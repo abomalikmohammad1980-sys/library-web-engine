@@ -70,8 +70,10 @@ for (const p of paras) {
     const wordEnd = wordStart + word.length;
     cursor = wordEnd;
     const W = colBase - (ourLines.length === 0 ? Math.max(p.indFirstLine, 0) : 0);
-    // عرض السطر لو ضُم: من بداية السطر حتى نهاية الكلمة (بمسافاته الداخلية)
-    if (lineWords.length && width(lineStartChar, wordEnd) > W) {
+    // فرضية تحت القياس: سماحية مسافات معلقة/كسرية في قرار الكسر.
+    // ‏HANG_SPACES=0 يعطل (الافتراضي). قاعدة الضغط العام رُفضت قياسًا (انظر السجل).
+    const allowance = Number(process.env.HANG_SPACES ?? "0") * spaceW;
+    if (lineWords.length && width(lineStartChar, wordEnd) - allowance > W) {
       ourLines.push(lineWords);
       lineWords = [word]; lineStartChar = wordStart;
     } else lineWords.push(word);
