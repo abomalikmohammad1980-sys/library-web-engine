@@ -16,9 +16,55 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import zipfile
 from collections import defaultdict
+
+try:
+    from fontTools.ttLib import TTFont
+except ImportError:  # الإكمال اختياري إن غابت fontTools
+    TTFont = None
+
+
+class FontMetrics:
+    """مقاييس خط subset مفكوك (extract_fonts.py) لإكمال التقدمات المحذوفة —
+    القاعدة 3: المحذوف في Indices = التقدم الطبيعي من الخط."""
+
+    def __init__(self, fonts_dir: str):
+        self.dir = fonts_dir
+        self.cache: dict[str, tuple] = {}
+
+    def get(self, odttf_name: str):
+        base = os.path.splitext(odttf_name)[0]
+        if base not in self.cache:
+            path = os.path.join(self.dir, base + ".ttf")
+            if TTFont is None or not os.path.exists(path):
+                self.cache[base] = None
+            else:
+                f = TTFont(path, lazy=True)
+                self.cache[base] = (f["hmtx"], f.getGlyphOrder(), f.getBestCmap(),
+                                     f, f["head"].unitsPerEm)
+        return self.cache[base]
+
+    def adv_units(self, odttf_name: str, gid: int):
+        m = self.get(odttf_name)
+        if not m:
+            return None
+        hmtx, order, _, _, upem = m
+        if gid is None or gid >= len(order):
+            return None
+        return hmtx[order[gid]][0], upem
+
+    def char_glyph(self, odttf_name: str, ch: str):
+        m = self.get(odttf_name)
+        if not m:
+            return None
+        hmtx, order, cmap, f, upem = m
+        name = cmap.get(ord(ch))
+        if name is None:
+            return None
+        return f.getGlyphID(name), hmtx[name][0], upem
 
 GLYPHS_RE = re.compile(r"<Glyphs\b[^>]*?/?>", re.S)
 ATTR_RE = re.compile(r'(\w[\w.]*)="([^"]*)"')
@@ -49,6 +95,9 @@ def parse_indices(indices: str, em_size_xps: float):
 
 
 def extract(xps_path: str, max_pages: int | None):
+    base = os.path.splitext(os.path.basename(xps_path))[0]
+    fonts_dir = os.path.join(os.path.dirname(xps_path), "fonts", base)
+    metrics = FontMetrics(fonts_dir) if os.path.isdir(fonts_dir) else None
     z = zipfile.ZipFile(xps_path)
     page_parts = sorted(
         (n for n in z.namelist() if re.search(r"Pages/\d+\.fpage$", n)),
@@ -103,13 +152,33 @@ def extract(xps_path: str, max_pages: int | None):
                 s, tx, ty = stack[-1]
                 em = float(attrs.get("FontRenderingEmSize", "0")) * s
                 glyphs = parse_indices(attrs.get("Indices", ""), em)
+                font_name = attrs.get("FontUri", "").split("/")[-1]
+                # إكمال التقدمات المحذوفة (القاعدة 3) من مقاييس الخط
+                if metrics is not None:
+                    if not attrs.get("Indices"):
+                        # ‏Indices غائبة كليًا: الغليفات من cmap حرفًا حرفًا
+                        glyphs = []
+                        for ch in attrs["UnicodeString"]:
+                            cg = metrics.char_glyph(font_name, ch)
+                            if cg is None:
+                                glyphs.append({"gid": None, "adv": None})
+                            else:
+                                gid, aw, upem = cg
+                                glyphs.append({"gid": gid,
+                                    "adv": aw / upem * em * XPS_UNIT_TO_TWIPS})
+                    else:
+                        for g in glyphs:
+                            if g["adv"] is None and g["gid"] is not None:
+                                au = metrics.adv_units(font_name, g["gid"])
+                                if au:
+                                    g["adv"] = au[0] / au[1] * em * XPS_UNIT_TO_TWIPS
                 adv_known = [g["adv"] for g in glyphs if g["adv"] is not None]
                 runs.append({
                     "text": attrs["UnicodeString"],
                     "x": round((float(attrs.get("OriginX", "0")) * s + tx) * XPS_UNIT_TO_TWIPS),
                     "y": round((float(attrs.get("OriginY", "0")) * s + ty) * XPS_UNIT_TO_TWIPS),
                     "emTwips": round(em * XPS_UNIT_TO_TWIPS),
-                    "font": attrs.get("FontUri", "").split("/")[-1],
+                    "font": font_name,
                     "bidiLevel": int(attrs.get("BidiLevel", "0")),
                     "glyphCount": len(glyphs),
                     "advSumTwips": round(sum(adv_known)) if adv_known else None,

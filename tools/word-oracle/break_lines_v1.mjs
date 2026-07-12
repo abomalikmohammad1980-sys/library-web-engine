@@ -65,22 +65,31 @@ for (const p of paras) {
   for (let c = 0; c < fullText.length; c++) prefix[c + 1] = prefix[c] + advAtChar[c];
   const width = (a, b) => prefix[b] - prefix[a]; // عرض النص [a,b)
 
-  const ourLines = [];
+  const ourLines = []; const ourMeta = [];
   let lineStartChar = 0, lineWords = [], cursor = 0;
   for (const word of words) {
     const wordStart = fullText.indexOf(word, cursor);
     const wordEnd = wordStart + word.length;
     cursor = wordEnd;
     const W = colBase - (ourLines.length === 0 ? Math.max(p.indFirstLine, 0) : 0);
-    // فرضية تحت القياس: سماحية مسافات معلقة/كسرية في قرار الكسر.
-    // ‏HANG_SPACES=0 يعطل (الافتراضي). قاعدة الضغط العام رُفضت قياسًا (انظر السجل).
-    const allowance = Number(process.env.HANG_SPACES ?? "0") * spaceW;
+    // سماحية ضغط مسافات في قرار الكسر — يعاد قياسها على العدّة المُصلحة
+    // (القياس الأول كان على عدّة معطوبة: أسطر فارغة + تخلل فوتر).
+    const FLOOR = Number(process.env.SPACE_FLOOR ?? "1");
+    const nSp = (fullText.slice(lineStartChar, wordEnd).match(/ /g) ?? []).length;
+    let allowance = nSp * spaceW * (1 - FLOOR);
+    // ‏w:overflowPunct (افتراضي OOXML: true): علامة الترقيم في نهاية السطر
+    // يُسمح لها بتجاوز الهامش — سماحية بعرض العلامة الطرفية نفسها.
+    if (process.env.OVERFLOW_PUNCT === "1") {
+      const lastCh = word[word.length - 1];
+      if ("،؛:.!؟»)".includes(lastCh))
+        allowance += width(wordEnd - 1, wordEnd);
+    }
     if (lineWords.length && width(lineStartChar, wordEnd) - allowance > W) {
-      ourLines.push(lineWords);
+      ourLines.push(lineWords); ourMeta.push({ start: lineStartChar, nextWordEnd: wordEnd });
       lineWords = [word]; lineStartChar = wordStart;
     } else lineWords.push(word);
   }
-  if (lineWords.length) ourLines.push(lineWords);
+  if (lineWords.length) { ourLines.push(lineWords); ourMeta.push({ start: lineStartChar, nextWordEnd: -1 }); }
 
   // محاذاة: أول truth line يطابق nospace سطرنا الأول
   const target = norm(ourLines[0].join(" "));
@@ -94,9 +103,17 @@ for (const p of paras) {
   if (start < 0) { parasSkipped++; continue; }
   parasAligned++;
 
+  // استهلاك أسطر الحقيقة مع تخطي أسطر أرقام صفحات الفوتر المتخللة
+  // (فقرة عابرة للصفحات ⇐ رقم الصفحة يقع بين سطرين — الفئة أ في المصنّف)
+  const seq = [];
+  for (let j = start; j < truthLines.length && seq.length <= ourLines.length; j++) {
+    if (/^[()0-9]{1,6}$/.test(truthLines[j].n)) continue;
+    seq.push(truthLines[j]);
+  }
+
   let firstDiv = -1;
   for (let i = 0; i < ourLines.length; i++) {
-    const t = truthLines[start + i];
+    const t = seq[i];
     if (!t) break;
     linesTotal++;
     const ok = norm(ourLines[i].join("")) === t.n;
@@ -116,6 +133,8 @@ for (const p of paras) {
         wordSide: wWords[0], ourSide: oWords[0], wLen: t.n.length, oLen: oN.length,
         boundaryLastChar: (wWords[wWords.length - 1] ?? "").slice(-1),
         kashidasOnLine: kashN, wordLineAdvTwips: Math.round(wordLineAdv), W: colBase,
+        ourNatOverIfPacked: ourMeta[i] && ourMeta[i].nextWordEnd > 0
+          ? Math.round(width(ourMeta[i].start, ourMeta[i].nextWordEnd) - colBase) : null,
       }));
     }
     else if (failures.length < 8) {
