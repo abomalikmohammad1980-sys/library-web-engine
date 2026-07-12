@@ -46,6 +46,7 @@ const paras = model.paragraphs.filter((p) =>
 
 let linesTotal = 0, linesMatched = 0, parasAligned = 0, parasSkipped = 0;
 const failures = [];
+const divDecisions = []; // نطاق الجدوى التجريبي لقاسم المقارنة الموزونة
 
 for (const p of paras) {
   const em = p.runs[0].emTwips;
@@ -56,11 +57,29 @@ for (const p of paras) {
   // كاسر greedy على أعراض عناقيد الفقرة المشكَّلة كاملةً (لا جمع كلمات معزولة):
   // التشكيل السياقي يلتقط kerning/الوصل عبر الحدود — كما يقيس محرك حقيقي.
   const fullText = words.join(" ");
+  // خريطة حجم كل حرف من runs الفقرة — الفقرات مختلطة الأحجام (درس para181:
+  // run بحجم 320 وسط فقرة 300 جعل قياسنا أقصر 6.7% فحشرنا كلمة زائدة،
+  // وبدا سطر Word «لا يبلغ الهامش» — الفئة 2 كانت خلل عدّة لا سلوك Word).
+  const emAt = new Float64Array(fullText.length);
+  if (process.env.RUN_EM !== "0") {
+    const raw = p.text, rawEm = [];
+    for (const r of p.runs) for (const ch of r.text) rawEm.push(r.emTwips);
+    let k = 0;
+    for (let fi = 0; fi < fullText.length; fi++) {
+      if (fullText[fi] === " ") {
+        emAt[fi] = /\s/.test(raw[k] ?? "") ? rawEm[k] : em;
+        while (k < raw.length && /\s/.test(raw[k])) k++;
+      } else {
+        while (k < raw.length && /\s/.test(raw[k])) k++;
+        emAt[fi] = rawEm[k] ?? em; k++;
+      }
+    }
+  } else emAt.fill(em);
   const buf = new HbBuffer();
   buf.addText(fullText); buf.guessSegmentProperties(); shape(font, buf);
   const infos = buf.getGlyphInfos(), poss = buf.getGlyphPositions();
   const advAtChar = new Float64Array(fullText.length + 1);
-  for (let g = 0; g < infos.length; g++) advAtChar[infos[g].cluster] += (poss[g].xAdvance / upem) * em;
+  for (let g = 0; g < infos.length; g++) advAtChar[infos[g].cluster] += (poss[g].xAdvance / upem) * emAt[infos[g].cluster];
   const prefix = new Float64Array(fullText.length + 1);
   for (let c = 0; c < fullText.length; c++) prefix[c + 1] = prefix[c] + advAtChar[c];
   const width = (a, b) => prefix[b] - prefix[a]; // عرض النص [a,b)
@@ -71,7 +90,10 @@ for (const p of paras) {
     const wordStart = fullText.indexOf(word, cursor);
     const wordEnd = wordStart + word.length;
     cursor = wordEnd;
-    const W = colBase - (ourLines.length === 0 ? Math.max(p.indFirstLine, 0) : 0);
+    // التقدم الأول بإشارته: السالب تعليقٌ (hanging) يوسّع السطر الأول —
+    // الحقيقة أكدته (para127: سطر أول يمتد إلى 15456 متجاوزًا هامش 15398 بـ58).
+    const indFL = process.env.HANG_IND === "0" ? Math.max(p.indFirstLine, 0) : p.indFirstLine;
+    const W = colBase - (ourLines.length === 0 ? indFL : 0);
     // سماحية ضغط مسافات في قرار الكسر — يعاد قياسها على العدّة المُصلحة
     // (القياس الأول كان على عدّة معطوبة: أسطر فارغة + تخلل فوتر).
     const FLOOR = Number(process.env.SPACE_FLOOR ?? "1");
@@ -97,13 +119,33 @@ for (const p of paras) {
       if (n > 0) {
         const sigma = 1 - D / (n * spaceW);
         // بوابة السماحية بنص الخوارزمية: n_allow = n + 1 ‏(القاعدة 16 §3)
-        if (D <= 0.25 * (n + 1) * spaceW) {
-          const L1 = width(lineStartChar, lineEndChar);
-          const n1 = Math.max(n - 1, 0);
-          const e = n1 > 0 ? 1 + (W - L1) / (n1 * spaceW) : Infinity;
+        const gateOK = D <= 0.25 * (n + 1) * spaceW;
+        let e = null, L1 = null, n1 = null;
+        if (gateOK) {
+          L1 = width(lineStartChar, lineEndChar);
+          n1 = Math.max(n - 1, 0);
+          e = n1 > 0 ? 1 + (W - L1) / (n1 * spaceW) : Infinity;
           const CAP = Number(process.env.E_CAP ?? "1.5");
-          if (e > CAP || 1 + (e - 1) / 1.7 >= 1 / sigma) { fits = true; shrinkPacked = true; }
+          // قاسم المقارنة الموزونة: 1.6 معايرةً على نطاق الجدوى التجريبي
+          // (1.481, 1.680] من 33 قرارًا محكومًا بالحقيقة — 1.7 المستعار من
+          // هندسة LO العكسية خارج النطاق (يرفض حشر 104:0 الذي فعله Word).
+          const DIV = Number(process.env.W_DIV ?? "1.6");
+          const adopt = e > CAP || 1 + (e - 1) / DIV >= 1 / sigma;
+          if (adopt) { fits = true; shrinkPacked = true; }
+          // حدّ القاسم الذي يقلب هذا القرار: adopt ⇔ DIV ≤ (e−1)σ/(1−σ)
+          if (e <= CAP && sigma < 1)
+            divDecisions.push({ para: p.index, line: ourLines.length, adopted: adopt,
+              bound: (e - 1) * sigma / (1 - sigma) });
         }
+        if (process.env.FORENSIC_SHRINK &&
+            process.env.FORENSIC_SHRINK.split(",").includes(String(p.index)))
+          console.log("قرار-انكماش:", JSON.stringify({ para: p.index, line: ourLines.length,
+            word, D: Math.round(D), n, spaceW: Math.round(spaceW),
+            gate: Math.round(0.25 * (n + 1) * spaceW), gateOK,
+            sigma: +sigma.toFixed(4), invSigma: +(1 / sigma).toFixed(4),
+            e: e === null ? null : +(+e).toFixed(4),
+            weighted: e === null ? null : +(1 + (e - 1) / 1.7).toFixed(4),
+            adopted: shrinkPacked }));
       }
     }
     if (!fits) {
@@ -141,15 +183,16 @@ for (const p of paras) {
     seq.push(truthLines[j]);
   }
 
-  let firstDiv = -1;
+  let firstDiv = -1, cmpN = 0;
   for (let i = 0; i < ourLines.length; i++) {
     const t = seq[i];
     if (!t) break;
+    cmpN = i + 1;
     linesTotal++;
     const ok = norm(ourLines[i].join("")) === t.n;
+    if (!ok && firstDiv < 0) firstDiv = i;
     if (ok) linesMatched++;
-    else if (firstDiv < 0 && process.env.FORENSICS) {
-      firstDiv = i;
+    else if (firstDiv === i && process.env.FORENSICS) {
       // الكلمة الحدية: أول اختلاف بين تسلسلي الكلمات
       const oN = norm(ourLines[i].join(""));
       let c = 0; while (c < Math.min(t.n.length, oN.length) && t.n[c] === oN[c]) c++;
@@ -177,8 +220,31 @@ for (const p of paras) {
         word: t.raw.slice(0, 35), ours: ourLines[i].join(" ").slice(0, 35) });
     }
   }
+  // تعليم صحة قرارات الانكماش: قبل أول انحراف = موافقة Word؛ عنده = مخالفته؛
+  // بعده أو خارج المقارنة = مجهولة (الحقيقة تنزاح بالتتالي) فتُسقط من النطاق.
+  for (const d of divDecisions) if (d.para === p.index && d.truth === undefined) {
+    if (d.line >= cmpN) d.truth = null;
+    else if (firstDiv < 0 || d.line < firstDiv) d.truth = d.adopted;
+    else if (d.line === firstDiv) d.truth = !d.adopted;
+    else d.truth = null;
+  }
 }
 
+if (process.env.DIV_BAND) {
+  // نطاق الجدوى: adopt ⇔ DIV ≤ bound ⇒ الحشود الصحيحة تعطي حدًا أعلى مسموحًا
+  // (DIV ≤ min bounds)، والرفوض الصحيحة حدًا أدنى (DIV > max bounds).
+  const judged = divDecisions.filter((d) => d.truth !== null && d.truth !== undefined);
+  const adopts = judged.filter((d) => d.truth).sort((a, b) => a.bound - b.bound);
+  const rejects = judged.filter((d) => !d.truth).sort((a, b) => b.bound - a.bound);
+  console.log(`قرارات محكومة: ${judged.length} (حشر ${adopts.length} / كسر ${rejects.length})`);
+  console.log("أدنى حدود الحشر:", adopts.slice(0, 5).map((d) => `${d.bound.toFixed(4)}@${d.para}:${d.line}`).join(" "));
+  console.log("أعلى حدود الكسر:", rejects.slice(0, 5).map((d) => `${d.bound.toFixed(4)}@${d.para}:${d.line}`).join(" "));
+  const lo = rejects.length ? rejects[0].bound : -Infinity;
+  const hi = adopts.length ? adopts[0].bound : Infinity;
+  console.log(lo < hi
+    ? `★ نطاق DIV الممكن: (${lo.toFixed(4)}, ${hi.toFixed(4)}]`
+    : `⚠ لا نطاق متسقًا — تعارضات: ${rejects.filter((d) => d.bound >= hi).length + adopts.filter((d) => d.bound <= lo).length}`);
+}
 const pct = linesTotal ? ((100 * linesMatched) / linesTotal).toFixed(2) : "0";
 console.log(`فقرات docx مؤهلة: ${paras.length} | محاذاة: ${parasAligned} | بلا محاذاة: ${parasSkipped}`);
 console.log(`★★ الرقم الشمالي v1 (نص من XML): ${linesMatched}/${linesTotal} = ${pct}%`);
