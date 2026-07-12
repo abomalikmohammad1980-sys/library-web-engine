@@ -89,10 +89,26 @@ export function openDocx(bytes: Uint8Array): { documentXml: string; stylesXml: s
 }
 
 // ---------- الأنماط: styleId ← {sz, family, basedOn} + docDefaults
-interface StyleProps { sz: number | null; family: string | null; basedOn: string | null }
+interface StyleProps {
+  sz: number | null; family: string | null; basedOn: string | null;
+  indLeft: number | null; indRight: number | null; indFirstLine: number | null;
+}
 export interface StyleTable {
   defaults: { sz: number | null; family: string | null };
   byId: Map<string, StyleProps>;
+}
+
+function indProps(pPr: XNode[] | null): { indLeft: number | null; indRight: number | null; indFirstLine: number | null } {
+  const ind = pPr ? findAttr(pPr, "w:ind") : null;
+  if (!ind) return { indLeft: null, indRight: null, indFirstLine: null };
+  const fl = ind["@w:firstLine"] != null || ind["@w:hanging"] != null
+    ? Number(ind["@w:firstLine"] ?? 0) - Number(ind["@w:hanging"] ?? 0)
+    : null;
+  return {
+    indLeft: ind["@w:left"] != null ? Number(ind["@w:left"]) : null,
+    indRight: ind["@w:right"] != null ? Number(ind["@w:right"]) : null,
+    indFirstLine: fl,
+  };
 }
 
 function rPrProps(rpr: XNode[] | null): { sz: number | null; family: string | null } {
@@ -131,24 +147,27 @@ export function parseStyles(stylesXml: string | null): StyleTable {
     const rpr = first(body, "w:rPr");
     const basedOnAttrs = findAttr(body, "w:basedOn");
     const p = rPrProps(rpr);
-    table.byId.set(id, { ...p, basedOn: basedOnAttrs?.["@w:val"] ?? null });
+    const ind = indProps(first(body, "w:pPr"));
+    table.byId.set(id, { ...p, ...ind, basedOn: basedOnAttrs?.["@w:val"] ?? null });
   }
   return table;
 }
 
-function resolveViaStyle(table: StyleTable, styleId: string | null): { sz: number | null; family: string | null } {
-  let sz: number | null = null;
-  let family: string | null = null;
-  let id = styleId;
-  let guard = 0;
+function resolveViaStyle(table: StyleTable, styleId: string | null) {
+  let sz: number | null = null, family: string | null = null;
+  let indLeft: number | null = null, indRight: number | null = null, indFirstLine: number | null = null;
+  let id = styleId, guard = 0;
   while (id && guard++ < 12) {
     const s = table.byId.get(id);
     if (!s) break;
-    sz ??= s.sz;
-    family ??= s.family;
+    sz ??= s.sz; family ??= s.family;
+    indLeft ??= s.indLeft; indRight ??= s.indRight; indFirstLine ??= s.indFirstLine;
     id = s.basedOn;
   }
-  return { sz: sz ?? table.defaults.sz, family: family ?? table.defaults.family };
+  return {
+    sz: sz ?? table.defaults.sz, family: family ?? table.defaults.family,
+    indLeft: indLeft ?? 0, indRight: indRight ?? 0, indFirstLine: indFirstLine ?? 0,
+  };
 }
 
 // ---------- المستند
@@ -184,12 +203,12 @@ export function parseDocument(documentXml: string, styles: StyleTable): Document
     const styleId = pPr ? (findAttr(pPr, "w:pStyle")?.["@w:val"] ?? null) : null;
     const jc = pPr ? (findAttr(pPr, "w:jc")?.["@w:val"] ?? null) : null;
     const bidi = pPr ? findAttr(pPr, "w:bidi") != null : false;
-    const ind = pPr ? findAttr(pPr, "w:ind") : null;
-    const indLeft = Number(ind?.["@w:left"] ?? 0);
-    const indRight = Number(ind?.["@w:right"] ?? 0);
-    const indFirstLine = Number(ind?.["@w:firstLine"] ?? 0) - Number(ind?.["@w:hanging"] ?? 0);
-
     const styleProps = resolveViaStyle(styles, styleId);
+    // ‏w:ind: المباشر على الفقرة يتقدم؛ وإلا فمن سلسلة النمط (نفس قاعدة rPr)
+    const own = indProps(pPr);
+    const indLeft = own.indLeft ?? styleProps.indLeft;
+    const indRight = own.indRight ?? styleProps.indRight;
+    const indFirstLine = own.indFirstLine ?? styleProps.indFirstLine;
     const pPrRPr = pPr ? rPrProps(first(pPr, "w:rPr")) : { sz: null, family: null };
 
     let excluded: BodyParagraph["excluded"] = false;

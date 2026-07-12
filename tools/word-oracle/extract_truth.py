@@ -71,27 +71,52 @@ def extract(xps_path: str, max_pages: int | None):
         width_tw = round(float(m.group(1)) * XPS_UNIT_TO_TWIPS) if m else None
         height_tw = round(float(m.group(2)) * XPS_UNIT_TO_TWIPS) if m else None
 
+        # ‏Word يلف محتوى الصفحة بـ Canvas RenderTransform ‏(scale 4/3: نقاط ← 1/96")
+        # ‏(قاعدة مكتشفة — انظر word-behavior-spec). نتتبع مكدس التحويلات ونطبقه
+        # على المواضع والأحجام. ندعم scale+translate ونرصد أي دوران كتحذير.
         runs = []
-        for gm in GLYPHS_RE.finditer(xml):
-            attrs = dict(ATTR_RE.findall(gm.group(0)))
-            if "UnicodeString" not in attrs:
-                continue
-            em = float(attrs.get("FontRenderingEmSize", "0"))
-            glyphs = parse_indices(attrs.get("Indices", ""), em)
-            adv_known = [g["adv"] for g in glyphs if g["adv"] is not None]
-            runs.append({
-                "text": attrs["UnicodeString"],
-                "x": round(float(attrs.get("OriginX", "0")) * XPS_UNIT_TO_TWIPS),
-                "y": round(float(attrs.get("OriginY", "0")) * XPS_UNIT_TO_TWIPS),
-                "emTwips": round(em * XPS_UNIT_TO_TWIPS),
-                "font": attrs.get("FontUri", "").split("/")[-1],
-                "bidiLevel": int(attrs.get("BidiLevel", "0")),
-                "glyphCount": len(glyphs),
-                "advSumTwips": round(sum(adv_known)) if adv_known else None,
-                "glyphAdvTwips": [round(a) if a is not None else None for a in
-                                   (g["adv"] for g in glyphs)],
-                "glyphIds": [g["gid"] for g in glyphs],
-            })
+        stack = [(1.0, 0.0, 0.0)]  # (scale, tx, ty) تراكمية
+        in_rt = False
+        TAG_RE = re.compile(
+            r"<(/?)(Canvas\.RenderTransform|Canvas|MatrixTransform|Glyphs)\b([^>]*?)(/?)>", re.S)
+        for tm in TAG_RE.finditer(xml):
+            closing, tag, body, selfclose = tm.group(1) == "/", tm.group(2), tm.group(3), tm.group(4) == "/"
+            if tag == "Canvas.RenderTransform":
+                in_rt = not closing
+            elif tag == "Canvas":
+                if closing:
+                    if len(stack) > 1:
+                        stack.pop()
+                elif not selfclose:
+                    stack.append(stack[-1])
+            elif tag == "MatrixTransform" and in_rt:
+                a_ = dict(ATTR_RE.findall(body))
+                m6 = [float(v) for v in a_.get("Matrix", "1,0,0,1,0,0").split(",")]
+                if abs(m6[1]) > 1e-9 or abs(m6[2]) > 1e-9 or abs(m6[0] - m6[3]) > 1e-6:
+                    print(f"تحذير: تحويل غير متجانس في {part}: {m6}")
+                s, tx, ty = stack[-1]
+                stack[-1] = (s * m6[0], s * m6[4] + tx, s * m6[5] + ty)
+            elif tag == "Glyphs" and not closing:
+                attrs = dict(ATTR_RE.findall(body))
+                if "UnicodeString" not in attrs:
+                    continue
+                s, tx, ty = stack[-1]
+                em = float(attrs.get("FontRenderingEmSize", "0")) * s
+                glyphs = parse_indices(attrs.get("Indices", ""), em)
+                adv_known = [g["adv"] for g in glyphs if g["adv"] is not None]
+                runs.append({
+                    "text": attrs["UnicodeString"],
+                    "x": round((float(attrs.get("OriginX", "0")) * s + tx) * XPS_UNIT_TO_TWIPS),
+                    "y": round((float(attrs.get("OriginY", "0")) * s + ty) * XPS_UNIT_TO_TWIPS),
+                    "emTwips": round(em * XPS_UNIT_TO_TWIPS),
+                    "font": attrs.get("FontUri", "").split("/")[-1],
+                    "bidiLevel": int(attrs.get("BidiLevel", "0")),
+                    "glyphCount": len(glyphs),
+                    "advSumTwips": round(sum(adv_known)) if adv_known else None,
+                    "glyphAdvTwips": [round(a) if a is not None else None for a in
+                                       (g["adv"] for g in glyphs)],
+                    "glyphIds": [g["gid"] for g in glyphs],
+                })
 
         # تجميع الأسطر: نفس OriginY ضمن سماحية ±2 twips
         lines_map = defaultdict(list)
