@@ -6,8 +6,8 @@
 | # | المهمة | الحالة | ملاحظات |
 |---|---|---|---|
 | 1 | إنشاء الريبو + الهيكل + قالب PR + ‏.gitignore/.gitattributes | **done** ✅ | حماية `main` تتم على GitHub بعد الربط بـ remote (خطوة يدوية للمالك)؛ LFS مفعّل |
-| 2 | نسخ `reference/` (محرك Dart + AGENTS.md + مراجع OOXML) والوثائق | **In progress** | |
-| 3 | كتابة PRD ‏(`docs/prd.md`) | pending | |
+| 2 | نسخ `reference/` (محرك Dart + AGENTS.md + مراجع OOXML) والوثائق | **done** ✅ | ‏10MB؛ استُثني PDF المواصفة الضخم (يبقى في المستودع الأصلي) |
+| 3 | كتابة PRD ‏(`docs/prd.md`) | **In progress** | |
 | 4 | كتابة `AGENTS.md` الجذري (دستور الوكلاء) | pending | |
 | 5 | سقالة pnpm/TS/Vitest + ‏CI workflow — أول اختبار أخضر محليًا | pending | التشغيل الأخضر على GitHub Actions بعد الربط بـ remote |
 | 6 | تدوين ADRs الخمسة الأولى | pending | |
