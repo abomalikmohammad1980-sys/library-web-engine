@@ -66,7 +66,7 @@ for (const p of paras) {
   const width = (a, b) => prefix[b] - prefix[a]; // عرض النص [a,b)
 
   const ourLines = []; const ourMeta = [];
-  let lineStartChar = 0, lineWords = [], cursor = 0;
+  let lineStartChar = 0, lineEndChar = 0, lineWords = [], cursor = 0;
   for (const word of words) {
     const wordStart = fullText.indexOf(word, cursor);
     const wordEnd = wordStart + word.length;
@@ -84,10 +84,38 @@ for (const p of paras) {
       if ("،؛:.!؟»)".includes(lastCh))
         allowance += width(wordEnd - 1, wordEnd);
     }
-    if (lineWords.length && width(lineStartChar, wordEnd) - allowance > W) {
+    let fits = !(lineWords.length && width(lineStartChar, wordEnd) - allowance > W);
+    // ★ خوارزمية Word 2013+ ‏(compatibilityMode≥15، ‏jc=both) — القاعدة 16:
+    // تمريرة انكماش: أرضية المسافة 75%، وتُتبنى فقط إن كان بديل التمديد أسوأ
+    // (المقارنة الموزونة: e>1.5 أو 1+(e−1)/1.7 ≥ 1/σ). مصدر النموذج:
+    // هندسة LibreOffice العكسية لـ MSO ‏(tdf#119908 وسلسلته).
+    let shrinkPacked = false;
+    if (!fits && process.env.SMART_JUSTIFY !== "0" && p.jc === "both" && lineWords.length) {
+      const D = width(lineStartChar, wordEnd) - W;
+      const seg = fullText.slice(lineStartChar, wordEnd);
+      const n = (seg.match(/ /g) ?? []).length;
+      if (n > 0) {
+        const sigma = 1 - D / (n * spaceW);
+        if (sigma >= 0.75) {
+          const L1 = width(lineStartChar, lineEndChar);
+          const n1 = Math.max(n - 1, 0);
+          const e = n1 > 0 ? 1 + (W - L1) / (n1 * spaceW) : Infinity;
+          if (e > 1.5 || 1 + (e - 1) / 1.7 >= 1 / sigma) { fits = true; shrinkPacked = true; }
+        }
+      }
+    }
+    if (!fits) {
       ourLines.push(lineWords); ourMeta.push({ start: lineStartChar, nextWordEnd: wordEnd });
       lineWords = [word]; lineStartChar = wordStart;
-    } else lineWords.push(word);
+    } else {
+      lineWords.push(word);
+      // بعد الحشر بالانكماش السطر ممتلئ — يُغلق فورًا (السلوك المرصود)
+      if (shrinkPacked) {
+        ourLines.push(lineWords); ourMeta.push({ start: lineStartChar, nextWordEnd: -1 });
+        lineWords = []; lineStartChar = wordEnd + 1;
+      }
+    }
+    lineEndChar = wordEnd;
   }
   if (lineWords.length) { ourLines.push(lineWords); ourMeta.push({ start: lineStartChar, nextWordEnd: -1 }); }
 
