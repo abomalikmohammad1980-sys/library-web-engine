@@ -90,6 +90,7 @@ def extract(xps_path: str, max_pages: int | None):
                 "advSumTwips": round(sum(adv_known)) if adv_known else None,
                 "glyphAdvTwips": [round(a) if a is not None else None for a in
                                    (g["adv"] for g in glyphs)],
+                "glyphIds": [g["gid"] for g in glyphs],
             })
 
         # تجميع الأسطر: نفس OriginY ضمن سماحية ±2 twips
