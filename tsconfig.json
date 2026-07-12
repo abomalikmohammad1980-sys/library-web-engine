@@ -1,6 +1,7 @@
 {
   "files": [],
   "references": [
-    { "path": "packages/layout" }
+    { "path": "packages/layout" },
+    { "path": "packages/ooxml-model" }
   ]
 }
