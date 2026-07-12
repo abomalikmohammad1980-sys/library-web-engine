@@ -96,11 +96,13 @@ for (const p of paras) {
       const n = (seg.match(/ /g) ?? []).length;
       if (n > 0) {
         const sigma = 1 - D / (n * spaceW);
-        if (sigma >= 0.75) {
+        // بوابة السماحية بنص الخوارزمية: n_allow = n + 1 ‏(القاعدة 16 §3)
+        if (D <= 0.25 * (n + 1) * spaceW) {
           const L1 = width(lineStartChar, lineEndChar);
           const n1 = Math.max(n - 1, 0);
           const e = n1 > 0 ? 1 + (W - L1) / (n1 * spaceW) : Infinity;
-          if (e > 1.5 || 1 + (e - 1) / 1.7 >= 1 / sigma) { fits = true; shrinkPacked = true; }
+          const CAP = Number(process.env.E_CAP ?? "1.5");
+          if (e > CAP || 1 + (e - 1) / 1.7 >= 1 / sigma) { fits = true; shrinkPacked = true; }
         }
       }
     }
