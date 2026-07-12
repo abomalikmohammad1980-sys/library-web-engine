@@ -6,10 +6,15 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { Blob, Buffer as HbBuffer, Face, Font, shape } from "harfbuzzjs";
 import { extractFromDocx } from "../../packages/ooxml-model/dist/index.js";
 
-const model = extractFromDocx(readFileSync("corpus/books/sample-masjid.docx"));
-const truth = JSON.parse(readFileSync("corpus/ground-truth/sample-masjid.truth.json", "utf-8"));
+// معايير الكتاب عبر البيئة — الافتراضي الكتاب الأول (sample-masjid/adwa)
+const BOOK = process.env.BOOK ?? "sample-masjid";
+const FAMILY = process.env.FAMILY ?? "adwa-assalaf";
+const FONT_FILE = process.env.FONT_FILE ?? "corpus/book-fonts/adwa-assalaf.ttf";
 
-const face = new Face(new Blob(readFileSync("corpus/book-fonts/adwa-assalaf.ttf")), 0);
+const model = extractFromDocx(readFileSync(`corpus/books/${BOOK}.docx`));
+const truth = JSON.parse(readFileSync(`corpus/ground-truth/${BOOK}.truth.json`, "utf-8"));
+
+const face = new Face(new Blob(readFileSync(FONT_FILE)), 0);
 const font = new Font(face);
 const upem = face.upem;
 const wCache = new Map();
@@ -41,7 +46,7 @@ for (const pg of truth.pages) for (const ln of pg.lines) {
 const paras = model.paragraphs.filter((p) =>
   !p.excluded &&
   p.text.trim().split(/\s+/).length >= 8 &&
-  p.runs.every((r) => r.family === "adwa-assalaf" && r.emTwips),
+  p.runs.every((r) => r.family === FAMILY && r.emTwips),
 );
 
 let linesTotal = 0, linesMatched = 0, parasAligned = 0, parasSkipped = 0;
@@ -50,7 +55,17 @@ const divDecisions = []; // نطاق الجدوى التجريبي لقاسم ا
 
 for (const p of paras) {
   const em = p.runs[0].emTwips;
-  const words = p.text.trim().split(/\s+/);
+  // فواصل الأسطر اليدوية (w:br ⇒ \n من النموذج): كسر إجباري بعد الكلمة —
+  // درس sample-tadris: ‏33 فاصلًا يدويًا ظهرت أسطرها «قصيرة بلا سبب».
+  const words = []; const brkAfter = new Set();
+  if (process.env.MANUAL_BR !== "0") {
+    for (const seg of p.text.split("\n")) {
+      const ws = seg.trim().split(/\s+/).filter(Boolean);
+      words.push(...ws);
+      if (words.length) brkAfter.add(words.length - 1);
+    }
+    brkAfter.delete(words.length - 1); // آخر الفقرة ينتهي طبيعيًا
+  } else words.push(...p.text.trim().split(/\s+/).filter(Boolean));
   const spaceW = widthTwips(" ", em);
   const colBase = model.section.columnTwips - p.indLeft - p.indRight;
 
@@ -85,8 +100,9 @@ for (const p of paras) {
   const width = (a, b) => prefix[b] - prefix[a]; // عرض النص [a,b)
 
   const ourLines = []; const ourMeta = [];
-  let lineStartChar = 0, lineEndChar = 0, lineWords = [], cursor = 0;
+  let lineStartChar = 0, lineEndChar = 0, lineWords = [], cursor = 0, wi = -1;
   for (const word of words) {
+    wi++;
     const wordStart = fullText.indexOf(word, cursor);
     const wordEnd = wordStart + word.length;
     cursor = wordEnd;
@@ -112,7 +128,17 @@ for (const p of paras) {
     // (المقارنة الموزونة: e>1.5 أو 1+(e−1)/1.7 ≥ 1/σ). مصدر النموذج:
     // هندسة LibreOffice العكسية لـ MSO ‏(tdf#119908 وسلسلته).
     let shrinkPacked = false;
-    if (!fits && process.env.SMART_JUSTIFY !== "0" && p.jc === "both" && lineWords.length) {
+    // أوضاع الكشيدة تسوّغ لكن بمعاملات حشر مختلفة: تعميم بوابة both عليها
+    // نتيجة سلبية مقيسة (كتاب1: 98.9%←87.4%؛ ‏tadris: ‏89.2%←85.8%) —
+    // ‏Word يحشر في mediumKashida ‏(tadris 48/242) ولا يحشر في lowKashida
+    // بنفس العتبات ⇒ بند بحث مستقل. ‏KASHIDA_JC=1 للتجريب فقط.
+    const JUST_JC = process.env.KASHIDA_JC === "1"
+      ? ["both", "lowKashida", "mediumKashida", "highKashida"] : ["both"];
+    // بوابة القاعدة 16 الآلية: الانكماش لـcompatibilityMode ≥ 15 حصرًا —
+    // تأكدت على sample-jalsa27 ‏(compat=11): تعطيله 59.5%←82.4%.
+    const smartOn = process.env.SMART_JUSTIFY != null
+      ? process.env.SMART_JUSTIFY !== "0" : model.compatibilityMode >= 15;
+    if (!fits && smartOn && JUST_JC.includes(p.jc) && lineWords.length) {
       const D = width(lineStartChar, wordEnd) - W;
       const seg = fullText.slice(lineStartChar, wordEnd);
       const n = (seg.match(/ /g) ?? []).length;
@@ -160,6 +186,11 @@ for (const p of paras) {
       }
     }
     lineEndChar = wordEnd;
+    // كسر إجباري بعد هذه الكلمة (w:br) — يُغلق السطر مهما كان امتلاؤه
+    if (brkAfter.has(wi) && lineWords.length) {
+      ourLines.push(lineWords); ourMeta.push({ start: lineStartChar, nextWordEnd: -1 });
+      lineWords = []; lineStartChar = wordEnd + 1;
+    }
   }
   if (lineWords.length) { ourLines.push(lineWords); ourMeta.push({ start: lineStartChar, nextWordEnd: -1 }); }
 
@@ -249,5 +280,5 @@ const pct = linesTotal ? ((100 * linesMatched) / linesTotal).toFixed(2) : "0";
 console.log(`فقرات docx مؤهلة: ${paras.length} | محاذاة: ${parasAligned} | بلا محاذاة: ${parasSkipped}`);
 console.log(`★★ الرقم الشمالي v1 (نص من XML): ${linesMatched}/${linesTotal} = ${pct}%`);
 for (const f of failures) console.log("  فشل:", JSON.stringify(f));
-writeFileSync("corpus/ground-truth/linebreak-v1-report.json",
+writeFileSync(`corpus/ground-truth/linebreak-v1-report${BOOK === "sample-masjid" ? "" : "-" + BOOK}.json`,
   JSON.stringify({ paras: paras.length, parasAligned, linesTotal, linesMatched, pct: Number(pct), failures }, null, 1));

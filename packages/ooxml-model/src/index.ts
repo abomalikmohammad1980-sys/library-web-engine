@@ -32,7 +32,7 @@ export interface BodyParagraph {
   indLeft: number;
   indRight: number;
   indFirstLine: number;
-  excluded: false | "table" | "drawing" | "field" | "tab" | "empty";
+  excluded: false | "table" | "drawing" | "field" | "tab" | "sym" | "empty";
 }
 export interface SectionGeometry {
   pageWTwips: number;
@@ -45,6 +45,8 @@ export interface SectionGeometry {
 export interface DocumentModelV0 {
   section: SectionGeometry;
   paragraphs: BodyParagraph[];
+  /** من settings.xml؛ ‏11 عند الغياب (ما قبل 2010) — مفتاح القاعدة 16 */
+  compatibilityMode: number;
 }
 
 // ---------- أدوات XML
@@ -79,13 +81,30 @@ function findAttr(parent: XNode[], name: string): Record<string, string> | null 
 }
 
 // ---------- فتح الأرشيف
-export function openDocx(bytes: Uint8Array): { documentXml: string; stylesXml: string | null } {
+export function openDocx(bytes: Uint8Array): {
+  documentXml: string; stylesXml: string | null; settingsXml: string | null;
+} {
   const files = unzipSync(bytes);
   const dec = new TextDecoder("utf-8");
   const doc = files["word/document.xml"];
   if (!doc) throw new Error("word/document.xml غير موجود");
   const styles = files["word/styles.xml"];
-  return { documentXml: dec.decode(doc), stylesXml: styles ? dec.decode(styles) : null };
+  const settings = files["word/settings.xml"];
+  return {
+    documentXml: dec.decode(doc),
+    stylesXml: styles ? dec.decode(styles) : null,
+    settingsXml: settings ? dec.decode(settings) : null,
+  };
+}
+
+/** ‏compatibilityMode من settings.xml — مفتاح خوارزمية التسويغ الذكي
+ *  (القاعدة 16: الانكماش لـ≥15 فقط؛ تنبؤ تأكد على كتاب compat=11).
+ *  الغياب = وثيقة ما قبل 2010 ⇒ ‏11. */
+export function compatibilityMode(settingsXml: string | null): number {
+  if (!settingsXml) return 11;
+  const m = settingsXml.match(
+    /w:name="compatibilityMode"[^>]*w:val="(\d+)"|w:val="(\d+)"[^>]*w:name="compatibilityMode"/);
+  return m ? Number(m[1] ?? m[2]) : 11;
 }
 
 // ---------- الأنماط: styleId ← {sz, family, basedOn} + docDefaults
@@ -228,6 +247,12 @@ export function parseDocument(documentXml: string, styles: StyleTable): Document
           const parts = t["w:t"] as XNode[];
           for (const seg of parts) if ("#text" in seg) text += String(seg["#text"]);
         }
+        // فاصل سطر يدوي (w:br بأنواعه) — يُمثَّل بـ\n: نقطة كسر إجبارية للكاسر
+        if ("w:br" in t) text += "\n";
+        // ‏w:sym: حرف بخط رمزي (ﷺ ونحوه بـAGA Arabesque) — قياسه الصادق يتطلب
+        // تشكيلًا متعدد الخطوط؛ حتى حينه تُستبعد الفقرة (وإلا قِيس نصها أقصر
+        // من الحقيقة وفسدت المحاذاة — درس sample-tadris para291).
+        if ("w:sym" in t) excluded = excluded || "sym";
         if ("w:tab" in t) excluded = excluded || "tab";
         if ("w:drawing" in t || "w:pict" in t) excluded = excluded || "drawing";
         if ("w:fldChar" in t || "w:instrText" in t) excluded = excluded || "field";
@@ -249,10 +274,12 @@ export function parseDocument(documentXml: string, styles: StyleTable): Document
       indLeft, indRight, indFirstLine, excluded,
     });
   }
-  return { section, paragraphs };
+  return { section, paragraphs, compatibilityMode: 11 };
 }
 
 export function extractFromDocx(bytes: Uint8Array): DocumentModelV0 {
-  const { documentXml, stylesXml } = openDocx(bytes);
-  return parseDocument(documentXml, parseStyles(stylesXml));
+  const { documentXml, stylesXml, settingsXml } = openDocx(bytes);
+  const model = parseDocument(documentXml, parseStyles(stylesXml));
+  model.compatibilityMode = compatibilityMode(settingsXml);
+  return model;
 }

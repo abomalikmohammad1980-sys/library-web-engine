@@ -15,6 +15,7 @@ XPS = أرشيف ZIP يحوي لكل صفحة FixedPage XML، وكل نص فيه
 from __future__ import annotations
 
 import argparse
+import html
 import json
 import os
 import re
@@ -149,6 +150,9 @@ def extract(xps_path: str, max_pages: int | None):
                 attrs = dict(ATTR_RE.findall(body))
                 if "UnicodeString" not in attrs:
                     continue
+                # فك كيانات XML ‏(&quot; &amp; …) — كانت تتسرب حرفيًا إلى نص
+                # الحقيقة فتفسد المطابقة (درس sample-jalsa27 para27)
+                attrs["UnicodeString"] = html.unescape(attrs["UnicodeString"])
                 s, tx, ty = stack[-1]
                 em = float(attrs.get("FontRenderingEmSize", "0")) * s
                 glyphs = parse_indices(attrs.get("Indices", ""), em)
