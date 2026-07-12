@@ -31,8 +31,10 @@ const truthLines = [];
 for (const pg of truth.pages) for (const ln of pg.lines) {
   const rs = ln.runs.filter((r) => r.text.trim());
   const logical = [...rs].sort((a, b) => b.x - a.x).map((r) => r.text).join("");
-  truthLines.push({ n: norm(logical), raw: logical.trim(),
-    em: rs.length ? rs[0].emTwips : 0 });
+  const nn = norm(logical);
+  if (!nn) continue; // سطر فارغ بصريًا — لا يشارك في تدفق النص
+  truthLines.push({ n: nn, raw: logical.trim(),
+    em: rs.length ? rs[0].emTwips : 0, runs: rs });
 }
 
 // فقرات docx المؤهلة: متن نظيف بخط adwa وحجم معلوم وكلمات كافية
@@ -92,12 +94,30 @@ for (const p of paras) {
   if (start < 0) { parasSkipped++; continue; }
   parasAligned++;
 
+  let firstDiv = -1;
   for (let i = 0; i < ourLines.length; i++) {
     const t = truthLines[start + i];
     if (!t) break;
     linesTotal++;
     const ok = norm(ourLines[i].join("")) === t.n;
     if (ok) linesMatched++;
+    else if (firstDiv < 0 && process.env.FORENSICS) {
+      firstDiv = i;
+      // الكلمة الحدية: أول اختلاف بين تسلسلي الكلمات
+      const oN = norm(ourLines[i].join(""));
+      let c = 0; while (c < Math.min(t.n.length, oN.length) && t.n[c] === oN[c]) c++;
+      const wWords = [t.n.slice(Math.max(0,c-8), c+10)];
+      const oWords = [oN.slice(Math.max(0,c-8), c+10)];
+      const k = c;
+      const kashN = t.runs.reduce((a, r) => a + (r.glyphIds ?? []).filter((g) => g === 229).length, 0);
+      const wordLineAdv = t.runs.reduce((a, r) => a + (r.advSumTwips ?? 0), 0);
+      console.log("تشريح:", JSON.stringify({
+        para: p.index, line: i, divergeAtWord: k,
+        wordSide: wWords[0], ourSide: oWords[0], wLen: t.n.length, oLen: oN.length,
+        boundaryLastChar: (wWords[wWords.length - 1] ?? "").slice(-1),
+        kashidasOnLine: kashN, wordLineAdvTwips: Math.round(wordLineAdv), W: colBase,
+      }));
+    }
     else if (failures.length < 8) {
       // تشخيص: عرض سطر Word الفعلي بكلماته (تشكيلنا) مقابل عمودنا
       const wWords = t.raw.split(/\s+/).filter(Boolean);
