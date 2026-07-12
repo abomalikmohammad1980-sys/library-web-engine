@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: تثبيت الاعتمادات
+        run: pnpm install --frozen-lockfile
+
+      - name: فحص الأنواع
+        run: pnpm typecheck
+
+      - name: بناء الحزم
+        run: pnpm build
+
+      - name: الاختبارات
+        run: pnpm test
+
+      # بوابة عدم انحدار المُحكِّم — تُفعَّل فعليًا بعد بناء oracle-client
+      # في المرحلة 0 (تقارن ضد corpus/ground-truth المخزنة في LFS، بلا Word).
+      - name: المُحكِّم (عينة)
+        run: pnpm oracle:check
