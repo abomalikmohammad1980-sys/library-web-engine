@@ -11,8 +11,19 @@
 | 4 | كتابة `AGENTS.md` الجذري (دستور الوكلاء) | **done** ✅ | |
 | 5 | سقالة pnpm/TS/Vitest + ‏CI workflow — أول اختبار أخضر محليًا | **done** ✅ | ‏5 اختبارات خضراء + typecheck + build؛ حزمة `layout` بدأت بوحدات twips/EMU الحقيقية |
 | 6 | تدوين ADRs الخمسة الأولى | **done** ✅ | 0001 امتلاك التخطيط، 0002 التشغيل المزدوج، 0003 XPS أولًا، 0004 شبكة twips، 0005 الكشيدة الغليفية |
-| 7 | نقل أداة census إلى `tools/census` وتشغيلها | **In progress** | المكتبة الحقيقية غير موجودة على هذا الجهاز — سيُشغَّل على العينة المتاحة وتوثَّق المحدودية |
+| 7 | نقل أداة census إلى `tools/census` وتشغيلها | **done** ✅ | شُغِّلت بوضعَي docx والكاش على العينة المتاحة (كتابان)؛ أنتجت أول جرد خطوط (27 خطًا) وخريطة رايات `w:compat` — انظر «نتائج أولية» أدناه |
+
+## نتائج أولية من census (عينة كتابين — ليست المكتبة التراثية)
+
+- **جرد الخطوط (مدخل قرار الترخيص):** 27 خطًا؛ أبرز المرشحين لمراجعة الترخيص: ‏Traditional Arabic، ‏PT Bold Heading، ‏GE SS Two، ‏DecoType Naskh، ‏Simplified Arabic، ‏(AH) Manal. ومقابلها حرة: ‏KFGQPC HAFS، ‏Aref Ruqaa، ‏adwa-assalaf.
+- **رايات `w:compat` المرصودة:** `compatibilityMode=15`، ‏`doNotFlipMirrorIndents`، ‏`enableOpenTypeFeatures`، ‏`overrideTableStyleFontSizeAndJustification`، ‏`differentiateMultirowTableHeaders`، ‏`useWord2013TrackBottomHyphenation=0` — تدخل نموذج المستند من اليوم الأول.
+- ⚠️ **محدودية معلنة:** العينة وثيقتان حديثتان لا كتب تراثية؛ **إعادة التشغيل على المكتبة الحقيقية بند أول في بوابة المرحلة 0.**
+
+## خطوات يدوية متبقية على المالك
+
+1. إنشاء remote على GitHub + ‏`git push` + تفعيل حماية `main` (تتطلب حسابك).
+2. توفير مسار المكتبة التراثية الحقيقية (docx أو كاش) لإعادة تشغيل census عليها.
 
 ## سجل زمني
 
-- (يُملأ مع كل تحديث حالة)
+- 2026-07-12: تنفيذ المهام 1–7 كاملة — 8 commits على `main`، اختبارات خضراء (5/5)، typecheck وbuild ناجحان، census يعمل بوضعيه.
