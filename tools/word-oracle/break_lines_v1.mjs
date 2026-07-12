@@ -39,7 +39,9 @@ for (const pg of truth.pages) for (const ln of pg.lines) {
   const nn = norm(logical);
   if (!nn) continue; // سطر فارغ بصريًا — لا يشارك في تدفق النص
   truthLines.push({ n: nn, raw: logical.trim(),
-    em: rs.length ? rs[0].emTwips : 0, runs: rs });
+    em: rs.length ? rs[0].emTwips : 0, runs: rs,
+    xMin: ln.xMin, xMax: ln.xMax,
+    advAll: ln.runs.reduce((a, r) => a + (r.advSumTwips ?? 0), 0) });
 }
 
 // فقرات docx المؤهلة: متن نظيف بخط adwa وحجم معلوم وكلمات كافية
@@ -232,10 +234,14 @@ for (const p of paras) {
       const k = c;
       const kashN = t.runs.reduce((a, r) => a + (r.glyphIds ?? []).filter((g) => g === 229).length, 0);
       const wordLineAdv = t.runs.reduce((a, r) => a + (r.advSumTwips ?? 0), 0);
+      const rightEdge = model.section.pageWTwips - model.section.marRightTwips;
       console.log("تشريح:", JSON.stringify({
-        para: p.index, line: i, divergeAtWord: k,
+        para: p.index, line: i, jc: p.jc, divergeAtWord: k,
         wordSide: wWords[0], ourSide: oWords[0], wLen: t.n.length, oLen: oN.length,
         boundaryLastChar: (wWords[wWords.length - 1] ?? "").slice(-1),
+        // هندسة سطر الحقيقة مقابل حواف العمود: تضيّق يسار/يمين (عائم؟ تقدم؟)
+        gapL: t.xMin - model.section.marLeftTwips, gapR: rightEdge - t.xMax,
+        tAdv: Math.round(t.advAll),
         kashidasOnLine: kashN, wordLineAdvTwips: Math.round(wordLineAdv), W: colBase,
         ourNatOverIfPacked: ourMeta[i] && ourMeta[i].nextWordEnd > 0
           ? Math.round(width(ourMeta[i].start, ourMeta[i].nextWordEnd) - colBase) : null,
