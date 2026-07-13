@@ -124,11 +124,25 @@ for (const p of paras) {
       }
     }
   } else emAt.fill(em);
-  const buf = new HbBuffer();
-  buf.addText(fullText); buf.guessSegmentProperties(); shape(font, buf);
-  const infos = buf.getGlyphInfos(), poss = buf.getGlyphPositions();
   const advAtChar = new Float64Array(fullText.length + 1);
-  for (let g = 0; g < infos.length; g++) advAtChar[infos[g].cluster] += (poss[g].xAdvance / upem) * emAt[infos[g].cluster];
+  if (process.env.WORD_SHAPE === "1") {
+    // تجربة: تشكيل كل كلمة معزولة (قطع kerning/السياق عبر المسافات —
+    // فرضية أن Word يقيس أجزاء السطر لا السطر المتصل)
+    let pos = 0;
+    for (const wd of words) {
+      const b = new HbBuffer(); b.addText(wd); b.guessSegmentProperties(); shape(font, b);
+      const is = b.getGlyphInfos(), ps = b.getGlyphPositions();
+      for (let g = 0; g < is.length; g++)
+        advAtChar[pos + is[g].cluster] += (ps[g].xAdvance / upem) * emAt[pos + is[g].cluster];
+      pos += wd.length;
+      if (pos < fullText.length) { advAtChar[pos] = (emAt[pos] / em) * spaceW; pos++; }
+    }
+  } else {
+    const buf = new HbBuffer();
+    buf.addText(fullText); buf.guessSegmentProperties(); shape(font, buf);
+    const infos = buf.getGlyphInfos(), poss = buf.getGlyphPositions();
+    for (let g = 0; g < infos.length; g++) advAtChar[infos[g].cluster] += (poss[g].xAdvance / upem) * emAt[infos[g].cluster];
+  }
   // تجارب تقريب المقاييس (عائلة الحدّيات ±80 twips):
   // ‏ROUND_ADV=1: تقريب تقدم العنقود لأقرب twip (نتيجة سلبية صافية مقيسة).
   // ‏ROUND_ADV=2: تكميم على 1/100 من em (محبب XPS Indices نفسه).
@@ -139,6 +153,9 @@ for (const p of paras) {
       const emC = emAt[c] || em;
       advAtChar[c] = Math.round((advAtChar[c] / emC) * 100) / 100 * emC;
     }
+  // معايرة محرك قديم (compat<15): انحياز مقيس ثابت (jalsa: وسيط 0.9855)
+  const SCALE = Number(process.env.ADV_SCALE ?? "1");
+  if (SCALE !== 1) for (let c = 0; c <= fullText.length; c++) advAtChar[c] *= SCALE;
   const prefix = new Float64Array(fullText.length + 1);
   for (let c = 0; c < fullText.length; c++) prefix[c + 1] = prefix[c] + advAtChar[c];
   const width = (a, b) => prefix[b] - prefix[a]; // عرض النص [a,b)
@@ -167,7 +184,19 @@ for (const p of paras) {
   // المقيسة من هامش النص. ‏(MARKER_W=0 للتعطيل A/B)
   let markerW = 0; // خصم من عمود السطر الأول = (موقف بدء النص − indLeft)
   if (markerLen > 0 && p.numbered && process.env.MARKER_W !== "0") {
-    const mW = widthTwips(truthLines[start].raw.replace(/\s+/g, "").slice(0, markerLen), em);
+    // عرض العلامة من runs الحقيقة أولًا (علامات Wingdings ليست بخط المتن —
+    // قياسها به خطأ صريح)؛ الرجوع لخط المتن إن لم تنطبق حدود الـruns.
+    let mW = 0;
+    if (process.env.MARKER_TRUTH !== "0") {
+      let covered = 0;
+      for (const r of [...truthLines[start].runs].sort((a, b) => b.x - a.x)) {
+        if (covered >= markerLen) break;
+        mW += r.advSumTwips ?? 0;
+        covered += norm(r.text).length;
+      }
+      if (covered !== markerLen) mW = 0; // حدود لا تنطبق — تراجع
+    }
+    if (!mW) mW = widthTwips(truthLines[start].raw.replace(/\s+/g, "").slice(0, markerLen), em);
     const textStart = numTabTextStart({
       indLeftTwips: p.indLeft,
       hangingTwips: p.indFirstLine < 0 ? -p.indFirstLine : 0,
@@ -213,6 +242,8 @@ for (const p of paras) {
     const FLOOR = Number(process.env.SPACE_FLOOR ?? "1");
     const nSp = (fullText.slice(lineStartChar, wordEnd).match(/ /g) ?? []).length;
     let allowance = nSp * spaceW * (1 - FLOOR);
+    // ‏EPS تشخيصي فقط: يقيس حجم عائلة الحدّيات (لا يُتبنى كقاعدة)
+    allowance += Number(process.env.EPS ?? "0");
     // ‏w:overflowPunct (افتراضي OOXML: true): علامة الترقيم في نهاية السطر
     // يُسمح لها بتجاوز الهامش — سماحية بعرض العلامة الطرفية نفسها.
     if (process.env.OVERFLOW_PUNCT === "1") {
