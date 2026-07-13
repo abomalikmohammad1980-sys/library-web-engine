@@ -151,6 +151,8 @@ export interface NumLevelProps {
   indLeft: number | null; indRight: number | null;
   /** التعليق بإشارة firstLine السالبة (نفس تمثيل الفقرات) */
   indFirstLine: number | null;
+  /** حجم علامة القائمة (lvl/rPr sz بأنصاف النقاط) — يشارك في ارتفاع السطر */
+  sz: number | null;
 }
 export type NumberingTable = Map<string, NumLevelProps>; // "numId/ilvl"
 
@@ -174,14 +176,17 @@ export function parseNumbering(numberingXml: string | null): NumberingTable {
         const ilvl = (l[":@"] as Record<string, string> | undefined)?.["@w:ilvl"];
         const pPr = first(lvl, "w:pPr");
         const ind = pPr ? findAttr(pPr, "w:ind") : null;
-        if (ilvl == null || !ind) continue;
-        const left = ind["@w:left"] != null ? Number(ind["@w:left"]) : null;
-        const right = ind["@w:right"] != null ? Number(ind["@w:right"]) : null;
-        const hanging = ind["@w:hanging"] != null ? Number(ind["@w:hanging"]) : null;
-        const firstLine = ind["@w:firstLine"] != null ? Number(ind["@w:firstLine"]) : null;
+        if (ilvl == null) continue;
+        const sz = rPrProps(first(lvl, "w:rPr")).sz;
+        if (!ind && sz == null) continue;
+        const left = ind?.["@w:left"] != null ? Number(ind["@w:left"]) : null;
+        const right = ind?.["@w:right"] != null ? Number(ind["@w:right"]) : null;
+        const hanging = ind?.["@w:hanging"] != null ? Number(ind["@w:hanging"]) : null;
+        const firstLine = ind?.["@w:firstLine"] != null ? Number(ind["@w:firstLine"]) : null;
         lvls.set(ilvl, {
           indLeft: left, indRight: right,
           indFirstLine: hanging != null ? -hanging : firstLine,
+          sz,
         });
       }
       absLvls.set(absId, lvls);
@@ -417,6 +422,8 @@ export function parseDocument(
     const indFirstLine = own.indFirstLine ?? numProps?.indFirstLine ?? styleProps.indFirstLine;
     const pPrRPr = pPr ? rPrProps(first(pPr, "w:rPr")) : { sz: null, family: null };
     const markSz = pPrRPr.sz ?? styleProps.sz ?? null;
+    // ملحوظة: طيّ lvl/rPr.sz هنا نتيجة سلبية مقيسة (tadris ‏96.1→93.7) —
+    // الحقل مكشوف في NumberingTable لمن يحتاجه، بلا مشاركة في ارتفاع السطر.
     const markEmTwips = markSz != null ? markSz * 10 : null;
 
     let excluded: BodyParagraph["excluded"] = false;
