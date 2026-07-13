@@ -341,6 +341,61 @@ for (const p of paras) {
     const top = [...pHist.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5);
     if (top.length) console.log("   أخطاء البداية:", top.map(([k, v]) => `${k > 0 ? "+" : ""}${k}×${v}`).join("  "));
   }
+
+  // ★ مُحكِّم الصفحة الكاملة: تركيب القواعد 8+7+6 — تنبؤ متسلسل بكل
+  // ‏baselines الصفحة من الهامش العلوي، بلا أي مرساة من الحقيقة بعد البداية.
+  const FOOT = (n) => /^[()0-9]{1,6}$/.test(n) || /^الصفحة\(?\d+\)?من\(?\d+\)?$/.test(n);
+  const spanLines = (S) => {
+    const out = [];
+    for (let j = S.startIdx; j <= S.endIdx; j++)
+      if (!FOOT(truthLines[j].n)) out.push(truthLines[j]);
+    return out;
+  };
+  const byPage = new Map();
+  for (const S of paraSpans) {
+    if (!byPage.has(S.firstT.page)) byPage.set(S.firstT.page, []);
+    byPage.get(S.firstT.page).push(S);
+  }
+  let fOk = 0, fN = 0, pagesFull = 0, pagesTried = 0;
+  const fHist = new Map();
+  for (const [pg, spans] of byPage) {
+    spans.sort((a, b) => a.startIdx - b.startIdx);
+    if (firstOfPage.get(pg) !== spans[0].firstT) continue; // الصفحة لا تبدأ بفقرة محاذاة
+    pagesTried++;
+    let y = null, prevS = null, prevT = null, pageOk = true;
+    for (const S of spans) {
+      if (prevS && S.startIdx !== prevS.endIdx + 1) { pageOk = false; break; } // انقطاع محاذاة
+      const lines = spanLines(S).filter((t) => t.page === pg);
+      if (!lines.length) break;
+      for (let i = 0; i < lines.length; i++) {
+        const t = lines[i];
+        const M = lineMet(S.p, t, i === 0);
+        if (!M) { pageOk = false; break; }
+        if (y == null) y = marTopOf(S.p) + M.asc;                       // القاعدة 8
+        else if (i === 0) {                                             // حد فقرات (6+7ب)
+          const MP = lineMet(prevS.p, prevT, false);
+          const la = prevS.p.spacing;
+          const mA = la.line != null && la.lineRule !== "exact" && la.lineRule !== "atLeast" ? la.line / 240 : 1;
+          y += MP.desc + MP.gap + (MP.asc + MP.desc + MP.gap) * (mA - 1)
+            + Math.max(prevS.p.spacing.after ?? 0, S.p.spacing.before ?? 0) + M.asc;
+        } else y += stepV7(S.p, prevT, t) ?? 0;                          // القاعدة 7
+        fN++;
+        const err = t.y - y;
+        if (Math.abs(err) <= TOL) fOk++;
+        else fHist.set(Math.round(err / 5) * 5, (fHist.get(Math.round(err / 5) * 5) ?? 0) + 1);
+        prevT = t;
+      }
+      prevS = S;
+      if (!pageOk) break;
+    }
+    if (pageOk) pagesFull++;
+  }
+  if (fN) {
+    console.log(`★ الصفحة الكاملة: ${fOk}/${fN} baselines = ${(100 * fOk / fN).toFixed(2)}% ` +
+      `(صفحات مكتملة السلسلة: ${pagesFull}/${pagesTried})`);
+    const top = [...fHist.entries()].sort((a, b) => b[1] - a[1]).slice(0, 6);
+    if (top.length) console.log("   انحرافات (مجمعة ×5):", top.map(([k, v]) => `${k > 0 ? "+" : ""}${k}×${v}`).join("  "));
+  }
 }
 const pct = pairs ? ((100 * ok) / pairs).toFixed(2) : "0";
 console.log(`▲ الرقم الشمالي الرأسي v1 ‏(${BOOK}): ${ok}/${pairs} = ${pct}% ` +
