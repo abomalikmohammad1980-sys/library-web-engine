@@ -180,6 +180,9 @@ export function compatibilityMode(settingsXml: string | null): number {
 interface StyleProps {
   sz: number | null; family: string | null; basedOn: string | null;
   indLeft: number | null; indRight: number | null; indFirstLine: number | null;
+  /** ‏w:jc من pPr النمط — يورَّث (درس tadris para87: فقرة jc=null ظاهريًا
+   *  وسطرها مسوَّغ ممتلئ لأن نمطها يحمل التسويغ) */
+  jc: string | null;
 }
 export interface StyleTable {
   defaults: { sz: number | null; family: string | null };
@@ -235,25 +238,27 @@ export function parseStyles(stylesXml: string | null): StyleTable {
     const rpr = first(body, "w:rPr");
     const basedOnAttrs = findAttr(body, "w:basedOn");
     const p = rPrProps(rpr);
-    const ind = indProps(first(body, "w:pPr"));
-    table.byId.set(id, { ...p, ...ind, basedOn: basedOnAttrs?.["@w:val"] ?? null });
+    const stylePPr = first(body, "w:pPr");
+    const ind = indProps(stylePPr);
+    const jc = stylePPr ? (findAttr(stylePPr, "w:jc")?.["@w:val"] ?? null) : null;
+    table.byId.set(id, { ...p, ...ind, jc, basedOn: basedOnAttrs?.["@w:val"] ?? null });
   }
   return table;
 }
 
 function resolveViaStyle(table: StyleTable, styleId: string | null) {
-  let sz: number | null = null, family: string | null = null;
+  let sz: number | null = null, family: string | null = null, jc: string | null = null;
   let indLeft: number | null = null, indRight: number | null = null, indFirstLine: number | null = null;
   let id = styleId, guard = 0;
   while (id && guard++ < 12) {
     const s = table.byId.get(id);
     if (!s) break;
-    sz ??= s.sz; family ??= s.family;
+    sz ??= s.sz; family ??= s.family; jc ??= s.jc;
     indLeft ??= s.indLeft; indRight ??= s.indRight; indFirstLine ??= s.indFirstLine;
     id = s.basedOn;
   }
   return {
-    sz: sz ?? table.defaults.sz, family: family ?? table.defaults.family,
+    sz: sz ?? table.defaults.sz, family: family ?? table.defaults.family, jc,
     indLeft: indLeft ?? 0, indRight: indRight ?? 0, indFirstLine: indFirstLine ?? 0,
   };
 }
@@ -293,9 +298,10 @@ export function parseDocument(
 
     const pPr = first(p, "w:pPr");
     const styleId = pPr ? (findAttr(pPr, "w:pStyle")?.["@w:val"] ?? null) : null;
-    const jc = pPr ? (findAttr(pPr, "w:jc")?.["@w:val"] ?? null) : null;
     const bidi = pPr ? findAttr(pPr, "w:bidi") != null : false;
     const styleProps = resolveViaStyle(styles, styleId);
+    // ‏w:jc: المباشر يتقدم وإلا فمن سلسلة النمط (درس tadris para87)
+    const jc = (pPr ? (findAttr(pPr, "w:jc")?.["@w:val"] ?? null) : null) ?? styleProps.jc;
     // ترقيم الفقرة: تقدمات مستوى الترقيم تتوسط الأسبقية (مباشر > ترقيم > نمط)
     const numPr = pPr ? first(pPr, "w:numPr") : null;
     const numId = numPr ? (findAttr(numPr, "w:numId")?.["@w:val"] ?? null) : null;

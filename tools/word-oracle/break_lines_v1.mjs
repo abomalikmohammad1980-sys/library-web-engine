@@ -121,12 +121,15 @@ for (const p of paras) {
   }
   if (start < 0) { parasSkipped++; continue; }
   parasAligned++;
-  // خصم عرض العلامة من السطر الأول: نتيجة سلبية مقيسة — أضرّ بالكتب السليمة
-  // (masjid ‏99.49%←92.82%): العلامة تسكن منطقة التعليق ولا تستهلك من النص
-  // في التنسيقات السوية. ‏dawra (حيث تستهلك فعلًا) فئة مفتوحة موثقة.
-  const markerW = process.env.MARKER_W === "1" && markerLen > 0
-    ? Math.round(widthTwips(truthLines[start].raw.replace(/\s+/g, "").slice(0, markerLen), em) + spaceW)
-    : 0;
+  // علامة التعداد والسطر الأول: العلامة تسكن منطقة التعليق (hanging) —
+  // لا خصم إلا إذا كانت أعرض منها فتدفع النص (درس dawra: ‏«17-» عند 20pt
+  // أعرض من hanging=360). الخصم الأعمى نتيجة سلبية مقيسة (masjid ‏99.49←92.82).
+  let markerW = 0;
+  if (markerLen > 0 && process.env.MARKER_W !== "0") {
+    const mW = widthTwips(truthLines[start].raw.replace(/\s+/g, "").slice(0, markerLen), em) + spaceW;
+    const hang = p.numbered && p.indFirstLine < 0 ? -p.indFirstLine : 0;
+    markerW = Math.round(Math.max(0, mW - hang));
+  }
 
   const ourLines = []; const ourMeta = [];
   let lineStartChar = 0, lineEndChar = 0, lineWords = [], cursor = 0, wi = -1;
