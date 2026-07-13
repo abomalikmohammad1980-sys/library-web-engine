@@ -5,6 +5,7 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import { Blob, Buffer as HbBuffer, Face, Font, shape } from "harfbuzzjs";
 import { extractFromDocx } from "../../packages/ooxml-model/dist/index.js";
+import { numTabTextStart } from "../../packages/layout/dist/index.js";
 
 // معايير الكتاب عبر البيئة — الافتراضي الكتاب الأول (sample-masjid/adwa)
 const BOOK = process.env.BOOK ?? "sample-masjid";
@@ -139,14 +140,12 @@ for (const p of paras) {
   let markerW = 0; // خصم من عمود السطر الأول = (موقف بدء النص − indLeft)
   if (markerLen > 0 && p.numbered && process.env.MARKER_W !== "0") {
     const mW = widthTwips(truthLines[start].raw.replace(/\s+/g, "").slice(0, markerLen), em);
-    const hang = p.indFirstLine < 0 ? -p.indFirstLine : 0;
-    const anchor = p.indLeft - hang;          // إزاحة مرساة العلامة من هامش النص
-    const markerEnd = anchor + mW;            // العلامة تمتد نحو النص (RTL معكوس)
-    let textStart = p.indLeft;                // الموقف الافتراضي عند indLeft
-    if (markerEnd > textStart) {
-      const dts = model.defaultTabStop || 720; // التوقفات التلقائية من الهامش
-      textStart = (Math.floor(markerEnd / dts) + 1) * dts;
-    }
+    const textStart = numTabTextStart({
+      indLeftTwips: p.indLeft,
+      hangingTwips: p.indFirstLine < 0 ? -p.indFirstLine : 0,
+      markerWidthTwips: mW,
+      defaultTabStopTwips: model.defaultTabStop,
+    });
     markerW = Math.round(Math.max(0, textStart - p.indLeft));
   }
 

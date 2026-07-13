@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { breakLines, shouldShrinkPack, type BreakItem } from "./linebreak.js";
+import { breakLines, numTabTextStart, shouldShrinkPack, type BreakItem } from "./linebreak.js";
 
 /** كلمات متساوية العرض بمسافات بلانك موحدة */
 function uniform(count: number, width: number, space: number): BreakItem[] {
@@ -131,5 +131,43 @@ describe("breakLines — تكامل الانكماش", () => {
     const L1 = W - (1.3608 - 1) * (n - 1) * w;
     expect(shouldShrinkPack(D, n, w, W, L1, { div: 1.7 })).toBe(false);
     expect(shouldShrinkPack(D, n, w, W, L1, { div: 1.6 })).toBe(true);
+  });
+});
+
+describe("numTabTextStart — قاعدة تاب الترقيم (القاعدة 22)", () => {
+  // مثبتات sample-dawra المقيسة: indLeft=720، hanging=360، defaultTabStop=720
+  it("علامة تسع التعليق ⇒ النص عند indLeft (الموقف الظاهري)", () => {
+    expect(numTabTextStart({ indLeftTwips: 720, hangingTwips: 360, markerWidthTwips: 300 }))
+      .toBe(720); // markerEnd=660 ≤ 720
+  });
+
+  it("علامة أعرض من التعليق ⇒ القفز لأول مضاعف defaultTabStop (درس dawra «17-»)", () => {
+    // markerEnd = 360 + 450 = 810 > 720 ⇒ المضاعف التالي 1440
+    expect(numTabTextStart({ indLeftTwips: 720, hangingTwips: 360, markerWidthTwips: 450 }))
+      .toBe(1440);
+  });
+
+  it("موقف مخصص بعد نهاية العلامة يسبق المضاعفات التلقائية", () => {
+    expect(numTabTextStart({
+      indLeftTwips: 720, hangingTwips: 360, markerWidthTwips: 450,
+      customTabsTwips: [900],
+    })).toBe(900);
+  });
+
+  it("doNotUseIndentAsNumberingTabStop يُسقط الموقف الظاهري", () => {
+    // بلا العلم: markerEnd=560 ≤ 720 ⇒ 720؛ بالعلم: يقفز للمضاعف 720... 
+    // markerEnd=560 ⇒ المضاعف التالي 720 يصادف نفسه — نفرّق بحالة أوضح:
+    expect(numTabTextStart({
+      indLeftTwips: 1000, hangingTwips: 360, markerWidthTwips: 200,
+      noIndentAsTabStop: true,
+    })).toBe(1440); // markerEnd=840 ⇒ تجاهل 1000 والقفز لمضاعف 1440
+    expect(numTabTextStart({
+      indLeftTwips: 1000, hangingTwips: 360, markerWidthTwips: 200,
+    })).toBe(1000);
+  });
+
+  it("بلا تعليق: لا موقف ظاهريًا — مضاعفات فقط", () => {
+    expect(numTabTextStart({ indLeftTwips: 720, hangingTwips: 0, markerWidthTwips: 100 }))
+      .toBe(1440); // anchor=720، markerEnd=820 ⇒ 1440
   });
 });

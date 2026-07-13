@@ -56,6 +56,40 @@ export interface Line {
 export const SHRINK_E_CAP = 1.5;
 export const SHRINK_DIV = 1.6;
 
+/** موضع بداية نصّ السطر الأول في فقرة معدودة (قاعدة تاب الترقيم — بحث
+ *  Clean-room ‏2026-07-13: ‏ECMA-376 ‏`w:suff`/`w:defaultTabStop`/
+ *  ‏`doNotUseIndentAsNumberingTabStop`؛ تحقق: ‏sample-dawra ‏82.76%←100%).
+ *
+ *  الإحداثيات إزاحاتٌ من هامش نصّ العمود (تنعكس مرآتيًا في RTL):
+ *  العلامة ترتكز عند `indLeft − hanging` وتمتد نحو النص؛ ومع `suff=tab`
+ *  (الافتراضي) يقفز النص إلى أول موقف تبويب بعد نهايتها — الموقف الظاهري
+ *  (virtual) عند `indLeft`، فالموقفات المخصصة، فمضاعفات `defaultTabStop`
+ *  المقيسة من الهامش.
+ *
+ *  فجوة معلنة: سلوك المساواة التامة (`markerEnd === stop`) غير موثق —
+ *  نعتمد «أكبر تمامًا» حتى يُحسم بمثبت قياس.
+ */
+export function numTabTextStart(args: {
+  indLeftTwips: number;
+  /** التعليق موجبًا (0 = بلا تعليق) */
+  hangingTwips: number;
+  markerWidthTwips: number;
+  defaultTabStopTwips?: number;
+  /** موقفات مخصصة (إزاحات من الهامش، مرتبة أو لا) */
+  customTabsTwips?: readonly number[];
+  /** ‏doNotUseIndentAsNumberingTabStop: يُسقط الموقف الظاهري عند indLeft */
+  noIndentAsTabStop?: boolean;
+}): number {
+  const dts = args.defaultTabStopTwips ?? 720;
+  const anchor = args.indLeftTwips - args.hangingTwips;
+  const markerEnd = anchor + args.markerWidthTwips;
+  const stops = [...(args.customTabsTwips ?? [])];
+  if (!args.noIndentAsTabStop && args.hangingTwips > 0) stops.push(args.indLeftTwips);
+  const custom = stops.filter((s) => s > markerEnd).sort((a, b) => a - b)[0];
+  if (custom !== undefined) return custom;
+  return (Math.floor(markerEnd / dts) + 1) * dts;
+}
+
 /** قرار تبنّي الحشر بالانكماش (القاعدة 16 §3–4) — دالة نقية قابلة للاختبار.
  *
  * @param D فائض السطر الطبيعي لو حُشرت الكلمة الحدية (twips، > 0)
