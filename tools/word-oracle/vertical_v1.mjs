@@ -146,6 +146,7 @@ const paras = model.paragraphs.filter((p) =>
 let pairs = 0, ok = 0;
 const missHist = new Map();
 const missSamples = [];
+const paraSpans = []; // حدود الفقرات: {startIdx، endIdx، p، firstT، lastT}
 for (const p of paras) {
   const em = p.runs[0].emTwips;
   const paraN = norm(p.text);
@@ -160,13 +161,16 @@ for (const p of paras) {
   if (start < 0) continue;
   // استهلاك أسطر الفقرة
   const seq = [];
+  let endIdx = start;
   for (let j = start, accLen = 0;
        j < truthLines.length && accLen < paraN.length && seq.length < 200; j++) {
     const t = truthLines[j];
     if (/^[()0-9]{1,6}$/.test(t.n)) continue;
     if (/^الصفحة\(?\d+\)?من\(?\d+\)?$/.test(t.n)) continue;
-    seq.push(t); accLen += t.n.length;
+    seq.push(t); accLen += t.n.length; endIdx = j;
   }
+  if (seq.length)
+    paraSpans.push({ startIdx: start, endIdx, p, firstT: seq[0], lastT: seq[seq.length - 1] });
   const pred = predictedPitch(p, em);
   // ‏MODE: ‏v3 (افتراضي) خطوة عائمة عند em المثالي + تكميم baseline للنقطة؛
   // ‏v2 خطوة نقاط صحيحة لكل سطر؛ ‏v1 خطوة الفقرة الموحدة. ‏ACCUM=0 للأزواج.
@@ -200,6 +204,36 @@ for (const p of paras) {
   }
 }
 
+// حدود الفقرات (v3): فقرتان متتاليتان في الحقيقة على نفس الصفحة —
+// ‏Δ المتنبأ = خطوة السطر الأول للاحقة + after(السابقة) + before(اللاحقة)
+{
+  paraSpans.sort((a, b) => a.startIdx - b.startIdx);
+  let bPairs = 0, bOk = 0;
+  const bHist = new Map();
+  for (let i = 1; i < paraSpans.length; i++) {
+    const A = paraSpans[i - 1], B = paraSpans[i];
+    if (B.startIdx - A.endIdx !== 1) continue;              // غير متلاصقتين
+    if (A.lastT.page !== B.firstT.page) continue;           // فاصل صفحة
+    const obs = B.firstT.y - A.lastT.y;
+    if (obs <= 0) continue;
+    const step = (stepDotsV3(B.p, B.firstT) ?? 0) * 2.4;
+    if (!step) continue;
+    const af = A.p.spacing.after ?? 0, bf = B.p.spacing.before ?? 0;
+    // ‏BGAP=max: قاعدة انهيار الفواصل (Word يأخذ الأكبر لا المجموع)
+    const predB = step + (process.env.BGAP === "sum" ? af + bf : Math.max(af, bf));
+    bPairs++;
+    if (Math.abs(obs - predB) <= TOL) bOk++;
+    else {
+      const k = Math.round(obs - predB);
+      bHist.set(k, (bHist.get(k) ?? 0) + 1);
+    }
+  }
+  if (bPairs) {
+    console.log(`▲ حدود الفقرات: ${bOk}/${bPairs} = ${(100 * bOk / bPairs).toFixed(2)}%`);
+    const top = [...bHist.entries()].sort((a, b) => b[1] - a[1]).slice(0, 6);
+    if (top.length) console.log("   أخطاء الحدود:", top.map(([k, v]) => `${k > 0 ? "+" : ""}${k}×${v}`).join("  "));
+  }
+}
 const pct = pairs ? ((100 * ok) / pairs).toFixed(2) : "0";
 console.log(`▲ الرقم الشمالي الرأسي v1 ‏(${BOOK}): ${ok}/${pairs} = ${pct}% ` +
   `(|خطأ| ≤ ${TOL} twips، ‏hheaPitch=${PITCH.toFixed(4)}em)`);
