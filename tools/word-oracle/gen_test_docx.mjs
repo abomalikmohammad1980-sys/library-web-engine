@@ -38,7 +38,7 @@ const doc = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <w:body>${body}
 <w:sectPr><w:pgSz w:w="11906" w:h="16838"/>
 <w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440"/>
-<w:bidi/></w:sectPr></w:body></w:document>`;
+<w:bidi/>${process.env.DOCGRID ? `<w:docGrid w:linePitch="${process.env.DOCGRID}"/>` : ""}</w:sectPr></w:body></w:document>`;
 
 const settings = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <w:settings xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"
