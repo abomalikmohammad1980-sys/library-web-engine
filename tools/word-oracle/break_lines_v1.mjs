@@ -100,6 +100,16 @@ for (const p of paras) {
   const infos = buf.getGlyphInfos(), poss = buf.getGlyphPositions();
   const advAtChar = new Float64Array(fullText.length + 1);
   for (let g = 0; g < infos.length; g++) advAtChar[infos[g].cluster] += (poss[g].xAdvance / upem) * emAt[infos[g].cluster];
+  // تجارب تقريب المقاييس (عائلة الحدّيات ±80 twips):
+  // ‏ROUND_ADV=1: تقريب تقدم العنقود لأقرب twip (نتيجة سلبية صافية مقيسة).
+  // ‏ROUND_ADV=2: تكميم على 1/100 من em (محبب XPS Indices نفسه).
+  if (process.env.ROUND_ADV === "1")
+    for (let c = 0; c <= fullText.length; c++) advAtChar[c] = Math.round(advAtChar[c]);
+  else if (process.env.ROUND_ADV === "2")
+    for (let c = 0; c <= fullText.length; c++) {
+      const emC = emAt[c] || em;
+      advAtChar[c] = Math.round((advAtChar[c] / emC) * 100) / 100 * emC;
+    }
   const prefix = new Float64Array(fullText.length + 1);
   for (let c = 0; c < fullText.length; c++) prefix[c + 1] = prefix[c] + advAtChar[c];
   const width = (a, b) => prefix[b] - prefix[a]; // عرض النص [a,b)
