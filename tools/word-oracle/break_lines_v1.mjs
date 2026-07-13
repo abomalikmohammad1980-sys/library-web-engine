@@ -85,7 +85,11 @@ const failures = [];
 const divDecisions = []; // نطاق الجدوى التجريبي لقاسم المقارنة الموزونة
 
 for (const p of paras) {
-  const em = p.runs[0].emTwips;
+  // تكميم em على شبكة 600dpi: نتيجة سلبية قاطعة أفقيًا (jalsa ‏82.8←65.8،
+  // ‏dawra ‏96.6←81.7) — ‏Word يقيس الأعراض الأفقية بالمقاييس المثالية
+  // (em الكسري) بينما شبكة النقاط تحكم الرأسي والرسم فقط. ‏EM600=1 للتجريب.
+  const emQ = (v) => process.env.EM600 === "1" ? Math.round(v * 5 / 12) * 2.4 : v;
+  const em = emQ(p.runs[0].emTwips);
   // فواصل الأسطر اليدوية (w:br ⇒ \n من النموذج): كسر إجباري بعد الكلمة —
   // درس sample-tadris: ‏33 فاصلًا يدويًا ظهرت أسطرها «قصيرة بلا سبب».
   const words = []; const brkAfter = new Set();
@@ -112,7 +116,7 @@ for (const p of paras) {
   const emAt = new Float64Array(fullText.length);
   if (process.env.RUN_EM !== "0") {
     const raw = p.text, rawEm = [];
-    for (const r of p.runs) for (const ch of r.text) rawEm.push(r.emTwips);
+    for (const r of p.runs) for (const ch of r.text) rawEm.push(emQ(r.emTwips));
     let k = 0;
     for (let fi = 0; fi < fullText.length; fi++) {
       if (fullText[fi] === " ") {
