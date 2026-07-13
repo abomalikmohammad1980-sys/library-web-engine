@@ -25,8 +25,10 @@ const ORD = ["الأولى", "الثانية", "الثالثة", "الرابعة
   "السابعة عشرة", "الثامنة عشرة", "التاسعة عشرة", "العشرون",
   "الحادية والعشرون", "الثانية والعشرون", "الثالثة والعشرون", "الرابعة والعشرون"];
 let body = "", idx = 0;
-for (const font of ["Amiri", "Traditional Arabic"])
-  for (const line of [240, 259, 278])
+const FONTS = (process.env.FONTS ?? "Amiri,Traditional Arabic").split(",");
+const LINES = (process.env.LINES ?? "240,259,278").split(",").map(Number);
+for (const font of FONTS)
+  for (const line of LINES)
     for (let k = 0; k < 4; k++, idx++)
       body += para(font, 32, line, k)
         .replace("<w:t>", `<w:t>هذه الفقرة التجريبية ${ORD[idx]} في مصفوفة القياس، `);
