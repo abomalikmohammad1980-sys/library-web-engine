@@ -34,15 +34,43 @@ const norm = (s) => s
 
 // أسطر الحقيقة مسطّحة بالترتيب (نصوصها بالضم الهندسي من v0 يكفي هنا للتطبيع اللافراغي)
 const truthLines = [];
-for (const pg of truth.pages) for (const ln of pg.lines) {
-  const rs = ln.runs.filter((r) => r.text.trim());
-  const logical = [...rs].sort((a, b) => b.x - a.x).map((r) => r.text).join("");
-  const nn = norm(logical);
-  if (!nn) continue; // سطر فارغ بصريًا — لا يشارك في تدفق النص
-  truthLines.push({ n: nn, raw: logical.trim(),
-    em: rs.length ? rs[0].emTwips : 0, runs: rs,
-    xMin: ln.xMin, xMax: ln.xMax,
-    advAll: ln.runs.reduce((a, r) => a + (r.advSumTwips ?? 0), 0) });
+for (let pgI = 0; pgI < truth.pages.length; pgI++) {
+  for (const ln of truth.pages[pgI].lines) {
+    const rs = ln.runs.filter((r) => r.text.trim());
+    const logical = [...rs].sort((a, b) => b.x - a.x).map((r) => r.text).join("");
+    const nn = norm(logical);
+    if (!nn) continue; // سطر فارغ بصريًا — لا يشارك في تدفق النص
+    truthLines.push({ n: nn, raw: logical.trim(),
+      em: rs.length ? rs[0].emTwips : 0, runs: rs,
+      xMin: ln.xMin, xMax: ln.xMax, y: ln.baselineTwips, page: pgI,
+      advAll: ln.runs.reduce((a, r) => a + (r.advSumTwips ?? 0), 0) });
+  }
+}
+
+// جدول العائمات المضيّقة (wrapSquare/Tight/Through) — تصميم العزل: النطاق
+// الرأسي يُرسى على سطر فقرة المرساة الأول في الحقيقة (y مقيس)، والأفقي
+// (التضييق ومن أي جهة) تنبؤ خالص من هندسة wp:anchor. ‏(FLOATS=0 للتعطيل)
+const floatBands = [];
+if (process.env.FLOATS !== "0") {
+  for (const q of model.paragraphs) {
+    for (const a of q.anchors ?? []) {
+      if (!["Square", "Tight", "Through"].includes(a.wrap)) continue;
+      if (a.posVRel !== "paragraph") continue; // ‏margin/page تحتاج الهامش الأعلى — v2
+      const qn = norm(q.text);
+      if (qn.length < 11) continue;
+      const tl = truthLines.find((t) => t.n.length > 10 && qn.startsWith(t.n));
+      if (!tl) continue;
+      const sec2 = model.sections?.[q.sectionIndex] ?? model.section;
+      const top = tl.y - tl.em + a.posVOffset; // قمة سطر المرساة تقريبًا
+      // ‏posH من حافة العمود (وmargin ≈ العمود لعمود واحد — تقريب v1)
+      const leftGap = a.posHOffset - a.distL;
+      const rightGap = sec2.columnTwips - (a.posHOffset + a.extentW + a.distR);
+      floatBands.push({ page: tl.page, top, bottom: top + a.extentH,
+        avail: Math.max(leftGap, rightGap) });
+    }
+  }
+  if (floatBands.length && process.env.FORENSICS)
+    console.log("عائمات:", JSON.stringify(floatBands));
 }
 
 // فقرات docx المؤهلة: متن نظيف بخط adwa وحجم معلوم وكلمات كافية
@@ -149,6 +177,17 @@ for (const p of paras) {
     markerW = Math.round(Math.max(0, textStart - p.indLeft));
   }
 
+  // استهلاك أسطر الحقيقة مقدَّمًا (قبل الكسر) مع تخطي الفوترات المتخللة —
+  // يوفر y لكل سطر متوقع (البعد الرأسي المقيس لتضييق العائمات)
+  const seq = [];
+  for (let j = start, accLen = 0;
+       j < truthLines.length && accLen < paraN.length && seq.length < words.length + 2; j++) {
+    const t = truthLines[j];
+    if (/^[()0-9]{1,6}$/.test(t.n)) continue;
+    if (/^الصفحة\(?\d+\)?من\(?\d+\)?$/.test(t.n)) continue;
+    seq.push(t); accLen += t.n.length;
+  }
+
   const ourLines = []; const ourMeta = [];
   let lineStartChar = 0, lineEndChar = 0, lineWords = [], cursor = 0, wi = -1;
   for (const word of words) {
@@ -162,7 +201,13 @@ for (const p of paras) {
     // ⇒ نص السطر الأول يبدأ كسائر الأسطر (لا توسعة).
     const indFL = p.numbered ? 0
       : process.env.HANG_IND === "0" ? Math.max(p.indFirstLine, 0) : p.indFirstLine;
-    const W = colBase - (ourLines.length === 0 ? indFL + markerW : 0);
+    let W = colBase - (ourLines.length === 0 ? indFL + markerW : 0);
+    // تضييق العائم: السطر المتوقع (y من الحقيقة) داخل نطاق عائم ⇒ عرضه المتاح
+    const tSeq = seq[ourLines.length];
+    if (tSeq && floatBands.length)
+      for (const fb of floatBands)
+        if (fb.page === tSeq.page && tSeq.y >= fb.top && tSeq.y <= fb.bottom && fb.avail < W)
+          W = fb.avail;
     // سماحية ضغط مسافات في قرار الكسر — يعاد قياسها على العدّة المُصلحة
     // (القياس الأول كان على عدّة معطوبة: أسطر فارغة + تخلل فوتر).
     const FLOOR = Number(process.env.SPACE_FLOOR ?? "1");
@@ -250,16 +295,6 @@ for (const p of paras) {
     }
   }
   if (lineWords.length) { ourLines.push(lineWords); ourMeta.push({ start: lineStartChar, nextWordEnd: -1 }); }
-
-  // استهلاك أسطر الحقيقة مع تخطي أسطر أرقام صفحات الفوتر المتخللة
-  // (فقرة عابرة للصفحات ⇐ رقم الصفحة يقع بين سطرين — الفئة أ في المصنّف)
-  const seq = [];
-  for (let j = start; j < truthLines.length && seq.length <= ourLines.length; j++) {
-    // فوتر متخلل: رقم صفحة مجرد، أو نمط «الصفحة (n) من (m)» (درس muqtarah)
-    if (/^[()0-9]{1,6}$/.test(truthLines[j].n)) continue;
-    if (/^الصفحة\(?\d+\)?من\(?\d+\)?$/.test(truthLines[j].n)) continue;
-    seq.push(truthLines[j]);
-  }
 
   let firstDiv = -1, cmpN = 0;
   for (let i = 0; i < ourLines.length; i++) {

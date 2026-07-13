@@ -37,6 +37,18 @@ export interface BodyParagraph {
   sectionIndex: number;
   /** فقرة معدودة (w:numPr بـnumId فعّال) — علامتها تُرسم ولا تعيش في النص */
   numbered: boolean;
+  /** كائنات عائمة مرساة في هذه الفقرة (wp:anchor) — تضيّق أسطر الجوار */
+  anchors: FloatAnchor[];
+}
+
+/** عائم wp:anchor — الأبعاد بالـ twips (‏EMU ÷ 635) */
+export interface FloatAnchor {
+  extentW: number; extentH: number;
+  posHRel: string; posHOffset: number;
+  posVRel: string; posVOffset: number;
+  distL: number; distR: number; distT: number; distB: number;
+  /** ‏Square / Tight / Through / TopAndBottom / None */
+  wrap: string;
 }
 export interface SectionGeometry {
   pageWTwips: number;
@@ -86,6 +98,22 @@ function attrs(node: XNode[] | null, container: XNode[] | null, name: string): R
   }
   return {};
 }
+/** جمع كل العناصر باسم معيّن في أي عمق (لأشجار wp:drawing المتشعبة) */
+function collectDeep(nodes: XNode[], name: string): { node: XNode[]; attrs: Record<string, string> }[] {
+  const out: { node: XNode[]; attrs: Record<string, string> }[] = [];
+  for (const n of nodes) {
+    for (const key of Object.keys(n)) {
+      if (key === ":@" || key === "#text") continue;
+      const child = n[key];
+      if (!Array.isArray(child)) continue;
+      if (key === name)
+        out.push({ node: child as XNode[], attrs: (n[":@"] as Record<string, string>) ?? {} });
+      out.push(...collectDeep(child as XNode[], name));
+    }
+  }
+  return out;
+}
+
 function findAttr(parent: XNode[], name: string): Record<string, string> | null {
   for (const n of parent) if (name in n) return ((n[":@"] as Record<string, string>) ?? {});
   return null;
@@ -328,6 +356,7 @@ export function parseDocument(
 
     let excluded: BodyParagraph["excluded"] = false;
     const runs: EffectiveRun[] = [];
+    const anchors: FloatAnchor[] = [];
     for (const rNode of p) {
       if (!("w:r" in rNode)) {
         if ("w:fldSimple" in rNode || "w:hyperlink" in rNode) excluded = excluded || "field";
@@ -351,6 +380,37 @@ export function parseDocument(
         if ("w:sym" in t) excluded = excluded || "sym";
         if ("w:tab" in t) excluded = excluded || "tab";
         if ("w:drawing" in t || "w:pict" in t) excluded = excluded || "drawing";
+        // العائمات: هندسة wp:anchor (الامتداد والموضع والالتفاف) بالـ twips
+        if ("w:drawing" in t) {
+          const EMU = 635;
+          for (const { node: anc, attrs: a } of collectDeep(t["w:drawing"] as XNode[], "wp:anchor")) {
+            const ext = collectDeep(anc, "wp:extent")[0]?.attrs;
+            const posH = collectDeep(anc, "wp:positionH")[0];
+            const posV = collectDeep(anc, "wp:positionV")[0];
+            const off = (w: { node: XNode[] } | undefined) => {
+              if (!w) return 0;
+              const o = collectDeep(w.node, "wp:posOffset")[0];
+              const txt = o?.node.find((n) => "#text" in n)?.["#text"];
+              return txt != null ? Math.round(Number(txt) / EMU) : 0;
+            };
+            const wrap = ["wp:wrapSquare", "wp:wrapTight", "wp:wrapThrough",
+              "wp:wrapTopAndBottom", "wp:wrapNone"]
+              .find((n) => collectDeep(anc, n).length > 0) ?? "";
+            anchors.push({
+              extentW: ext ? Math.round(Number(ext["@cx"]) / EMU) : 0,
+              extentH: ext ? Math.round(Number(ext["@cy"]) / EMU) : 0,
+              posHRel: posH?.attrs["@relativeFrom"] ?? "column",
+              posHOffset: off(posH),
+              posVRel: posV?.attrs["@relativeFrom"] ?? "paragraph",
+              posVOffset: off(posV),
+              distL: Math.round(Number(a["@distL"] ?? 0) / EMU),
+              distR: Math.round(Number(a["@distR"] ?? 0) / EMU),
+              distT: Math.round(Number(a["@distT"] ?? 0) / EMU),
+              distB: Math.round(Number(a["@distB"] ?? 0) / EMU),
+              wrap: wrap.replace("wp:wrap", ""),
+            });
+          }
+        }
         if ("w:fldChar" in t || "w:instrText" in t) excluded = excluded || "field";
       }
       if (!text) continue;
@@ -367,7 +427,7 @@ export function parseDocument(
     if (!text.trim()) excluded = excluded || "empty";
     paragraphs.push({
       index: idx, runs, text, styleId, jc, bidi,
-      indLeft, indRight, indFirstLine, excluded, sectionIndex: -1, numbered,
+      indLeft, indRight, indFirstLine, excluded, sectionIndex: -1, numbered, anchors,
     });
     // ‏sectPr داخل pPr يختم مقطعًا: هندسته تسري على هذه الفقرة وما سبقها
     const pSect = pPr ? first(pPr, "w:sectPr") : null;
