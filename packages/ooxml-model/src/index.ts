@@ -44,6 +44,9 @@ export interface BodyParagraph {
   /** حجم «علامة الفقرة» (rPr داخل pPr ← النمط) بالـ twips — يشارك في ارتفاع
    *  السطر ولو غير مرئي (فرضية masjid ‏a4: ‏+19..21 = فرق نصف نقطة) */
   markEmTwips: number | null;
+  /** خط علامة الترقيم بشريحة ASCII (rFonts ascii من rPr علامة الفقرة) —
+   *  أرقام العلامة «1.» لاتينية فتُرسم به وترفع ascent سطرها (لغز 586) */
+  markAsciiFamily: string | null;
 }
 
 /** عائم wp:anchor — الأبعاد بالـ twips (‏EMU ÷ 635) */
@@ -421,6 +424,11 @@ export function parseDocument(
     const indRight = own.indRight ?? numProps?.indRight ?? styleProps.indRight;
     const indFirstLine = own.indFirstLine ?? numProps?.indFirstLine ?? styleProps.indFirstLine;
     const pPrRPr = pPr ? rPrProps(first(pPr, "w:rPr")) : { sz: null, family: null };
+    // خط علامة الترقيم بشريحة ASCII (أرقام «1.» لاتينية الشريحة!) — من
+    // ‏rFonts ascii في rPr علامة الفقرة (حل لغز 586: ‏asc(Simplified)=1.18em)
+    const markAsciiFamily = pPr
+      ? (findAttr(first(pPr, "w:rPr") ?? [], "w:rFonts")?.["@w:ascii"] ?? null)
+      : null;
     const markSz = pPrRPr.sz ?? styleProps.sz ?? null;
     // ملحوظة: طيّ lvl/rPr.sz هنا نتيجة سلبية مقيسة (tadris ‏96.1→93.7) —
     // الحقل مكشوف في NumberingTable لمن يحتاجه، بلا مشاركة في ارتفاع السطر.
@@ -510,7 +518,7 @@ export function parseDocument(
     paragraphs.push({
       index: idx, runs, text, styleId, jc, bidi,
       indLeft, indRight, indFirstLine, excluded, sectionIndex: -1, numbered, anchors,
-      spacing, markEmTwips,
+      spacing, markEmTwips, markAsciiFamily,
     });
     // ‏sectPr داخل pPr يختم مقطعًا: هندسته تسري على هذه الفقرة وما سبقها
     const pSect = pPr ? first(pPr, "w:sectPr") : null;

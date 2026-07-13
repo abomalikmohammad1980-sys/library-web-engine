@@ -56,6 +56,7 @@ function fontVertMetrics(path) {
 }
 const MAIN_MET = fontVertMetrics(FONT_FILE);
 const runMet = new Map(); // odttf → {a، d، g}
+const famMet = new Map(); // family → {a، d، g} (لخط علامة الترقيم بشريحتها)
 
 // ‏v2: خطوة السطر = max على runs السطر من (خطوة خط الـrun × حجمه) —
 // أسطر فيها بولد/لاتيني/مصحفي تعلو (عنقودا tadris ‏203/204 = tradbdo).
@@ -70,7 +71,9 @@ try {
     if (!src) continue;
     try {
       runPitch.set(odttf, fontVerticalPitch(src));
-      runMet.set(odttf, fontVertMetrics(src));
+      const met = fontVertMetrics(src);
+      runMet.set(odttf, met);
+      if (info.family && !famMet.has(info.family)) famMet.set(info.family, met);
     } catch { /* خط بلا ملف */ }
   }
 } catch { /* لا خريطة — نبقى على خط المتن */ }
@@ -155,9 +158,13 @@ function lineMet(p, t, isFirstLine = false) {
   }
   if (!asc) return null;
   // رفع العلامة: العلامة تسكن **أول سطر** الفقرة المعدودة فقط — ترفع
-  // ‏ascent ذلك السطر وحده (sdkjs:3895)، بخط المتن وحجم rPr علامة الفقرة
-  if (isFirstLine && p.numbered && p.markEmTwips)
-    asc = Math.max(asc, MAIN_MET.a * p.markEmTwips);
+  // ‏ascent ذلك السطر وحده (sdkjs:3895)، **بخطها الفعلي حسب شريحة نصها**:
+  // أرقام «1.» لاتينية ⇒ ‏rFonts ascii من rPr علامة الفقرة (لغز 586:
+  // ‏desc(adwa)+asc(Simplified ‏1.18em) = ‏586.7 والمرصود 586–588 ✓)
+  if (isFirstLine && p.numbered && p.markEmTwips) {
+    const met = (p.markAsciiFamily && famMet.get(p.markAsciiFamily)) ?? MAIN_MET;
+    asc = Math.max(asc, met.a * p.markEmTwips);
+  }
   return { asc, desc, gap };
 }
 
