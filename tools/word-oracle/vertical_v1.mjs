@@ -226,6 +226,10 @@ for (const p of paras) {
     else {
       const k = Math.round(obs - predB);
       bHist.set(k, (bHist.get(k) ?? 0) + 1);
+      if (process.env.BFOR === "1")
+        console.log("حد-فاشل:", JSON.stringify({ af, bf, gapObs: Math.round(obs - step),
+          stepR: Math.round(step), pA: A.p.index, pB: B.p.index,
+          styleA: A.p.styleId, styleB: B.p.styleId }));
     }
   }
   if (bPairs) {
