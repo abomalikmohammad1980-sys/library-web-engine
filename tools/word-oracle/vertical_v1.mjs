@@ -107,6 +107,8 @@ function stepDotsV3(p, t) {
     maxDots = Math.max(maxDots, factor * (emIdeal / 2.4));
   }
   if (!maxDots) return null;
+  // ‏VMODE=5 (فرضية ahadith): سقف المفرد لنقطة صحيحة قبل المضاعف
+  if (process.env.VMODE === "5") maxDots = Math.ceil(maxDots);
   const { line, lineRule } = p.spacing;
   if (line == null) return maxDots;
   if (lineRule === "exact") return line / 2.4;
@@ -178,7 +180,7 @@ for (const p of paras) {
     if (b.y - a.y <= 0) { anchorY = null; continue; }
     if (anchorY == null) { anchorY = a.y; accPred = 0; }
     pairs++;
-    const stepPred = (MODE === "3" || MODE === "4") ? ((stepDotsV3(p, b) ?? pred / 2.4) * 2.4)
+    const stepPred = (MODE === "3" || MODE === "4" || MODE === "5") ? ((stepDotsV3(p, b) ?? pred / 2.4) * 2.4)
       : MODE === "2" ? (predictedPitchV2(p, b) ?? pred) : pred;
     accPred += stepPred;
     // ‏v3: تكميم baseline المتراكم للنقاط؛ ‏v4: نفس الخطوة بلا تكميم
