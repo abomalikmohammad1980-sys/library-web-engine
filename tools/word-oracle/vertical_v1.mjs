@@ -313,6 +313,35 @@ for (const p of paras) {
     if (top.length) console.log("   أخطاء الحدود:", top.map(([k, v]) => `${k > 0 ? "+" : ""}${k}×${v}`).join("  "));
   }
 }
+// القاعدة 8: بداية الصفحة — ‏baseline أول سطر = الهامش العلوي + ascent السطر
+{
+  let pOk = 0, pN = 0;
+  const pHist = new Map();
+  const marTopOf = (p) =>
+    (model.sections?.[p.sectionIndex] ?? model.section).marTopTwips ?? 1440;
+  const marTop = model.section.marTopTwips ?? 1440; // للعنوان فقط
+  // أول سطر فقرة يبدأ صفحةً: من paraSpans حيث firstT هو أول أسطر صفحته
+  const firstOfPage = new Map();
+  for (const t of truthLines)
+    if (!firstOfPage.has(t.page) || t.y < firstOfPage.get(t.page).y)
+      firstOfPage.set(t.page, t);
+  for (const S of paraSpans) {
+    const f = firstOfPage.get(S.firstT.page);
+    if (f !== S.firstT) continue; // ليست بادئة الصفحة
+    const M = lineMet(S.p, S.firstT, true);
+    if (!M) continue;
+    pN++;
+    const pred = marTopOf(S.p) + M.asc;
+    const err = S.firstT.y - pred;
+    if (Math.abs(err) <= TOL) pOk++;
+    else pHist.set(Math.round(err), (pHist.get(Math.round(err)) ?? 0) + 1);
+  }
+  if (pN) {
+    console.log(`▲ بداية الصفحة: ${pOk}/${pN} = ${(100 * pOk / pN).toFixed(2)}% (هامش ${marTop})`);
+    const top = [...pHist.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5);
+    if (top.length) console.log("   أخطاء البداية:", top.map(([k, v]) => `${k > 0 ? "+" : ""}${k}×${v}`).join("  "));
+  }
+}
 const pct = pairs ? ((100 * ok) / pairs).toFixed(2) : "0";
 console.log(`▲ الرقم الشمالي الرأسي v1 ‏(${BOOK}): ${ok}/${pairs} = ${pct}% ` +
   `(|خطأ| ≤ ${TOL} twips، ‏hheaPitch=${PITCH.toFixed(4)}em)`);

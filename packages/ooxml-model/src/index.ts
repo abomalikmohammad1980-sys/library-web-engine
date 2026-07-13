@@ -63,6 +63,9 @@ export interface SectionGeometry {
   pageHTwips: number;
   marLeftTwips: number;
   marRightTwips: number;
+  /** الهامش العلوي — بداية الصفحة الرأسية (القاعدة 8) */
+  marTopTwips: number;
+  marBottomTwips: number;
   /** عرض عمود المتن = العرض − الهامشان */
   columnTwips: number;
 }
@@ -383,7 +386,8 @@ export function parseDocument(
   if (!body) throw new Error("w:body غير موجود");
 
   const DEFAULT_GEO: SectionGeometry = {
-    pageWTwips: 11906, pageHTwips: 16838, marLeftTwips: 1440, marRightTwips: 1440, columnTwips: 9026,
+    pageWTwips: 11906, pageHTwips: 16838, marLeftTwips: 1440, marRightTwips: 1440,
+    marTopTwips: 1440, marBottomTwips: 1440, columnTwips: 9026,
   };
   function geomFrom(sectPr: XNode[] | null): SectionGeometry {
     if (!sectPr) return DEFAULT_GEO;
@@ -393,7 +397,10 @@ export function parseDocument(
     const h = Number(pgSz?.["@w:h"] ?? DEFAULT_GEO.pageHTwips);
     const l = Number(pgMar?.["@w:left"] ?? DEFAULT_GEO.marLeftTwips);
     const r = Number(pgMar?.["@w:right"] ?? DEFAULT_GEO.marRightTwips);
-    return { pageWTwips: w, pageHTwips: h, marLeftTwips: l, marRightTwips: r, columnTwips: w - l - r };
+    const t = Number(pgMar?.["@w:top"] ?? DEFAULT_GEO.marTopTwips);
+    const b = Number(pgMar?.["@w:bottom"] ?? DEFAULT_GEO.marBottomTwips);
+    return { pageWTwips: w, pageHTwips: h, marLeftTwips: l, marRightTwips: r,
+      marTopTwips: t, marBottomTwips: b, columnTwips: w - l - r };
   }
   const sections: SectionGeometry[] = [];
   let pendingFrom = 0; // أول فقرة لم يُسند مقطعها بعد
