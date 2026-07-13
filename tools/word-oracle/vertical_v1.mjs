@@ -16,7 +16,7 @@ import { extractFromDocx } from "../../packages/ooxml-model/dist/index.js";
 const BOOK = process.env.BOOK ?? "sample-masjid";
 const FAMILY = process.env.FAMILY ?? "adwa-assalaf";
 const FONT_FILE = process.env.FONT_FILE ?? "corpus/book-fonts/adwa-assalaf.ttf";
-const TOL = Number(process.env.TOL ?? "2");
+const TOL = Number(process.env.TOL ?? "3"); // سماحية النقطة (2.4tw) + ضجيج تكميم twips
 
 // ---- مقاييس الخط الرأسية من الملف مباشرة (hhea + head)
 function fontVerticalPitch(path) {
@@ -37,6 +37,21 @@ function fontVerticalPitch(path) {
 }
 const PITCH = fontVerticalPitch(FONT_FILE);
 
+// ‏v2: خطوة السطر = max على runs السطر من (خطوة خط الـrun × حجمه) —
+// أسطر فيها بولد/لاتيني/مصحفي تعلو (عنقودا tadris ‏203/204 = tradbdo).
+// خرائط الخطوط من fonts-map.json (odttf → الملف الأصلي).
+const runPitch = new Map(); // odttf name → hhea pitch em-factor
+try {
+  const fm = JSON.parse(readFileSync(`corpus/ground-truth/fonts/${BOOK}/fonts-map.json`, "utf-8"));
+  for (const [odttf, info] of Object.entries(fm)) {
+    // ‏hhea من الـsubset المفكوك نفسه — مطابقة «الأصل» بالعائلة تخلط
+    // العادي بالبولد (tradbdo) فتفسد الخطوة
+    const src = info.subset ?? info.original;
+    if (!src) continue;
+    try { runPitch.set(odttf, fontVerticalPitch(src)); } catch { /* خط بلا ملف */ }
+  }
+} catch { /* لا خريطة — نبقى على خط المتن */ }
+
 const model = extractFromDocx(readFileSync(`corpus/books/${BOOK}.docx`));
 const truth = JSON.parse(readFileSync(`corpus/ground-truth/${BOOK}.truth.json`, "utf-8"));
 
@@ -52,8 +67,51 @@ for (let pgI = 0; pgI < truth.pages.length; pgI++) {
     const nn = norm(logical);
     if (!nn) continue;
     truthLines.push({ n: nn, em: rs.length ? rs[0].emTwips : 0,
-      ems: new Set(rs.map((r) => r.emTwips)), y: ln.baselineTwips, page: pgI });
+      ems: new Set(rs.map((r) => r.emTwips)), y: ln.baselineTwips, page: pgI,
+      runFonts: rs.map((r) => ({ font: r.font, em: r.emTwips })) });
   }
+}
+
+/** ‏v2: خطوة السطر من تركيبته الفعلية — max على runs من (خطوة الخط × emDots) */
+function linePitchDots(t) {
+  let maxDots = 0;
+  for (const r of t.runFonts ?? []) {
+    const factor = runPitch.get(r.font) ?? PITCH;
+    const emDots = Math.round(r.em * 5 / 12);
+    maxDots = Math.max(maxDots, factor * emDots);
+  }
+  return maxDots;
+}
+
+function predictedPitchV2(p, t) {
+  const { line, lineRule } = p.spacing;
+  const single = linePitchDots(t);
+  if (!single) return null;
+  let dots;
+  if (line == null) dots = Math.round(single);
+  else if (lineRule === "exact") dots = Math.round(line * 5 / 12);
+  else if (lineRule === "atLeast") dots = Math.max(Math.round(single), Math.round(line * 5 / 12));
+  else dots = Math.round(single * line / 240);
+  return dots * 2.4;
+}
+
+/** ‏v3: الخطوة عند em «المثالي» غير المكمم (em/2.4 نقطة عائمة) — التكميم
+ *  يقع على الـbaseline المتراكم لا على الخطوة (يفسر تناوب 199/200 بمتوسط
+ *  ‏199.28، ودawra ‏249 الغالبة من 249.1، وmasjid ‏236/237 من 236.45). */
+function stepDotsV3(p, t) {
+  let maxDots = 0;
+  for (const r of t.runFonts ?? []) {
+    const factor = runPitch.get(r.font) ?? PITCH;
+    // ‏em الحقيقة مكمم (319 من 15.96) — نعيده للمثالي: أقرب نصف نقطة (10 twips)
+    const emIdeal = Math.round(r.em / 10) * 10;
+    maxDots = Math.max(maxDots, factor * (emIdeal / 2.4));
+  }
+  if (!maxDots) return null;
+  const { line, lineRule } = p.spacing;
+  if (line == null) return maxDots;
+  if (lineRule === "exact") return line / 2.4;
+  if (lineRule === "atLeast") return Math.max(maxDots, line / 2.4);
+  return maxDots * line / 240;
 }
 
 function predictedPitch(p, em) {
@@ -108,19 +166,25 @@ for (const p of paras) {
     seq.push(t); accLen += t.n.length;
   }
   const pred = predictedPitch(p, em);
-  // نمط التراكم (الافتراضي): Word يحسب المواضع عائمةً ويقرب كل baseline
-  // مستقلًا — فالموضع المتراكم من مرساة الفقرة هو الثابت، لا فرق الزوج
-  // (الذي يتذبذب ±2 بالتقريب). ‏ACCUM=0 يعيد مقياس الأزواج القديم.
+  // ‏MODE: ‏v3 (افتراضي) خطوة عائمة عند em المثالي + تكميم baseline للنقطة؛
+  // ‏v2 خطوة نقاط صحيحة لكل سطر؛ ‏v1 خطوة الفقرة الموحدة. ‏ACCUM=0 للأزواج.
+  const MODE = process.env.VMODE ?? "4";
   const accum = process.env.ACCUM !== "0";
-  let anchorY = null, anchorI = 0;
+  let anchorY = null, accPred = 0;
   for (let i = 1; i < seq.length; i++) {
     const a = seq[i - 1], b = seq[i];
     if (a.page !== b.page) { anchorY = null; continue; } // فاصل صفحة — خارج v1
-    if (a.ems.size > 1 || b.ems.size > 1) { anchorY = null; continue; } // خلط أحجام — v2
+    if (MODE === "1" && (a.ems.size > 1 || b.ems.size > 1)) { anchorY = null; continue; }
     if (b.y - a.y <= 0) { anchorY = null; continue; }
-    if (anchorY == null) { anchorY = a.y; anchorI = i - 1; }
+    if (anchorY == null) { anchorY = a.y; accPred = 0; }
     pairs++;
-    const predicted = accum ? anchorY + (i - anchorI) * pred : pred;
+    const stepPred = (MODE === "3" || MODE === "4") ? ((stepDotsV3(p, b) ?? pred / 2.4) * 2.4)
+      : MODE === "2" ? (predictedPitchV2(p, b) ?? pred) : pred;
+    accPred += stepPred;
+    // ‏v3: تكميم baseline المتراكم للنقاط؛ ‏v4: نفس الخطوة بلا تكميم
+    const predicted = accum
+      ? (MODE === "3" ? Math.round((anchorY + accPred) / 2.4) * 2.4 : anchorY + accPred)
+      : stepPred;
     const obs = accum ? b.y : b.y - a.y;
     const err = Math.abs(obs - predicted);
     if (err <= TOL) ok++;
