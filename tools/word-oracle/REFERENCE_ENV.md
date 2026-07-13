@@ -23,6 +23,7 @@
 | تحديثات Office | ✅ **معطلة** (رفع UAC مؤكد بالسجل) | ‏`ClickToRun\Configuration\UpdatesEnabled=False` |
 | خطوط الكتب | ✅ جزئيًا — ‏`adwa-assalaf` ثُبِّت (تثبيت مستخدم) | مصدر: arbfonts.com بإذن المالك؛ ‏Version 14.50 ‏(2010)، 301KB، الملف محفوظ في `corpus/book-fonts/` ‏(LFS)؛ **بقية خطوط المكتبة تُستكمل من حزمة الإنتاج لاحقًا** |
 | لقطة الخطوط | ✅ | ‏`fonts-snapshot.txt` ‏(459 مدخلًا) |
+| خطوط Al-Jazeera ‏(أُضيفت 2026-07-13 بإذن المالك العام «ثبّت ما تشاء») | ✅ تثبيت مستخدم ‏(HKCU + ‏LocalAppData\Fonts) | ‏`Al-Jazeera-Arabic-Light`/`-Bold` من أصول المالك المحلية (ai_library_flutter/assets/fonts)؛ ‏`Al-Jazeera-Arabic-Regular` ‏v2.100 ‏(50,580 بايت) من arbfonts.com بعد تحقق بنيوي بـfontTools ‏(GSUB سليم). التراخيص: قرار المالك 2026-07-13 «كافة التراخيص مؤمَّنة». تحقق الاستخدام: XPS ‏sample-ahadith/sample-muqtarah ضمّن subsets ‏Al-Jazeera فعلًا (لا استبدال) |
 
 > ✅ **أعيد توليد الحقيقة بعد التجميد** (2026-07-12): ‏`sample-masjid.{xps,truth.json}` الحاليان مولّدان بالبيئة المجمدة (Numeral=Context، تحديثات معطلة، ‏adwa-assalaf مثبت). شاهد الأثر: عدد أسطر العينة تغير 207←173 بعد تثبيت الخط الحقيقي — دليل عملي على أن غياب خطٍّ يلوّث الحقيقة.
 

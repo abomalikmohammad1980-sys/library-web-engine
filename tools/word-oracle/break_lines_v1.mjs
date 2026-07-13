@@ -69,7 +69,10 @@ for (const p of paras) {
     brkAfter.delete(words.length - 1); // آخر الفقرة ينتهي طبيعيًا
   } else words.push(...p.text.trim().split(/\s+/).filter(Boolean));
   const spaceW = widthTwips(" ", em);
-  const colBase = model.section.columnTwips - p.indLeft - p.indRight;
+  // هندسة مقطع الفقرة نفسها — المستندات متعددة المقاطع (درس muqtarah:
+  // مقطع عمودي 8722 يليه عرضي 14299 واعتماد الأخير كسّر كل المحاذاة)
+  const sec = model.sections?.[p.sectionIndex] ?? model.section;
+  const colBase = sec.columnTwips - p.indLeft - p.indRight;
 
   // كاسر greedy على أعراض عناقيد الفقرة المشكَّلة كاملةً (لا جمع كلمات معزولة):
   // التشكيل السياقي يلتقط kerning/الوصل عبر الحدود — كما يقيس محرك حقيقي.
@@ -101,6 +104,30 @@ for (const p of paras) {
   for (let c = 0; c < fullText.length; c++) prefix[c + 1] = prefix[c] + advAtChar[c];
   const width = (a, b) => prefix[b] - prefix[a]; // عرض النص [a,b)
 
+  // محاذاة قبل الكسر (لا تعتمد على أسطرنا): أول truth line بادئةٌ لنص الفقرة.
+  // تسامح بادئة العلامة: فقرات w:numPr يرسم Word علامتها (·، ‏1-، …) كـrun
+  // في بداية السطر وليست في نص docx — نسمح بإسقاط ≤5 أحرف من رأس سطر الحقيقة
+  // (درس muqtarah: ‏11 فقرة معدودة بلا محاذاة).
+  const paraN = norm(p.text);
+  let start = -1, markerLen = 0;
+  outer:
+  for (let i = 0; i < truthLines.length; i++) {
+    const tn = truthLines[i].n;
+    // شرط الحجم: نفس الفقرة النصية قد تتكرر بأحجام مختلفة (ملخص/متن)
+    if (!tn || tn.length <= 10 || Math.abs(truthLines[i].em - em) > 3) continue;
+    for (let j = 0; j <= 5 && j < tn.length - 10; j++) {
+      if (paraN.startsWith(tn.slice(j))) { start = i; markerLen = j; break outer; }
+    }
+  }
+  if (start < 0) { parasSkipped++; continue; }
+  parasAligned++;
+  // خصم عرض العلامة من السطر الأول: نتيجة سلبية مقيسة — أضرّ بالكتب السليمة
+  // (masjid ‏99.49%←92.82%): العلامة تسكن منطقة التعليق ولا تستهلك من النص
+  // في التنسيقات السوية. ‏dawra (حيث تستهلك فعلًا) فئة مفتوحة موثقة.
+  const markerW = process.env.MARKER_W === "1" && markerLen > 0
+    ? Math.round(widthTwips(truthLines[start].raw.replace(/\s+/g, "").slice(0, markerLen), em) + spaceW)
+    : 0;
+
   const ourLines = []; const ourMeta = [];
   let lineStartChar = 0, lineEndChar = 0, lineWords = [], cursor = 0, wi = -1;
   for (const word of words) {
@@ -110,8 +137,11 @@ for (const p of paras) {
     cursor = wordEnd;
     // التقدم الأول بإشارته: السالب تعليقٌ (hanging) يوسّع السطر الأول —
     // الحقيقة أكدته (para127: سطر أول يمتد إلى 15456 متجاوزًا هامش 15398 بـ58).
-    const indFL = process.env.HANG_IND === "0" ? Math.max(p.indFirstLine, 0) : p.indFirstLine;
-    const W = colBase - (ourLines.length === 0 ? indFL : 0);
+    // الفقرة المعدودة: العلامة + التبويب يملآن منطقة التعليق حتى indLeft
+    // ⇒ نص السطر الأول يبدأ كسائر الأسطر (لا توسعة).
+    const indFL = p.numbered ? 0
+      : process.env.HANG_IND === "0" ? Math.max(p.indFirstLine, 0) : p.indFirstLine;
+    const W = colBase - (ourLines.length === 0 ? indFL + markerW : 0);
     // سماحية ضغط مسافات في قرار الكسر — يعاد قياسها على العدّة المُصلحة
     // (القياس الأول كان على عدّة معطوبة: أسطر فارغة + تخلل فوتر).
     const FLOOR = Number(process.env.SPACE_FLOOR ?? "1");
@@ -196,23 +226,13 @@ for (const p of paras) {
   }
   if (lineWords.length) { ourLines.push(lineWords); ourMeta.push({ start: lineStartChar, nextWordEnd: -1 }); }
 
-  // محاذاة: أول truth line يطابق nospace سطرنا الأول
-  const target = norm(ourLines[0].join(" "));
-  const paraN = norm(p.text);
-  let start = -1;
-  for (let i = 0; i < truthLines.length; i++) {
-    // شرط الحجم: نفس الفقرة النصية قد تتكرر بأحجام مختلفة (ملخص/متن)
-    if (truthLines[i].n && paraN.startsWith(truthLines[i].n) && truthLines[i].n.length > 10
-        && Math.abs(truthLines[i].em - em) <= 3) { start = i; break; }
-  }
-  if (start < 0) { parasSkipped++; continue; }
-  parasAligned++;
-
   // استهلاك أسطر الحقيقة مع تخطي أسطر أرقام صفحات الفوتر المتخللة
   // (فقرة عابرة للصفحات ⇐ رقم الصفحة يقع بين سطرين — الفئة أ في المصنّف)
   const seq = [];
   for (let j = start; j < truthLines.length && seq.length <= ourLines.length; j++) {
+    // فوتر متخلل: رقم صفحة مجرد، أو نمط «الصفحة (n) من (m)» (درس muqtarah)
     if (/^[()0-9]{1,6}$/.test(truthLines[j].n)) continue;
+    if (/^الصفحة\(?\d+\)?من\(?\d+\)?$/.test(truthLines[j].n)) continue;
     seq.push(truthLines[j]);
   }
 
@@ -222,7 +242,9 @@ for (const p of paras) {
     if (!t) break;
     cmpN = i + 1;
     linesTotal++;
-    const ok = norm(ourLines[i].join("")) === t.n;
+    // سطر الفقرة الأول يقارن بعد إسقاط علامة التعداد المرسومة (markerLen)
+    const tn = i === 0 ? t.n.slice(markerLen) : t.n;
+    const ok = norm(ourLines[i].join("")) === tn;
     if (!ok && firstDiv < 0) firstDiv = i;
     if (ok) linesMatched++;
     else if (firstDiv === i && process.env.FORENSICS) {
@@ -234,13 +256,13 @@ for (const p of paras) {
       const k = c;
       const kashN = t.runs.reduce((a, r) => a + (r.glyphIds ?? []).filter((g) => g === 229).length, 0);
       const wordLineAdv = t.runs.reduce((a, r) => a + (r.advSumTwips ?? 0), 0);
-      const rightEdge = model.section.pageWTwips - model.section.marRightTwips;
+      const rightEdge = sec.pageWTwips - sec.marRightTwips;
       console.log("تشريح:", JSON.stringify({
         para: p.index, line: i, jc: p.jc, divergeAtWord: k,
         wordSide: wWords[0], ourSide: oWords[0], wLen: t.n.length, oLen: oN.length,
         boundaryLastChar: (wWords[wWords.length - 1] ?? "").slice(-1),
         // هندسة سطر الحقيقة مقابل حواف العمود: تضيّق يسار/يمين (عائم؟ تقدم؟)
-        gapL: t.xMin - model.section.marLeftTwips, gapR: rightEdge - t.xMax,
+        gapL: t.xMin - sec.marLeftTwips, gapR: rightEdge - t.xMax,
         tAdv: Math.round(t.advAll),
         kashidasOnLine: kashN, wordLineAdvTwips: Math.round(wordLineAdv), W: colBase,
         ourNatOverIfPacked: ourMeta[i] && ourMeta[i].nextWordEnd > 0

@@ -33,6 +33,10 @@ export interface BodyParagraph {
   indRight: number;
   indFirstLine: number;
   excluded: false | "table" | "drawing" | "field" | "tab" | "sym" | "empty";
+  /** فهرس مقطع الفقرة في DocumentModelV0.sections */
+  sectionIndex: number;
+  /** فقرة معدودة (w:numPr بـnumId فعّال) — علامتها تُرسم ولا تعيش في النص */
+  numbered: boolean;
 }
 export interface SectionGeometry {
   pageWTwips: number;
@@ -43,7 +47,12 @@ export interface SectionGeometry {
   columnTwips: number;
 }
 export interface DocumentModelV0 {
+  /** هندسة المقطع الأخير — توافق خلفي؛ المعتمد: sections[sectionIndex] */
   section: SectionGeometry;
+  /** كل مقاطع المستند بترتيبها (sectPr داخل pPr يختم مقطعًا، وsectPr
+   *  الـbody يختم الأخير) — درس sample-muqtarah: مقطع عمودي ثم عرضي،
+   *  واعتماد الأخير وحده أعطى عمودًا 14299 لفقرات عمودها 8722. */
+  sections: SectionGeometry[];
   paragraphs: BodyParagraph[];
   /** من settings.xml؛ ‏11 عند الغياب (ما قبل 2010) — مفتاح القاعدة 16 */
   compatibilityMode: number;
@@ -83,6 +92,7 @@ function findAttr(parent: XNode[], name: string): Record<string, string> | null 
 // ---------- فتح الأرشيف
 export function openDocx(bytes: Uint8Array): {
   documentXml: string; stylesXml: string | null; settingsXml: string | null;
+  numberingXml: string | null;
 } {
   const files = unzipSync(bytes);
   const dec = new TextDecoder("utf-8");
@@ -90,11 +100,70 @@ export function openDocx(bytes: Uint8Array): {
   if (!doc) throw new Error("word/document.xml غير موجود");
   const styles = files["word/styles.xml"];
   const settings = files["word/settings.xml"];
+  const numbering = files["word/numbering.xml"];
   return {
     documentXml: dec.decode(doc),
     stylesXml: styles ? dec.decode(styles) : null,
     settingsXml: settings ? dec.decode(settings) : null,
+    numberingXml: numbering ? dec.decode(numbering) : null,
   };
+}
+
+// ---------- الترقيم: numId+ilvl ← تقدمات المستوى (numbering.xml)
+// درس sample-dawra: فقرات التعداد بلا w:ind مباشر وتقدماتها في lvl
+// ‏(left=720/hanging=360) — تجاهلها ⇒ عمود أعرض بـ720 لكل أسطرها.
+export interface NumLevelProps {
+  indLeft: number | null; indRight: number | null;
+  /** التعليق بإشارة firstLine السالبة (نفس تمثيل الفقرات) */
+  indFirstLine: number | null;
+}
+export type NumberingTable = Map<string, NumLevelProps>; // "numId/ilvl"
+
+export function parseNumbering(numberingXml: string | null): NumberingTable {
+  const table: NumberingTable = new Map();
+  if (!numberingXml) return table;
+  const root = parser.parse(numberingXml) as XNode[];
+  const numbering = first(root, "w:numbering");
+  if (!numbering) return table;
+  // ‏abstractNumId ← مستوياته
+  const absLvls = new Map<string, Map<string, NumLevelProps>>();
+  for (const node of numbering) {
+    if ("w:abstractNum" in node) {
+      const abs = node["w:abstractNum"] as XNode[];
+      const absId = (node[":@"] as Record<string, string> | undefined)?.["@w:abstractNumId"];
+      if (absId == null) continue;
+      const lvls = new Map<string, NumLevelProps>();
+      for (const l of abs) {
+        if (!("w:lvl" in l)) continue;
+        const lvl = l["w:lvl"] as XNode[];
+        const ilvl = (l[":@"] as Record<string, string> | undefined)?.["@w:ilvl"];
+        const pPr = first(lvl, "w:pPr");
+        const ind = pPr ? findAttr(pPr, "w:ind") : null;
+        if (ilvl == null || !ind) continue;
+        const left = ind["@w:left"] != null ? Number(ind["@w:left"]) : null;
+        const right = ind["@w:right"] != null ? Number(ind["@w:right"]) : null;
+        const hanging = ind["@w:hanging"] != null ? Number(ind["@w:hanging"]) : null;
+        const firstLine = ind["@w:firstLine"] != null ? Number(ind["@w:firstLine"]) : null;
+        lvls.set(ilvl, {
+          indLeft: left, indRight: right,
+          indFirstLine: hanging != null ? -hanging : firstLine,
+        });
+      }
+      absLvls.set(absId, lvls);
+    }
+  }
+  // ‏num ← abstractNum
+  for (const node of numbering) {
+    if (!("w:num" in node)) continue;
+    const num = node["w:num"] as XNode[];
+    const numId = (node[":@"] as Record<string, string> | undefined)?.["@w:numId"];
+    const absRef = findAttr(num, "w:abstractNumId")?.["@w:val"];
+    if (numId == null || absRef == null) continue;
+    const lvls = absLvls.get(String(absRef));
+    if (!lvls) continue;
+    for (const [ilvl, props] of lvls) table.set(`${numId}/${ilvl}`, props);
+  }
+  return table;
 }
 
 /** ‏compatibilityMode من settings.xml — مفتاح خوارزمية التسويغ الذكي
@@ -190,26 +259,30 @@ function resolveViaStyle(table: StyleTable, styleId: string | null) {
 }
 
 // ---------- المستند
-export function parseDocument(documentXml: string, styles: StyleTable): DocumentModelV0 {
+export function parseDocument(
+  documentXml: string, styles: StyleTable,
+  numbering: NumberingTable = new Map(),
+): DocumentModelV0 {
   const root = parser.parse(documentXml) as XNode[];
   const doc = first(root, "w:document");
   const body = doc ? first(doc, "w:body") : null;
   if (!body) throw new Error("w:body غير موجود");
 
-  // ‏sectPr الأخير على مستوى الـ body
-  let section: SectionGeometry = {
+  const DEFAULT_GEO: SectionGeometry = {
     pageWTwips: 11906, pageHTwips: 16838, marLeftTwips: 1440, marRightTwips: 1440, columnTwips: 9026,
   };
-  const sectPr = first(body, "w:sectPr");
-  if (sectPr) {
+  function geomFrom(sectPr: XNode[] | null): SectionGeometry {
+    if (!sectPr) return DEFAULT_GEO;
     const pgSz = findAttr(sectPr, "w:pgSz");
     const pgMar = findAttr(sectPr, "w:pgMar");
-    const w = Number(pgSz?.["@w:w"] ?? section.pageWTwips);
-    const h = Number(pgSz?.["@w:h"] ?? section.pageHTwips);
-    const l = Number(pgMar?.["@w:left"] ?? section.marLeftTwips);
-    const r = Number(pgMar?.["@w:right"] ?? section.marRightTwips);
-    section = { pageWTwips: w, pageHTwips: h, marLeftTwips: l, marRightTwips: r, columnTwips: w - l - r };
+    const w = Number(pgSz?.["@w:w"] ?? DEFAULT_GEO.pageWTwips);
+    const h = Number(pgSz?.["@w:h"] ?? DEFAULT_GEO.pageHTwips);
+    const l = Number(pgMar?.["@w:left"] ?? DEFAULT_GEO.marLeftTwips);
+    const r = Number(pgMar?.["@w:right"] ?? DEFAULT_GEO.marRightTwips);
+    return { pageWTwips: w, pageHTwips: h, marLeftTwips: l, marRightTwips: r, columnTwips: w - l - r };
   }
+  const sections: SectionGeometry[] = [];
+  let pendingFrom = 0; // أول فقرة لم يُسند مقطعها بعد
 
   const paragraphs: BodyParagraph[] = [];
   let idx = 0;
@@ -223,11 +296,17 @@ export function parseDocument(documentXml: string, styles: StyleTable): Document
     const jc = pPr ? (findAttr(pPr, "w:jc")?.["@w:val"] ?? null) : null;
     const bidi = pPr ? findAttr(pPr, "w:bidi") != null : false;
     const styleProps = resolveViaStyle(styles, styleId);
-    // ‏w:ind: المباشر على الفقرة يتقدم؛ وإلا فمن سلسلة النمط (نفس قاعدة rPr)
+    // ترقيم الفقرة: تقدمات مستوى الترقيم تتوسط الأسبقية (مباشر > ترقيم > نمط)
+    const numPr = pPr ? first(pPr, "w:numPr") : null;
+    const numId = numPr ? (findAttr(numPr, "w:numId")?.["@w:val"] ?? null) : null;
+    const ilvl = numPr ? (findAttr(numPr, "w:ilvl")?.["@w:val"] ?? "0") : "0";
+    const numbered = numId != null && numId !== "0";
+    const numProps = numbered ? (numbering.get(`${numId}/${ilvl}`) ?? null) : null;
+    // ‏w:ind: المباشر على الفقرة يتقدم؛ وإلا فمن الترقيم؛ وإلا فسلسلة النمط
     const own = indProps(pPr);
-    const indLeft = own.indLeft ?? styleProps.indLeft;
-    const indRight = own.indRight ?? styleProps.indRight;
-    const indFirstLine = own.indFirstLine ?? styleProps.indFirstLine;
+    const indLeft = own.indLeft ?? numProps?.indLeft ?? styleProps.indLeft;
+    const indRight = own.indRight ?? numProps?.indRight ?? styleProps.indRight;
+    const indFirstLine = own.indFirstLine ?? numProps?.indFirstLine ?? styleProps.indFirstLine;
     const pPrRPr = pPr ? rPrProps(first(pPr, "w:rPr")) : { sz: null, family: null };
 
     let excluded: BodyParagraph["excluded"] = false;
@@ -271,15 +350,28 @@ export function parseDocument(documentXml: string, styles: StyleTable): Document
     if (!text.trim()) excluded = excluded || "empty";
     paragraphs.push({
       index: idx, runs, text, styleId, jc, bidi,
-      indLeft, indRight, indFirstLine, excluded,
+      indLeft, indRight, indFirstLine, excluded, sectionIndex: -1, numbered,
     });
+    // ‏sectPr داخل pPr يختم مقطعًا: هندسته تسري على هذه الفقرة وما سبقها
+    const pSect = pPr ? first(pPr, "w:sectPr") : null;
+    if (pSect) {
+      sections.push(geomFrom(pSect));
+      for (let k = pendingFrom; k < paragraphs.length; k++)
+        paragraphs[k]!.sectionIndex = sections.length - 1;
+      pendingFrom = paragraphs.length;
+    }
   }
-  return { section, paragraphs, compatibilityMode: 11 };
+  // ‏sectPr الـbody يختم المقطع الأخير (البقية كلها له)
+  sections.push(geomFrom(first(body, "w:sectPr")));
+  for (let k = pendingFrom; k < paragraphs.length; k++)
+    paragraphs[k]!.sectionIndex = sections.length - 1;
+  const section = sections[sections.length - 1]!;
+  return { section, sections, paragraphs, compatibilityMode: 11 };
 }
 
 export function extractFromDocx(bytes: Uint8Array): DocumentModelV0 {
-  const { documentXml, stylesXml, settingsXml } = openDocx(bytes);
-  const model = parseDocument(documentXml, parseStyles(stylesXml));
+  const { documentXml, stylesXml, settingsXml, numberingXml } = openDocx(bytes);
+  const model = parseDocument(documentXml, parseStyles(stylesXml), parseNumbering(numberingXml));
   model.compatibilityMode = compatibilityMode(settingsXml);
   return model;
 }
