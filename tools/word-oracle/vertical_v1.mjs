@@ -57,8 +57,21 @@ for (let pgI = 0; pgI < truth.pages.length; pgI++) {
 }
 
 function predictedPitch(p, em) {
-  const single = PITCH * em;
   const { line, lineRule } = p.spacing;
+  if (process.env.GRID600 === "1") {
+    // ★ شبكة الطابعة 600dpi (اكتشاف XPS الخام): ‏em والخطوة أعداد صحيحة
+    // من النقاط (‏1 نقطة = 2.4 twips). ‏em: ‏16pt→133 نقطة (تفسر 15.96pt
+    // المرصودة)؛ الخطوة: round(round(hhea×emDots) × line/240).
+    const emDots = Math.round(em * 5 / 12); // twips → نقاط 600dpi
+    const singleDots = Math.round(PITCH * emDots);
+    let dots;
+    if (line == null) dots = singleDots;
+    else if (lineRule === "exact") dots = Math.round(line * 5 / 12);
+    else if (lineRule === "atLeast") dots = Math.max(singleDots, Math.round(line * 5 / 12));
+    else dots = Math.round(singleDots * line / 240);
+    return dots * 2.4;
+  }
+  const single = PITCH * em;
   if (line == null) return single;
   if (lineRule === "exact") return line;
   if (lineRule === "atLeast") return Math.max(single, line);
