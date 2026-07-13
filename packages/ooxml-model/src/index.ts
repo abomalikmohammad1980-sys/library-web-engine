@@ -47,6 +47,8 @@ export interface SectionGeometry {
   columnTwips: number;
 }
 export interface DocumentModelV0 {
+  /** ‏w:defaultTabStop — فاصل التوقفات التلقائية بالـ twips (افتراضي 720) */
+  defaultTabStop: number;
   /** هندسة المقطع الأخير — توافق خلفي؛ المعتمد: sections[sectionIndex] */
   section: SectionGeometry;
   /** كل مقاطع المستند بترتيبها (sectPr داخل pPr يختم مقطعًا، وsectPr
@@ -174,6 +176,15 @@ export function compatibilityMode(settingsXml: string | null): number {
   const m = settingsXml.match(
     /w:name="compatibilityMode"[^>]*w:val="(\d+)"|w:val="(\d+)"[^>]*w:name="compatibilityMode"/);
   return m ? Number(m[1] ?? m[2]) : 11;
+}
+
+/** ‏w:defaultTabStop من settings.xml (ECMA-376 §17.15.1.25) — فاصل التوقفات
+ *  التلقائية مقيسًا من هامش النص؛ الافتراضي 720 twips. مدخل قاعدة تاب
+ *  الترقيم (نص السطر الأول بعد علامة أعرض من التعليق). */
+export function defaultTabStop(settingsXml: string | null): number {
+  if (!settingsXml) return 720;
+  const m = settingsXml.match(/w:defaultTabStop[^>]*w:val="(\d+)"/);
+  return m ? Number(m[1]) : 720;
 }
 
 // ---------- الأنماط: styleId ← {sz, family, basedOn} + docDefaults
@@ -372,12 +383,13 @@ export function parseDocument(
   for (let k = pendingFrom; k < paragraphs.length; k++)
     paragraphs[k]!.sectionIndex = sections.length - 1;
   const section = sections[sections.length - 1]!;
-  return { section, sections, paragraphs, compatibilityMode: 11 };
+  return { section, sections, paragraphs, compatibilityMode: 11, defaultTabStop: 720 };
 }
 
 export function extractFromDocx(bytes: Uint8Array): DocumentModelV0 {
   const { documentXml, stylesXml, settingsXml, numberingXml } = openDocx(bytes);
   const model = parseDocument(documentXml, parseStyles(stylesXml), parseNumbering(numberingXml));
   model.compatibilityMode = compatibilityMode(settingsXml);
+  model.defaultTabStop = defaultTabStop(settingsXml);
   return model;
 }

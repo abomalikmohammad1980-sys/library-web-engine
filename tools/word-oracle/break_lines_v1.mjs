@@ -131,14 +131,23 @@ for (const p of paras) {
   }
   if (start < 0) { parasSkipped++; continue; }
   parasAligned++;
-  // علامة التعداد والسطر الأول: العلامة تسكن منطقة التعليق (hanging) —
-  // لا خصم إلا إذا كانت أعرض منها فتدفع النص (درس dawra: ‏«17-» عند 20pt
-  // أعرض من hanging=360). الخصم الأعمى نتيجة سلبية مقيسة (masjid ‏99.49←92.82).
-  let markerW = 0;
-  if (markerLen > 0 && process.env.MARKER_W !== "0") {
-    const mW = widthTwips(truthLines[start].raw.replace(/\s+/g, "").slice(0, markerLen), em) + spaceW;
-    const hang = p.numbered && p.indFirstLine < 0 ? -p.indFirstLine : 0;
-    markerW = Math.round(Math.max(0, mW - hang));
+  // علامة التعداد والسطر الأول — قاعدة تاب الترقيم (بحث Clean-room، ‏ECMA-376
+  // ‏suff/defaultTabStop/doNotUseIndentAsNumberingTabStop): العلامة ترتكز عند
+  // ‏(indLeft − hanging)، والنص يبدأ عند أول موقف تبويب بعد نهايتها —
+  // الموقف الافتراضي (virtual) عند indLeft، وإلا فمضاعفات defaultTabStop
+  // المقيسة من هامش النص. ‏(MARKER_W=0 للتعطيل A/B)
+  let markerW = 0; // خصم من عمود السطر الأول = (موقف بدء النص − indLeft)
+  if (markerLen > 0 && p.numbered && process.env.MARKER_W !== "0") {
+    const mW = widthTwips(truthLines[start].raw.replace(/\s+/g, "").slice(0, markerLen), em);
+    const hang = p.indFirstLine < 0 ? -p.indFirstLine : 0;
+    const anchor = p.indLeft - hang;          // إزاحة مرساة العلامة من هامش النص
+    const markerEnd = anchor + mW;            // العلامة تمتد نحو النص (RTL معكوس)
+    let textStart = p.indLeft;                // الموقف الافتراضي عند indLeft
+    if (markerEnd > textStart) {
+      const dts = model.defaultTabStop || 720; // التوقفات التلقائية من الهامش
+      textStart = (Math.floor(markerEnd / dts) + 1) * dts;
+    }
+    markerW = Math.round(Math.max(0, textStart - p.indLeft));
   }
 
   const ourLines = []; const ourMeta = [];
@@ -196,7 +205,11 @@ for (const p of paras) {
           L1 = width(lineStartChar, lineEndChar);
           n1 = Math.max(n - 1, 0);
           e = n1 > 0 ? 1 + (W - L1) / (n1 * spaceW) : Infinity;
-          const CAP = Number(process.env.E_CAP ?? "1.5");
+          // فرضية بحث الكشيدة: سقف التمديد = هدف الوضع (1.33/2.0/3.0)
+          const CAP_BY_JC = { both: 1.5, lowKashida: 1.33, mediumKashida: 2.0, highKashida: 3.0 };
+          const CAP = process.env.KASHIDA_CAP === "1"
+            ? (CAP_BY_JC[p.jc] ?? 1.5)
+            : Number(process.env.E_CAP ?? "1.5");
           // قاسم المقارنة الموزونة: 1.6 معايرةً على نطاق الجدوى التجريبي
           // (1.481, 1.680] من 33 قرارًا محكومًا بالحقيقة — 1.7 المستعار من
           // هندسة LO العكسية خارج النطاق (يرفض حشر 104:0 الذي فعله Word).
