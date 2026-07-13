@@ -274,3 +274,15 @@ spacing مباشر (‏contextualSpacing فقط) وsectPr يحمل `docGrid line
 بعد سطور) — فجبهة «تكافؤ الكم الرأسي الدقيق» (أنصاف النقاط/دفع الهيدر)
 هي الفاصل بين هذه الأرقام و100% صفحةً كاملة. المقياس الرابع الآن قائم
 في العدّة ويقيس كل جولة قادمة تلقائيًا.
+
+## 🏆 القاعدة 8-ج: externalLeading فوق أول سطر الصفحة — الإزاحتان الكامنتان انحلتا
+
+المطاردة: ‏muqtarah/ahadith بدايتا صفحاتهما +104/+112 فوق marTop+asc —
+والنسبة ثابتة **‏0.35em**. الحل: ‏extLeading = ‏hheaTotal − winTotal
+(‏jazeera **الوحيد** الذي يفترقان فيه: 0.342em — بقية خطوطنا ext≈0) —
+وقاعدة LO الموثقة: «‏leading يُضاف فوق السطر». الصيغة:
+**بداية الصفحة = ‏marTop + ‏(hheaTotal − winDescent)×em** ‏(= ext + winAsc).
+النتائج: بدايات muqtarah وahadith ‏**100%**، الإجمالي 47/49 عبر الستة؛
+الصفحة الكاملة: ‏ahadith ‏0←**87.5%**، ‏muqtarah ‏0←76%، ‏masjid ‏41→57.5%
+(‏adwa ‏ext=0.009em حسّن بداياته أيضًا)، ‏tadris ‏100% ثابت.
+‏(fontVertMetrics تقرأ الآن OS/2 winDescent؛ ‏lineMet يصدّر ascStart.)

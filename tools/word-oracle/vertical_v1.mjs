@@ -47,12 +47,14 @@ function fontVertMetrics(path) {
     tables.set(buf.toString("ascii", o, o + 4), buf.readUInt32BE(o + 8));
   }
   const head = tables.get("head"), hhea = tables.get("hhea");
+  const os2 = tables.get("OS/2");
   const upem = buf.readUInt16BE(head + 18);
-  return {
-    a: buf.readInt16BE(hhea + 4) / upem,
-    d: -buf.readInt16BE(hhea + 6) / upem,
-    g: buf.readInt16BE(hhea + 8) / upem,
-  };
+  const a = buf.readInt16BE(hhea + 4) / upem;
+  const d = -buf.readInt16BE(hhea + 6) / upem;
+  const g = buf.readInt16BE(hhea + 8) / upem;
+  // ‏OS/2 win (لـexternalLeading): ‏usWinAscent@74، ‏usWinDescent@76
+  const wd = os2 != null ? buf.readUInt16BE(os2 + 76) / upem : d;
+  return { a, d, g, wd };
 }
 const MAIN_MET = fontVertMetrics(FONT_FILE);
 const runMet = new Map(); // odttf → {a، d، g}
@@ -165,7 +167,17 @@ function lineMet(p, t, isFirstLine = false) {
     const met = (p.markAsciiFamily && famMet.get(p.markAsciiFamily)) ?? MAIN_MET;
     asc = Math.max(asc, met.a * p.markEmTwips);
   }
-  return { asc, desc, gap };
+  // ‏ascStart (القاعدة 8-ج): صعود «أول سطر الصفحة» يشمل externalLeading —
+  // ‏(hheaTotal − winDesc)×em = ‏ext + winAsc (‏LO: ‏leading فوق السطر).
+  // ‏jazeera الوحيد ذو ext>0 ‏(0.342em): يفسر +104/+112 حرفيًا.
+  let ascStart = 0;
+  for (const r of t.runFonts ?? []) {
+    const met = runMet.get(r.font) ?? MAIN_MET;
+    const emIdeal = Math.round(r.em / 10) * 10;
+    const hheaTotal = met.a + met.d + met.g;
+    ascStart = Math.max(ascStart, (hheaTotal - (met.wd ?? met.d)) * emIdeal);
+  }
+  return { asc, desc, gap, ascStart: Math.max(ascStart, asc) };
 }
 
 /** ‏Δ ‏baseline(a←b) داخل الفقرة: ‏desc(a) + فجوة التباعد (بارتفاع a —
@@ -320,6 +332,29 @@ for (const p of paras) {
   const marTopOf = (p) =>
     (model.sections?.[p.sectionIndex] ?? model.section).marTopTwips ?? 1440;
   const marTop = model.section.marTopTwips ?? 1440; // للعنوان فقط
+  // ‏8-ب: قاع الهيدر لكل صفحة (أسطر تحت الهامش العلوي + 400) — الهيدر
+  // العميق يدفع المتن: البداية = hdrLast + خطوة سطرٍ كاملة بمقاييس المتن
+  const pageStartPred = (p, firstT) => {
+    const M = lineMet(p, firstT, true);
+    if (!M) return null;
+    let pred = marTopOf(p) + (M.ascStart ?? M.asc);
+    // أسطر الهيدر: ما يقع فوق التنبؤ الأساسي بوضوح (أدنى من pred−50)
+    let hdr = null;
+    for (const t of truthLines)
+      if (t.page === firstT.page && t !== firstT && t.y < pred - 50 && (hdr == null || t.y > hdr))
+        hdr = t.y;
+    if (hdr != null) {
+      const sp = p.spacing;
+      const m = sp.line != null && sp.lineRule !== "exact" && sp.lineRule !== "atLeast" ? sp.line / 240 : 1;
+      const self = M.desc + M.gap + (M.asc + M.desc + M.gap) * (m - 1) + M.asc;
+      pred = Math.max(pred, hdr + self);
+    }
+    if (process.env.PS_DEBUG === "1")
+      console.log("ps:", JSON.stringify({ pg: firstT.page, obs: firstT.y,
+        base: Math.round(marTopOf(p) + M.asc), hdr, pred: Math.round(pred),
+        asc: Math.round(M.asc), marTop: marTopOf(p) }));
+    return pred;
+  };
   // أول سطر فقرة يبدأ صفحةً: من paraSpans حيث firstT هو أول أسطر صفحته
   const firstOfPage = new Map();
   for (const t of truthLines)
@@ -328,10 +363,9 @@ for (const p of paras) {
   for (const S of paraSpans) {
     const f = firstOfPage.get(S.firstT.page);
     if (f !== S.firstT) continue; // ليست بادئة الصفحة
-    const M = lineMet(S.p, S.firstT, true);
-    if (!M) continue;
+    const pred = pageStartPred(S.p, S.firstT);
+    if (pred == null) continue;
     pN++;
-    const pred = marTopOf(S.p) + M.asc;
     const err = S.firstT.y - pred;
     if (Math.abs(err) <= TOL) pOk++;
     else pHist.set(Math.round(err), (pHist.get(Math.round(err)) ?? 0) + 1);
@@ -371,7 +405,7 @@ for (const p of paras) {
         const t = lines[i];
         const M = lineMet(S.p, t, i === 0);
         if (!M) { pageOk = false; break; }
-        if (y == null) y = marTopOf(S.p) + M.asc;                       // القاعدة 8
+        if (y == null) y = pageStartPred(S.p, t) ?? (marTopOf(S.p) + M.asc); // القاعدة 8+8ب
         else if (i === 0) {                                             // حد فقرات (6+7ب)
           const MP = lineMet(prevS.p, prevT, false);
           const la = prevS.p.spacing;
@@ -381,6 +415,9 @@ for (const p of paras) {
         } else y += stepV7(S.p, prevT, t) ?? 0;                          // القاعدة 7
         fN++;
         const err = t.y - y;
+        if (process.env.FP_TRACE === String(pg))
+          console.log(`  [${i === 0 ? (y === marTopOf(S.p) + M.asc ? "بداية" : "حد") : "خطوة"}] ` +
+            `pred=${Math.round(y)} obs=${t.y} err=${Math.round(err)}`);
         if (Math.abs(err) <= TOL) fOk++;
         else fHist.set(Math.round(err / 5) * 5, (fHist.get(Math.round(err / 5) * 5) ?? 0) + 1);
         prevT = t;
