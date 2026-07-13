@@ -95,20 +95,27 @@ for (const p of paras) {
     seq.push(t); accLen += t.n.length;
   }
   const pred = predictedPitch(p, em);
+  // نمط التراكم (الافتراضي): Word يحسب المواضع عائمةً ويقرب كل baseline
+  // مستقلًا — فالموضع المتراكم من مرساة الفقرة هو الثابت، لا فرق الزوج
+  // (الذي يتذبذب ±2 بالتقريب). ‏ACCUM=0 يعيد مقياس الأزواج القديم.
+  const accum = process.env.ACCUM !== "0";
+  let anchorY = null, anchorI = 0;
   for (let i = 1; i < seq.length; i++) {
     const a = seq[i - 1], b = seq[i];
-    if (a.page !== b.page) continue;               // فاصل صفحة — خارج v1
-    if (a.ems.size > 1 || b.ems.size > 1) continue; // خلط أحجام — v2
-    const obs = b.y - a.y;
-    if (obs <= 0) continue;
+    if (a.page !== b.page) { anchorY = null; continue; } // فاصل صفحة — خارج v1
+    if (a.ems.size > 1 || b.ems.size > 1) { anchorY = null; continue; } // خلط أحجام — v2
+    if (b.y - a.y <= 0) { anchorY = null; continue; }
+    if (anchorY == null) { anchorY = a.y; anchorI = i - 1; }
     pairs++;
-    const err = Math.abs(obs - pred);
+    const predicted = accum ? anchorY + (i - anchorI) * pred : pred;
+    const obs = accum ? b.y : b.y - a.y;
+    const err = Math.abs(obs - predicted);
     if (err <= TOL) ok++;
     else {
-      const k = Math.round(obs - pred);
+      const k = Math.round(obs - predicted);
       missHist.set(k, (missHist.get(k) ?? 0) + 1);
       if (missSamples.length < 8)
-        missSamples.push({ para: p.index, line: i, obs, pred: Math.round(pred),
+        missSamples.push({ para: p.index, line: i, obs, pred: Math.round(predicted),
           spacing: p.spacing });
     }
   }
