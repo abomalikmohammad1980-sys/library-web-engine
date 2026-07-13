@@ -39,6 +39,8 @@ export interface BodyParagraph {
   numbered: boolean;
   /** كائنات عائمة مرساة في هذه الفقرة (wp:anchor) — تضيّق أسطر الجوار */
   anchors: FloatAnchor[];
+  /** ‏w:spacing محسومًا (مباشر ← سلسلة النمط ← docDefaults) — الترصيف الرأسي */
+  spacing: SpacingProps;
 }
 
 /** عائم wp:anchor — الأبعاد بالـ twips (‏EMU ÷ 635) */
@@ -222,9 +224,13 @@ interface StyleProps {
   /** ‏w:jc من pPr النمط — يورَّث (درس tadris para87: فقرة jc=null ظاهريًا
    *  وسطرها مسوَّغ ممتلئ لأن نمطها يحمل التسويغ) */
   jc: string | null;
+  spacing: SpacingProps;
 }
 export interface StyleTable {
-  defaults: { sz: number | null; family: string | null };
+  defaults: { sz: number | null; family: string | null; spacing: SpacingProps };
+  /** نمط الفقرة الافتراضي (w:default="1") — الفقرات بلا pStyle ترثه قبل
+   *  docDefaults (درس masjid الرأسي: ‏Normal ‏line=240 يلغي docDefaults 276) */
+  defaultParagraphStyleId: string | null;
   byId: Map<string, StyleProps>;
 }
 
@@ -238,6 +244,31 @@ function indProps(pPr: XNode[] | null): { indLeft: number | null; indRight: numb
     indLeft: ind["@w:left"] != null ? Number(ind["@w:left"]) : null,
     indRight: ind["@w:right"] != null ? Number(ind["@w:right"]) : null,
     indFirstLine: fl,
+  };
+}
+
+/** ‏w:spacing من pPr — مدخل الترصيف الرأسي (line بوحدة 240 لكل سطر مفرد،
+ *  ‏lineRule: ‏auto (مضاعف) / exact / atLeast (twips)؛ ‏before/after بالـ twips) */
+export interface SpacingProps {
+  /** وجود عنصر w:spacing نفسه — الوراثة **عنصرية** لا سمّية: العنصر المباشر
+   *  (ولو بسمة واحدة) يلغي عنصر النمط كليًا (درس masjid الرأسي: فقرات
+   *  ‏after مباشر فقط تُرصف بالمفرد رغم line=276 في النمط) */
+  present: boolean;
+  line: number | null;
+  lineRule: "auto" | "exact" | "atLeast" | null;
+  before: number | null;
+  after: number | null;
+}
+function spacingProps(pPr: XNode[] | null): SpacingProps {
+  const el = pPr ? pPr.find((n) => "w:spacing" in n) : null;
+  const sp = el ? ((el[":@"] as Record<string, string>) ?? {}) : null;
+  if (!sp) return { present: false, line: null, lineRule: null, before: null, after: null };
+  return {
+    present: true,
+    line: sp["@w:line"] != null ? Number(sp["@w:line"]) : null,
+    lineRule: (sp["@w:lineRule"] as SpacingProps["lineRule"]) ?? (sp["@w:line"] != null ? "auto" : null),
+    before: sp["@w:before"] != null ? Number(sp["@w:before"]) : null,
+    after: sp["@w:after"] != null ? Number(sp["@w:after"]) : null,
   };
 }
 
@@ -255,8 +286,13 @@ function rPrProps(rpr: XNode[] | null): { sz: number | null; family: string | nu
   return { sz, family };
 }
 
+const NO_SPACING: SpacingProps = { present: false, line: null, lineRule: null, before: null, after: null };
+
 export function parseStyles(stylesXml: string | null): StyleTable {
-  const table: StyleTable = { defaults: { sz: null, family: null }, byId: new Map() };
+  const table: StyleTable = {
+    defaults: { sz: null, family: null, spacing: NO_SPACING },
+    defaultParagraphStyleId: null, byId: new Map(),
+  };
   if (!stylesXml) return table;
   const root = parser.parse(stylesXml) as XNode[];
   const styles = first(root, "w:styles");
@@ -266,13 +302,17 @@ export function parseStyles(stylesXml: string | null): StyleTable {
   if (docDefaults) {
     const rprDefault = first(docDefaults, "w:rPrDefault");
     const rpr = rprDefault ? first(rprDefault, "w:rPr") : null;
-    table.defaults = rPrProps(rpr);
+    const pprDefault = first(docDefaults, "w:pPrDefault");
+    const dpPr = pprDefault ? first(pprDefault, "w:pPr") : null;
+    table.defaults = { ...rPrProps(rpr), spacing: spacingProps(dpPr) };
   }
   for (const styleNode of styles) {
     if (!("w:style" in styleNode)) continue;
     const a = (styleNode[":@"] as Record<string, string>) ?? {};
     const id = a["@w:styleId"];
     if (!id) continue;
+    if (a["@w:type"] === "paragraph" && (a["@w:default"] === "1" || a["@w:default"] === "true"))
+      table.defaultParagraphStyleId = id;
     const body = styleNode["w:style"] as XNode[];
     const rpr = first(body, "w:rPr");
     const basedOnAttrs = findAttr(body, "w:basedOn");
@@ -280,7 +320,10 @@ export function parseStyles(stylesXml: string | null): StyleTable {
     const stylePPr = first(body, "w:pPr");
     const ind = indProps(stylePPr);
     const jc = stylePPr ? (findAttr(stylePPr, "w:jc")?.["@w:val"] ?? null) : null;
-    table.byId.set(id, { ...p, ...ind, jc, basedOn: basedOnAttrs?.["@w:val"] ?? null });
+    table.byId.set(id, {
+      ...p, ...ind, jc, spacing: spacingProps(stylePPr),
+      basedOn: basedOnAttrs?.["@w:val"] ?? null,
+    });
   }
   return table;
 }
@@ -288,17 +331,33 @@ export function parseStyles(stylesXml: string | null): StyleTable {
 function resolveViaStyle(table: StyleTable, styleId: string | null) {
   let sz: number | null = null, family: string | null = null, jc: string | null = null;
   let indLeft: number | null = null, indRight: number | null = null, indFirstLine: number | null = null;
+  // وراثة w:spacing سمّية عبر السلسلة (درسا masjid/muqtarah الرأسيان:
+  // ‏after المباشر يتعايش مع line من النمط/docDefaults؛ وطبقة النمط
+  // الافتراضي هي التي تحسم لا العنصرية)
+  const sp: SpacingProps = { ...NO_SPACING };
   let id = styleId, guard = 0;
   while (id && guard++ < 12) {
     const s = table.byId.get(id);
     if (!s) break;
     sz ??= s.sz; family ??= s.family; jc ??= s.jc;
     indLeft ??= s.indLeft; indRight ??= s.indRight; indFirstLine ??= s.indFirstLine;
+    if (s.spacing.present) {
+      sp.present = true;
+      if (sp.line == null && s.spacing.line != null) { sp.line = s.spacing.line; sp.lineRule = s.spacing.lineRule; }
+      sp.before ??= s.spacing.before; sp.after ??= s.spacing.after;
+    }
     id = s.basedOn;
+  }
+  const dsp = table.defaults.spacing;
+  if (dsp.present) {
+    sp.present = true;
+    if (sp.line == null && dsp.line != null) { sp.line = dsp.line; sp.lineRule = dsp.lineRule; }
+    sp.before ??= dsp.before; sp.after ??= dsp.after;
   }
   return {
     sz: sz ?? table.defaults.sz, family: family ?? table.defaults.family, jc,
     indLeft: indLeft ?? 0, indRight: indRight ?? 0, indFirstLine: indFirstLine ?? 0,
+    spacing: sp,
   };
 }
 
@@ -338,7 +397,8 @@ export function parseDocument(
     const pPr = first(p, "w:pPr");
     const styleId = pPr ? (findAttr(pPr, "w:pStyle")?.["@w:val"] ?? null) : null;
     const bidi = pPr ? findAttr(pPr, "w:bidi") != null : false;
-    const styleProps = resolveViaStyle(styles, styleId);
+    // فقرة بلا pStyle ترث نمط الفقرة الافتراضي (Normal) قبل docDefaults
+    const styleProps = resolveViaStyle(styles, styleId ?? styles.defaultParagraphStyleId);
     // ‏w:jc: المباشر يتقدم وإلا فمن سلسلة النمط (درس tadris para87)
     const jc = (pPr ? (findAttr(pPr, "w:jc")?.["@w:val"] ?? null) : null) ?? styleProps.jc;
     // ترقيم الفقرة: تقدمات مستوى الترقيم تتوسط الأسبقية (مباشر > ترقيم > نمط)
@@ -425,9 +485,20 @@ export function parseDocument(
     }
     const text = runs.filter((r) => !r.hidden).map((r) => r.text).join("");
     if (!text.trim()) excluded = excluded || "empty";
+    // ‏w:spacing: وراثة سمّية — سمات المباشر تتقدم وتُكمَّل من السلسلة
+    const ownSp = spacingProps(pPr);
+    const chain = styleProps.spacing;
+    const spacing: SpacingProps = {
+      present: ownSp.present || chain.present,
+      line: ownSp.line ?? chain.line,
+      lineRule: ownSp.line != null ? ownSp.lineRule : chain.lineRule,
+      before: ownSp.before ?? chain.before,
+      after: ownSp.after ?? chain.after,
+    };
     paragraphs.push({
       index: idx, runs, text, styleId, jc, bidi,
       indLeft, indRight, indFirstLine, excluded, sectionIndex: -1, numbered, anchors,
+      spacing,
     });
     // ‏sectPr داخل pPr يختم مقطعًا: هندسته تسري على هذه الفقرة وما سبقها
     const pSect = pPr ? first(pPr, "w:sectPr") : null;
