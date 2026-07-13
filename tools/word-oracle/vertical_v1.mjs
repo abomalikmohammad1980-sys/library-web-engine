@@ -107,7 +107,7 @@ function stepDotsV3(p, t) {
     maxDots = Math.max(maxDots, factor * (emIdeal / 2.4));
   }
   // علامة الفقرة تشارك في ارتفاع السطر (rPr داخل pPr — قصة a4). ‏MARK=0 للتعطيل
-  if (process.env.MARK !== "0" && p.markEmTwips)
+  if (process.env.MARK === "1" && p.markEmTwips)
     maxDots = Math.max(maxDots, PITCH * (p.markEmTwips / 2.4));
   if (!maxDots) return null;
   // ‏VMODE=5 (فرضية ahadith): سقف المفرد لنقطة صحيحة قبل المضاعف
