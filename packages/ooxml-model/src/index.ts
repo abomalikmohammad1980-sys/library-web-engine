@@ -41,6 +41,9 @@ export interface BodyParagraph {
   anchors: FloatAnchor[];
   /** ‏w:spacing محسومًا (مباشر ← سلسلة النمط ← docDefaults) — الترصيف الرأسي */
   spacing: SpacingProps;
+  /** حجم «علامة الفقرة» (rPr داخل pPr ← النمط) بالـ twips — يشارك في ارتفاع
+   *  السطر ولو غير مرئي (فرضية masjid ‏a4: ‏+19..21 = فرق نصف نقطة) */
+  markEmTwips: number | null;
 }
 
 /** عائم wp:anchor — الأبعاد بالـ twips (‏EMU ÷ 635) */
@@ -413,6 +416,8 @@ export function parseDocument(
     const indRight = own.indRight ?? numProps?.indRight ?? styleProps.indRight;
     const indFirstLine = own.indFirstLine ?? numProps?.indFirstLine ?? styleProps.indFirstLine;
     const pPrRPr = pPr ? rPrProps(first(pPr, "w:rPr")) : { sz: null, family: null };
+    const markSz = pPrRPr.sz ?? styleProps.sz ?? null;
+    const markEmTwips = markSz != null ? markSz * 10 : null;
 
     let excluded: BodyParagraph["excluded"] = false;
     const runs: EffectiveRun[] = [];
@@ -498,7 +503,7 @@ export function parseDocument(
     paragraphs.push({
       index: idx, runs, text, styleId, jc, bidi,
       indLeft, indRight, indFirstLine, excluded, sectionIndex: -1, numbered, anchors,
-      spacing,
+      spacing, markEmTwips,
     });
     // ‏sectPr داخل pPr يختم مقطعًا: هندسته تسري على هذه الفقرة وما سبقها
     const pSect = pPr ? first(pPr, "w:sectPr") : null;
