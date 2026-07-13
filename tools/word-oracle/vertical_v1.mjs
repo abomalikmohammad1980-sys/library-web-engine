@@ -37,6 +37,26 @@ function fontVerticalPitch(path) {
 }
 const PITCH = fontVerticalPitch(FONT_FILE);
 
+/** مقاييس رأسية مفصولة (القاعدة 7): {a، d، g} كسورًا من em */
+function fontVertMetrics(path) {
+  const buf = readFileSync(path);
+  const num = buf.readUInt16BE(4);
+  const tables = new Map();
+  for (let i = 0; i < num; i++) {
+    const o = 12 + i * 16;
+    tables.set(buf.toString("ascii", o, o + 4), buf.readUInt32BE(o + 8));
+  }
+  const head = tables.get("head"), hhea = tables.get("hhea");
+  const upem = buf.readUInt16BE(head + 18);
+  return {
+    a: buf.readInt16BE(hhea + 4) / upem,
+    d: -buf.readInt16BE(hhea + 6) / upem,
+    g: buf.readInt16BE(hhea + 8) / upem,
+  };
+}
+const MAIN_MET = fontVertMetrics(FONT_FILE);
+const runMet = new Map(); // odttf → {a، d، g}
+
 // ‏v2: خطوة السطر = max على runs السطر من (خطوة خط الـrun × حجمه) —
 // أسطر فيها بولد/لاتيني/مصحفي تعلو (عنقودا tadris ‏203/204 = tradbdo).
 // خرائط الخطوط من fonts-map.json (odttf → الملف الأصلي).
@@ -48,7 +68,10 @@ try {
     // العادي بالبولد (tradbdo) فتفسد الخطوة
     const src = info.subset ?? info.original;
     if (!src) continue;
-    try { runPitch.set(odttf, fontVerticalPitch(src)); } catch { /* خط بلا ملف */ }
+    try {
+      runPitch.set(odttf, fontVerticalPitch(src));
+      runMet.set(odttf, fontVertMetrics(src));
+    } catch { /* خط بلا ملف */ }
   }
 } catch { /* لا خريطة — نبقى على خط المتن */ }
 
@@ -119,6 +142,39 @@ function stepDotsV3(p, t) {
   return maxDots * line / 240;
 }
 
+/** ‏v7 (القاعدة 7): مقاييس السطر مفصولة — {asc، desc، gap} = ‏max على runs،
+ *  وعلامة الترقيم (بحجم rPr علامة الفقرة) ترفع ascent فقط (sdkjs:3895). */
+function lineMet(p, t, isFirstLine = false) {
+  let asc = 0, desc = 0, gap = 0;
+  for (const r of t.runFonts ?? []) {
+    const met = runMet.get(r.font) ?? MAIN_MET;
+    const emIdeal = Math.round(r.em / 10) * 10;
+    asc = Math.max(asc, met.a * emIdeal);
+    desc = Math.max(desc, met.d * emIdeal);
+    gap = Math.max(gap, met.g * emIdeal);
+  }
+  if (!asc) return null;
+  // رفع العلامة: العلامة تسكن **أول سطر** الفقرة المعدودة فقط — ترفع
+  // ‏ascent ذلك السطر وحده (sdkjs:3895)، بخط المتن وحجم rPr علامة الفقرة
+  if (isFirstLine && p.numbered && p.markEmTwips)
+    asc = Math.max(asc, MAIN_MET.a * p.markEmTwips);
+  return { asc, desc, gap };
+}
+
+/** ‏Δ ‏baseline(a←b) داخل الفقرة: ‏desc(a) + فجوة التباعد (بارتفاع a —
+ *  ‏LINE_SPACING_AS_GAP_BELOW) + ‏gap(a) + ‏asc(b) */
+function stepV7(p, ta, tb) {
+  const A = lineMet(p, ta), B = lineMet(p, tb);
+  if (!A || !B) return null;
+  const { line, lineRule } = p.spacing;
+  if (line != null && lineRule === "exact") return line;
+  const m = line != null && lineRule !== "atLeast" ? line / 240 : 1;
+  // ‏gap يدخل المضاعف (قياس muqtarah: انجراف +0.8/سطر = gap×(m−1) بدونه)
+  const base = A.desc + A.gap + (A.asc + A.desc + A.gap) * (m - 1) + B.asc;
+  if (line != null && lineRule === "atLeast") return Math.max(base, line);
+  return base;
+}
+
 function predictedPitch(p, em) {
   const { line, lineRule } = p.spacing;
   if (process.env.GRID600 === "1") {
@@ -177,7 +233,7 @@ for (const p of paras) {
   const pred = predictedPitch(p, em);
   // ‏MODE: ‏v3 (افتراضي) خطوة عائمة عند em المثالي + تكميم baseline للنقطة؛
   // ‏v2 خطوة نقاط صحيحة لكل سطر؛ ‏v1 خطوة الفقرة الموحدة. ‏ACCUM=0 للأزواج.
-  const MODE = process.env.VMODE ?? "4";
+  const MODE = process.env.VMODE ?? "7";
   const accum = process.env.ACCUM !== "0";
   let anchorY = null, accPred = 0;
   for (let i = 1; i < seq.length; i++) {
@@ -187,7 +243,8 @@ for (const p of paras) {
     if (b.y - a.y <= 0) { anchorY = null; continue; }
     if (anchorY == null) { anchorY = a.y; accPred = 0; }
     pairs++;
-    const stepPred = (MODE === "3" || MODE === "4" || MODE === "5") ? ((stepDotsV3(p, b) ?? pred / 2.4) * 2.4)
+    const stepPred = MODE === "7" ? (stepV7(p, a, b) ?? pred)
+      : (MODE === "3" || MODE === "4" || MODE === "5") ? ((stepDotsV3(p, b) ?? pred / 2.4) * 2.4)
       : MODE === "2" ? (predictedPitchV2(p, b) ?? pred) : pred;
     accPred += stepPred;
     // ‏v3: تكميم baseline المتراكم للنقاط؛ ‏v4: نفس الخطوة بلا تكميم
@@ -219,7 +276,15 @@ for (const p of paras) {
     if (A.lastT.page !== B.firstT.page) continue;           // فاصل صفحة
     const obs = B.firstT.y - A.lastT.y;
     if (obs <= 0) continue;
-    const step = (stepDotsV3(B.p, B.firstT) ?? 0) * 2.4;
+    // ‏v7 للحدود: ‏desc من آخر أسطر A (بمضاعفها) + ‏asc أول أسطر B (بعلامتها)
+    let step;
+    if ((process.env.VMODE ?? "7") === "7") {
+      const MA = lineMet(A.p, A.lastT, A.startIdx === A.endIdx),
+        MB = lineMet(B.p, B.firstT, true);
+      if (!MA || !MB) continue;
+      const la = A.p.spacing, mA = la.line != null && la.lineRule !== "exact" && la.lineRule !== "atLeast" ? la.line / 240 : 1;
+      step = MA.desc + MA.gap + (MA.asc + MA.desc + MA.gap) * (mA - 1) + MB.asc;
+    } else step = (stepDotsV3(B.p, B.firstT) ?? 0) * 2.4;
     if (!step) continue;
     const af = A.p.spacing.after ?? 0, bf = B.p.spacing.before ?? 0;
     // ‏BGAP=max: قاعدة انهيار الفواصل (Word يأخذ الأكبر لا المجموع)
