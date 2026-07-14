@@ -10,7 +10,7 @@ import { writeFileSync } from "node:fs";
 import { strToU8, zipSync } from "../../node_modules/.pnpm/fflate@0.8.3/node_modules/fflate/esm/browser.js";
 
 const LINE = process.env.LINE ?? "278";
-const F = "Al-Jazeera-Arabic-Regular";
+const F = process.env.FONT ?? "Al-Jazeera-Arabic-Regular";
 const RPR = `<w:rPr><w:rFonts w:ascii="${F}" w:hAnsi="${F}" w:cs="${F}"/><w:sz w:val="32"/><w:szCs w:val="32"/><w:rtl/></w:rPr>`;
 const RUN_RPR = `<w:rPr><w:rFonts w:ascii="${F}" w:hAnsi="${F}" w:cs="${F}" w:hint="cs"/><w:sz w:val="32"/><w:szCs w:val="32"/><w:rtl/></w:rPr>`;
 const BASE = "إن العناية بترصيف النص العربي على الشبكة تتطلب فهمًا دقيقًا لقواعد " +

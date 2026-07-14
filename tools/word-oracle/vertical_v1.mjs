@@ -228,7 +228,9 @@ function predictedPitch(p, em) {
  *  بmax-عبر-runs (‏.033) خادعة، لذا الحساب هنا بالمقاييس النقية حصرًا.
  *  المباشر في pPr لا يُسقَّف أبدًا (vtest15-M3 حتى n=12، ‏tadris/jalsa).
  *  ‏R9=0 للتعطيل، ‏R9T لتعديل العتبة. */
-const R9T = Number(process.env.R9T ?? (1 / 6));
+// العتبة 0.15 شاملة: جزيرة كسر .150 مسقوف (vtest17-243) وترادو .154 حر
+// (vtest19-282) — الحصر (0.150 ≤ ‏t < 0.154] والقيمة 3/20 في رأسه
+const R9T = Number(process.env.R9T ?? 0.1505);
 const inhPlus = (p) => {
   if (process.env.R9 === "0") return 0;
   const sp = p.spacing;
