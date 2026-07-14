@@ -258,6 +258,9 @@ function lineMet(p, t, isFirstLine = false) {
   // ‏desc(adwa)+asc(Simplified ‏1.18em) = ‏586.7 والمرصود 586–588 ✓).
   // بلا شريحة لاتينية معلنة: العلامة بخط المتن نفسه (dawra «1-» بترادو
   // العادي) — فالمرجع صعود المتن، لا MAIN_MET (كان subset البولد فيرفع +11.5)
+  // رفع العلامة يسري على **بداية الصفحة** فقط لا حدّ الفقرات (BND_NOMARK): عند
+  // الحدّ نزول الفقرة السابقة يوفّر المتّسع فلا يُدفع أول سطر B (masjid: obs 569
+  // بلا رفع لا 587 برفع Simplified 1.18em؛ لكن بداية الصفحة تَرفع «لغز 586»).
   if (isFirstLine && p.numbered && p.markEmTwips) {
     const markAscFactor = (p.markAsciiFamily && famMet.get(p.markAsciiFamily)?.a)
       ?? textAscFactor;
@@ -530,6 +533,10 @@ for (let hi = 0; hi < heads.length; hi++) {
       if (!MA || !MB) continue;
       const la = A.p.spacing, mA = la.line != null && la.lineRule !== "exact" && la.lineRule !== "atLeast" ? la.line / 240 : 1;
       step = MA.desc + MA.gap + (MA.asc + MA.desc + MA.gap) * (mA - 1) + MB.asc;
+      if (process.env.BND_COMP === String(A.p.index))
+        console.log("comp:", JSON.stringify({ pA: A.p.index, MAdesc: +MA.desc.toFixed(1), MAgap: +MA.gap.toFixed(1),
+          MBasc: +MB.asc.toFixed(1), MBascStart: +(MB.ascStart ?? 0).toFixed(1), step: +step.toFixed(1),
+          Bnum: B.p.numbered, BmarkEm: B.p.markEmTwips, obsStep: +(B.firstT.y - A.lastT.y).toFixed(1) }));
     } else step = (stepDotsV3(B.p, B.firstT) ?? 0) * 2.4;
     if (!step) continue;
     // حدّ التباعد: max(after,before) أو 0 لـcontextualSpacing (نمطٌ مشترك) —
