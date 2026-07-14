@@ -97,8 +97,12 @@ for (let pgI = 0; pgI < truth.pages.length; pgI++) {
     const logical = [...rs].sort((a, b) => b.x - a.x).map((r) => r.text).join("");
     const nn = norm(logical);
     if (!nn) continue;
+    // ‏baselineTwipsF (الكسري، بلا تكميم دلو 2tw الاستخراجي) هو المرجع الصحيح —
+    // التكميم كان يخفي دقة النموذج الحقيقية (فرقه يبلغ 1.4tw = نصف عتبة ±3).
+    // ‏NOFLOAT=1 للعودة للمكمَّم. (جبهة أرضية المقاييس: كانت ضجيج استخراجٍ جزئيًا.)
     truthLines.push({ n: nn, em: rs.length ? rs[0].emTwips : 0,
-      ems: new Set(rs.map((r) => r.emTwips)), y: ln.baselineTwips, page: pgI,
+      ems: new Set(rs.map((r) => r.emTwips)),
+      y: process.env.NOFLOAT === "1" ? ln.baselineTwips : (ln.baselineTwipsF ?? ln.baselineTwips), page: pgI,
       runFonts: rs.map((r) => ({ font: r.font, em: r.emTwips })) });
   }
 }
