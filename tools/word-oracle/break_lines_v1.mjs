@@ -256,10 +256,18 @@ for (const p of paras) {
     allowance += Number(process.env.EPS ?? "0");
     // ‏w:overflowPunct (افتراضي OOXML: true): علامة الترقيم في نهاية السطر
     // يُسمح لها بتجاوز الهامش — سماحية بعرض العلامة الطرفية نفسها.
-    if (process.env.OVERFLOW_PUNCT === "1") {
+    // ★ تعليق الترقيم الطرفيّ (وكيل بحث Q4: Word يكسر بعرض advance/ABC لا
+    // الحبر، فالمِحبرة اليمنى للترقيم الطرفيّ تتدلّى خارج الهامش). التدلّي =
+    // الحاملة اليمنى (ink خلف advance) — صغيرٌ، لا عرض المحرف كاملًا (الكامل
+    // يُفرِط فيحشر masjid خطأً). نقرّبها بسقفٍ صغير OVERFLOW_CAP (افتراضي 24tw
+    // = نقطة واحدة). ‏OVERFLOW_PUNCT=full للسلوك القديم (العرض الكامل).
+    if (process.env.OVERFLOW_PUNCT !== "0") {
       const lastCh = word[word.length - 1];
-      if ("،؛:.!؟»)".includes(lastCh))
-        allowance += width(wordEnd - 1, wordEnd);
+      if ("،؛:.!؟»)".includes(lastCh)) {
+        const cw = width(wordEnd - 1, wordEnd);
+        allowance += process.env.OVERFLOW_PUNCT === "full"
+          ? cw : Math.min(cw, Number(process.env.OVERFLOW_CAP ?? "12"));
+      }
     }
     // ★ سماحية كسر حسب وضع الكشيدة (وكيل بحث: الوضع الأعلى K_max أكبر ⇒
     // يكسر أبكر). المقيس على tadris: ‏lowKashida نحشر أقل (Word يحشر متجاوزًا
