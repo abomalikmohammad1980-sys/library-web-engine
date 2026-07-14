@@ -153,18 +153,22 @@ function stepDotsV3(p, t) {
 /** ‏v7 (القاعدة 7): مقاييس السطر مفصولة — {asc، desc، gap} = ‏max على runs،
  *  وعلامة الترقيم (بحجم rPr علامة الفقرة) ترفع ascent فقط (sdkjs:3895). */
 function lineMet(p, t, isFirstLine = false) {
-  let asc = 0, desc = 0, gap = 0, textAscFactor = 0;
+  let asc = 0, desc = 0, gap = 0, textAscFactor = 0, ascRunGap = 0;
   for (const r of t.runFonts ?? []) {
     const met = runMet.get(r.font) ?? MAIN_MET;
     // ‏EM_MODE: ‏q10 (افتراضي) em لأقرب 10 (المثالي 16pt→320)؛ ‏exact em
     // المرصود كما هو (319 المكمَّم 600dpi) — تجربة إزالة انجراف tadris +3
     const emIdeal = process.env.EM_MODE === "exact" ? r.em : Math.round(r.em / 10) * 10;
-    asc = Math.max(asc, met.a * emIdeal);
+    if (met.a * emIdeal > asc) { asc = met.a * emIdeal; ascRunGap = met.g * emIdeal; }
     desc = Math.max(desc, met.d * emIdeal);
     gap = Math.max(gap, met.g * emIdeal);
     textAscFactor = Math.max(textAscFactor, met.a); // صعود خط المتن نفسه
   }
   if (!asc) return null;
+  // القاعدة 7-ب (GDI، مقيسة page_sim صفحة 2): externalLeading من الخط
+  // **المهيمن** (أعلى asc) لا max على الـruns — رُونٌ لاتينية ثانوية
+  // (Arial gap=67=10tw) كانت تضخّم التباعد الحدّي زائفًا. ‏GAP_COUPLE=0 للتعطيل.
+  if (process.env.GAP_COUPLE !== "0") gap = ascRunGap;
   // رفع العلامة: العلامة تسكن **أول سطر** الفقرة المعدودة فقط — ترفع
   // ‏ascent ذلك السطر وحده (sdkjs:3895)، **بخطها الفعلي حسب شريحة نصها**:
   // أرقام «1.» لاتينية ⇒ ‏rFonts ascii من rPr علامة الفقرة (لغز 586:

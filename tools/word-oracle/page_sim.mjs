@@ -74,16 +74,20 @@ truthLines.sort((a, b) => a.page - b.page || a.y - b.y);
 
 // مقاييس السطر (القاعدة 7): {asc, desc, gap, ascStart}
 function lineMet(p, t, isFirstLine = false) {
-  let asc = 0, desc = 0, gap = 0, textAsc = 0;
+  let asc = 0, desc = 0, gap = 0, textAsc = 0, ascRunGap = 0;
+  const COUPLE = process.env.GAP_COUPLE !== "0";
   for (const r of t.runFonts ?? []) {
     const met = runMet.get(r.font) ?? MAIN_MET;
     const em = Math.round(r.em / 10) * 10;
-    asc = Math.max(asc, met.a * em);
+    if (met.a * em > asc) { asc = met.a * em; ascRunGap = met.g * em; } // gap يتبع أعلى asc
     desc = Math.max(desc, met.d * em);
     gap = Math.max(gap, met.g * em);
     textAsc = Math.max(textAsc, met.a);
   }
   if (!asc) return null;
+  // القاعدة 7-ب (GDI): externalLeading من الخط **المهيمن** (أعلى asc) لا max
+  // على الـruns — الرُّونُ اللاتينية الثانوية (Arial gap=67) لا تُضخّم التباعد.
+  if (COUPLE) gap = ascRunGap;
   if (isFirstLine && p.numbered && p.markEmTwips) {
     const mf = (p.markAsciiFamily && famMet.get(p.markAsciiFamily)?.a) ?? textAsc;
     asc = Math.max(asc, mf * p.markEmTwips);
@@ -172,9 +176,14 @@ for (let idx = 0; idx < truthLines.length; idx++) {
     if (MP) {
       const la = prevP.spacing;
       const mA = la.line != null && la.lineRule !== "exact" && la.lineRule !== "atLeast" ? la.line / 240 : 1;
-      const bgap = process.env.NOBGAP === "1" ? 0 : MP.gap; // تجربة إسقاط lineGap الحدّي
-      y += MP.desc + bgap + (MP.asc + MP.desc + MP.gap) * (mA - 1)
-        + Math.max(prevP.spacing.after ?? 0, p.spacing.before ?? 0) + M.asc + inhPlus(p);
+      const bgap = process.env.NOBGAP === "1" ? 0 : MP.gap;
+      const mTerm = (MP.asc + MP.desc + MP.gap) * (mA - 1);
+      const sMax = Math.max(prevP.spacing.after ?? 0, p.spacing.before ?? 0);
+      const ip = inhPlus(p);
+      const delta = MP.desc + bgap + mTerm + sMax + M.asc + ip;
+      if (process.env.MDBG === "1" && FP && String(t.page) === FP)
+        console.log(`     ↳ حد: MPdesc=${Math.round(MP.desc)} bgap=${Math.round(bgap)} mTerm=${Math.round(mTerm)}(mA=${mA.toFixed(3)} line=${la.line}) sMax=${sMax} Masc=${Math.round(M.asc)} ip=${ip.toFixed(1)} = ${Math.round(delta)}`);
+      y += delta;
     } else y = t.y;
   } else {
     y += (stepV7(p, prevT, t) ?? 0);
@@ -183,8 +192,12 @@ for (let idx = 0; idx < truthLines.length; idx++) {
   const err = t.y - y;
   if (Math.abs(err) <= TOL) ok++;
   else missHist.set(Math.round(err / 5) * 5, (missHist.get(Math.round(err / 5) * 5) ?? 0) + 1);
-  if (FP && String(t.page) === FP)
-    console.log(`  [p${t.page} ${own.isFirst ? "حد/بداية" : "خطوة"}] pred=${Math.round(y)} obs=${t.y} err=${Math.round(err)}`);
+  if (FP && String(t.page) === FP) {
+    const dbg = process.env.MDBG === "1" && prevT
+      ? ` | prevDesc=${Math.round((lineMet(prevP, prevT, false) ?? {}).desc ?? 0)} curAsc=${Math.round(M.asc)} prevFont=${(prevT.runFonts?.[0]?.font ?? "").slice(0, 8)} curFont=${(t.runFonts?.[0]?.font ?? "").slice(0, 8)}`
+      : "";
+    console.log(`  [p${t.page} ${own.isFirst ? "حد" : "خطوة"}] pred=${Math.round(y)} obs=${t.y} err=${Math.round(err)}${dbg}`);
+  }
   // استرداد الفجوة (RECOVER=1، افتراضي): محتوى غير نصي (صور/رسوم/أقسام)
   // يُحدث قفزةً لا يراها نموذج النص — نعيد الإرساء لنقيس دقة النص بين المراسي
   // (المحاكي العملي يتنبأ بين مراسٍ معلومة، لا يخترع مواضع الصور).
