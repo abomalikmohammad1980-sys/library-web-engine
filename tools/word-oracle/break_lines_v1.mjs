@@ -279,6 +279,71 @@ for (const p of paras) {
   }
 
   const ourLines = []; const ourMeta = [];
+  const KP = process.env.KP === "1";
+  if (KP) {
+    // ── كاسر Knuth-Plass الأمثل (total-fit) وفق براءة US7770111B2 (مايكروسوفت) ──
+    // ★★ مُجرَّبٌ ومرفوضٌ تجريبيًّا (2026-07-14): أسوأ من الجشِع على الكتب الستّة كلّها
+    //   (masjid 100→90، ahadith 99→91، muqtarah 100→90، tadris 94→86، jalsa 88→19،
+    //   dawra 97→49). الخلاصة: ترصيف Word الفعليّ لهذا المتن **جشِعٌ (first-fit)**، لا
+    //   تحسينٌ عالميّ — يملأ كلّ سطرٍ لأقصاه ويحتمل سطرًا مضغوطًا (ق16) بدل سحب كلمةٍ
+    //   للأسفل لموازنة الفقرة. براءة الأمثل تصف وضعًا اختياريًّا لا يُطبَّق افتراضيًّا هنا.
+    //   يُبقى خلف البوّابة (KP=1) توثيقًا للاستنفاد. البقايا ليست جشِع-مقابل-أمثل.
+    // بدل القرار المحلّيّ الجشِع، برمجةٌ ديناميكيّةٌ تُقلِّل مجموع «رداءة» أسطر الفقرة.
+    // الرداءة مكعّبةٌ في نسبة التعديل (الأس المكعّب هو ما يُلغى في بوّابة ق16 المحلّيّة
+    // فتصير s/t<k) — انكماشٌ نسبةً لسقفه S_max=0.25، تمديدٌ نسبةً لـT_max=0.50.
+    // انكماشٌ فوق S_max = تجاوزُ هامشٍ ممنوع (∞). السطر الأخير أعرج (لا يُسوَّغ).
+    // «الرديء جدًّا» (تمديد فوق T_max) ينمو خطّيًّا أبطأ (نصّ البراءة). الكسر الإجباريّ
+    // (w:br) يمنع تمدُّد السطر عبره. ملاحظة v1: يتجاهل تضييق العائمات (نادرٌ، بندٌ لاحق).
+    const wc = []; { let cur = 0; for (const w of words) { const s = fullText.indexOf(w, cur); wc.push([s, s + w.length]); cur = s + w.length; } }
+    const N = words.length, INF = Infinity;
+    const indFLk = p.numbered ? 0 : (process.env.HANG_IND === "0" ? Math.max(p.indFirstLine, 0) : p.indFirstLine);
+    const punctHang = (we) => {
+      if (process.env.OVERFLOW_PUNCT === "0") return 0;
+      const lastCh = fullText[we - 1];
+      if ("،؛:.!؟»)".includes(lastCh)) {
+        const cw = width(we - 1, we);
+        return process.env.OVERFLOW_PUNCT === "full" ? cw : Math.min(cw, Number(process.env.OVERFLOW_CAP ?? "12"));
+      }
+      return 0;
+    };
+    const SF = process.env.SIGMA_FLOOR != null ? Number(process.env.SIGMA_FLOOR) : 0.75;
+    const Smax = 1 - SF;                                  // أقصى انكماش (0.25)
+    const Tmax = Number(process.env.E_CAP ?? "1.5") - 1;  // أقصى تمديدٍ مقبول (0.5)
+    const cost = (i, j) => {
+      for (let k = i; k <= j - 2; k++) if (brkAfter.has(k)) return INF; // كسرٌ إجباريٌّ داخل السطر
+      const L = width(wc[i][0], wc[j - 1][1]);
+      const n = (j - i) - 1;                              // مسافاتٌ قابلة للتسويغ
+      const isFirst = i === 0, isLast = j === N;
+      const W = colBase - (isFirst ? indFLk + markerW : 0) + punctHang(wc[j - 1][1]);
+      const deficit = L - W;
+      if (deficit > 0) {                                  // انكماش (يشمل فيض الكلمة الواحدة)
+        if (n === 0) return 0;                            // كلمةٌ واحدةٌ تفيض — إجباريّ
+        const s = deficit / (n * spaceW);
+        if (s > Smax + 1e-9) return INF;                  // فوق السقف = تجاوزُ هامشٍ ممنوع
+        const r = s / Smax; return r * r * r;
+      }
+      if (isLast) return 0;                               // السطر الأخير أعرج (لا يُسوَّغ)
+      if (n === 0) return INF;                            // كلمةٌ واحدةٌ ناقصةٌ داخليّة لا تُسوَّغ
+      const t = (-deficit) / (n * spaceW);                // تمديد
+      const r = t / Tmax;
+      return r <= 1 ? r * r * r : 1 + 0.5 * (r - 1);      // الرديء جدًّا ينمو أبطأ
+    };
+    const best = new Float64Array(N + 1).fill(INF); best[0] = 0;
+    const from = new Int32Array(N + 1).fill(-1);
+    for (let j = 1; j <= N; j++)
+      for (let i = 0; i < j; i++) {
+        if (best[i] === INF) continue;
+        const c = cost(i, j); if (c === INF) continue;
+        if (best[i] + c < best[j]) { best[j] = best[i] + c; from[j] = i; }
+      }
+    if (from[N] < 0) { ourLines.push(words.slice()); ourMeta.push({ start: 0, nextWordEnd: -1 }); }
+    else {
+      const cuts = [];
+      for (let j = N; j > 0; j = from[j]) { cuts.push([from[j], j]); if (from[j] <= 0) break; }
+      cuts.reverse();
+      for (const [i, j] of cuts) { ourLines.push(words.slice(i, j)); ourMeta.push({ start: wc[i][0], nextWordEnd: -1 }); }
+    }
+  } else {
   let lineStartChar = 0, lineEndChar = 0, lineWords = [], cursor = 0, wi = -1;
   for (const word of words) {
     wi++;
@@ -424,6 +489,7 @@ for (const p of paras) {
     }
   }
   if (lineWords.length) { ourLines.push(lineWords); ourMeta.push({ start: lineStartChar, nextWordEnd: -1 }); }
+  }
 
   let firstDiv = -1, cmpN = 0;
   for (let i = 0; i < ourLines.length; i++) {
