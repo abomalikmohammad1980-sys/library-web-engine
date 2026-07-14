@@ -172,7 +172,8 @@ for (let idx = 0; idx < truthLines.length; idx++) {
     if (MP) {
       const la = prevP.spacing;
       const mA = la.line != null && la.lineRule !== "exact" && la.lineRule !== "atLeast" ? la.line / 240 : 1;
-      y += MP.desc + MP.gap + (MP.asc + MP.desc + MP.gap) * (mA - 1)
+      const bgap = process.env.NOBGAP === "1" ? 0 : MP.gap; // تجربة إسقاط lineGap الحدّي
+      y += MP.desc + bgap + (MP.asc + MP.desc + MP.gap) * (mA - 1)
         + Math.max(prevP.spacing.after ?? 0, p.spacing.before ?? 0) + M.asc + inhPlus(p);
     } else y = t.y;
   } else {
@@ -184,6 +185,10 @@ for (let idx = 0; idx < truthLines.length; idx++) {
   else missHist.set(Math.round(err / 5) * 5, (missHist.get(Math.round(err / 5) * 5) ?? 0) + 1);
   if (FP && String(t.page) === FP)
     console.log(`  [p${t.page} ${own.isFirst ? "حد/بداية" : "خطوة"}] pred=${Math.round(y)} obs=${t.y} err=${Math.round(err)}`);
+  // استرداد الفجوة (RECOVER=1، افتراضي): محتوى غير نصي (صور/رسوم/أقسام)
+  // يُحدث قفزةً لا يراها نموذج النص — نعيد الإرساء لنقيس دقة النص بين المراسي
+  // (المحاكي العملي يتنبأ بين مراسٍ معلومة، لا يخترع مواضع الصور).
+  if (process.env.RECOVER !== "0" && Math.abs(err) > 60) y = t.y;
   prevT = t; prevP = p;
 }
 const pct = total ? (100 * ok / total).toFixed(2) : "0";
