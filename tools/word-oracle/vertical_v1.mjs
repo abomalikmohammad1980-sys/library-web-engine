@@ -132,6 +132,7 @@ try {
 } catch { /* لا خريطة — نبقى على خط المتن */ }
 
 const model = extractFromDocx(readFileSync(`corpus/books/${BOOK}.docx`));
+const paraByIndex = new Map(model.paragraphs.map((p) => [p.index, p])); // .index ≠ موقع المصفوفة
 const truth = JSON.parse(readFileSync(`corpus/ground-truth/${BOOK}.truth.json`, "utf-8"));
 
 const norm = (s) => s
@@ -655,8 +656,28 @@ for (let hi = 0; hi < heads.length; hi++) {
           const mA = la.line != null && la.lineRule !== "exact" && la.lineRule !== "atLeast" ? la.line / 240 : 1;
           // قنص التباعد الحدّي في المُركِّم مجرَّبٌ ومرفوض: يكسر jalsa (الأرضي
           // يتراكم؛ PCARRY يقنص الداخلي فقط لا الحدّ). القياس في مُحكِّم الحدود المفرد.
-          const gap = Math.max(prevS.p.spacing.after ?? 0, S.p.spacing.before ?? 0);
-          const bstep = MP.desc + MP.gap + (MP.asc + MP.desc + MP.gap) * (mA - 1) + gap + M.asc;
+          // ★ اكتمال المُركِّب (COMPOSER2): الفقرات الفارغة (excluded==="empty")
+          // بين الفقرتين تشغل سطرًا لكلٍّ (لا محرف ⇒ غائبة عن truthLines) —
+          // نُسلسل عبرها بمقاييس علامتها (markEm × MAIN_MET) قبل حدّ الوصول.
+          let yPrevMet = MP, mPrev = mA, prevAfter = prevS.p.spacing.after ?? 0;
+          if (process.env.COMPOSER2 === "1") {
+            if (process.env.C2_DBG === "1" && S.p.index - prevS.p.index > 1)
+              console.log("c2 boundary prevIdx=" + prevS.p.index + " curIdx=" + S.p.index +
+                " between=" + Array.from({ length: S.p.index - prevS.p.index - 1 }, (_, k) =>
+                  (model.paragraphs[prevS.p.index + 1 + k]?.excluded ?? "?")).join(","));
+            for (let bi = prevS.p.index + 1; bi < S.p.index; bi++) {
+              const bp = paraByIndex.get(bi);
+              if (!bp || bp.excluded !== "empty") continue;
+              const emB = Math.round((bp.markEmTwips ?? 320) / 10) * 10;
+              const BL = { asc: MAIN_MET.a * emB, desc: MAIN_MET.d * emB, gap: MAIN_MET.g * emB };
+              const gB = Math.max(prevAfter, bp.spacing.before ?? 0);
+              y += yPrevMet.desc + yPrevMet.gap + (yPrevMet.asc + yPrevMet.desc + yPrevMet.gap) * (mPrev - 1) + gB + BL.asc;
+              const mB = bp.spacing.line != null && bp.spacing.lineRule === "auto" ? bp.spacing.line / 240 : 1;
+              yPrevMet = BL; mPrev = mB; prevAfter = bp.spacing.after ?? 0;
+            }
+          }
+          const gap = Math.max(prevAfter, S.p.spacing.before ?? 0);
+          const bstep = yPrevMet.desc + yPrevMet.gap + (yPrevMet.asc + yPrevMet.desc + yPrevMet.gap) * (mPrev - 1) + gap + M.asc;
           if (process.env.BND_DBG === "1")
             console.log("bnd:", JSON.stringify({ obsStep: t.y - prevT.y, predStep: Math.round(bstep),
               err: Math.round(t.y - prevT.y - bstep), pDesc: Math.round(MP.desc), pGap: Math.round(MP.gap),
