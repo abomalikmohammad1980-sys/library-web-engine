@@ -550,7 +550,8 @@ for (let hi = 0; hi < heads.length; hi++) {
       const k = Math.round(obs - predB);
       bHist.set(k, (bHist.get(k) ?? 0) + 1);
       if (process.env.BFOR === "1")
-        console.log("حد-فاشل:", JSON.stringify({ af, bf, gapObs: Math.round(obs - step),
+        console.log("حد-فاشل:", JSON.stringify({ rawGap: Math.round(rawGap),
+          gapObs: Math.round(obs - step), ctx: A.p.styleId === B.p.styleId && ctxStyles.has(A.p.styleId),
           stepR: Math.round(step), pA: A.p.index, pB: B.p.index,
           styleA: A.p.styleId, styleB: B.p.styleId }));
     }
