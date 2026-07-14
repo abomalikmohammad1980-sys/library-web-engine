@@ -439,9 +439,10 @@ for (let hi = 0; hi < heads.length; hi++) {
     // مرساة الفقرة لشبكة 2.4tw يلتقط النقطة المُقحَمة — masjid 95.9→97.6،
     // dawra 95.3→96.0، بلا انتكاس.
     const iCarry = process.env.ICARRY !== "0" && MODE === "7";
+    const iGrid = Number(process.env.ICARRY_GRID ?? "2.4"); // شبكة الحَمْل
     const quant = MODE === "3" || (MODE === "7" && process.env.Q7 === "1");
     const predicted = accum
-      ? (iCarry ? anchorY + Math.round(accPred / 2.4) * 2.4
+      ? (iCarry ? anchorY + Math.round(accPred / iGrid) * iGrid
         : quant ? Math.round((anchorY + accPred) / 2.4) * 2.4 : anchorY + accPred)
       : stepPred;
     const obs = accum ? b.y : b.y - a.y;
