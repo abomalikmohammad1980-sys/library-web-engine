@@ -216,23 +216,29 @@ function predictedPitch(p, em) {
   return single * (line / 240); // auto
 }
 
-/** القاعدة 9 (مصفوفات vtest13–16 + محاكمتا muqtarah/masjid): فقرةٌ تباعدها
- *  من docDefaults **بقيمة الافتراضي المدمج line=278** (قيمة REF-1 المثبتة
- *  بغياب styles.xml كليًا — vtest15) تُرفع خطوةُ سطرها الأول لسقف نقطة
- *  600dpi صحيحة: ‏T(n) = ceil(خطوة) + (n−1)×خطوة (‏n=3،5،7،12 موثقة؛
- *  ‏ahadith: ‏+0.989 نقطة = 2.37tw والمقيس 2.4 ✓).
- *  حدود القاعدة المحاكمة:
- *  - المباشر في pPr لا يُسقَّف (vtest15-M3، ‏vtest5، ‏tadris/jalsa ‏100%).
- *  - وراثة نمط مسمى لا تُسقَّف (masjid ‏276: ‏92.7→75.6 بالتعميم).
- *  - ‏docDefaults ‏259 لا يُسقَّف رغم كسر مماثل (‏muqtarah ‏228.033 نقطة
- *    بلا رفع مقابل ‏ahadith ‏261.011 مرفوعة) — الكسر ليس المميز؛ القيمة
- *    ‏278≡المدمج هي — والآلية الدقيقة سؤال مفتوح (مسار «كالمدمج»؟).
- *  ‏R9=0 للتعطيل. */
-const inhPlus = (p, stepTw) => {
-  if (process.env.R9 === "0" || stepTw == null) return 0;
-  if (p.spacing.lineSource !== "docDefaults" || p.spacing.line !== 278) return 0;
-  const d = stepTw / 2.4;
-  return (Math.ceil(d) - d) * 2.4;
+/** القاعدة 9 — **قانون الكسر** (مسبار docDefaults عشري القيم vtest17):
+ *  فقرة تباعدها **غير مباشر** (موروث من docDefaults/نمط لا من pPr نفسه)
+ *  تُرفع خطوةُ سطرها الأول لسقف نقطة 600dpi صحيحة **إذا كان كسر الخطوة
+ *  دون 1/6 نقطة**: ‏T(n) = ceil(خطوة) + (n−1)×خطوة.
+ *  المسبار: كسور {.011، .072، .089→لم يُقس، .111، .133، .150} مسقوفة كلها،
+ *  و{.172، .211، .256، .333، .378} حرة كلها — العتبة محسورة في
+ *  ‏(0.150، 0.172] و1/6 في وسطها (الآلية الدقيقة سؤال مفتوح — تكميم
+ *  ‏LineServices داخلي؟). ‏ahadith ‏(.011): ‏+2.37tw والمقيس 2.4 ✓؛
+ *  ‏muqtarah ‏(.974 بمقاييس Light النقية): حر ✓ — قيمة stepV7 الملوثة
+ *  بmax-عبر-runs (‏.033) خادعة، لذا الحساب هنا بالمقاييس النقية حصرًا.
+ *  المباشر في pPr لا يُسقَّف أبدًا (vtest15-M3 حتى n=12، ‏tadris/jalsa).
+ *  ‏R9=0 للتعطيل، ‏R9T لتعديل العتبة. */
+const R9T = Number(process.env.R9T ?? (1 / 6));
+const inhPlus = (p) => {
+  if (process.env.R9 === "0") return 0;
+  const sp = p.spacing;
+  if (sp.line == null || sp.lineSource === "ppr" || sp.lineRule !== "auto") return 0;
+  const em = p.runs?.[0]?.emTwips;
+  if (!em) return 0;
+  const emIdeal = Math.round(em / 10) * 10;
+  const d = (PITCH * emIdeal * sp.line / 240) / 2.4; // خطوة نقية بخط المتن
+  const f = d % 1;
+  return f < R9T ? (Math.ceil(d) - d) * 2.4 : 0;
 };
 
 const paras = model.paragraphs.filter((p) =>
@@ -285,7 +291,7 @@ for (const p of paras) {
     const stepPred = MODE === "7" ? (stepV7(p, a, b) ?? pred)
       : (MODE === "3" || MODE === "4" || MODE === "5") ? ((stepDotsV3(p, b) ?? pred / 2.4) * 2.4)
       : MODE === "2" ? (predictedPitchV2(p, b) ?? pred) : pred;
-    const bonus = fresh ? inhPlus(p, stepPred) : 0;
+    const bonus = fresh ? inhPlus(p) : 0;
     if (process.env.R9DBG === "1" && fresh && bonus)
       console.log("r9:", JSON.stringify({ para: p.index, step: +stepPred.toFixed(2),
         bonus: +bonus.toFixed(2), src: p.spacing.lineSource, line: p.spacing.line }));
@@ -438,8 +444,8 @@ for (const p of paras) {
           y += MP.desc + MP.gap + (MP.asc + MP.desc + MP.gap) * (mA - 1)
             + Math.max(prevS.p.spacing.after ?? 0, S.p.spacing.before ?? 0) + M.asc;
         } else {                                                         // القاعدة 7
-          const st = stepV7(S.p, prevT, t) ?? 0;
-          y += st + (i === 1 ? inhPlus(S.p, st) : 0); // (+9 في أول خطوة داخلية)
+          y += (stepV7(S.p, prevT, t) ?? 0)
+            + (i === 1 ? inhPlus(S.p) : 0); // (+9 في أول خطوة داخلية)
         }
         fN++;
         const err = t.y - y;
