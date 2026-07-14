@@ -74,9 +74,15 @@ if (process.env.FLOATS !== "0") {
 }
 
 // فقرات docx المؤهلة: متن نظيف بخط adwa وحجم معلوم وكلمات كافية
+// ‏JC_ONLY تشخيصي: يقصر القياس على وضع تسويغٍ بعينه (both/lowKashida/…)
+// لعزل مساهمة الكشيدة عن التسويغ بالمسافات في المصفوفة الأفقية.
+const JC_ONLY = process.env.JC_ONLY;
 const paras = model.paragraphs.filter((p) =>
   !p.excluded &&
   p.text.trim().split(/\s+/).length >= 8 &&
+  (!JC_ONLY || (JC_ONLY === "kashida"
+    ? /Kashida$/.test(p.jc ?? "")
+    : (p.jc ?? "null") === JC_ONLY)) &&
   p.runs.every((r) => r.family === FAMILY && r.emTwips),
 );
 
@@ -255,7 +261,18 @@ for (const p of paras) {
       if ("،؛:.!؟»)".includes(lastCh))
         allowance += width(wordEnd - 1, wordEnd);
     }
-    let fits = !(lineWords.length && width(lineStartChar, wordEnd) - allowance > W);
+    // ★ سماحية كسر حسب وضع الكشيدة (وكيل بحث: الوضع الأعلى K_max أكبر ⇒
+    // يكسر أبكر). المقيس على tadris: ‏lowKashida نحشر أقل (Word يحشر متجاوزًا
+    // قليلًا ⇒ سماحية موجبة) وmediumKashida نحشر أكثر (Word يكسر أبكر ⇒
+    // سماحية سالبة/تحفّظ). الوحدة كسرٌ من عرض المسافة. ‏KASHIDA_MARGIN=0 للتعطيل.
+    const KM = Number(process.env.KASHIDA_MARGIN ?? "0");
+    let kMargin = 0;
+    if (KM) {
+      if (p.jc === "lowKashida") kMargin = +0.9 * spaceW;      // احشر أكثر
+      else if (p.jc === "mediumKashida") kMargin = -0.9 * spaceW; // اكسر أبكر
+      else if (p.jc === "highKashida") kMargin = -1.8 * spaceW;
+    }
+    let fits = !(lineWords.length && width(lineStartChar, wordEnd) - allowance - kMargin > W);
     // ★ خوارزمية Word 2013+ ‏(compatibilityMode≥15، ‏jc=both) — القاعدة 16:
     // تمريرة انكماش: أرضية المسافة 75%، وتُتبنى فقط إن كان بديل التمديد أسوأ
     // (المقارنة الموزونة: e>1.5 أو 1+(e−1)/1.7 ≥ 1/σ). مصدر النموذج:
