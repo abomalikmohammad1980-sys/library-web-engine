@@ -279,11 +279,10 @@ for (const p of paras) {
     const tn = truthLines[i].n;
     if (!tn || tn.length < minLen) continue;
     if (!ALLFAM && Math.abs(truthLines[i].em - em) > 3) continue;
-    // الأسطر الطويلة: تطابق البادئة بإزاحة ≤5؛ القصيرة (عناوين): تطابق
-    // البادئة الكامل من الطرفين (السطر بادئةٌ للفقرة أو العكس)
-    const span = Math.max(0, tn.length - 10);
-    for (let j = 0; j <= 5 && j <= span; j++)
+    // المطابقة الأصلية (طويلة): بادئة بإزاحة ≤5 وطول السطر > 10
+    for (let j = 0; j <= 5 && j < tn.length - 10; j++)
       if (paraN.startsWith(tn.slice(j))) { start = i; break outer; }
+    // ‏ALLFAM: العناوين القصيرة — تطابق البادئة الكامل من الطرفين
     if (ALLFAM && tn.length < 14 && (paraN.startsWith(tn) || tn.startsWith(paraN)))
       { start = i; break outer; }
   }
@@ -501,8 +500,14 @@ for (let hi = 0; hi < heads.length; hi++) {
           const MP = lineMet(prevS.p, prevT, false);
           const la = prevS.p.spacing;
           const mA = la.line != null && la.lineRule !== "exact" && la.lineRule !== "atLeast" ? la.line / 240 : 1;
-          y += MP.desc + MP.gap + (MP.asc + MP.desc + MP.gap) * (mA - 1)
-            + Math.max(prevS.p.spacing.after ?? 0, S.p.spacing.before ?? 0) + M.asc;
+          const gap = Math.max(prevS.p.spacing.after ?? 0, S.p.spacing.before ?? 0);
+          const bstep = MP.desc + MP.gap + (MP.asc + MP.desc + MP.gap) * (mA - 1) + gap + M.asc;
+          if (process.env.BND_DBG === "1")
+            console.log("bnd:", JSON.stringify({ obsStep: t.y - prevT.y, predStep: Math.round(bstep),
+              err: Math.round(t.y - prevT.y - bstep), pDesc: Math.round(MP.desc), pGap: Math.round(MP.gap),
+              cAsc: Math.round(M.asc), gap, emPrev: prevS.p.runs.find((r) => r.emTwips)?.emTwips,
+              emCur: S.p.runs.find((r) => r.emTwips)?.emTwips, numCur: S.p.numbered }));
+          y += bstep;
         } else {                                                         // القاعدة 7
           y += (stepV7(S.p, prevT, t) ?? 0)
             + (i === 1 ? inhPlus(S.p) : 0); // (+9 في أول خطوة داخلية)
