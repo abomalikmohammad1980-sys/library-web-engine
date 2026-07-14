@@ -431,9 +431,18 @@ for (let hi = 0; hi < heads.length; hi++) {
     // هنا (Q7=1 لتجربته): المرساة نقطةُ حقيقةٍ منتصفَ صفحةٍ ناتجةٌ عن تراكم
     // تكميمات من رأس الصفحة — فإعادة التكميم محليًا تضاعف الخطأ (جُرّب:
     // الستة انحدرت). التكميم محلّه المُحكِّم الكامل (يتراكم من الرأس).
+    // ★ نموذج الحَمْل الداخلي (ICARRY=1): قنص **الإزاحة عن مرساة الفقرة** لشبكة
+    // 2.4tw — يلتقط النقطة المُقحَمة (الحَمْل الكسري) مع إبقاء المرساة كسرية.
+    // فرضية: انجراف masjid/dawra +3 ليس pitch بل حَمْلٌ متراكم (متوسط المعايرة
+    // 612.51 = المثالي 612.40 + توزيع الحَمْل، لا انحياز مقياس).
+    // ★ نموذج الحَمْل الداخلي **افتراضيّ** (ICARRY=0 للتعطيل): قنص الإزاحة عن
+    // مرساة الفقرة لشبكة 2.4tw يلتقط النقطة المُقحَمة — masjid 95.9→97.6،
+    // dawra 95.3→96.0، بلا انتكاس.
+    const iCarry = process.env.ICARRY !== "0" && MODE === "7";
     const quant = MODE === "3" || (MODE === "7" && process.env.Q7 === "1");
     const predicted = accum
-      ? (quant ? Math.round((anchorY + accPred) / 2.4) * 2.4 : anchorY + accPred)
+      ? (iCarry ? anchorY + Math.round(accPred / 2.4) * 2.4
+        : quant ? Math.round((anchorY + accPred) / 2.4) * 2.4 : anchorY + accPred)
       : stepPred;
     const obs = accum ? b.y : b.y - a.y;
     const err = Math.abs(obs - predicted);
