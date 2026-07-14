@@ -272,6 +272,12 @@ export interface SpacingProps {
   lineRule: "auto" | "exact" | "atLeast" | null;
   before: number | null;
   after: number | null;
+  /** ‏line جاء من pPr المباشر (القاعدة الرأسية 9) */
+  lineDirect?: boolean;
+  /** مصدر line بدقة: ‏pPr مباشر / نمط مسمى / docDefaults — القاعدة 9
+   *  (+1 نقطة 600dpi لكل فقرة) تنطبق على docDefaults حصرًا: تعميمها على
+   *  وراثة النمط كسر masjid ‏92.7→75.6 وmuqtarah ‏97.9→66.7 (محاكمة 2026-07-14) */
+  lineSource?: "ppr" | "style" | "docDefaults" | null;
 }
 function spacingProps(pPr: XNode[] | null): SpacingProps {
   const el = pPr ? pPr.find((n) => "w:spacing" in n) : null;
@@ -348,7 +354,7 @@ function resolveViaStyle(table: StyleTable, styleId: string | null) {
   // وراثة w:spacing سمّية عبر السلسلة (درسا masjid/muqtarah الرأسيان:
   // ‏after المباشر يتعايش مع line من النمط/docDefaults؛ وطبقة النمط
   // الافتراضي هي التي تحسم لا العنصرية)
-  const sp: SpacingProps = { ...NO_SPACING };
+  const sp: SpacingProps = { ...NO_SPACING, lineSource: null };
   let id = styleId, guard = 0;
   while (id && guard++ < 12) {
     const s = table.byId.get(id);
@@ -357,7 +363,9 @@ function resolveViaStyle(table: StyleTable, styleId: string | null) {
     indLeft ??= s.indLeft; indRight ??= s.indRight; indFirstLine ??= s.indFirstLine;
     if (s.spacing.present) {
       sp.present = true;
-      if (sp.line == null && s.spacing.line != null) { sp.line = s.spacing.line; sp.lineRule = s.spacing.lineRule; }
+      if (sp.line == null && s.spacing.line != null) {
+        sp.line = s.spacing.line; sp.lineRule = s.spacing.lineRule; sp.lineSource = "style";
+      }
       sp.before ??= s.spacing.before; sp.after ??= s.spacing.after;
     }
     id = s.basedOn;
@@ -365,7 +373,9 @@ function resolveViaStyle(table: StyleTable, styleId: string | null) {
   const dsp = table.defaults.spacing;
   if (dsp.present) {
     sp.present = true;
-    if (sp.line == null && dsp.line != null) { sp.line = dsp.line; sp.lineRule = dsp.lineRule; }
+    if (sp.line == null && dsp.line != null) {
+      sp.line = dsp.line; sp.lineRule = dsp.lineRule; sp.lineSource = "docDefaults";
+    }
     sp.before ??= dsp.before; sp.after ??= dsp.after;
   }
   return {
@@ -521,6 +531,8 @@ export function parseDocument(
       lineRule: ownSp.line != null ? ownSp.lineRule : chain.lineRule,
       before: ownSp.before ?? chain.before,
       after: ownSp.after ?? chain.after,
+      lineDirect: ownSp.line != null,
+      lineSource: ownSp.line != null ? "ppr" : (chain.lineSource ?? null),
     };
     paragraphs.push({
       index: idx, runs, text, styleId, jc, bidi,

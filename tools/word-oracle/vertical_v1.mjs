@@ -216,6 +216,25 @@ function predictedPitch(p, em) {
   return single * (line / 240); // auto
 }
 
+/** القاعدة 9 (مصفوفات vtest13–16 + محاكمتا muqtarah/masjid): فقرةٌ تباعدها
+ *  من docDefaults **بقيمة الافتراضي المدمج line=278** (قيمة REF-1 المثبتة
+ *  بغياب styles.xml كليًا — vtest15) تُرفع خطوةُ سطرها الأول لسقف نقطة
+ *  600dpi صحيحة: ‏T(n) = ceil(خطوة) + (n−1)×خطوة (‏n=3،5،7،12 موثقة؛
+ *  ‏ahadith: ‏+0.989 نقطة = 2.37tw والمقيس 2.4 ✓).
+ *  حدود القاعدة المحاكمة:
+ *  - المباشر في pPr لا يُسقَّف (vtest15-M3، ‏vtest5، ‏tadris/jalsa ‏100%).
+ *  - وراثة نمط مسمى لا تُسقَّف (masjid ‏276: ‏92.7→75.6 بالتعميم).
+ *  - ‏docDefaults ‏259 لا يُسقَّف رغم كسر مماثل (‏muqtarah ‏228.033 نقطة
+ *    بلا رفع مقابل ‏ahadith ‏261.011 مرفوعة) — الكسر ليس المميز؛ القيمة
+ *    ‏278≡المدمج هي — والآلية الدقيقة سؤال مفتوح (مسار «كالمدمج»؟).
+ *  ‏R9=0 للتعطيل. */
+const inhPlus = (p, stepTw) => {
+  if (process.env.R9 === "0" || stepTw == null) return 0;
+  if (p.spacing.lineSource !== "docDefaults" || p.spacing.line !== 278) return 0;
+  const d = stepTw / 2.4;
+  return (Math.ceil(d) - d) * 2.4;
+};
+
 const paras = model.paragraphs.filter((p) =>
   !p.excluded &&
   p.text.trim().split(/\s+/).length >= 8 &&
@@ -260,12 +279,17 @@ for (const p of paras) {
     if (a.page !== b.page) { anchorY = null; continue; } // فاصل صفحة — خارج v1
     if (MODE === "1" && (a.ems.size > 1 || b.ems.size > 1)) { anchorY = null; continue; }
     if (b.y - a.y <= 0) { anchorY = null; continue; }
-    if (anchorY == null) { anchorY = a.y; accPred = 0; }
+    const fresh = anchorY == null;
+    if (fresh) { anchorY = a.y; accPred = 0; }
     pairs++;
     const stepPred = MODE === "7" ? (stepV7(p, a, b) ?? pred)
       : (MODE === "3" || MODE === "4" || MODE === "5") ? ((stepDotsV3(p, b) ?? pred / 2.4) * 2.4)
       : MODE === "2" ? (predictedPitchV2(p, b) ?? pred) : pred;
-    accPred += stepPred;
+    const bonus = fresh ? inhPlus(p, stepPred) : 0;
+    if (process.env.R9DBG === "1" && fresh && bonus)
+      console.log("r9:", JSON.stringify({ para: p.index, step: +stepPred.toFixed(2),
+        bonus: +bonus.toFixed(2), src: p.spacing.lineSource, line: p.spacing.line }));
+    accPred += stepPred + bonus; // القاعدة 9: سقف أول خطوة
     // ‏v3: تكميم baseline المتراكم للنقاط؛ ‏v4: نفس الخطوة بلا تكميم
     const predicted = accum
       ? (MODE === "3" ? Math.round((anchorY + accPred) / 2.4) * 2.4 : anchorY + accPred)
@@ -307,6 +331,7 @@ for (const p of paras) {
     if (!step) continue;
     const af = A.p.spacing.after ?? 0, bf = B.p.spacing.before ?? 0;
     // ‏BGAP=max: قاعدة انهيار الفواصل (Word يأخذ الأكبر لا المجموع)
+    // القاعدة 9 لا تمس الحدود (تجربتها هنا: 86→31% — النقطة تسكن أول خطوة داخلية)
     const predB = step + (process.env.BGAP === "sum" ? af + bf : Math.max(af, bf));
     bPairs++;
     if (Math.abs(obs - predB) <= TOL) bOk++;
@@ -412,7 +437,10 @@ for (const p of paras) {
           const mA = la.line != null && la.lineRule !== "exact" && la.lineRule !== "atLeast" ? la.line / 240 : 1;
           y += MP.desc + MP.gap + (MP.asc + MP.desc + MP.gap) * (mA - 1)
             + Math.max(prevS.p.spacing.after ?? 0, S.p.spacing.before ?? 0) + M.asc;
-        } else y += stepV7(S.p, prevT, t) ?? 0;                          // القاعدة 7
+        } else {                                                         // القاعدة 7
+          const st = stepV7(S.p, prevT, t) ?? 0;
+          y += st + (i === 1 ? inhPlus(S.p, st) : 0); // (+9 في أول خطوة داخلية)
+        }
         fN++;
         const err = t.y - y;
         if (process.env.FP_TRACE === String(pg))
