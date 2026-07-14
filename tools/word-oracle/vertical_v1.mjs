@@ -244,16 +244,22 @@ function lineMet(p, t, isFirstLine = false) {
 
 /** ‏Δ ‏baseline(a←b) داخل الفقرة: ‏desc(a) + فجوة التباعد (بارتفاع a —
  *  ‏LINE_SPACING_AS_GAP_BELOW) + ‏gap(a) + ‏asc(b) */
+// نفي: تكميم خطوة السطر لشبكة 600dpi (2.4tw) هدم الكتب الكسرية الخطوة
+// (jalsa داخلي 100→62، masjid 96→88) — ‏Word **لا** يكمّم الخطوة للدوت؛
+// تطابق muqtarah ‏547.27→547.2 كان مصادفة (547.2 = ‏228 دوت بحتَ اتفاق).
+// الخطوات كسرية فعلًا. ‏STEP_DOT=1 لتجربة التكميم (معطّل افتراضيًا).
+const DOT = 2.4;
+const qStep = (s) => process.env.STEP_DOT === "1" ? Math.round(s / DOT) * DOT : s;
 function stepV7(p, ta, tb) {
   const A = lineMet(p, ta), B = lineMet(p, tb);
   if (!A || !B) return null;
   const { line, lineRule } = p.spacing;
-  if (line != null && lineRule === "exact") return line;
+  if (line != null && lineRule === "exact") return qStep(line);
   const m = line != null && lineRule !== "atLeast" ? line / 240 : 1;
   // ‏gap يدخل المضاعف (قياس muqtarah: انجراف +0.8/سطر = gap×(m−1) بدونه)
   const base = A.desc + A.gap + (A.asc + A.desc + A.gap) * (m - 1) + B.asc;
-  if (line != null && lineRule === "atLeast") return Math.max(base, line);
-  return base;
+  if (line != null && lineRule === "atLeast") return Math.max(qStep(base), line);
+  return qStep(base);
 }
 
 function predictedPitch(p, em) {
