@@ -148,6 +148,9 @@ for (let pgI = 0; pgI < truth.pages.length; pgI++) {
       runFonts: rs.map((r) => ({ font: r.font, em: r.emTwips })) });
   }
 }
+// ملاحظة: ‏truthLines من الاستخراج مرتّبةٌ أصلًا بالـ(صفحة، y) — تجربة الفرز
+// الصريح كانت no-op؛ فشاذّ ahadith para85 (−463) ليس ترتيبًا بل استهلاك
+// فقرةٍ معدودةٍ مختلطة المحتوى (آية قرآنية مضمّنة بمقاييس مختلفة) — بند دقة.
 
 /** ‏v2: خطوة السطر من تركيبته الفعلية — max على runs من (خطوة الخط × emDots) */
 function linePitchDots(t) {
