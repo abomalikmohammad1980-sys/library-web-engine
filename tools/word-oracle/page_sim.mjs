@@ -186,6 +186,10 @@ for (let idx = 0; idx < truthLines.length; idx++) {
         console.log(`     ↳ حد: MPdesc=${Math.round(MP.desc)} bgap=${Math.round(bgap)} mTerm=${Math.round(mTerm)}(mA=${mA.toFixed(3)} line=${la.line}) sMax=${sMax} Masc=${Math.round(M.asc)} ip=${ip.toFixed(1)} = ${Math.round(delta)}`);
       y += delta;
     } else y = t.y;
+  } else if (prevT && t.page === prevT.page && (t.y - prevT.y) < ((t.runFonts?.[0]?.em ?? 300) * 0.6)) {
+    // عنصرٌ سطريّ (تعليق/إحالة بخطٍّ صغير على y أدنى بقليل) لا كسر سطر —
+    // ارسِ عليه دون تنبؤ خطوةٍ كاملة (كحارس الخطوة الدنيا في المُحكِّم الداخلي).
+    y = t.y;
   } else {
     y += (stepV7(p, prevT, t) ?? 0);
   }
