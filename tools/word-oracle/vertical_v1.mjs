@@ -647,9 +647,8 @@ for (let hi = 0; hi < heads.length; hi++) {
           const MP = lineMet(prevS.p, prevT, false);
           const la = prevS.p.spacing;
           const mA = la.line != null && la.lineRule !== "exact" && la.lineRule !== "atLeast" ? la.line / 240 : 1;
-          // ملاحظة: قنص التباعد هنا (المُراكِم) يُدخِل انجرافًا في jalsa (100→70)
-          // لأنه يتراكم بلا قنص baseline مقابل؛ يبقى القنص في مُحكِّم الحدود المفرد
-          // فقط (BND_DOT، حيث المقارنة لكل حدٍّ على حِدة). القياس نفسه (قاعدة 8-هـ).
+          // قنص التباعد الحدّي في المُركِّم مجرَّبٌ ومرفوض: يكسر jalsa (الأرضي
+          // يتراكم؛ PCARRY يقنص الداخلي فقط لا الحدّ). القياس في مُحكِّم الحدود المفرد.
           const gap = Math.max(prevS.p.spacing.after ?? 0, S.p.spacing.before ?? 0);
           const bstep = MP.desc + MP.gap + (MP.asc + MP.desc + MP.gap) * (mA - 1) + gap + M.asc;
           if (process.env.BND_DBG === "1")
