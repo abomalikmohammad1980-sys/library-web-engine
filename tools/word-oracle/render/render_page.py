@@ -17,7 +17,8 @@ _cache = {}
 def load(fontname):
     key = fontname
     if key in _cache: return _cache[key]
-    ttf = os.path.join(fdir, fontname.replace(".odttf", ".ttf"))
+    ff = os.environ.get("FONTFILE")
+    ttf = ff if ff else os.path.join(fdir, fontname.replace(".odttf", ".ttf"))
     f = TTFont(ttf)
     gs = f.getGlyphSet()
     order = f.getGlyphOrder()
