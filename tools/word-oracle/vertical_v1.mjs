@@ -398,6 +398,9 @@ for (let hi = 0; hi < heads.length; hi++) {
   }
   if (seq.length)
     paraSpans.push({ startIdx: start, endIdx, p, firstT: seq[0], lastT: seq[seq.length - 1] });
+  if (process.env.PARA_DBG && Number(process.env.PARA_DBG) === p.index)
+    console.log("para" + p.index, "start=" + start, "startText=" + truthLines[start].n.slice(0, 20),
+      "paraN=" + paraN.slice(0, 20), "seq=" + seq.map((t) => Math.round(t.y)).join(","));
   const pred = predictedPitch(p, em);
   // ‏MODE: ‏v3 (افتراضي) خطوة عائمة عند em المثالي + تكميم baseline للنقطة؛
   // ‏v2 خطوة نقاط صحيحة لكل سطر؛ ‏v1 خطوة الفقرة الموحدة. ‏ACCUM=0 للأزواج.
@@ -409,6 +412,10 @@ for (let hi = 0; hi < heads.length; hi++) {
     if (a.page !== b.page) { anchorY = null; continue; } // فاصل صفحة — خارج v1
     if (MODE === "1" && (a.ems.size > 1 || b.ems.size > 1)) { anchorY = null; continue; }
     if (b.y - a.y <= 0) { anchorY = null; continue; }
+    // عنصرٌ سطريّ لا كسر سطر: فرقٌ رأسيّ أدنى من ~نصف em (تعليق/إحالة بخطٍّ
+    // صغير قرب السطر مثل «(متفق عليه)» على y أدنى بـ51tw) — ليس خطوة pitch.
+    // (‏ahadith para85 المعدود: −463 = تنبؤ خطوةٍ كاملةٍ لعنصرٍ 51tw سطريّ.)
+    if (b.y - a.y < (b.em ?? 300) * 0.6) { anchorY = null; continue; }
     const fresh = anchorY == null;
     if (fresh) { anchorY = a.y; accPred = 0; }
     pairs++;
