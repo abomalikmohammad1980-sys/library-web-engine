@@ -629,7 +629,13 @@ for (let hi = 0; hi < heads.length; hi++) {
     let y = null, prevS = null, prevT = null, pageOk = true, pageAnchor = 0;
     let paraY0Smooth = 0, paraY0Cmp = 0; // مرساة الفقرة لنموذج الحَمْل لكل فقرة (PCARRY)
     for (const S of spans) {
-      if (prevS && S.startIdx !== prevS.endIdx + 1) { pageOk = false; break; } // انقطاع محاذاة
+      if (prevS && S.startIdx !== prevS.endIdx + 1) {
+        if (process.env.GAP_DBG === "1")
+          console.log("gap pg" + pg + ":", "بين", prevS.endIdx, "و", S.startIdx,
+            "أسطر مفقودة:", Array.from({ length: S.startIdx - prevS.endIdx - 1 }, (_, k) =>
+              truthLines[prevS.endIdx + 1 + k]?.n.slice(0, 18)).join(" | "));
+        pageOk = false; break;
+      } // انقطاع محاذاة
       const lines = spanLines(S).filter((t) => t.page === pg);
       if (!lines.length) break;
       for (let i = 0; i < lines.length; i++) {
