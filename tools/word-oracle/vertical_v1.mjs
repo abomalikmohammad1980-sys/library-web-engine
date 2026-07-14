@@ -248,8 +248,8 @@ function lineMet(p, t, isFirstLine = false) {
 // (jalsa داخلي 100→62، masjid 96→88) — ‏Word **لا** يكمّم الخطوة للدوت؛
 // تطابق muqtarah ‏547.27→547.2 كان مصادفة (547.2 = ‏228 دوت بحتَ اتفاق).
 // الخطوات كسرية فعلًا. ‏STEP_DOT=1 لتجربة التكميم (معطّل افتراضيًا).
-const DOT = 2.4;
-const qStep = (s) => process.env.STEP_DOT === "1" ? Math.round(s / DOT) * DOT : s;
+const DOT = Number(process.env.STEP_DOT ?? "0"); // ‏0=معطّل، وإلا حجم الشبكة (tw)
+const qStep = (s) => DOT > 0 ? Math.round(s / DOT) * DOT : s;
 function stepV7(p, ta, tb) {
   const A = lineMet(p, ta), B = lineMet(p, tb);
   if (!A || !B) return null;
@@ -581,7 +581,10 @@ for (let hi = 0; hi < heads.length; hi++) {
         // ‏round(y/2.4) الساذج يقلب قيم tadris الجالسة على حدود الشبكة تمامًا
         // ‏(100→88): النموذج الكسري أدقّ من التكميم الساذج، وخوارزمية تكميم
         // ‏LineServices الحقيقية (تراكم كسري بأنصاف نقاط) هدف بحثٍ لاحق.
-        const yCmp = process.env.QFP === "1" ? Math.round(y / 2.4) * 2.4 : y;
+        // ‏QFP: تكميم baseline المتراكم لشبكةٍ دقيقة (نموذج LineServices:
+        // تراكمٌ كسريّ + قنص كل baseline) — القيمة = حجم الشبكة (0.6 دقيقة).
+        const qfp = Number(process.env.QFP ?? "0");
+        const yCmp = qfp > 0 ? Math.round(y / qfp) * qfp : y;
         const err = t.y - yCmp;
         if (process.env.FP_TRACE === String(pg))
           console.log(`  [${i === 0 ? (y === marTopOf(S.p) + M.asc ? "بداية" : "حد") : "خطوة"}] ` +
