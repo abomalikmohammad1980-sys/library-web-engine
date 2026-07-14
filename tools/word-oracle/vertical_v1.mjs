@@ -214,6 +214,10 @@ function lineMet(p, t, isFirstLine = false) {
     textAscFactor = Math.max(textAscFactor, met.a); // صعود خط المتن نفسه
   }
   if (!asc) return null;
+  // ★ نموذج LineServices (LSV=1): كل حدٍّ يُقرّب لـtwip صحيح قبل الجمع
+  // (‏MulDiv الداخلي) — ‏muqtarah: ‏round(316.26)+round(180.62)+round(10.25)
+  // = ‏507 (مقابل 507.13 كسريًا) يفسر انحياز 0.015%. مع snap الخطوة لـ0.6.
+  if (process.env.LSV === "1") { asc = Math.round(asc); desc = Math.round(desc); gap = Math.round(gap); }
   // القاعدة 7-ب (GDI، مقيسة page_sim صفحة 2): externalLeading من الخط
   // **المهيمن** (أعلى asc) لا max على الـruns — رُونٌ لاتينية ثانوية
   // (Arial gap=67=10tw) كانت تضخّم التباعد الحدّي زائفًا. ‏GAP_COUPLE=0 للتعطيل.
@@ -248,7 +252,10 @@ function lineMet(p, t, isFirstLine = false) {
 // (jalsa داخلي 100→62، masjid 96→88) — ‏Word **لا** يكمّم الخطوة للدوت؛
 // تطابق muqtarah ‏547.27→547.2 كان مصادفة (547.2 = ‏228 دوت بحتَ اتفاق).
 // الخطوات كسرية فعلًا. ‏STEP_DOT=1 لتجربة التكميم (معطّل افتراضيًا).
-const DOT = Number(process.env.STEP_DOT ?? "0"); // ‏0=معطّل، وإلا حجم الشبكة (tw)
+// ‏LSV=1 يفعّل نموذج LineServices: تقريب الحدود (في lineMet) + قنص الخطوة
+// لشبكة 0.6tw (‏STEP_DOT يتجاوز الحجم). ‏STEP_DOT=0 صريحًا للتعطيل.
+const DOT = process.env.STEP_DOT != null ? Number(process.env.STEP_DOT)
+  : (process.env.LSV === "1" ? 0.6 : 0);
 const qStep = (s) => DOT > 0 ? Math.round(s / DOT) * DOT : s;
 function stepV7(p, ta, tb) {
   const A = lineMet(p, ta), B = lineMet(p, tb);
