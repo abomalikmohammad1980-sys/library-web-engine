@@ -106,10 +106,11 @@ export function shouldShrinkPack(
   opts?: { eCap?: number; div?: number; k?: number; model?: "ratio" | "linear" },
 ): boolean {
   if (n < 1 || meanSpace <= 0 || D <= 0) return false;
-  // بوابة السماحية: أرضية عرض المسافة 75% بسماحية n+1
-  if (D > 0.25 * (n + 1) * meanSpace) return false;
   const sigma = 1 - D / (n * meanSpace);
-  if (sigma <= 0) return false;
+  // ★ أرضية الانكماش الصلبة (قاعدة 16-ب): Word 2013+ يضغط المسافة بحدٍّ أقصى
+  // 25% (σ≥0.75)، فوقه يكسر حتمًا. مفهومٌ من بحث LO/Németh (tdf#119908،
+  // PropWordSpacingMinimum)، وقيمته 0.75 مثبّتةٌ على الحقيقة (muqtarah 91→100%).
+  if (sigma < 0.75) return false;
   // بديل التمديد: كسر مبكر وتمديد n−1 بلانكات لملء W
   const n1 = n - 1;
   const e = n1 > 0 ? 1 + (W - L1) / (n1 * meanSpace) : Infinity;

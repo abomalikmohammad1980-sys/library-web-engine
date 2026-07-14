@@ -65,24 +65,23 @@ describe("shouldShrinkPack — القاعدة 16", () => {
     expect(shouldShrinkPack(D, n, w, W, L1)).toBe(true);
   });
 
-  it("بوابة السماحية: D فوق 0.25·(n+1)·w̄ يرفض مهما حسُن البديل", () => {
+  it("أرضية الانكماش الصلبة σ<0.75 ترفض مهما حسُن البديل (قاعدة 16-ب)", () => {
     const n = 10, w = 50;
-    const gate = 0.25 * (n + 1) * w; // 137.5
-    expect(shouldShrinkPack(gate + 1, n, w, 10_000, 0)).toBe(false);
-    // على البوابة تمامًا (σ≈0.725 عند n=10) مع بديل سيئ جدًا ⇒ سقف e يتبنى
-    expect(shouldShrinkPack(gate, n, w, 10_000, 0)).toBe(true);
+    // ‏σ<0.75 (انكماش >25%) يكسر حتمًا: D=0.25·n·w=125 هو حدّ σ=0.75
+    expect(shouldShrinkPack(126, n, w, 10_000, 0)).toBe(false); // σ<0.75
+    // عند الأرضية تمامًا (σ=0.75) مع بديل سيئ جدًا ⇒ سقف e يتبنى
+    expect(shouldShrinkPack(125, n, w, 10_000, 0)).toBe(true); // σ=0.75
   });
 
-  it("سقف التمديد e>1.5 يتبنى ولو رفضته نسبة الحدّين", () => {
-    // ‏σ=0.726 (s=0.274)، ‏e=1.6 (t=0.6): s/t=0.457<0.5 ⇒ نسبةٌ تحشر أصلًا
+  it("سقف التمديد e>1.5 يتبنى ولو رفضته نسبة الحدّين (فوق الأرضية)", () => {
+    // ‏σ=0.80 (s=0.20، فوق الأرضية 0.75)، ‏e=1.8 (t=0.8): s/t=0.25
     const n = 10, w = 50, W = 5000;
-    const D = (1 - 0.726) * n * w; // 137 ≤ البوابة 137.5
-    const L1 = W - 0.6 * (n - 1) * w; // e = 1.6
-    expect(shouldShrinkPack(D, n, w, W, L1)).toBe(true);
-    // بسقف مرفوع (eCap=2) وقيمة k متشدّدة تكشف أن السقف هو من تبنّى:
-    // s/t=0.457 ≥ k=0.4 ⇒ لولا السقف لرُفض
-    expect(shouldShrinkPack(D, n, w, W, L1, { eCap: 2.0, k: 0.4 })).toBe(false);
-    expect(shouldShrinkPack(D, n, w, W, L1, { eCap: 2.0, k: 0.5 })).toBe(true);
+    const D = 100; // σ = 1 − 100/(10·50) = 0.80
+    const L1 = 4640; // e = 1 + (5000−4640)/(9·50) = 1.8
+    expect(shouldShrinkPack(D, n, w, W, L1)).toBe(true); // e=1.8 > سقف 1.5
+    // بسقف مرفوع (eCap=2) e<2 فتحكم النسبة s/t=0.25:
+    expect(shouldShrinkPack(D, n, w, W, L1, { eCap: 2.0, k: 0.2 })).toBe(false);
+    expect(shouldShrinkPack(D, n, w, W, L1, { eCap: 2.0, k: 0.3 })).toBe(true);
   });
 
   it("نسبة الحدّين تفصل «أن» الحدّية التي عجز الموزون عنها (masjid)", () => {

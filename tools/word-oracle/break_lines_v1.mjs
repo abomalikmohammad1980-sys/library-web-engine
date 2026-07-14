@@ -294,8 +294,15 @@ for (const p of paras) {
       const n = (seg.match(/ /g) ?? []).length;
       if (n > 0) {
         const sigma = 1 - D / (n * spaceW);
-        // بوابة السماحية بنص الخوارزمية: n_allow = n + 1 ‏(القاعدة 16 §3)
-        const gateOK = D <= 0.25 * (n + 1) * spaceW;
+        // ★ أرضية الانكماش الصلبة (قاعدة 16-ب، وكيل بحث LO/Németh tdf#119908):
+        // Word 2013+ يضغط المسافة بحدٍّ أقصى، فوقه **يكسر** حتمًا مهما حسُنت
+        // نسبة الحدّين. البحث دلّ على المفهوم (PropWordSpacingMinimum)؛ والمسح
+        // على الحقيقة ثبّت القيمة **σ≥0.75 (أقصى 25% انكماش)** — muqtarah أفقي
+        // 91.3→100% بلا انتكاس (كان يحشر سطورًا تتطلّب >25% كسرها Word). البوابة
+        // القديمة D≤0.25(n+1)w كانت أرخى بـ0.25/n فتُمرّر تلك السطور. SIGMA_FLOOR
+        // لتعديل القيمة، =0 للبوابة القديمة.
+        const sigFloor = process.env.SIGMA_FLOOR != null ? Number(process.env.SIGMA_FLOOR) : 0.75;
+        const gateOK = sigFloor > 0 ? (sigma >= sigFloor) : (D <= 0.25 * (n + 1) * spaceW);
         let e = null, L1 = null, n1 = null;
         if (gateOK) {
           L1 = width(lineStartChar, lineEndChar);
