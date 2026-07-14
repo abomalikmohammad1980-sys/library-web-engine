@@ -156,13 +156,16 @@ function stepDotsV3(p, t) {
 
 /** ‏v7 (القاعدة 7): مقاييس السطر مفصولة — {asc، desc، gap} = ‏max على runs،
  *  وعلامة الترقيم (بحجم rPr علامة الفقرة) ترفع ascent فقط (sdkjs:3895). */
+// ‏VPS: معايرة مقياس المقاييس الرأسية (اختبار انحياز ~0.2% المتراكم الذي
+// يظهر في الصفحة الكاملة رغم اجتياز الداخلي — hhea مقابل GDI الدقيق).
+const VPS = Number(process.env.VPS ?? "1");
 function lineMet(p, t, isFirstLine = false) {
   let asc = 0, desc = 0, gap = 0, textAscFactor = 0, ascRunGap = 0;
   for (const r of t.runFonts ?? []) {
     const met = runMet.get(r.font) ?? MAIN_MET;
     // ‏EM_MODE: ‏q10 (افتراضي) em لأقرب 10 (المثالي 16pt→320)؛ ‏exact em
     // المرصود كما هو (319 المكمَّم 600dpi) — تجربة إزالة انجراف tadris +3
-    const emIdeal = process.env.EM_MODE === "exact" ? r.em : Math.round(r.em / 10) * 10;
+    const emIdeal = (process.env.EM_MODE === "exact" ? r.em : Math.round(r.em / 10) * 10) * VPS;
     if (met.a * emIdeal > asc) { asc = met.a * emIdeal; ascRunGap = met.g * emIdeal; }
     desc = Math.max(desc, met.d * emIdeal);
     gap = Math.max(gap, met.g * emIdeal);
