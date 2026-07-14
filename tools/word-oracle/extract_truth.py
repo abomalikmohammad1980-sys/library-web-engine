@@ -181,6 +181,8 @@ def extract(xps_path: str, max_pages: int | None):
                     "text": attrs["UnicodeString"],
                     "x": round((float(attrs.get("OriginX", "0")) * s + tx) * XPS_UNIT_TO_TWIPS),
                     "y": round((float(attrs.get("OriginY", "0")) * s + ty) * XPS_UNIT_TO_TWIPS),
+                    # ‏y الكسري (بلا تقريب) — لكشف شبكة Word الحقيقية وتكميم baseline
+                    "yF": (float(attrs.get("OriginY", "0")) * s + ty) * XPS_UNIT_TO_TWIPS,
                     "emTwips": round(em * XPS_UNIT_TO_TWIPS),
                     "font": font_name,
                     "bidiLevel": int(attrs.get("BidiLevel", "0")),
@@ -208,8 +210,10 @@ def extract(xps_path: str, max_pages: int | None):
                     starts.append(r["x"] - adv); ends.append(r["x"])
                 else:
                     starts.append(r["x"]); ends.append(r["x"] + adv)
+            yF_vals = sorted(r["yF"] for r in rs)
             lines.append({
                 "baselineTwips": y,
+                "baselineTwipsF": yF_vals[len(yF_vals) // 2],  # وسيط y الكسري
                 "xMin": min(starts),
                 "xMax": max(ends),
                 "text": " ".join(r["text"] for r in rs),
