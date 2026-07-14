@@ -21,6 +21,24 @@ const FONT_FILE = process.env.FONT_FILE ?? "corpus/book-fonts/adwa-assalaf.ttf";
 const model = extractFromDocx(readFileSync(`corpus/books/${BOOK}.docx`));
 const truth = JSON.parse(readFileSync(`corpus/ground-truth/${BOOK}.truth.json`, "utf-8"));
 
+// ★ مقاييس GDI الأصليّة (تلميح 600dpi، خاصّ بويندوز): GDI_COLLECT=1 يجمع fullText؛
+// gdi_measure.ps1 يقيسها؛ GDI_CUM=1 يستعملها. **نتيجة سلبية قاطعة (في المُحكِّم
+// الحقيقي لا الخام)**: على الكسر الجشع الصرف (jc=null) GDI ≡ HarfBuzz **حرفيًا**
+// (tadris 202/208 متطابقان) — فتلميح الجهاز **لا يغيّر قرار الكسر**؛ Word يكسر
+// بدقّة التصميم (HarfBuzz صحيح)، والتلميح للرسم فقط. على الانكماش/الكشيدة GDI
+// أسوأ (90.07 مقابل 94.41) لأن عرضه الأوسع يُطلق منطق ق16. البقايا الأفقية دقّة
+// ±3tw عند التصميم لا تُحلّ بـGDI. العلم تشخيصيٌّ مطفأ يوثّق النتيجة السلبية.
+const GDI_COLLECT = process.env.GDI_COLLECT === "1";
+const gdiCollect = [];
+let GDI_CACHE = null;
+if (process.env.GDI_CUM === "1") {
+  try {
+    GDI_CACHE = new Map();
+    const raw = JSON.parse(readFileSync(`tools/word-oracle/gdi-cache-${BOOK}.json`, "utf-8"));
+    for (const [k, v] of Object.entries(raw)) GDI_CACHE.set(k, v); // fullText → cumulative px @600dpi
+  } catch { GDI_CACHE = null; }
+}
+
 const face = new Face(new Blob(readFileSync(FONT_FILE)), 0);
 const font = new Font(face);
 const upem = face.upem;
@@ -172,7 +190,13 @@ for (const p of paras) {
       pos += wd.length;
       if (pos < fullText.length) { advAtChar[pos] = (emAt[pos] / em) * spaceW; pos++; }
     }
+  } else if (GDI_CACHE && GDI_CACHE.has(fullText)) {
+    // ★ مقاييس GDI الأصليّة: cum بكسلات 600dpi → تقدّم كل محرف = فرق cum × 2.4tw.
+    const cum = GDI_CACHE.get(fullText);
+    let prev = 0;
+    for (let c = 0; c < fullText.length; c++) { advAtChar[c] = (cum[c] - prev) * 2.4; prev = cum[c]; }
   } else {
+    if (GDI_COLLECT) gdiCollect.push({ em: Math.round((emAt[0] || em)), text: fullText });
     const buf = new HbBuffer();
     buf.addText(fullText); buf.guessSegmentProperties(); shape(font, buf, HB_FEATS);
     const infos = buf.getGlyphInfos(), poss = buf.getGlyphPositions();
@@ -472,6 +496,11 @@ if (process.env.DIV_BAND) {
 const pct = linesTotal ? ((100 * linesMatched) / linesTotal).toFixed(2) : "0";
 console.log(`فقرات docx مؤهلة: ${paras.length} | محاذاة: ${parasAligned} | بلا محاذاة: ${parasSkipped}`);
 console.log(`★★ الرقم الشمالي v1 (نص من XML): ${linesMatched}/${linesTotal} = ${pct}%`);
+if (GDI_COLLECT) {
+  writeFileSync(`tools/word-oracle/gdi-collect-${BOOK}.txt`,
+    gdiCollect.map((o) => o.em + "\t" + o.text.replace(/[\r\n]/g, " ")).join("\n"), "utf8");
+  console.log(`GDI_COLLECT: كُتب ${gdiCollect.length} fullText إلى gdi-collect-${BOOK}.txt`);
+}
 for (const f of failures) console.log("  فشل:", JSON.stringify(f));
 writeFileSync(`corpus/ground-truth/linebreak-v1-report${BOOK === "sample-masjid" ? "" : "-" + BOOK}.json`,
   JSON.stringify({ paras: paras.length, parasAligned, linesTotal, linesMatched, pct: Number(pct), failures }, null, 1));
