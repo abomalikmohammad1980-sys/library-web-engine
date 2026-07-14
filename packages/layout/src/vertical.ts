@@ -16,6 +16,10 @@ export interface VertMetrics {
   g: number;
   /** OS/2 usWinDescent / upem (لـexternalLeading في بداية الصفحة) */
   wd: number;
+  /** OS/2 usWinAscent / upem (اختياريّ): يفعّل صيغة بداية الصفحة المقصوصة
+   *  (externalLeading = max(0,…) كـGDI tmExternalLeading). حين يُحذف، يُستعمل
+   *  الاحتياطيّ المبسَّط الذي يفترض externalLeading ≥ 0. */
+  wa?: number;
 }
 
 export interface LineSpacing {
@@ -103,7 +107,15 @@ export function pageStartAscent(
   const mClass = lineMultiplier(sp) > 1 ? "mN" : "m1";
   const calVal = cal?.[String(em)]?.[mClass];
   if (calVal != null) return calVal;
-  return (m.a + m.d + m.g - m.wd) * em; // النموذج الاحتياطيّ
+  // النموذج (ق8-ج): الأساس الأوّل = usWinAscent + externalLeading، حيث
+  // externalLeading = max(0, (hheaAsc−hheaDesc+hheaGap) − (usWinAsc+usWinDesc)).
+  // مؤكَّدٌ ببحثٍ في شفرة WPF LineServices (LineServicesCallbacks.cs: الأساس الأوّل =
+  // الصعود المُقرَّب وحده) ومطابِقٌ للمعايرة المقيسة ضمن نقطة جهازٍ واحدة (<1tw).
+  if (m.wa != null) {
+    const extLead = Math.max(0, (m.a + m.d + m.g) - (m.wa + m.wd));
+    return (m.wa + extLead) * em;
+  }
+  return (m.a + m.d + m.g - m.wd) * em; // احتياطيّ مبسَّط (يفترض externalLeading ≥ 0)
 }
 
 /** حَمْل النقطة (dot-carry، نموذج LineServices): يُراكم Word الـpitch الكسريّ ويُقحِم

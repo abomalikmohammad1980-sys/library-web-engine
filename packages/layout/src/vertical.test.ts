@@ -94,6 +94,20 @@ describe("pageStartAscent — ق‌ر8/8-د", () => {
     const model = (ADWA.a + ADWA.d + ADWA.g - ADWA.wd) * 300;
     expect(pageStartAscent(ADWA, 300, SINGLE, cal)).toBeCloseTo(model, 3);
   });
+  it("wa موجود، externalLeading≥0 ⇒ مطابقٌ للاحتياطيّ المبسَّط (adwa: usWinAsc=2267/2048)", () => {
+    // adwa: hheaTotal=(2267+1589+18)/2048، usWinTotal=(2267+1589)/2048 ⇒ extLead=18/2048≥0
+    const withWa: VertMetrics = { ...ADWA, wa: 2267 / 2048 };
+    const simplified = (ADWA.a + ADWA.d + ADWA.g - ADWA.wd) * 300;
+    expect(pageStartAscent(withWa, 300, SINGLE)).toBeCloseTo(simplified, 6);
+  });
+  it("wa موجود، usWin>hhea ⇒ القصّ عند الصفر يمنع بخس الصعود", () => {
+    // خطٌّ افتراضيّ: usWinAscent كبيرٌ، hheaTotal < usWinTotal ⇒ extLead=0، الأساس=usWinAscent
+    const font: VertMetrics = { a: 0.90, d: 0.20, g: 0, wd: 0.30, wa: 1.05 };
+    // extLead = max(0, (0.90+0.20+0) − (1.05+0.30)) = max(0, −0.25) = 0 ⇒ الأساس = wa×em
+    expect(pageStartAscent(font, 300, SINGLE)).toBeCloseTo(1.05 * 300, 6);
+    // الاحتياطيّ المبسَّط كان سيبخس: (0.90+0.20+0−0.30)×300 = 240 < 315
+    expect((font.a + font.d + font.g - font.wd) * 300).toBe(240);
+  });
 });
 
 describe("carrySnap — حَمْل النقطة (dot-carry)", () => {
