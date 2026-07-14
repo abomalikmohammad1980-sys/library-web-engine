@@ -153,7 +153,9 @@ function lineMet(p, t, isFirstLine = false) {
   let asc = 0, desc = 0, gap = 0, textAscFactor = 0;
   for (const r of t.runFonts ?? []) {
     const met = runMet.get(r.font) ?? MAIN_MET;
-    const emIdeal = Math.round(r.em / 10) * 10;
+    // ‏EM_MODE: ‏q10 (افتراضي) em لأقرب 10 (المثالي 16pt→320)؛ ‏exact em
+    // المرصود كما هو (319 المكمَّم 600dpi) — تجربة إزالة انجراف tadris +3
+    const emIdeal = process.env.EM_MODE === "exact" ? r.em : Math.round(r.em / 10) * 10;
     asc = Math.max(asc, met.a * emIdeal);
     desc = Math.max(desc, met.d * emIdeal);
     gap = Math.max(gap, met.g * emIdeal);
