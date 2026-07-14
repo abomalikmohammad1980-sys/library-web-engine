@@ -150,22 +150,26 @@ function stepDotsV3(p, t) {
 /** ‏v7 (القاعدة 7): مقاييس السطر مفصولة — {asc، desc، gap} = ‏max على runs،
  *  وعلامة الترقيم (بحجم rPr علامة الفقرة) ترفع ascent فقط (sdkjs:3895). */
 function lineMet(p, t, isFirstLine = false) {
-  let asc = 0, desc = 0, gap = 0;
+  let asc = 0, desc = 0, gap = 0, textAscFactor = 0;
   for (const r of t.runFonts ?? []) {
     const met = runMet.get(r.font) ?? MAIN_MET;
     const emIdeal = Math.round(r.em / 10) * 10;
     asc = Math.max(asc, met.a * emIdeal);
     desc = Math.max(desc, met.d * emIdeal);
     gap = Math.max(gap, met.g * emIdeal);
+    textAscFactor = Math.max(textAscFactor, met.a); // صعود خط المتن نفسه
   }
   if (!asc) return null;
   // رفع العلامة: العلامة تسكن **أول سطر** الفقرة المعدودة فقط — ترفع
   // ‏ascent ذلك السطر وحده (sdkjs:3895)، **بخطها الفعلي حسب شريحة نصها**:
   // أرقام «1.» لاتينية ⇒ ‏rFonts ascii من rPr علامة الفقرة (لغز 586:
-  // ‏desc(adwa)+asc(Simplified ‏1.18em) = ‏586.7 والمرصود 586–588 ✓)
+  // ‏desc(adwa)+asc(Simplified ‏1.18em) = ‏586.7 والمرصود 586–588 ✓).
+  // بلا شريحة لاتينية معلنة: العلامة بخط المتن نفسه (dawra «1-» بترادو
+  // العادي) — فالمرجع صعود المتن، لا MAIN_MET (كان subset البولد فيرفع +11.5)
   if (isFirstLine && p.numbered && p.markEmTwips) {
-    const met = (p.markAsciiFamily && famMet.get(p.markAsciiFamily)) ?? MAIN_MET;
-    asc = Math.max(asc, met.a * p.markEmTwips);
+    const markAscFactor = (p.markAsciiFamily && famMet.get(p.markAsciiFamily)?.a)
+      ?? textAscFactor;
+    asc = Math.max(asc, markAscFactor * p.markEmTwips);
   }
   // ‏ascStart (القاعدة 8-ج): صعود «أول سطر الصفحة» يشمل externalLeading —
   // ‏(hheaTotal − winDesc)×em = ‏ext + winAsc (‏LO: ‏leading فوق السطر).
