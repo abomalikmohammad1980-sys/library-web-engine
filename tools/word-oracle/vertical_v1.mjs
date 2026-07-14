@@ -59,9 +59,49 @@ function fontVertMetrics(path) {
   if (process.env.NOGAP === "1") g = 0;
   return { a, d, g, wd };
 }
-const MAIN_MET = fontVertMetrics(FONT_FILE);
+let MAIN_MET = fontVertMetrics(FONT_FILE);
 const runMet = new Map(); // odttf → {a، d، g}
 const famMet = new Map(); // family → {a، d، g} (لخط علامة الترقيم بشريحتها)
+
+// ★ مطابقة المقاييس الدقيقة (PRECISE=1، افتراضي): subset الاستخراج قد يُعاد
+// توليده بـupem مخفَّض (Jazeera 1000 مقابل 2048) فيُقرّب pitch بـ~0.03% —
+// وWord يستعمل الخط الأصلي الدقيق. نطابق كل subset بأقرب أصلٍ بالـpitch من
+// مجموعة book-fonts ونستعمل مقاييسه العالية الدقة. (تجاوز مسمّى fonts-map
+// الخاطئ — يطابق بالقيمة لا بالاسم.) ‏PRECISE=0 للعودة لمقاييس subset الخام.
+import { readdirSync } from "node:fs";
+function fontUpem(path) {
+  const buf = readFileSync(path);
+  const num = buf.readUInt16BE(4);
+  for (let i = 0; i < num; i++) {
+    const o = 12 + i * 16;
+    if (buf.toString("ascii", o, o + 4) === "head") return buf.readUInt16BE(buf.readUInt32BE(o + 8) + 18);
+  }
+  return 2048;
+}
+const origMets = [];
+if (process.env.PRECISE !== "0") {
+  try {
+    for (const f of readdirSync("corpus/book-fonts")) {
+      if (!f.endsWith(".ttf")) continue;
+      try {
+        const m = fontVertMetrics(`corpus/book-fonts/${f}`);
+        origMets.push({ f, pitch: m.a + m.d + m.g, upem: fontUpem(`corpus/book-fonts/${f}`), met: m });
+      } catch { /* تخطَّ */ }
+    }
+  } catch { /* لا مجلد */ }
+}
+/** أدقّ مقاييس أصليّة لـpitch معطى: ضمن 0.1% وبأعلى upem (المصدر الدقيق —
+ *  subset الاستخراج المخفَّض upem يقرّب pitch فيلتبس بأصولٍ أدنى دقة بنفس
+ *  القيمة المقرّبة؛ نفضّل الأعلى upem بينها). أو null إن لم يطابق. */
+const precise = (subMet) => {
+  if (!origMets.length) return null;
+  const p = subMet.a + subMet.d + subMet.g;
+  const cands = origMets.filter((o) => Math.abs(o.pitch - p) / p < 0.001);
+  if (!cands.length) return null;
+  cands.sort((a, b) => b.upem - a.upem); // أعلى upem أولًا
+  return cands[0].met;
+};
+{ const pm = precise(MAIN_MET); if (pm) MAIN_MET = pm; } // ترقية خط المتن الرئيسي
 
 // ‏v2: خطوة السطر = max على runs السطر من (خطوة خط الـrun × حجمه) —
 // أسطر فيها بولد/لاتيني/مصحفي تعلو (عنقودا tadris ‏203/204 = tradbdo).
@@ -76,7 +116,9 @@ try {
     if (!src) continue;
     try {
       runPitch.set(odttf, fontVerticalPitch(src));
-      const met = fontVertMetrics(src);
+      let met = fontVertMetrics(src);
+      const pm = precise(met); // مقاييس أصليّة دقيقة إن طابقت بالـpitch
+      if (pm) met = pm;
       runMet.set(odttf, met);
       if (info.family && !famMet.has(info.family)) famMet.set(info.family, met);
     } catch { /* خط بلا ملف */ }
