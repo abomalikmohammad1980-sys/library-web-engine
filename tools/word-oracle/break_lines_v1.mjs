@@ -3,7 +3,13 @@
  *  والحقيقة (XPS) للمقارنة فقط. المحاذاة بين فقرات docx وأسطر الحقيقة
  *  بتطبيع «بلا مسافات» + توحيد الأرقام + إسقاط علامات الاتجاه/التطويل. */
 import { readFileSync, writeFileSync } from "node:fs";
-import { Blob, Buffer as HbBuffer, Face, Font, shape } from "harfbuzzjs";
+import { Blob, Buffer as HbBuffer, Face, Feature, Font, shape } from "harfbuzzjs";
+// ‏HB_FEATURES: تعطيل/تفعيل ميزات OpenType (مثال «-kern,-calt»). مُجرَّبٌ ومرفوض:
+// تعطيل أيٍّ منها يُسيء بشدّة (jalsa: ‏-kern→12٪، ‏-liga→10٪، ‏-calt→86٪) —
+// ‏HarfBuzz يطبّق GPOS/الميزات مطابقًا لـWord؛ فرقُ الـ~3tw ليس ميزةً بل دقّة
+// تشكيلٍ دون-twip غير قابلة للاختزال (مُثبَتٌ باستنفاد كل الفرضيات).
+const HB_FEATS = process.env.HB_FEATURES
+  ? process.env.HB_FEATURES.split(",").map((s) => Feature.fromString(s.trim())) : [];
 import { extractFromDocx } from "../../packages/ooxml-model/dist/index.js";
 import { numTabTextStart } from "../../packages/layout/dist/index.js";
 
@@ -18,14 +24,26 @@ const truth = JSON.parse(readFileSync(`corpus/ground-truth/${BOOK}.truth.json`, 
 const face = new Face(new Blob(readFileSync(FONT_FILE)), 0);
 const font = new Font(face);
 const upem = face.upem;
+// ★ تقدّم متوافق-GDI (وكيل بحث ScriptPlace/DirectWrite): فرضيةُ أن Word يشبك
+// تقدّم كل محرف لبكسل جهازٍ صحيح عند دقة الطابعة. الوصفة: ppem = round(pt·DPI/72)
+// صحيح؛ adv_px = round(adv_du·ppem/upem)؛ العرض = Σ adv_px × 1440/DPI.
+// **مُجرَّبةٌ ومرفوضةٌ تجريبيًا**: تُسيء لكل دقة (jalsa 600→47٪، 1200→73٪،
+// تتقارب للطبيعي 87.8 كلما دقّت الشبكة) — Word لا يشبك للورق هنا؛ التشكيل
+// الطبيعي (HarfBuzz، كل الميزات) هو أقرب مطابقة. ‏GDI_ADV=<DPI> للتجريب.
+const GDI_DPI = process.env.GDI_ADV ? Number(process.env.GDI_ADV) : 0;
+const gdiAdv = (advDu, emTw) => {
+  if (!GDI_DPI) return (advDu / upem) * emTw;              // طبيعي (HarfBuzz)
+  const ppem = Math.round((emTw * GDI_DPI) / 1440);        // بكسلات، ppem صحيح
+  return (Math.round((advDu * ppem) / upem) * 1440) / GDI_DPI; // بكسل صحيح → twips
+};
 const wCache = new Map();
 function widthTwips(text, em) {
-  const k = text + "@" + em;
+  const k = text + "@" + em + "@" + GDI_DPI;
   if (wCache.has(k)) return wCache.get(k);
   const b = new HbBuffer();
-  b.addText(text); b.guessSegmentProperties(); shape(font, b);
-  let u = 0; for (const p of b.getGlyphPositions()) u += p.xAdvance;
-  const w = (u / upem) * em; wCache.set(k, w); return w;
+  b.addText(text); b.guessSegmentProperties(); shape(font, b, HB_FEATS);
+  let w = 0; for (const p of b.getGlyphPositions()) w += gdiAdv(p.xAdvance, em);
+  wCache.set(k, w); return w;
 }
 
 const norm = (s) => s
@@ -147,7 +165,7 @@ for (const p of paras) {
     // فرضية أن Word يقيس أجزاء السطر لا السطر المتصل)
     let pos = 0;
     for (const wd of words) {
-      const b = new HbBuffer(); b.addText(wd); b.guessSegmentProperties(); shape(font, b);
+      const b = new HbBuffer(); b.addText(wd); b.guessSegmentProperties(); shape(font, b, HB_FEATS);
       const is = b.getGlyphInfos(), ps = b.getGlyphPositions();
       for (let g = 0; g < is.length; g++)
         advAtChar[pos + is[g].cluster] += (ps[g].xAdvance / upem) * emAt[pos + is[g].cluster];
@@ -156,9 +174,9 @@ for (const p of paras) {
     }
   } else {
     const buf = new HbBuffer();
-    buf.addText(fullText); buf.guessSegmentProperties(); shape(font, buf);
+    buf.addText(fullText); buf.guessSegmentProperties(); shape(font, buf, HB_FEATS);
     const infos = buf.getGlyphInfos(), poss = buf.getGlyphPositions();
-    for (let g = 0; g < infos.length; g++) advAtChar[infos[g].cluster] += (poss[g].xAdvance / upem) * emAt[infos[g].cluster];
+    for (let g = 0; g < infos.length; g++) advAtChar[infos[g].cluster] += gdiAdv(poss[g].xAdvance, emAt[infos[g].cluster]);
   }
   // تجارب تقريب المقاييس (عائلة الحدّيات ±80 twips):
   // ‏ROUND_ADV=1: تقريب تقدم العنقود لأقرب twip (نتيجة سلبية صافية مقيسة).
