@@ -51,9 +51,12 @@ function fontVertMetrics(path) {
   const upem = buf.readUInt16BE(head + 18);
   const a = buf.readInt16BE(hhea + 4) / upem;
   const d = -buf.readInt16BE(hhea + 6) / upem;
-  const g = buf.readInt16BE(hhea + 8) / upem;
+  let g = buf.readInt16BE(hhea + 8) / upem;
   // ‏OS/2 win (لـexternalLeading): ‏usWinAscent@74، ‏usWinDescent@76
   const wd = os2 != null ? buf.readUInt16BE(os2 + 76) / upem : d;
+  // ‏NOGAP=1: إسقاط lineGap الـhhea (فرضية: Word يستعمل win بلا فجوة لبعض
+  // الخطوط — adwa فجوته 18 وحدة = 2.6tw@300 توافق انجراف masjid تمامًا)
+  if (process.env.NOGAP === "1") g = 0;
   return { a, d, g, wd };
 }
 const MAIN_MET = fontVertMetrics(FONT_FILE);
