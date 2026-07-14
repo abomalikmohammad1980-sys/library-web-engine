@@ -133,6 +133,26 @@ try {
 
 const model = extractFromDocx(readFileSync(`corpus/books/${BOOK}.docx`));
 const paraByIndex = new Map(model.paragraphs.map((p) => [p.index, p])); // .index ≠ موقع المصفوفة
+
+// ★ الأنماط ذات contextualSpacing (Word يُسقط التباعد بين فقرتين متتاليتين من
+// نفس النمط) — غير مكشوفٍ في النموذج، فنستخرجه من styles.xml خامًا. (ahadith:
+// نمط a6 «List Paragraph» فقرات القوائم بلا تباعدٍ بينها؛ حدّها كان يُتنبّأ +158.)
+const ctxStyles = new Set();
+try {
+  const { unzipSync, strFromU8 } = await import("../../node_modules/.pnpm/fflate@0.8.3/node_modules/fflate/esm/browser.js");
+  const zip = unzipSync(readFileSync(`corpus/books/${BOOK}.docx`));
+  if (zip["word/styles.xml"]) {
+    const sx = strFromU8(zip["word/styles.xml"]);
+    for (const m of sx.matchAll(/<w:style\b[^>]*w:styleId="([^"]+)"[^>]*>([\s\S]*?)<\/w:style>/g))
+      if (m[2].includes("contextualSpacing")) ctxStyles.add(m[1]);
+  }
+} catch { /* بلا أنماط — لا تأثير */ }
+// حدّ التباعد بين فقرتين: 0 إن اشتركتا في نمطٍ ذي contextualSpacing
+const boundaryGap = (A, B) => {
+  const af = A.spacing?.after ?? 0, bf = B.spacing?.before ?? 0;
+  if (A.styleId && A.styleId === B.styleId && ctxStyles.has(A.styleId)) return 0;
+  return Math.max(af, bf);
+};
 const truth = JSON.parse(readFileSync(`corpus/ground-truth/${BOOK}.truth.json`, "utf-8"));
 
 const norm = (s) => s
@@ -512,17 +532,13 @@ for (let hi = 0; hi < heads.length; hi++) {
       step = MA.desc + MA.gap + (MA.asc + MA.desc + MA.gap) * (mA - 1) + MB.asc;
     } else step = (stepDotsV3(B.p, B.firstT) ?? 0) * 2.4;
     if (!step) continue;
-    let af = A.p.spacing.after ?? 0, bf = B.p.spacing.before ?? 0;
-    // ★ قنص التباعد الحدّي لنقطة 600dpi (قياسٌ متحكّم به: مستند فقرتين Regular
-    // بعد=160 ⇒ المرصود 65-66 نقطة = 156/158.4tw لا 160): Word يكمّم التباعد
-    // للجهاز (160tw = 66.67 نقطة ⇒ 66 بالتدوير الأرضي). ‏BND_DOT للتجربة (round/
-    // floor/off). الأرضي 66 (158.4) يقع ضمن ±3 من كلتا الحالتين المرصودتين.
+    // حدّ التباعد: max(after,before) أو 0 لـcontextualSpacing (نمطٌ مشترك) —
+    // ★ قنص التباعد لنقطة 600dpi (قياس: بعد=160 ⇒ 156/158.4 لا 160؛ floor).
     const bdot = process.env.BND_DOT ?? "floor";
     const snapD = (x) => bdot === "off" ? x : bdot === "round" ? Math.round(x / 2.4) * 2.4 : Math.floor(x / 2.4) * 2.4;
-    af = snapD(af); bf = snapD(bf);
-    // ‏BGAP=max: قاعدة انهيار الفواصل (Word يأخذ الأكبر لا المجموع)
-    // القاعدة 9 لا تمس الحدود (تجربتها هنا: 86→31% — النقطة تسكن أول خطوة داخلية)
-    let predB = step + (process.env.BGAP === "sum" ? af + bf : Math.max(af, bf));
+    const rawGap = process.env.CTX_SPACING === "0"
+      ? Math.max(A.p.spacing.after ?? 0, B.p.spacing.before ?? 0) : boundaryGap(A.p, B.p);
+    let predB = step + snapD(rawGap);
     // ★ قنص الخطوة الحدّية لنقطة الجهاز (BSTEP_DOT): حدود masjid بلا تباعد
     // (af=bf=0) انحرافها −4 = حَمْل النقطة نفسه الذي يعالجه ICARRY داخليًا؛
     // الخطوة الحدّية خطوةُ سطرٍ عادية تخضع لتكميم 2.4tw. القنص المطلق للإزاحة
@@ -681,7 +697,10 @@ for (let hi = 0; hi < heads.length; hi++) {
               yPrevMet = BL; mPrev = mB; prevAfter = bp.spacing.after ?? 0;
             }
           }
-          const gap = Math.max(prevAfter, S.p.spacing.before ?? 0);
+          // ‏contextualSpacing: صفرٌ بين فقرتين من نمطٍ مشترك ذي العلم
+          const gap = (process.env.CTX_SPACING !== "0" && prevS.p.styleId &&
+            prevS.p.styleId === S.p.styleId && ctxStyles.has(prevS.p.styleId))
+            ? 0 : Math.max(prevAfter, S.p.spacing.before ?? 0);
           const bstep = yPrevMet.desc + yPrevMet.gap + (yPrevMet.asc + yPrevMet.desc + yPrevMet.gap) * (mPrev - 1) + gap + M.asc;
           if (process.env.BND_DBG === "1")
             console.log("bnd:", JSON.stringify({ obsStep: t.y - prevT.y, predStep: Math.round(bstep),
