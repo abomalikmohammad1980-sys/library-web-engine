@@ -511,7 +511,14 @@ for (let hi = 0; hi < heads.length; hi++) {
       step = MA.desc + MA.gap + (MA.asc + MA.desc + MA.gap) * (mA - 1) + MB.asc;
     } else step = (stepDotsV3(B.p, B.firstT) ?? 0) * 2.4;
     if (!step) continue;
-    const af = A.p.spacing.after ?? 0, bf = B.p.spacing.before ?? 0;
+    let af = A.p.spacing.after ?? 0, bf = B.p.spacing.before ?? 0;
+    // ★ قنص التباعد الحدّي لنقطة 600dpi (قياسٌ متحكّم به: مستند فقرتين Regular
+    // بعد=160 ⇒ المرصود 65-66 نقطة = 156/158.4tw لا 160): Word يكمّم التباعد
+    // للجهاز (160tw = 66.67 نقطة ⇒ 66 بالتدوير الأرضي). ‏BND_DOT للتجربة (round/
+    // floor/off). الأرضي 66 (158.4) يقع ضمن ±3 من كلتا الحالتين المرصودتين.
+    const bdot = process.env.BND_DOT ?? "floor";
+    const snapD = (x) => bdot === "off" ? x : bdot === "round" ? Math.round(x / 2.4) * 2.4 : Math.floor(x / 2.4) * 2.4;
+    af = snapD(af); bf = snapD(bf);
     // ‏BGAP=max: قاعدة انهيار الفواصل (Word يأخذ الأكبر لا المجموع)
     // القاعدة 9 لا تمس الحدود (تجربتها هنا: 86→31% — النقطة تسكن أول خطوة داخلية)
     const predB = step + (process.env.BGAP === "sum" ? af + bf : Math.max(af, bf));
@@ -635,6 +642,9 @@ for (let hi = 0; hi < heads.length; hi++) {
           const MP = lineMet(prevS.p, prevT, false);
           const la = prevS.p.spacing;
           const mA = la.line != null && la.lineRule !== "exact" && la.lineRule !== "atLeast" ? la.line / 240 : 1;
+          // ملاحظة: قنص التباعد هنا (المُراكِم) يُدخِل انجرافًا في jalsa (100→70)
+          // لأنه يتراكم بلا قنص baseline مقابل؛ يبقى القنص في مُحكِّم الحدود المفرد
+          // فقط (BND_DOT، حيث المقارنة لكل حدٍّ على حِدة). القياس نفسه (قاعدة 8-هـ).
           const gap = Math.max(prevS.p.spacing.after ?? 0, S.p.spacing.before ?? 0);
           const bstep = MP.desc + MP.gap + (MP.asc + MP.desc + MP.gap) * (mA - 1) + gap + M.asc;
           if (process.env.BND_DBG === "1")
