@@ -333,9 +333,13 @@ for (let hi = 0; hi < heads.length; hi++) {
       console.log("r9:", JSON.stringify({ para: p.index, step: +stepPred.toFixed(2),
         bonus: +bonus.toFixed(2), src: p.spacing.lineSource, line: p.spacing.line }));
     accPred += stepPred + bonus; // القاعدة 9: سقف أول خطوة
-    // ‏v3: تكميم baseline المتراكم للنقاط؛ ‏v4: نفس الخطوة بلا تكميم
+    // تكميم baseline المتراكم على شبكة 600dpi: ‏v3 دائمًا. ‏v7 **لا** يُكمَّم
+    // هنا (Q7=1 لتجربته): المرساة نقطةُ حقيقةٍ منتصفَ صفحةٍ ناتجةٌ عن تراكم
+    // تكميمات من رأس الصفحة — فإعادة التكميم محليًا تضاعف الخطأ (جُرّب:
+    // الستة انحدرت). التكميم محلّه المُحكِّم الكامل (يتراكم من الرأس).
+    const quant = MODE === "3" || (MODE === "7" && process.env.Q7 === "1");
     const predicted = accum
-      ? (MODE === "3" ? Math.round((anchorY + accPred) / 2.4) * 2.4 : anchorY + accPred)
+      ? (quant ? Math.round((anchorY + accPred) / 2.4) * 2.4 : anchorY + accPred)
       : stepPred;
     const obs = accum ? b.y : b.y - a.y;
     const err = Math.abs(obs - predicted);
@@ -485,10 +489,15 @@ for (let hi = 0; hi < heads.length; hi++) {
             + (i === 1 ? inhPlus(S.p) : 0); // (+9 في أول خطوة داخلية)
         }
         fN++;
-        const err = t.y - y;
+        // تكميم شبكة 600dpi للمقارنة: **معطّل افتراضيًا** (QFP=1 لتجربته) —
+        // ‏round(y/2.4) الساذج يقلب قيم tadris الجالسة على حدود الشبكة تمامًا
+        // ‏(100→88): النموذج الكسري أدقّ من التكميم الساذج، وخوارزمية تكميم
+        // ‏LineServices الحقيقية (تراكم كسري بأنصاف نقاط) هدف بحثٍ لاحق.
+        const yCmp = process.env.QFP === "1" ? Math.round(y / 2.4) * 2.4 : y;
+        const err = t.y - yCmp;
         if (process.env.FP_TRACE === String(pg))
           console.log(`  [${i === 0 ? (y === marTopOf(S.p) + M.asc ? "بداية" : "حد") : "خطوة"}] ` +
-            `pred=${Math.round(y)} obs=${t.y} err=${Math.round(err)}`);
+            `pred=${Math.round(yCmp)} obs=${t.y} err=${Math.round(err)}`);
         if (Math.abs(err) <= TOL) fOk++;
         else fHist.set(Math.round(err / 5) * 5, (fHist.get(Math.round(err / 5) * 5) ?? 0) + 1);
         prevT = t;
