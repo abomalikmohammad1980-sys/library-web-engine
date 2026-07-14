@@ -46,6 +46,13 @@ for (let pgI = 0; pgI < truth.pages.length; pgI++) {
       advAll: ln.runs.reduce((a, r) => a + (r.advSumTwips ?? 0), 0) });
   }
 }
+// ★ سطور الترويسة/التذييل المكرّرة (تظهر ≥3 مرات بنصٍّ متطابق) — تُقصى من
+// مطابقة الفقرات: فقرةُ المتن التي تبدأ بنفس نصّ الترويسة كانت تُطابَق بسطر
+// الترويسة القصير (jalsa «الحمد لله والصلاة…» ترويسةٌ ‏8 مرات) فتتالت أخطاءٌ
+// زائفة. HDR_SKIP=0 للتعطيل.
+const _lineCount = new Map();
+for (const t of truthLines) _lineCount.set(t.n, (_lineCount.get(t.n) ?? 0) + 1);
+const isHeaderLine = (t) => process.env.HDR_SKIP !== "0" && (_lineCount.get(t.n) ?? 0) >= 3;
 
 // جدول العائمات المضيّقة (wrapSquare/Tight/Through) — تصميم العزل: النطاق
 // الرأسي يُرسى على سطر فقرة المرساة الأول في الحقيقة (y مقيس)، والأفقي
@@ -181,6 +188,7 @@ for (const p of paras) {
     const tn = truthLines[i].n;
     // شرط الحجم: نفس الفقرة النصية قد تتكرر بأحجام مختلفة (ملخص/متن)
     if (!tn || tn.length <= 10 || Math.abs(truthLines[i].em - em) > 3) continue;
+    if (isHeaderLine(truthLines[i])) continue; // سطر ترويسة مكرّر — ليس بداية فقرة
     for (let j = 0; j <= 5 && j < tn.length - 10; j++) {
       if (paraN.startsWith(tn.slice(j))) { start = i; markerLen = j; break outer; }
     }
@@ -224,6 +232,7 @@ for (const p of paras) {
     const t = truthLines[j];
     if (/^[()0-9]{1,6}$/.test(t.n)) continue;
     if (/^الصفحة\(?\d+\)?من\(?\d+\)?$/.test(t.n)) continue;
+    if (j > start && isHeaderLine(t)) continue; // ترويسة مكرّرة تتخلّل الفقرة
     seq.push(t); accLen += t.n.length;
   }
 
