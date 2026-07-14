@@ -552,7 +552,7 @@ for (let hi = 0; hi < heads.length; hi++) {
     spans.sort((a, b) => a.startIdx - b.startIdx);
     if (firstOfPage.get(pg) !== spans[0].firstT) continue; // الصفحة لا تبدأ بفقرة محاذاة
     pagesTried++;
-    let y = null, prevS = null, prevT = null, pageOk = true;
+    let y = null, prevS = null, prevT = null, pageOk = true, pageAnchor = 0;
     for (const S of spans) {
       if (prevS && S.startIdx !== prevS.endIdx + 1) { pageOk = false; break; } // انقطاع محاذاة
       const lines = spanLines(S).filter((t) => t.page === pg);
@@ -564,9 +564,10 @@ for (let hi = 0; hi < heads.length; hi++) {
         // ‏ANCHOR_PAGE=1: ارسِ أول سطر صفحةٍ على موضعه المقيس (يعزل دقة
         // الخطوات عن تنبؤ بداية الصفحة — الصفحات التي تسبقها عناوين/كتل
         // غير منمّطة تفشل تنبؤ البداية بإزاحة ثابتة، والخطوات تبقى تامة)
-        if (y == null) y = (process.env.ANCHOR_PAGE === "1")
+        if (y == null) { y = (process.env.ANCHOR_PAGE === "1")
           ? t.y
           : (pageStartPred(S.p, t) ?? (marTopOf(S.p) + M.asc)); // القاعدة 8+8ب
+          pageAnchor = y; }
         else if (i === 0) {                                             // حد فقرات (6+7ب)
           const MP = lineMet(prevS.p, prevT, false);
           const la = prevS.p.spacing;
@@ -590,8 +591,13 @@ for (let hi = 0; hi < heads.length; hi++) {
         // ‏LineServices الحقيقية (تراكم كسري بأنصاف نقاط) هدف بحثٍ لاحق.
         // ‏QFP: تكميم baseline المتراكم لشبكةٍ دقيقة (نموذج LineServices:
         // تراكمٌ كسريّ + قنص كل baseline) — القيمة = حجم الشبكة (0.6 دقيقة).
+        // ★ نموذج الحَمْل (LSCARRY=1): قنص **الإزاحة من مرساة الصفحة** لشبكة
+        // 2.4tw — يلتقط حَمْل المُراكِم الكسري (النقطة المُقحَمة) مع إبقاء خطأ
+        // بداية الصفحة ثابتًا (لا يتراكم). ‏QFP: قنص y المطلق (نموذج أقدم).
         const qfp = Number(process.env.QFP ?? "0");
-        const yCmp = qfp > 0 ? Math.round(y / qfp) * qfp : y;
+        let yCmp = y;
+        if (process.env.LSCARRY === "1") yCmp = pageAnchor + Math.round((y - pageAnchor) / 2.4) * 2.4;
+        else if (qfp > 0) yCmp = Math.round(y / qfp) * qfp;
         const err = t.y - yCmp;
         if (process.env.FP_TRACE === String(pg))
           console.log(`  [${i === 0 ? (y === marTopOf(S.p) + M.asc ? "بداية" : "حد") : "خطوة"}] ` +
