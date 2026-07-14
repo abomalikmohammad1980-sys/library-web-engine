@@ -247,10 +247,16 @@ const inhPlus = (p) => {
   return f < R9T ? (Math.ceil(d) - d) * 2.4 : 0;
 };
 
+// ‏ALLFAM=1: يضمّ **كل** الفقرات (عناوين وأحجام/خطوط مختلطة) لا فقرات المتن
+// المحاذاة فقط — لسدّ ثغرة بداية الصفحة في المُحكِّم الكامل (الفقرات غير
+// المنمّطة قبل المتن). المقاييس per-run فالخطوط المختلطة مدعومة أصلًا.
+const ALLFAM = process.env.ALLFAM === "1";
 const paras = model.paragraphs.filter((p) =>
   !p.excluded &&
-  p.text.trim().split(/\s+/).length >= 8 &&
-  p.runs.every((r) => r.family === FAMILY && r.emTwips));
+  (ALLFAM
+    ? p.runs.some((r) => r.emTwips) && p.text.trim().split(/\s+/).length >= 2
+    : (p.text.trim().split(/\s+/).length >= 8 &&
+       p.runs.every((r) => r.family === FAMILY && r.emTwips))));
 
 let pairs = 0, ok = 0;
 const missHist = new Map();
@@ -262,16 +268,24 @@ const paraSpans = []; // حدود الفقرات: {startIdx، endIdx، p، first
 const heads = [];
 const taken = new Set();
 for (const p of paras) {
-  const em = p.runs[0].emTwips;
+  const em = (p.runs.find((r) => r.emTwips) ?? p.runs[0]).emTwips;
   const paraN = norm(p.text);
+  // العناوين القصيرة (ALLFAM): تخفيف عتبة الطول ومطابقة em
+  const minLen = ALLFAM ? 4 : 11;
   let start = -1;
   outer:
   for (let i = 0; i < truthLines.length; i++) {
     if (taken.has(i)) continue;
     const tn = truthLines[i].n;
-    if (!tn || tn.length <= 10 || Math.abs(truthLines[i].em - em) > 3) continue;
-    for (let j = 0; j <= 5 && j < tn.length - 10; j++)
+    if (!tn || tn.length < minLen) continue;
+    if (!ALLFAM && Math.abs(truthLines[i].em - em) > 3) continue;
+    // الأسطر الطويلة: تطابق البادئة بإزاحة ≤5؛ القصيرة (عناوين): تطابق
+    // البادئة الكامل من الطرفين (السطر بادئةٌ للفقرة أو العكس)
+    const span = Math.max(0, tn.length - 10);
+    for (let j = 0; j <= 5 && j <= span; j++)
       if (paraN.startsWith(tn.slice(j))) { start = i; break outer; }
+    if (ALLFAM && tn.length < 14 && (paraN.startsWith(tn) || tn.startsWith(paraN)))
+      { start = i; break outer; }
   }
   if (start < 0) continue;
   taken.add(start);
