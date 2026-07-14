@@ -173,10 +173,11 @@ for (let pgI = 0; pgI < truth.pages.length; pgI++) {
     // ‏baselineTwipsF (الكسري، بلا تكميم دلو 2tw الاستخراجي) هو المرجع الصحيح —
     // التكميم كان يخفي دقة النموذج الحقيقية (فرقه يبلغ 1.4tw = نصف عتبة ±3).
     // ‏NOFLOAT=1 للعودة للمكمَّم. (جبهة أرضية المقاييس: كانت ضجيج استخراجٍ جزئيًا.)
+    const rsL = [...rs].sort((a, b) => b.x - a.x); // ترتيب منطقي RTL (الأيمن أولًا)
     truthLines.push({ n: nn, em: rs.length ? rs[0].emTwips : 0,
       ems: new Set(rs.map((r) => r.emTwips)),
       y: process.env.NOFLOAT === "1" ? ln.baselineTwips : (ln.baselineTwipsF ?? ln.baselineTwips), page: pgI,
-      runFonts: rs.map((r) => ({ font: r.font, em: r.emTwips })) });
+      runFonts: rsL.map((r) => ({ font: r.font, em: r.emTwips, text: r.text })) });
   }
 }
 // ملاحظة: ‏truthLines من الاستخراج مرتّبةٌ أصلًا بالـ(صفحة، y) — تجربة الفرز
@@ -237,7 +238,24 @@ function stepDotsV3(p, t) {
 const VPS = Number(process.env.VPS ?? "1");
 function lineMet(p, t, isFirstLine = false) {
   let asc = 0, desc = 0, gap = 0, textAscFactor = 0, ascRunGap = 0;
-  for (const r of t.runFonts ?? []) {
+  // ★ إقصاء عَلامة القائمة القائدة من صندوق السطر (MARK_RUN، افتراضي): فقرةٌ
+  // معدودةٌ سطرُها الأول علامتُه («-»/رقم) run قائدٌ بخطٍّ مختلفٍ عالي الصعود
+  // (masjid: «-» بـSimplified 1.18em) — لا يرفع صندوق نصّ Word (يُوضع كعلامةٍ
+  // ويُعالَج برفع markEm). إقصاؤه من asc الأقصى يمنع نفخ الحدّ +20. الشرط: أول
+  // run، نصٌّ قصير (≤3، علامةٌ لا نصّ)، خطٌّ يخالف باقي السطر. لا يمسّ tadris/
+  // dawra (شرائحها الطويلة نصٌّ حقيقيّ لا علامة). **مطفأٌ افتراضيًا** (MARK_RUN=1
+  // للتفعيل): يرفع masjid حدود 90.4→96.05٪ لكن يخفض tadris/dawra من 100٪ (شرطة
+  // تعدادهما بخطٍّ عالٍ ترفع الصندوق فعلًا) — تمييز الشرطة الرافعة بندٌ مفتوح.
+  const rf = t.runFonts ?? [];
+  // العلامة القائدة نقطة/شرطة تعداد (لا رقمًا): الأرقام في tadris/dawra نصٌّ
+  // يرفع الصندوق فعلًا؛ الشرطة «-»/• علامةٌ لا ترفع. فنقصر الإقصاء على المحارف
+  // غير الأبجدية-الرقمية (شرطات/نقاط تعداد) بخطٍّ مختلفٍ عن باقي السطر.
+  const mk = (rf[0]?.text ?? "").trim();
+  const skipMark = process.env.MARK_RUN === "1" && isFirstLine && p.numbered && rf.length > 1
+    && mk.length <= 2 && /^[-–—•·●○*▪◦]+$/.test(mk) && rf[0].font !== rf[1].font;
+  for (let ri = 0; ri < rf.length; ri++) {
+    if (skipMark && ri === 0) continue; // علامة القائمة القائدة — لا ترفع الصندوق
+    const r = rf[ri];
     const met = runMet.get(r.font) ?? MAIN_MET;
     // ‏EM_MODE: ‏q10 (افتراضي) em لأقرب 10 (المثالي 16pt→320)؛ ‏exact em
     // المرصود كما هو (319 المكمَّم 600dpi) — تجربة إزالة انجراف tadris +3
