@@ -250,23 +250,54 @@ let pairs = 0, ok = 0;
 const missHist = new Map();
 const missSamples = [];
 const paraSpans = []; // حدود الفقرات: {startIdx، endIdx، p، firstT، lastT}
+// مسار أول: رؤوس كل الفقرات — يمنع ابتلاع فقرة لاحقة كأسطر داخلية
+// (درس ahadith: فقرات القوائم المتلاصقة استُهلكت كأسطر «داخلية» فظهرت
+// حدودها متنكرة بأزواج +4 وشاذّي المحاذاة −458)
+const heads = [];
+const taken = new Set();
 for (const p of paras) {
   const em = p.runs[0].emTwips;
   const paraN = norm(p.text);
   let start = -1;
   outer:
   for (let i = 0; i < truthLines.length; i++) {
+    if (taken.has(i)) continue;
     const tn = truthLines[i].n;
     if (!tn || tn.length <= 10 || Math.abs(truthLines[i].em - em) > 3) continue;
     for (let j = 0; j <= 5 && j < tn.length - 10; j++)
       if (paraN.startsWith(tn.slice(j))) { start = i; break outer; }
   }
   if (start < 0) continue;
-  // استهلاك أسطر الفقرة
+  taken.add(start);
+  heads.push({ p, start, paraN });
+}
+heads.sort((a, b) => a.start - b.start);
+const headSet = new Set(heads.map((h) => h.start));
+// حواجز إضافية: رؤوس **كل** فقرات النموذج (حتى خارج مرشح المقياس —
+// فقرات القوائم القصيرة) كي لا تُبتلع أسطرها في فقرة سابقة
+for (const p of model.paragraphs) {
+  if (p.excluded) continue;
+  const pn = norm(p.text);
+  if (pn.length <= 10) continue;
+  for (let i = 0; i < truthLines.length; i++) {
+    if (taken.has(i)) continue;
+    const tn = truthLines[i].n;
+    if (!tn || tn.length <= 10) continue;
+    let hit = false;
+    for (let j = 0; j <= 5 && j < tn.length - 10; j++)
+      if (pn.startsWith(tn.slice(j))) { hit = true; break; }
+    if (hit) { taken.add(i); headSet.add(i); break; }
+  }
+}
+for (let hi = 0; hi < heads.length; hi++) {
+  const { p, start, paraN } = heads[hi];
+  const em = p.runs[0].emTwips;
+  // استهلاك أسطر الفقرة — حتى رأس الفقرة التالية حصرًا
   const seq = [];
   let endIdx = start;
   for (let j = start, accLen = 0;
        j < truthLines.length && accLen < paraN.length && seq.length < 200; j++) {
+    if (j > start && headSet.has(j)) break; // رأس فقرة أخرى — توقف
     const t = truthLines[j];
     if (/^[()0-9]{1,6}$/.test(t.n)) continue;
     if (/^الصفحة\(?\d+\)?من\(?\d+\)?$/.test(t.n)) continue;
