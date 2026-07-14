@@ -9,7 +9,15 @@ import { strToU8, zipSync } from "../../node_modules/.pnpm/fflate@0.8.3/node_mod
 const F = process.env.FONT ?? "Traditional Arabic";
 const SZ = process.env.SZ ?? "32";
 // جُمَل عربية متنوعة الطول والحروف (رباطات، لام-ألف، تشكيل، أرقام)
-const SENT = [
+const LONG = process.env.LONG === "1"; // أسطر طويلة (80+ حرفًا) على صفحة عريضة
+const SENT_LONG = [
+  "العناية بترصيف النص العربي على الشبكة تتطلب فهما دقيقا لقواعد التسويغ والكسر التي تحكم المطبوع منذ القرون",
+  "وقد كان الوراقون يتوارثون أسرار الصناعة جيلا بعد جيل حتى استقرت قواعد راسخة في تقدير المسافات وضبط الأسطر",
+  "ولما جاءت الحواسيب حملت معها أنظمة ترصيف جديدة تحتاج إلى مطابقة صارمة مع ما استقر عليه أهل الخبرة والمعرفة",
+  "إن مطابقة محرك الترصيف الحديث لسلوك المعالجات المكتبية يستلزم قياسا دقيقا لعرض كل كلمة وكل فاصلة وكل حرف",
+  "والحمد لله الذي علم بالقلم علم الإنسان ما لم يعلم وجعل الكتابة وعاء للعلم وحفظا للمعرفة عبر القرون الطويلة",
+];
+const SENT_SHORT = [
   "بسم الله الرحمن الرحيم",
   "الحمد لله رب العالمين",
   "محمد رسول الله صلى الله عليه وسلم",
@@ -26,6 +34,8 @@ const SENT = [
   "الوقت كالسيف إن لم تقطعه قطعك",
   "رحم الله امرأ عرف قدر نفسه",
 ];
+const SENT = LONG ? SENT_LONG : SENT_SHORT;
+const PGW = LONG ? 23811 : 11906;
 const RPR = `<w:rPr><w:rFonts w:ascii="${F}" w:hAnsi="${F}" w:cs="${F}" w:hint="cs"/><w:sz w:val="${SZ}"/><w:szCs w:val="${SZ}"/><w:rtl/></w:rPr>`;
 let body = "";
 for (const s of SENT)
@@ -35,7 +45,7 @@ for (const s of SENT)
 
 const doc = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
-<w:body>${body}<w:sectPr><w:pgSz w:w="11906" w:h="16838"/>
+<w:body>${body}<w:sectPr><w:pgSz w:w="${PGW}" w:h="16838"/>
 <w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440"/>
 <w:bidi/><w:docGrid w:linePitch="360"/></w:sectPr></w:body></w:document>`;
 const settings = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
