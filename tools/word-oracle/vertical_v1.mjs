@@ -103,6 +103,12 @@ const precise = (subMet) => {
 };
 { const pm = precise(MAIN_MET); if (pm) MAIN_MET = pm; } // ترقية خط المتن الرئيسي
 
+// معايرة بداية الصفحة (قاعدة 8-د): عائلة→em→صعودٌ مقيسٌ فوق الهامش (انظر الملف)
+let PS_CAL = {};
+if (process.env.PS_CAL_OFF !== "1")
+  try { PS_CAL = JSON.parse(readFileSync("tools/word-oracle/pagestart-cal.json", "utf-8")); }
+  catch { /* لا ملف معايرة — نبقى على النموذج */ }
+
 // ‏v2: خطوة السطر = max على runs السطر من (خطوة خط الـrun × حجمه) —
 // أسطر فيها بولد/لاتيني/مصحفي تعلو (عنقودا tadris ‏203/204 = tradbdo).
 // خرائط الخطوط من fonts-map.json (odttf → الملف الأصلي).
@@ -239,14 +245,34 @@ function lineMet(p, t, isFirstLine = false) {
   // ‏ascStart (القاعدة 8-ج): صعود «أول سطر الصفحة» يشمل externalLeading —
   // ‏(hheaTotal − winDesc)×em = ‏ext + winAsc (‏LO: ‏leading فوق السطر).
   // ‏jazeera الوحيد ذو ext>0 ‏(0.342em): يفسر +104/+112 حرفيًا.
-  let ascStart = 0;
+  let ascStart = 0, ascExact = asc;
+  const dotR = (x) => Math.round(x / 2.4) * 2.4;
   for (const r of t.runFonts ?? []) {
     const met = runMet.get(r.font) ?? MAIN_MET;
-    const emIdeal = Math.round(r.em / 10) * 10;
+    const emS = process.env.PS_EXACT_EM === "1" ? r.em : Math.round(r.em / 10) * 10;
     const hheaTotal = met.a + met.d + met.g;
-    ascStart = Math.max(ascStart, (hheaTotal - (met.wd ?? met.d)) * emIdeal);
+    const wd = met.wd ?? met.d;
+    // ★ قاعدة 8-د (تقريب حدود MulDiv): قياسٌ متحكّمٌ به لثلاثة خطوط
+    // (Jazeera-Light/Regular، Traditional) أثبت أن Word يقرّب **كل حدٍّ** من
+    // صعود أول سطر الصفحة لنقطة 600dpi على حِدة قبل الجمع (لا الجداءَ الكامل):
+    // ‏ascStart = dotR(hheaAsc·em) + dotR(ext·em) + 0.48؛ حيث ext = (asc+desc+
+    // gap) − winAsc − winDesc = d+g−wd (والـ0.48 = إزاحة أصل المحرف الاستخراجية
+    // الثابتة، 1/5 نقطة). طابق Light(420.48)/Regular(362.88) بلا بواقٍ. يفسّر
+    // «نقطة m>1» الظاهرة: تقريبُ الحدّ يقلب عند حدود النقطة، لا المضاعف نفسه.
+    // ★ معايرة بداية الصفحة لكل (خط، em) من مستنداتٍ متحكّمٍ بها (قاعدة 8-د):
+    // اتجاه تقريب حدود MulDiv في Word يتغيّر بـ(الخط، الحجم) تغيّرًا لا يُشتقّ من
+    // hhea/OS2 وحدها (Light em300 ⇒ +نقطة، Regular em320 ⇒ الجداء الكامل، بواقٍ
+    // ±2.4). فبدل نموذجٍ ناقص، نستعمل الصعود **المقيس** مباشرةً من مستند مفرد
+    // الخط (pagestart-cal.json: عائلة→em→صعودٌ فوق الهامش). الجداء الكامل احتياطًا.
+    const calFam = PS_CAL[process.env.FAMILY]?.[String(emS)];
+    const val = calFam != null ? calFam
+      : (process.env.PS_TERMROUND === "1"
+        ? dotR(met.a * emS) + dotR((met.d + met.g - wd) * emS) + 0.48
+        : (hheaTotal - wd) * emS);
+    ascStart = Math.max(ascStart, val);
+    if (process.env.PS_EXACT_EM === "1") ascExact = Math.max(ascExact, met.a * r.em);
   }
-  return { asc, desc, gap, ascStart: Math.max(ascStart, asc) };
+  return { asc, desc, gap, ascStart: Math.max(ascStart, ascExact) };
 }
 
 /** ‏Δ ‏baseline(a←b) داخل الفقرة: ‏desc(a) + فجوة التباعد (بارتفاع a —
@@ -513,7 +539,18 @@ for (let hi = 0; hi < heads.length; hi++) {
   const pageStartPred = (p, firstT) => {
     const M = lineMet(p, firstT, true);
     if (!M) return null;
-    let pred = marTopOf(p) + (M.ascStart ?? M.asc);
+    // ★ نقطة السطر الأول للتباعد التلقائي المتعدّد (قاعدة 8-د): قياسٌ متحكّمٌ
+    // به (مستند Jazeera-Light مفرد، LINE={240,259,360,480}) أثبت أن صعود
+    // أول سطرٍ يقفز **نقطةً واحدة 600dpi (2.4tw)** عند m>1 مقارنةً بـm=1.0،
+    // ويتشبّع (259/360/480 ⇒ 420.48 نفسها) — Word يضيف نقطة leading فوق أول
+    // سطرٍ حين المضاعف التلقائي > 1. مستقلٌّ عن الخط (نقطة جهازٍ واحدة):
+    // tadris (m=1.0) لا يأخذها فيبقى 100%، وmuqtarah/jalsa/dawra (m>1) تأخذها.
+    const sp0 = p.spacing;
+    const m0 = sp0.line != null && sp0.lineRule !== "exact" && sp0.lineRule !== "atLeast" ? sp0.line / 240 : 1;
+    // ملاحظة: نموذج تقريب الحدود (8-د في lineMet) صار يفسّر «نقطة m>1» بنيويًا؛
+    // هذا العلم يبقى للتجربة فقط (افتراضيًا مطفأ لئلا يُضاعِف الحساب).
+    const autoDot = (process.env.PS_AUTODOT === "1" && m0 > 1) ? 2.4 : 0;
+    let pred = marTopOf(p) + (M.ascStart ?? M.asc) + autoDot + Number(process.env.PS_BIAS ?? "0");
     // أسطر الهيدر: ما يقع فوق التنبؤ الأساسي بوضوح (أدنى من pred−50)
     let hdr = null;
     for (const t of truthLines)
@@ -573,6 +610,7 @@ for (let hi = 0; hi < heads.length; hi++) {
     if (firstOfPage.get(pg) !== spans[0].firstT) continue; // الصفحة لا تبدأ بفقرة محاذاة
     pagesTried++;
     let y = null, prevS = null, prevT = null, pageOk = true, pageAnchor = 0;
+    let paraY0Smooth = 0, paraY0Cmp = 0; // مرساة الفقرة لنموذج الحَمْل لكل فقرة (PCARRY)
     for (const S of spans) {
       if (prevS && S.startIdx !== prevS.endIdx + 1) { pageOk = false; break; } // انقطاع محاذاة
       const lines = spanLines(S).filter((t) => t.page === pg);
@@ -616,7 +654,16 @@ for (let hi = 0; hi < heads.length; hi++) {
         // بداية الصفحة ثابتًا (لا يتراكم). ‏QFP: قنص y المطلق (نموذج أقدم).
         const qfp = Number(process.env.QFP ?? "0");
         let yCmp = y;
-        if (process.env.LSCARRY === "1") yCmp = pageAnchor + Math.round((y - pageAnchor) / 2.4) * 2.4;
+        // ★ نموذج الحَمْل لكل فقرة (PCARRY): طوبولوجيا ICARRY الداخلية نفسها
+        // مطبّقةً في المُحكِّم الكامل — تُرسي كل فقرةٍ على أول سطرها المتنبَّأ،
+        // وتقنص إزاحة الأسطر الداخلية عنه لشبكة 2.4tw، فتُقحِم النقطة
+        // التعويضية (‏229 نقطة بدل 228) في مكانها كما يفعل LineServices. عند
+        // ‏i===0 المرساةُ تُعاد؛ الحدُّ نفسه لا يُقنَص (تنبؤه المباشر أدقّ).
+        if (i === 0) { paraY0Smooth = y; paraY0Cmp = y; }
+        if (process.env.PCARRY === "1") {
+          if (i > 0) yCmp = paraY0Cmp + Math.round((y - paraY0Smooth) / 2.4) * 2.4;
+        }
+        else if (process.env.LSCARRY === "1") yCmp = pageAnchor + Math.round((y - pageAnchor) / 2.4) * 2.4;
         else if (qfp > 0) yCmp = Math.round(y / qfp) * qfp;
         const err = t.y - yCmp;
         if (process.env.FP_TRACE === String(pg))

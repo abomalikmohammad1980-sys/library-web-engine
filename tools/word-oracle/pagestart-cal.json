@@ -1,0 +1,6 @@
+{
+  "_doc": "معايرة صعود أول سطر الصفحة فوق الهامش العلوي (twips)، لكل (عائلة الخط، em المكمَّم q10). مقيسة من مستنداتٍ متحكّمٍ بها مفردة الخط عبر Word COM (gen_pitch_cal → export_xps → extract_truth)، مستقلةٍ تمامًا عن كتب التحقق. تفسّر تقريب حدود MulDiv الجهازي الذي لا يُشتقّ من hhea/OS2. القيمة = baselineTwipsF(أول سطر) − marTop، لتباعدٍ متعدّد m>1 (الحالة الغالبة في المتون).",
+  "Al-Jazeera-Arabic-Light": { "300": 420.48 },
+  "Al-Jazeera-Arabic-Regular": { "259": 362.88, "320": 446.88 },
+  "Traditional Arabic": { "401": 398.88 }
+}
