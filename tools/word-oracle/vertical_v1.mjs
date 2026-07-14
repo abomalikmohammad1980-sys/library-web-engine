@@ -641,6 +641,11 @@ for (let hi = 0; hi < heads.length; hi++) {
       if (!lines.length) break;
       for (let i = 0; i < lines.length; i++) {
         const t = lines[i];
+        // حارس العنصر السطريّ (اكتمال المُركِّب): سطرٌ يقع دون 0.6em تحت سابقه
+        // ليس سطرًا جديدًا بل جزءٌ سطريٌّ من نفسه (شظية آيةٍ/تخريجٌ صغير الحجم)
+        // — لا خطوة له (كحارس المُحكِّم الداخلي). يُصحّح انجراف page5 (خطوات 50tw).
+        if (process.env.COMPOSER2 === "1" && prevT && t.page === prevT.page &&
+            t.y - prevT.y > 0 && t.y - prevT.y < (t.em || 300) * 0.6) continue;
         const M = lineMet(S.p, t, i === 0);
         if (!M) { pageOk = false; break; }
         // ‏ANCHOR_PAGE=1: ارسِ أول سطر صفحةٍ على موضعه المقيس (يعزل دقة
