@@ -54,7 +54,10 @@ export interface Line {
 }
 
 export const SHRINK_E_CAP = 1.5;
-export const SHRINK_DIV = 1.6;
+export const SHRINK_DIV = 1.6; // نموذج قديم (خطّي) — أُبقي للتوافق والاختبار
+/** نسبة الحدّين (نموذج LO/Németh): ‏k = S_max/T_max = ‏0.25/0.50 = ‏0.50 —
+ *  أرضية انكماش 75% على سقف تمديد 1.5. ليس ثابتًا مُعايَرًا بل نسبة حدّين. */
+export const SHRINK_K = 0.5;
 
 /** موضع بداية نصّ السطر الأول في فقرة معدودة (قاعدة تاب الترقيم — بحث
  *  Clean-room ‏2026-07-13: ‏ECMA-376 ‏`w:suff`/`w:defaultTabStop`/
@@ -100,7 +103,7 @@ export function numTabTextStart(args: {
  */
 export function shouldShrinkPack(
   D: number, n: number, meanSpace: number, W: number, L1: number,
-  opts?: { eCap?: number; div?: number },
+  opts?: { eCap?: number; div?: number; k?: number; model?: "ratio" | "linear" },
 ): boolean {
   if (n < 1 || meanSpace <= 0 || D <= 0) return false;
   // بوابة السماحية: أرضية عرض المسافة 75% بسماحية n+1
@@ -111,8 +114,15 @@ export function shouldShrinkPack(
   const n1 = n - 1;
   const e = n1 > 0 ? 1 + (W - L1) / (n1 * meanSpace) : Infinity;
   const eCap = opts?.eCap ?? SHRINK_E_CAP;
+  if (e > eCap) return true; // كسرٌ فضفاض جدًا (t ≥ T_max) ⇒ احشر دائمًا
+  // ★ نموذج نسبة الحدّين (الافتراضي): احشر ⇔ s/t < k، ‏s=1−σ، ‏t=e−1.
+  // يفصل الحالات الحدّية التي عجز النموذج الخطّي عنها (masjid «أن»).
+  if ((opts?.model ?? "ratio") === "ratio") {
+    const k = opts?.k ?? SHRINK_K;
+    return (1 - sigma) / (e - 1) < k;
+  }
   const div = opts?.div ?? SHRINK_DIV;
-  return e > eCap || 1 + (e - 1) / div >= 1 / sigma;
+  return 1 + (e - 1) / div >= 1 / sigma;
 }
 
 /** كسر فقرة مقيسة إلى أسطر بقرارات Word (greedy + القاعدة 16). */

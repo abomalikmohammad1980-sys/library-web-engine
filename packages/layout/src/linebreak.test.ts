@@ -73,14 +73,26 @@ describe("shouldShrinkPack — القاعدة 16", () => {
     expect(shouldShrinkPack(gate, n, w, 10_000, 0)).toBe(true);
   });
 
-  it("سقف التمديد e>1.5 يتبنى ولو رفضته المقارنة الموزونة", () => {
-    // ‏σ=0.726 (الموزون يرفض: 1.375 < 1.3774) لكن e=1.6 فوق السقف
+  it("سقف التمديد e>1.5 يتبنى ولو رفضته نسبة الحدّين", () => {
+    // ‏σ=0.726 (s=0.274)، ‏e=1.6 (t=0.6): s/t=0.457<0.5 ⇒ نسبةٌ تحشر أصلًا
     const n = 10, w = 50, W = 5000;
     const D = (1 - 0.726) * n * w; // 137 ≤ البوابة 137.5
     const L1 = W - 0.6 * (n - 1) * w; // e = 1.6
     expect(shouldShrinkPack(D, n, w, W, L1)).toBe(true);
-    // نفس الحالة بسقف مرفوع (A/B) ⇒ القرار للموزون: يرفض
-    expect(shouldShrinkPack(D, n, w, W, L1, { eCap: 2.0 })).toBe(false);
+    // بسقف مرفوع (eCap=2) وقيمة k متشدّدة تكشف أن السقف هو من تبنّى:
+    // s/t=0.457 ≥ k=0.4 ⇒ لولا السقف لرُفض
+    expect(shouldShrinkPack(D, n, w, W, L1, { eCap: 2.0, k: 0.4 })).toBe(false);
+    expect(shouldShrinkPack(D, n, w, W, L1, { eCap: 2.0, k: 0.5 })).toBe(true);
+  });
+
+  it("نسبة الحدّين تفصل «أن» الحدّية التي عجز الموزون عنها (masjid)", () => {
+    // القيم المقيسة: e=1.1467 (t=0.1467)، σ=0.9236 (s=0.0764) ⇒ s/t=0.521
+    const n = 24, w = 50, W = 13568;
+    const D = (1 - 0.9236) * n * w;
+    const L1 = W - (1.1467 - 1) * (n - 1) * w;
+    // النموذج الخطّي القديم يحشر خطأً؛ نسبة الحدّين (k=0.5) تكسر كـWord
+    expect(shouldShrinkPack(D, n, w, W, L1)).toBe(false);            // ratio
+    expect(shouldShrinkPack(D, n, w, W, L1, { model: "linear" })).toBe(true); // القديم يخطئ
   });
 
   it("لا بلانكات معتد بها ⇒ لا انكماش", () => {
@@ -90,15 +102,15 @@ describe("shouldShrinkPack — القاعدة 16", () => {
 
 describe("breakLines — تكامل الانكماش", () => {
   /** حالة حدية مبنية يدويًا: عمود 1000؛ خمس كلمات (181×4 + 180) بمسافات 20
-   *  ⇒ ‏L1=984؛ السادسة عرض 6 ⇒ ‏D=10، ‏σ=0.9، ‏e=1.2،
-   *  الموزون 1.125 ≥ 1/σ=1.111 ⇒ يحشر. */
+   *  ⇒ ‏L1=984؛ السادسة عرض 2 ⇒ ‏packed=1006، ‏D=6، ‏n=5، ‏σ=0.94 (s=0.06)،
+   *  ‏e=1.2 (t=0.2) ⇒ نسبة الحدّين s/t=0.30 < k=0.5 ⇒ يحشر. */
   const edgeItems = (): BreakItem[] => [
     { width: 181, spaceBefore: 0, blankBefore: false },
     { width: 181, spaceBefore: 20, blankBefore: true },
     { width: 181, spaceBefore: 20, blankBefore: true },
     { width: 181, spaceBefore: 20, blankBefore: true },
     { width: 180, spaceBefore: 20, blankBefore: true },
-    { width: 6, spaceBefore: 20, blankBefore: true },
+    { width: 2, spaceBefore: 20, blankBefore: true },
   ];
 
   it("يحشر بالانكماش ويغلق السطر فورًا", () => {
@@ -124,13 +136,15 @@ describe("breakLines — تكامل الانكماش", () => {
     expect(lines[0]).toMatchObject({ start: 0, end: 5, shrunk: false });
   });
 
-  it("قاسم الموزون قابل للضبط: div=1.7 التاريخي يرفض حالة 104:0", () => {
-    // نفس حالة 104:0 لكن عبر breakLines بأعراض مركبة تعطي σ/e المقيسين
+  it("النموذج الخطّي القديم قابل للاستدعاء: div=1.7 يرفض حالة 104:0", () => {
+    // حالة 104:0 المقيسة عبر النموذج الخطّي (model=linear) — تحوّط توافقٍ
     const n = 22, w = 50, W = 13601;
     const D = (1 - 0.8232) * n * w;
     const L1 = W - (1.3608 - 1) * (n - 1) * w;
-    expect(shouldShrinkPack(D, n, w, W, L1, { div: 1.7 })).toBe(false);
-    expect(shouldShrinkPack(D, n, w, W, L1, { div: 1.6 })).toBe(true);
+    expect(shouldShrinkPack(D, n, w, W, L1, { model: "linear", div: 1.7 })).toBe(false);
+    expect(shouldShrinkPack(D, n, w, W, L1, { model: "linear", div: 1.6 })).toBe(true);
+    // النموذج الافتراضي (نسبة الحدّين) يحشرها كـWord: s/t=0.490 < 0.5
+    expect(shouldShrinkPack(D, n, w, W, L1)).toBe(true);
   });
 });
 
