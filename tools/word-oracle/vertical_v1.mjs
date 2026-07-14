@@ -680,7 +680,10 @@ for (let hi = 0; hi < heads.length; hi++) {
         // التعويضية (‏229 نقطة بدل 228) في مكانها كما يفعل LineServices. عند
         // ‏i===0 المرساةُ تُعاد؛ الحدُّ نفسه لا يُقنَص (تنبؤه المباشر أدقّ).
         if (i === 0) { paraY0Smooth = y; paraY0Cmp = y; }
-        if (process.env.PCARRY === "1") {
+        // ‏PCARRY (افتراضي بعد معايرة بداية الصفحة): طوبولوجيا ICARRY في المُركِّب
+        // صارت نافعةً بحتًا — تصحيحُ المرساة أزال الانحياز الذي كان يُضرّ jalsa.
+        // ‏ahadith صفحة كاملة 83→87.5 بلا انحدار (الأربعة الباقية 100 ثابتة).
+        if (process.env.PCARRY !== "0") {
           if (i > 0) yCmp = paraY0Cmp + Math.round((y - paraY0Smooth) / 2.4) * 2.4;
         }
         else if (process.env.LSCARRY === "1") yCmp = pageAnchor + Math.round((y - pageAnchor) / 2.4) * 2.4;
