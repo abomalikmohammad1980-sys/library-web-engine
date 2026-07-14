@@ -160,6 +160,7 @@ for (let pi = 0; pi < paras.length; pi++) {
 let y = null, curPage = -1, prevP = null, prevT = null;
 let ok = 0, total = 0;
 const missHist = new Map();
+const perPage = new Map();
 const FP = process.env.FP_TRACE;
 for (let idx = 0; idx < truthLines.length; idx++) {
   const t = truthLines[idx];
@@ -190,7 +191,9 @@ for (let idx = 0; idx < truthLines.length; idx++) {
   }
   total++;
   const err = t.y - y;
-  if (Math.abs(err) <= TOL) ok++;
+  if (!perPage.has(t.page)) perPage.set(t.page, { ok: 0, n: 0 });
+  const pp = perPage.get(t.page); pp.n++;
+  if (Math.abs(err) <= TOL) { ok++; pp.ok++; }
   else missHist.set(Math.round(err / 5) * 5, (missHist.get(Math.round(err / 5) * 5) ?? 0) + 1);
   if (FP && String(t.page) === FP) {
     const dbg = process.env.MDBG === "1" && prevT
@@ -206,5 +209,11 @@ for (let idx = 0; idx < truthLines.length; idx++) {
 }
 const pct = total ? (100 * ok / total).toFixed(2) : "0";
 console.log(`★ المحاكي الكامل (${BOOK}): ${ok}/${total} baselines = ${pct}% (كل الصفحات، كل الفقرات)`);
+if (process.env.PAGE_SUMMARY === "1") {
+  const worst = [...perPage.entries()]
+    .map(([pg, v]) => ({ pg, pct: 100 * v.ok / v.n, n: v.n }))
+    .filter((x) => x.n >= 5).sort((a, b) => a.pct - b.pct).slice(0, 8);
+  console.log("   أسوأ الصفحات:", worst.map((x) => `ص${x.pg}=${x.pct.toFixed(0)}%(${x.n})`).join("  "));
+}
 const top = [...missHist.entries()].sort((a, b) => b[1] - a[1]).slice(0, 8);
 if (top.length) console.log("   انحرافات (×5):", top.map(([k, v]) => `${k > 0 ? "+" : ""}${k}×${v}`).join("  "));
