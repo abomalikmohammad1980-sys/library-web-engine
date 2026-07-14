@@ -477,7 +477,12 @@ for (let hi = 0; hi < heads.length; hi++) {
         const t = lines[i];
         const M = lineMet(S.p, t, i === 0);
         if (!M) { pageOk = false; break; }
-        if (y == null) y = pageStartPred(S.p, t) ?? (marTopOf(S.p) + M.asc); // القاعدة 8+8ب
+        // ‏ANCHOR_PAGE=1: ارسِ أول سطر صفحةٍ على موضعه المقيس (يعزل دقة
+        // الخطوات عن تنبؤ بداية الصفحة — الصفحات التي تسبقها عناوين/كتل
+        // غير منمّطة تفشل تنبؤ البداية بإزاحة ثابتة، والخطوات تبقى تامة)
+        if (y == null) y = (process.env.ANCHOR_PAGE === "1")
+          ? t.y
+          : (pageStartPred(S.p, t) ?? (marTopOf(S.p) + M.asc)); // القاعدة 8+8ب
         else if (i === 0) {                                             // حد فقرات (6+7ب)
           const MP = lineMet(prevS.p, prevT, false);
           const la = prevS.p.spacing;
