@@ -3,7 +3,9 @@
  *
  * المرجع: `docs/word-behavior-spec/smart-justify-shrink.md`.
  * الثوابت معايرة على الحقيقة (XPS) لا منقولة عن مصدر واحد:
- *  - أرضية عرض المسافة 75% (بوابة `D ≤ 0.25·(n+1)·w̄`) — نص الخوارزمية §3.
+ *  - أرضية الانكماش الصلبة **σ≥0.75** (أقصى 25% ضغط للمسافة، فوقه يكسر حتمًا) —
+ *    وكيل بحث LO/Németh ‏(tdf#119908، PropWordSpacingMinimum)، القيمة مثبّتة
+ *    على الحقيقة ‏(muqtarah أفقي 91→100%).
  *  - سقف التمديد `E_CAP = 1.5` (كان 1.33 حتى 2026-06 في MSO).
  *  - قاسم المقارنة الموزونة `DIV = 1.6`: نطاق الجدوى التجريبي من 33 قرارًا
  *    محكومًا بالحقيقة = ‏(1.481, 1.680] — و1.7 المستعار من هندسة LO العكسية
@@ -28,6 +30,10 @@ export interface BreakItem {
   blankBefore: boolean;
   /** ‏w:br بعد هذه الكلمة — كسر إجباري */
   forcedBreakAfter?: boolean;
+  /** تدلّي الحرف الطرفيّ خارج الهامش (قاعدة 16-ب، بحث ABC): الحاملة اليمنى
+   *  للترقيم الطرفيّ (،؛:.!؟»)) تتجاوز العمود دون كسر — القيمة المسموح تدلّيها
+   *  (≈ min(عرض المحرف، ~12tw))؛ 0 لغير الترقيم. مسؤولية طبقة القياس حسابها. */
+  trailingOverhang?: number;
 }
 
 export interface BreakParams {
@@ -148,7 +154,8 @@ export function breakLines(items: readonly BreakItem[], params: BreakParams): Li
     const joinW = first ? 0 : it.spaceBefore;
     const W = availFor(lines.length);
     const packed = lineW + joinW + it.width;
-    let fits = first || packed <= W;
+    // تدلّي الترقيم الطرفيّ: الحاملة اليمنى تتجاوز الهامش دون كسر (قاعدة 16-ب)
+    let fits = first || packed - (it.trailingOverhang ?? 0) <= W;
     let shrunk = false;
 
     if (!fits && shrinkEnabled) {

@@ -40,6 +40,16 @@ describe("breakLines — الكسر الجشع الأساسي", () => {
     expect(lines.map((l) => [l.start, l.end, l.forced]))
       .toEqual([[0, 1, true], [1, 4, false]]);
   });
+
+  it("تدلّي الترقيم الطرفيّ يُبقي الكلمة المتجاوزة قليلًا (قاعدة 16-ب)", () => {
+    // كلمتان (100+50+100=250) تفيضان عمود 245 بـ5؛ التدلّي 8 يبتلع الفيض
+    const items = uniform(2, 100, 50);
+    const noHang = breakLines(items, { columnTwips: 245 });
+    expect(noHang.map((l) => [l.start, l.end])).toEqual([[0, 1], [1, 2]]); // بلا تدلٍّ: يكسر
+    items[1]!.trailingOverhang = 8; // الحرف الطرفيّ يتدلّى 8 (>الفيض 5)
+    const withHang = breakLines(items, { columnTwips: 245 });
+    expect(withHang.map((l) => [l.start, l.end])).toEqual([[0, 2]]); // يتّسع بالتدلّي
+  });
 });
 
 describe("shouldShrinkPack — القاعدة 16", () => {
