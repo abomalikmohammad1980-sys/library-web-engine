@@ -264,11 +264,12 @@ function lineMet(p, t, isFirstLine = false) {
     // hhea/OS2 وحدها (Light em300 ⇒ +نقطة، Regular em320 ⇒ الجداء الكامل، بواقٍ
     // ±2.4). فبدل نموذجٍ ناقص، نستعمل الصعود **المقيس** مباشرةً من مستند مفرد
     // الخط (pagestart-cal.json: عائلة→em→صعودٌ فوق الهامش). الجداء الكامل احتياطًا.
-    // المعايرة مقيسةٌ لتباعدٍ متعدّد m>1؛ التباعد المفرد (m=1.0، tadris) مسارٌ
-    // مختلفٌ في Word فلا نطبّقها عليه (نبقيه على النموذج/الجداء الكامل).
+    // المعايرة بصنف التباعد: m1 (مفرد) أو mN (متعدّد)؛ المفقود يعود للنموذج.
+    // (Traditional em320 مفرده≠متعدّده لكن tadris بداياته غير منتظمة فلا m1 له.)
     const spc = p.spacing;
     const mmc = spc.line != null && spc.lineRule !== "exact" && spc.lineRule !== "atLeast" ? spc.line / 240 : 1;
-    const calFam = mmc > 1 ? PS_CAL[process.env.FAMILY]?.[String(emS)] : null;
+    const calEnt = PS_CAL[process.env.FAMILY]?.[String(emS)];
+    const calFam = calEnt ? (mmc > 1 ? calEnt.mN : calEnt.m1) ?? null : null;
     const val = calFam != null ? calFam
       : (process.env.PS_TERMROUND === "1"
         ? dotR(met.a * emS) + dotR((met.d + met.g - wd) * emS) + 0.48
