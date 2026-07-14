@@ -57,7 +57,11 @@ function fontVertMetrics(path) {
   // ‏NOGAP=1: إسقاط lineGap الـhhea (فرضية: Word يستعمل win بلا فجوة لبعض
   // الخطوط — adwa فجوته 18 وحدة = 2.6tw@300 توافق انجراف masjid تمامًا)
   if (process.env.NOGAP === "1") g = 0;
-  return { a, d, g, wd };
+  // ‏METRIC_SCALE: معايرة pitch الكسري (قياس متحكّم به): مقاييس subset قد تقع على
+  // نقطةٍ صحيحة تمامًا (dawra 597.6=249 نقطة) فلا يُقحِم ICARRY نقطة الحَمْل؛
+  // الـpitch الكسري المقيس (1.490991) يُعيد التوقيت. تجربة — يُنقل لملف معايرة إن نفع.
+  const ms = Number(process.env.METRIC_SCALE ?? "1");
+  return { a: a * ms, d: d * ms, g: g * ms, wd };
 }
 let MAIN_MET = fontVertMetrics(FONT_FILE);
 const runMet = new Map(); // odttf → {a، d، g}
