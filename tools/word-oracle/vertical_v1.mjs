@@ -521,7 +521,12 @@ for (let hi = 0; hi < heads.length; hi++) {
     af = snapD(af); bf = snapD(bf);
     // ‏BGAP=max: قاعدة انهيار الفواصل (Word يأخذ الأكبر لا المجموع)
     // القاعدة 9 لا تمس الحدود (تجربتها هنا: 86→31% — النقطة تسكن أول خطوة داخلية)
-    const predB = step + (process.env.BGAP === "sum" ? af + bf : Math.max(af, bf));
+    let predB = step + (process.env.BGAP === "sum" ? af + bf : Math.max(af, bf));
+    // ★ قنص الخطوة الحدّية لنقطة الجهاز (BSTEP_DOT): حدود masjid بلا تباعد
+    // (af=bf=0) انحرافها −4 = حَمْل النقطة نفسه الذي يعالجه ICARRY داخليًا؛
+    // الخطوة الحدّية خطوةُ سطرٍ عادية تخضع لتكميم 2.4tw. القنص المطلق للإزاحة
+    // النسبية (الفجوة عن A.lastT المرصود) يقرّبها لنقطةٍ صحيحة. round افتراضًا.
+    if (process.env.BSTEP_DOT !== "0") predB = Math.round(predB / 2.4) * 2.4;
     bPairs++;
     if (Math.abs(obs - predB) <= TOL) bOk++;
     else {
