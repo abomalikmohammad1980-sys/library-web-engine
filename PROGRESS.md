@@ -1,5 +1,9 @@
 # سجل تنفيذ المرحلة 0
 
+> 🗂️ **السجلّ الشامل الكامل (ابدأ هنا):** [docs/word-behavior-spec/MASTER-RECORD.md](docs/word-behavior-spec/MASTER-RECORD.md)
+> — المصفوفة الكاملة (24 خليّة)، تحقيق حاجز الـ100٪ من ثلاث جهات (قياس/تفكيك MSLS70/WPF)،
+> وقرار الـPoC (خلفيّة Word-COM). سِجلٌّ جامعٌ لا يضيع عبر ضغط السياق.
+>
 > 📘 **المرجع النهائي المرتّب لكل القواعد:** [docs/word-behavior-spec/RULES-REFERENCE.md](docs/word-behavior-spec/RULES-REFERENCE.md)
 > (مجمَّع، حسب المقياس، مع حالة generic/مُعايَر وموضع التنفيذ). هذا الملف سجلٌّ زمنيّ.
 >
