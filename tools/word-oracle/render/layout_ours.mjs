@@ -98,7 +98,10 @@ for (let pi = 0; pi < paras.length; pi++) {
   const lines = breakLines(items, { columnTwips: colBase, firstLineIndentTwips: p.indFirstLine || 0,
     justified: true, compatibilityMode: model.compatibilityMode });
 
-  if (pi > 0 && prev) baseline += singlePitch(MET, em) * lineMultiplier(prev.spacing) + (prev.after || 0);
+  // حدّ الفقرة: السطر الأخير للسابقة أضاف pitch سلفًا (خانة السطر التالي)؛
+  // فلا نضيف pitch ثانيةً — فقط فراغ التباعد الإضافيّ (after) إن وُجد. muqtarah
+  // متنُه بلا فراغٍ ظاهرٍ بين الفقرات (contextualSpacing) ⇒ الحدّ = pitch فقط.
+  if (pi > 0 && prev && process.env.PARA_AFTER === "1") baseline += (prev.after || 0);
 
   // علامة الترقيم (numPr): تُرسم على السطر الأوّل وتزيح بدايته (تعليق)
   let marker = null;
@@ -122,8 +125,7 @@ for (let pi = 0; pi < paras.length; pi++) {
     const nSpaces = lineWords.length - 1;
     const natural = wordsW + nSpaces * spaceW;
     const isLast = li === lines.length - 1;
-    const markerIndent = (li === 0 && marker) ? marker.indent : 0;
-    const W = colBase - (li === 0 ? Math.max(0, p.indFirstLine || 0) + markerIndent : 0);
+    const W = colBase - (li === 0 ? Math.max(0, p.indFirstLine || 0) : 0);
     const extra = (!isLast && !ln.forced && nSpaces > 0) ? (W - natural) / nSpaces : 0;
     const gap = spaceW + extra;
 
@@ -131,12 +133,12 @@ for (let pi = 0; pi < paras.length; pi++) {
 
     // وضعٌ RTL: أوّل كلمةٍ (منطقيًّا) أقصى اليمين؛ المحارف داخل الكلمة يسار→يمين
     const glyphs = [];
-    // العلامة في منطقة التعليق (يمين بداية النصّ)
+    // العلامة تتدلّى يمين حافّة النصّ (في الهامش) — لا تُزيح النصّ نفسه
     if (li === 0 && marker) {
-      let gx = rightEdge - markerIndent;
+      let gx = rightEdge;
       for (const g of marker.glyphs) { glyphs.push({ gid: g.gid, x: Math.round(gx * 100) / 100 }); gx += g.adv; }
     }
-    let penX = rightEdge - markerIndent;
+    let penX = rightEdge;
     for (const s of shaped) {
       const left = penX - s.width;
       let gx = left;
