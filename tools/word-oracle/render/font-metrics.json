@@ -1,0 +1,38 @@
+{
+ "adwa-assalaf": {
+  "file": "corpus/book-fonts/adwa-assalaf.ttf",
+  "upem": 2048,
+  "a": 1.106934,
+  "d": 0.775879,
+  "g": 0.008789,
+  "wd": 0.775879,
+  "wa": 1.106934
+ },
+ "Al-Jazeera-Arabic-Regular": {
+  "file": "corpus/book-fonts/Al-Jazeera-Arabic-Regular.ttf",
+  "upem": 1000,
+  "a": 1.054,
+  "d": 0.602,
+  "g": 0.034,
+  "wd": 0.294,
+  "wa": 1.054
+ },
+ "Al-Jazeera-Arabic-Light": {
+  "file": "corpus/book-fonts/Al-Jazeera-Arabic-Light.ttf",
+  "upem": 2048,
+  "a": 1.054199,
+  "d": 0.602051,
+  "g": 0.03418,
+  "wd": 0.293945,
+  "wa": 1.054199
+ },
+ "Traditional Arabic": {
+  "file": "corpus/book-fonts/trado.ttf",
+  "upem": 2048,
+  "a": 0.994141,
+  "d": 0.500488,
+  "g": 0.0,
+  "wd": 0.500488,
+  "wa": 0.994141
+ }
+}

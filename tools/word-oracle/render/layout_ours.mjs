@@ -54,11 +54,15 @@ function markerText(numbering, numId, ilvl, counters) {
   return lvl.text.replace(/%\d+/g, val);
 }
 
-const BOOK = "sample-muqtarah";
-const FONT_FILE = "corpus/book-fonts/Al-Jazeera-Arabic-Light.ttf";
-const FAMILY = "Al-Jazeera-Arabic-Light";
-const MET = { a: 1.0542, d: 0.60205, g: 0.03418, wd: 0.29395, wa: 1.0542 };
+const BOOK = process.env.BOOK || "sample-muqtarah";
 const OUT = process.argv[2] || "ours.json";
+const bookMap = JSON.parse(readFileSync("tools/word-oracle/book-fonts-map.json", "utf-8"));
+const metrics = JSON.parse(readFileSync("tools/word-oracle/render/font-metrics.json", "utf-8"));
+const cfg = bookMap[BOOK];
+const FAMILY = cfg.family;
+const FONT_FILE = cfg.horizFont;
+const MET = metrics[FAMILY];
+const PS_CAL = (() => { try { return JSON.parse(readFileSync("tools/word-oracle/pagestart-cal.json", "utf-8"))[FAMILY]; } catch { return null; } })();
 
 const model = extractFromDocx(readFileSync(`corpus/books/${BOOK}.docx`));
 const numbering = loadNumbering(`corpus/books/${BOOK}.docx`);
@@ -76,15 +80,15 @@ function shapeWord(w, em) {
 }
 const wordWidth = (w, em) => shapeWord(w, em).width;
 
-const sec = model.sections[0];
+const paras = model.paragraphs.filter((p) =>
+  !p.excluded && p.text.trim() &&
+  p.runs.every((r) => r.family === FAMILY && r.emTwips));
+const bodySecIdx = paras[0]?.sectionIndex ?? 0;
+const sec = model.sections?.[bodySecIdx] ?? model.section ?? model.sections[0];
 const { pageWTwips: pageW, pageHTwips: pageH, marRightTwips: marR, marTopTwips: marT, marBottomTwips: marB } = sec;
 
-const paras = model.paragraphs.filter((p) =>
-  !p.excluded && p.sectionIndex === 0 && p.text.trim() &&
-  p.runs.every((r) => r.family === FAMILY && r.emTwips));
-
 const pages = [[]]; let cur = 0;
-let baseline = marT + pageStartAscent(MET, paras[0].runs[0].emTwips, paras[0].spacing);
+let baseline = marT + pageStartAscent(MET, paras[0].runs[0].emTwips, paras[0].spacing, PS_CAL);
 let prev = null;
 
 for (let pi = 0; pi < paras.length; pi++) {
@@ -129,7 +133,7 @@ for (let pi = 0; pi < paras.length; pi++) {
     const extra = (!isLast && !ln.forced && nSpaces > 0) ? (W - natural) / nSpaces : 0;
     const gap = spaceW + extra;
 
-    if (baseline > pageH - marB) { pages.push([]); cur++; baseline = marT + pageStartAscent(MET, em, p.spacing); }
+    if (baseline > pageH - marB) { pages.push([]); cur++; baseline = marT + pageStartAscent(MET, em, p.spacing, PS_CAL); }
 
     // وضعٌ RTL: أوّل كلمةٍ (منطقيًّا) أقصى اليمين؛ المحارف داخل الكلمة يسار→يمين
     const glyphs = [];
