@@ -88,6 +88,8 @@ export interface FloatAnchor {
   distL: number; distR: number; distT: number; distB: number;
   /** ‏Square / Tight / Through / TopAndBottom / None */
   wrap: string;
+  /** معرّف علاقة الصورة (a:blip r:embed) — لاستخراج البايت من word/media للعرض */
+  rId: string | null;
 }
 export interface SectionGeometry {
   pageWTwips: number;
@@ -616,6 +618,8 @@ export function parseDocument(
               distT: Math.round(Number(a["@distT"] ?? 0) / EMU),
               distB: Math.round(Number(a["@distB"] ?? 0) / EMU),
               wrap: wrap.replace("wp:wrap", ""),
+              rId: collectDeep(anc, "a:blip")[0]?.attrs?.["@r:embed"]
+                ?? collectDeep(anc, "a:blip")[0]?.attrs?.["@r:link"] ?? null,
             });
           }
         }
