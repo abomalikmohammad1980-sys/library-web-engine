@@ -1353,7 +1353,11 @@ export function parseNotes(
     if (!id) continue;
     try {
       const wrapped = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document${ns}><w:body>${inner}</w:body></w:document>`;
-      out.set(id, parseDocument(wrapped, styles, numbering, theme).paragraphs);
+      const notePs = parseDocument(wrapped, styles, numbering, theme).paragraphs;
+      // نفسُ قاعدة الترويسة: rId داخل حاشيةٍ يُحلّ من footnotes.xml.rels لا من المستند
+      const notePart = tag === "w:endnote" ? "endnotes.xml" : "footnotes.xml";
+      for (const q of notePs) for (const a of q.anchors ?? []) a.part = notePart;
+      out.set(id, notePs);
     } catch { /* حاشيةٌ لا تُحلَّل: تُتجاهَل بدل إسقاط المستند */ }
   }
   return out;
