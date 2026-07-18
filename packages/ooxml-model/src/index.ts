@@ -966,7 +966,9 @@ export function parseDocument(
           // ‏w:trHeight: ارتفاعٌ مفروضٌ للصفّ (atLeast يوسّع، exact يقصّ)
           const trH = trPr ? findAttr(trPr, "w:trHeight") : null;
           const rowHeight = trH?.["@w:val"] != null ? Number(trH["@w:val"]) : null;
-          const rowHeightRule = trH?.["@w:hRule"] ?? (rowHeight != null ? "atLeast" : null);
+          // ‏w:hRule الافتراضيّ **auto**: القيمةُ تُهمَل ولا تُفرَض حدًّا أدنى.
+          // ‏atLeast وحدها توسّع، وexact وحدها تفرض. (كان عندي atLeast خطأً.)
+          const rowHeightRule = trH?.["@w:hRule"] ?? "auto";
           const cells = (tr["w:tr"] as XNode[]).filter((c) => "w:tc" in c);
           let col = 0;
           cells.forEach((cell, ci) => {
@@ -1254,17 +1256,32 @@ export function parseDocument(
                 const spPr = collectDeep(anc, "wps:spPr")[0]?.node
                   ?? collectDeep(anc, "pic:spPr")[0]?.node ?? anc;
                 // لونُ حشوٍ صريح؛ وschemeClr يُحلّ بالسمة
-                const solid = collectDeep(spPr, "a:solidFill")[0]?.node;
+                // ‏a:solidFill/a:noFill يجب أن تكون **أبناءً مباشرين** لـspPr: البحثُ
+                // العميق يلتقط حشوَ a:ln (الخطّ) فيجعله حشوَ الشكل — والعكس.
+                const directChild = (parent: XNode[], nm: string): XNode[] | undefined => {
+                  for (const n of parent) if (nm in n) return n[nm] as XNode[];
+                  return undefined;
+                };
+                const solid = directChild(spPr, "a:solidFill");
                 const clrOf = (node: XNode[] | undefined): string | null => {
                   if (!node) return null;
                   const srgb = collectDeep(node, "a:srgbClr")[0]?.attrs?.["@val"];
                   if (srgb) return srgb.toUpperCase();
                   const sch = collectDeep(node, "a:schemeClr")[0]?.attrs?.["@val"];
-                  if (sch) return theme.get(sch) ?? null;
+                  // ‏DrawingML يسمّيها bg1/tx1 وclrScheme يسمّيها lt1/dk1
+                  const SCH_ALIAS: Record<string, string> = { bg1: "lt1", tx1: "dk1",
+                    bg2: "lt2", tx2: "dk2" };
+                  if (sch) return theme.get(sch) ?? theme.get(SCH_ALIAS[sch] ?? "") ?? null;
                   return null;
                 };
-                const hasNoFill = collectDeep(spPr, "a:noFill").length > 0 && !solid;
-                const lnNode = collectDeep(spPr, "a:ln")[0];
+                const hasNoFill = directChild(spPr, "a:noFill") !== undefined && !solid;
+                const lnRaw = directChild(spPr, "a:ln");
+                const lnNode = lnRaw ? { node: lnRaw, attrs: (() => {
+                  for (const n of spPr) if ("a:ln" in n) return (n[":@"] as Record<string, string>) ?? {};
+                  return {} as Record<string, string>;
+                })() } : undefined;
+                // خطٌّ بـa:noFill لا لونَ له (لا يُرسَم) — ولا يُخلَط بحشو الشكل
+                const lnNoFill = lnRaw ? directChild(lnRaw, "a:noFill") !== undefined : false;
                 const strokeW = lnNode?.attrs?.["@w"]
                   ? Math.max(10, Math.round(Number(lnNode.attrs["@w"]) / EMU)) : 0;
                 const adjVal = collectDeep(geom?.node ?? [], "a:gd")[0]?.attrs?.["@fmla"];
@@ -1272,7 +1289,7 @@ export function parseDocument(
                 return { shape: {
                   prst: geom?.attrs?.["@prst"] ?? (vml ? "rect" : "rect"),
                   fill: hasNoFill ? null : clrOf(solid),
-                  stroke: clrOf(lnNode?.node) ?? (strokeW ? "000000" : null),
+                  stroke: lnNoFill ? null : (clrOf(lnNode?.node) ?? (strokeW ? "000000" : null)),
                   strokeW: strokeW || (lnNode ? 12 : 0), adj } };
               })(),
               ...(() => {
