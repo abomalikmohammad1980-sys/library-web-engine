@@ -77,6 +77,10 @@ export interface TableCellCtx {
   firstInCell: boolean; // أوّل فقرةٍ في الخليّة (تبدأ عند أعلى الصفّ)
   firstInRow: boolean;
   lastInRow: boolean;
+  /** تظليل الخليّة (w:shd@w:fill) — «auto»/FFFFFF يُعامَل شفّافًا (حصاد الشاملة الذهبية) */
+  shdFill: string | null;
+  /** نمط الجدول (w:tblStyle) — تُحلّ منه الحدود إن غابت المباشرة */
+  tblStyleId: string | null;
 }
 
 /** توقّف جدولةٍ مخصّص (§17.3.1.37) */
@@ -505,6 +509,8 @@ export function parseDocument(
       if ("w:p" in n) out.push({ node: n, cell: ctx });
       else if ("w:tbl" in n) {
         const tbl = n["w:tbl"] as XNode[];
+        const tblPr = first(tbl, "w:tblPr");
+        const tblStyleId = tblPr ? (findAttr(tblPr, "w:tblStyle")?.["@w:val"] ?? null) : null;
         const grid = collectDeep(tbl, "w:gridCol").map((g) => Number(g.attrs["@w:w"] ?? 0));
         const colX: number[] = []; let acc = 0;
         for (const w of grid) { colX.push(acc); acc += w; }
@@ -518,8 +524,12 @@ export function parseDocument(
             const tc = cell["w:tc"] as XNode[];
             const span = Number(findAttr(first(tc, "w:tcPr") ?? tc, "w:gridSpan")?.["@w:val"] ?? 1);
             const colWTwips = grid.slice(col, col + span).reduce((a, b) => a + b, 0) || 0;
+            const tcPr = first(tc, "w:tcPr");
+            const rawFill = tcPr ? (findAttr(tcPr, "w:shd")?.["@w:fill"] ?? null) : null;
+            const shdFill = rawFill && !["auto", "FFFFFF", "ffffff"].includes(rawFill) ? rawFill : null;
             const cc: TableCellCtx = { tableId, row, col, colXTwips: colX[col] ?? 0, colWTwips,
-              firstInCell: false, firstInRow: ci === 0, lastInRow: ci === cells.length - 1 };
+              firstInCell: false, firstInRow: ci === 0, lastInRow: ci === cells.length - 1,
+              shdFill, tblStyleId };
             const cellParas = flattenBlocks(tc, cc);
             if (cellParas[0]?.cell) cellParas[0].cell = { ...cellParas[0].cell, firstInCell: true };
             out.push(...cellParas);

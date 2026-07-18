@@ -26,6 +26,16 @@ if docx:
                     _img[rid] = f"data:image/{mime};base64," + base64.b64encode(z.read(name)).decode()
     except Exception:
         pass
+# مستطيلات خلايا الجداول (تظليل + حدود من نمط الجدول) — تُرسَم قبل النصّ
+cells = []
+for c in pg.get("cells", []):
+    fill = f'#{c["fill"]}' if c.get("fill") else "none"
+    bw = c.get("bw", 0) or 0
+    stroke = f'#{c.get("bc", "000000")}' if bw else "none"
+    if fill == "none" and not bw:
+        continue
+    cells.append(f'<rect x="{c["x"]:.1f}" y="{c["y"]:.1f}" width="{c["w"]:.1f}" '
+                 f'height="{c["h"]:.1f}" fill="{fill}" stroke="{stroke}" stroke-width="{bw}"/>')
 # عناصر الصور العائمة (طبقةٌ خلفيّة: تُرسَم قبل النصّ ليعلوها)
 imgs = []
 for a in pg.get("anchors", []):
@@ -57,7 +67,7 @@ for ln in pg["lines"]:
             paths.append(f'<path d="{d}" transform="translate({g["x"]:.2f} {y:.2f}) scale({scale:.5f} {-scale:.5f})"/>')
 svg = (f'<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" '
        f'viewBox="0 0 {W} {H}" width="{W/20:.0f}" height="{H/20:.0f}">'
-       f'<rect width="{W}" height="{H}" fill="white"/>{"".join(imgs)}'
+       f'<rect width="{W}" height="{H}" fill="white"/>{"".join(imgs)}{"".join(cells)}'
        f'<g fill="black">{"".join(paths)}</g></svg>')
 open(out, "w", encoding="utf-8").write(svg)
-print(f"our-engine page {pi}: {len(paths)} glyphs, {len(imgs)} images -> {out}")
+print(f"our-engine page {pi}: {len(paths)} glyphs, {len(imgs)} images, {len(cells)} cells -> {out}")

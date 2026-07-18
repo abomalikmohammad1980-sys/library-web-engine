@@ -85,6 +85,27 @@ function loadContextual(docxPath) {
   }
   return { styleSet, byText, norm: (s) => s.replace(/[٠-٩]/g, (d) => String(d.charCodeAt(0) - 0x0660)).replace(/\s+/g, "").slice(0, 30) };
 }
+// ── حدود أنماط الجداول (styles.xml → tblBorders) — حصاد «الشاملة الذهبية» ──
+// عرض الحدّ: w:sz بوحدة 1/8 نقطة → twips = (sz/8)*20، مقيَّدًا [10,60] twips.
+function loadTableBorders(docxPath) {
+  const zip = unzipSync(readFileSync(docxPath));
+  const styles = zip["word/styles.xml"] ? strFromU8(zip["word/styles.xml"]) : "";
+  const byStyle = {};
+  for (const st of styles.matchAll(/<w:style[^>]*w:styleId="([^"]+)"[^>]*>([\s\S]*?)<\/w:style>/g)) {
+    const tb = st[2].match(/<w:tblBorders>([\s\S]*?)<\/w:tblBorders>/);
+    if (!tb) continue;
+    const side = (nm) => {
+      const m = tb[1].match(new RegExp("<w:" + nm + "[ /][^>]*>"));
+      if (!m || /w:val="(none|nil)"/.test(m[0])) return null;
+      const sz = Number((m[0].match(/w:sz="(\d+)"/) || [])[1] || 4);
+      const col = (m[0].match(/w:color="([^"]+)"/) || [])[1] || "auto";
+      return { w: Math.min(60, Math.max(10, Math.round((sz / 8) * 20))), color: col === "auto" ? "000000" : col };
+    };
+    byStyle[st[1]] = { top: side("top"), bottom: side("bottom"), left: side("left"),
+      right: side("right"), insideH: side("insideH"), insideV: side("insideV") };
+  }
+  return byStyle;
+}
 // ── استخراج مقاطع (runs) كلّ فقرة بخصائصها (generic، آليّة B) ──
 // ارتفاع السطر = max عبر مقاطعه الفعليّة (بولد/حجم/خطّ). نبني، لكلّ فقرة، مصفوفةً
 // من المقاطع {len, bold, sz} بترتيبها — فنُسقِطها على مدى أحرف كلّ سطر لاحقًا.
@@ -158,6 +179,8 @@ const PS_CAL = (() => { try { return JSON.parse(readFileSync("tools/word-oracle/
 const model = extractFromDocx(readFileSync(`corpus/books/${BOOK}.docx`));
 const numbering = loadNumbering(`corpus/books/${BOOK}.docx`);
 const contextual = loadContextual(`corpus/books/${BOOK}.docx`);
+const tableBorders = loadTableBorders(`corpus/books/${BOOK}.docx`);
+const tableCells = []; // مستطيلات خلايا الجداول {page,x,y,w,h,fill,bw,bc}
 const hasContextual = (p) => contextual.byText.has(contextual.norm(p.text)) || contextual.styleSet.has(p.styleId);
 // ضبط الأرملة/اليتيم مُفعَّلٌ ما لم يُعطَّل صراحةً (widowControl=false في النموذج)
 const widowCtl = (p) => p.widowControl !== false;
@@ -256,6 +279,8 @@ const lineBoxAscDesc = (met, boldMet, em, hasBold, sizeEm) => {
   return { asc, desc: dg };
 };
 
+// يختم ارتفاعات خلايا الصفّ عند انتهائه (أطول خليّة تحدّد ارتفاع الصفّ)
+function finishRow(t) { if (!t) return; for (const c of t.cells) c.h = Math.max(120, (t.maxBottom + 80) - c.y); }
 for (let pi = 0; pi < paras.length; pi++) {
   const p = paras[pi]; const em = p.runs[0]?.emTwips || 200; // احتياطٌ لفقرة صورةٍ خالصة
   const fo = getFont(p.runs[0]?.family || MAIN_FAMILY); const MET = fo.met;
@@ -294,11 +319,20 @@ for (let pi = 0; pi < paras.length; pi++) {
   if (p.tableCell) {
     const tc = p.tableCell;
     if (!curTable || curTable.id !== tc.tableId || curTable.row !== tc.row) {
-      if (curTable) baseline = curTable.maxBottom; // أنهِ الصفّ السابق
-      curTable = { id: tc.tableId, row: tc.row, startBaseline: baseline, maxBottom: baseline };
+      if (curTable) { finishRow(curTable); baseline = curTable.maxBottom; }
+      curTable = { id: tc.tableId, row: tc.row, startBaseline: baseline, maxBottom: baseline,
+        rowTop: baseline - MET.a * em, cells: [] };
       prevDesc = null; pendingGap = 0;
     } else if (tc.firstInCell) { baseline = curTable.startBaseline; prevDesc = null; pendingGap = 0; }
-  } else if (curTable) { baseline = curTable.maxBottom; curTable = null; prevDesc = null; }
+    // مستطيلُ الخليّة (تظليلٌ + حدود من نمط الجدول) — يُختَم ارتفاعُه عند نهاية الصفّ
+    if (tc.firstInCell) {
+      const bs = tableBorders[tc.tblStyleId] || null;
+      const bside = bs && (bs.insideH || bs.top || bs.left);
+      const rect = { page: cur, x: rightEdge - tc.colWTwips, y: curTable.rowTop, w: tc.colWTwips, h: 0,
+        fill: tc.shdFill || null, bw: bside ? bside.w : 0, bc: bside ? bside.color : "000000" };
+      curTable.cells.push(rect); tableCells.push(rect);
+    }
+  } else if (curTable) { finishRow(curTable); baseline = curTable.maxBottom; curTable = null; prevDesc = null; }
   const boldMet = metrics[`${p.runs[0]?.family || MAIN_FAMILY}|bold`];
   const paraRuns = runsByPara.byPara.get(runsByPara.key(p.text));
   const wMeta = paraRuns ? paraWordMeta(paraRuns) : null; // مقاييس كلّ كلمة (بولد/حجم/عائلة)
@@ -475,9 +509,12 @@ for (let pi = 0; pi < paras.length; pi++) {
   prev = { spacing: p.spacing, after: p.spacing?.after, styleId: p.styleId, contextual: hasContextual(p) };
 }
 
+finishRow(curTable); // اختم آخر صفٍّ في المستند
 const out = { source: "our-engine", unit: "twip", mainFont: MAIN_FILE,
   pageW, pageH, docx: `corpus/books/${BOOK}.docx`,
-  pages: pages.map((lines, pi) => ({ w: pageW, h: pageH, lines, anchors: imgAnchors.filter((a) => a.page === pi) })) };
+  pages: pages.map((lines, pi) => ({ w: pageW, h: pageH, lines,
+    anchors: imgAnchors.filter((a) => a.page === pi),
+    cells: tableCells.filter((c) => c.page === pi && c.h > 0) })) };
 writeFileSync(OUT, JSON.stringify(out), "utf8");
 console.log(`محرّكنا: ${pages.length} صفحة، ${pages.reduce((a, p) => a + p.length, 0)} سطرًا -> ${OUT}`);
 console.log(`صفحة 1: ${pages[1]?.length ?? 0} سطر، أول baseline=${pages[1]?.[0]?.y?.toFixed(1)}`);
