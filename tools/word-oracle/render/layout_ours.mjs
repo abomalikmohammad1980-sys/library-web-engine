@@ -271,7 +271,7 @@ for (let pi = 0; pi < paras.length; pi++) {
   const spaceW = wordWidth(" ", em) || wordWidth(" ", em);
   const words = p.text.trim().split(/\s+/).filter(Boolean);
   // فقرةُ صورةٍ سطريّةٍ خالصة: كلمةٌ نائبة (nbsp) لتنتج سطرًا واحدًا يحجز ارتفاع الصورة.
-  if (!words.length && p.inlineImageHTwips > 0) words.push(" ");
+  if (!words.length && (p.inlineImageHTwips > 0 || p.excluded === "empty")) words.push(" ");
   // صورٌ عائمة (wp:anchor): طبقةٌ على الصفحة الحاليّة بموضعها المحلول (page/margin/paragraph).
   if (p.anchors && p.anchors.length) for (const a of p.anchors) {
     if (!a.rId) continue;
