@@ -734,7 +734,9 @@ export function parseDocument(
     // حسم كسرِ الصفحة: الفقرة المرصَّفة تستهلك المعلَّق (وتبدأ صفحةً)؛ غير المرصَّفة
     // تُمرِّره. كسرٌ لاحقٌ لنصّها (أو فارغة حاملة) يدفع التالية.
     let pageBreakBefore = false;
-    if (excluded) {
+    // الفقرةُ الفارغة **تُرصَّف** (سطرٌ فارغ) فتستهلك كسرَها بنفسها ولا تُمرِّره — وإلّا
+    // تنهار الكسراتُ المتتالية في واحدة (masjid: ٨٧ كسرًا كانت تُنتج ٢٦ فقط).
+    if (excluded && excluded !== "empty") {
       pendingBreak = pendingBreak || ppPageBreak || anyPageBreak;
     } else {
       pageBreakBefore = pendingBreak || ppPageBreak || leadingPageBreak;
