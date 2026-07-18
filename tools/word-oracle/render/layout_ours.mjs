@@ -187,7 +187,7 @@ const { pageWTwips: pageW, pageHTwips: pageH, marRightTwips: marR, marTopTwips: 
 const pages = [[]]; let cur = 0;
 const fo0 = getFont(paras[0].runs[0].family);
 let baseline = marT + pageStartAscent(fo0.met, paras[0].runs[0].emTwips, paras[0].spacing, PS_CAL);
-let prev = null, prevDesc = null, pendingGap = 0;
+let prev = null, prevDesc = null, pendingGap = 0, pageAnchor = baseline;
 // آليّة B (max عبر المقاطع): صندوق السطر — صعودٌ وهبوطٌ يأخذان أقصى مقطعٍ فيه
 // (بولد أطول). الخطوة = هبوط السابق + صعود الحاليّ (BOX=0 للعودة للـpitch الثابت).
 const BOX = process.env.BOX !== "0";
@@ -275,7 +275,7 @@ for (let pi = 0; pi < paras.length; pi++) {
     else if (!BOX) baseline += pendingGap;
     pendingGap = 0;
 
-    if (baseline > pageH - marB) { pages.push([]); cur++; baseline = marT + pageStartAscent(MET, em, p.spacing, cal); prevDesc = null; }
+    if (baseline > pageH - marB) { pages.push([]); cur++; baseline = marT + pageStartAscent(MET, em, p.spacing, cal); prevDesc = null; pageAnchor = baseline; }
 
     // وضعٌ RTL: أوّل كلمةٍ (منطقيًّا) أقصى اليمين؛ المحارف داخل الكلمة يسار→يمين
     const glyphs = [];
@@ -291,10 +291,11 @@ for (let pi = 0; pi < paras.length; pi++) {
       for (const g of s.glyphs) { glyphs.push({ gid: g.gid, x: Math.round(gx * 100) / 100 }); gx += g.adv; }
       penX = left - gap;
     }
-    // آليّة A (Word، مؤكَّدة بوكيلَي LibreOffice+الشبكة): تراكمٌ float + قنص الأساس
-    // المرسوم لشبكة نقطة الجهاز (2.4tw @ 600dpi) نسبةً للهامش العلويّ. DOTSNAP=0 للتعطيل.
+    // آليّة A (Word، مؤكَّدة LibreOffice+الشبكة+القياس): تراكمٌ float ثم قنص **الإزاحة
+    // عن مرساة الصفحة الحقيقيّة** لشبكة نقطة الجهاز (2.4tw @600dpi). LibreOffice: قنص
+    // الموضع التراكميّ لا كلّ خطوة. مؤكَّد: 52 سطرًا مُنمّى بلا بولد = عبور نقطةٍ كسريّ.
     const yOut = process.env.DOTSNAP !== "1" ? baseline
-      : marT + Math.round((baseline - marT) / 2.4) * 2.4;
+      : pageAnchor + Math.round((baseline - pageAnchor) / 2.4) * 2.4;
     pages[cur].push({ y: Math.round(yOut * 100) / 100, em, font: fo.file, glyphs });
     // هبوط السابق الفعّال يشمل فجوة المضاعف: desc + (asc+desc)×(mult−1)
     if (BOX) { const mlt = lineMultiplier(p.spacing); prevDesc = box.desc + (box.asc + box.desc) * (mlt - 1); }
