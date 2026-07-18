@@ -256,6 +256,7 @@ const SUP_SCALE = 0.66, SUP_RISE = 1 / 3; // مقيسٌ من Word: 211/320 = 0.6
 const runsByPara = loadRuns(`corpus/books/${BOOK}.docx`);
 const counters = {};
 
+const FONTSUB = process.env.FONTSUB === "1"; // بديلُ الخطّ المفقود — **مطفأ**: القاعدة ليست عامّة (انظر التعليق في getFont)
 // ── تعدّد الخطوط (generic): ذاكرةُ خطوطٍ لكلّ عائلة، مع احتياطيٍّ لخطّ المتن ──
 const fontCache = new Map();
 function getFont(family) {
@@ -263,10 +264,24 @@ function getFont(family) {
   if (fontCache.has(key)) return fontCache.get(key);
   const meta = metrics[key];
   const file = (meta && meta.file) || MAIN_FILE;
+  // خطٌّ غيرُ متوفّر: Word **يستبدله** ويأخذ مقاييسَ البديل، لا مقاييسَ خطّ المتن —
+  // وهذا **جذرُ فجوة masjid** الرأسيّة. لكنّ مقياسَ البديل **يختلف باختلاف الخطّ
+  // المفقود**، فليست قاعدةً واحدة: قِيس من Word أنّ «(AH) Manal Bold» في masjid
+  // يعطي ١٫١٤٧٥ (= Arial ١٫١٤٩٩)، بينما «mohammad bold art 1» في tadris يعطي
+  // ≈١٫٢٩٥ ولا يطابق أيَّ خطٍّ ضمّنه Word في XPS. لذلك FONTSUB **مطفأ**: تفعيلُه
+  // يصلح masjid (خطوة ٠٪⟶٥٠٪، صفحات ١٤١⟶١٢١ مقابل ١٢٧) ويكسر tadris
+  // (‏٣٢⟶٤٦ صفحة). الحلُّ الصحيح جدولُ بدائلَ مقيسٌ لكلّ خطّ، لا احتياطيٌّ واحد.
+  // قياسٌ على masjid: صفوفُ فهرسه بخطّ «(AH) Manal Bold» (لا مقاييسَ له عندنا ولا
+  // في خطوط XPS المضمّنة، أي أنّ Word استبدله هو أيضًا). خطوةُ Word ٤٨٧٫٢tw عند
+  // em=٣٢٠ وفجوةِ ١٢٠ ⟵ النسبةُ ١٫١٤٧٥، وهي **مقاييسُ Arial/Times بالضبط**
+  // (‏١٫١٤٩٩ ⟵ خطوة ٤٨٨٫٠، فرق ٠٫٨tw). أمّا مقاييسُ خطّ المتن (‏adwa-assalaf
+  // ١٫٨٩١٦) فتعطي ٧٢٥ — وهو ما كنّا نُخرجه.
+  const substMet = metrics["Arial"] ?? metrics["Times New Roman"] ?? metrics[MAIN_FAMILY];
+  const fallbackMet = (FONTSUB && !meta) ? substMet : (meta || metrics[MAIN_FAMILY]);
   let obj;
   try {
     const face = new Face(new Blob(readFileSync(file)), 0);
-    obj = { font: new Font(face), upem: face.upem, file, met: meta || metrics[MAIN_FAMILY] };
+    obj = { font: new Font(face), upem: face.upem, file, met: fallbackMet, substituted: !meta };
   } catch { obj = getFont(MAIN_FAMILY); }
   fontCache.set(key, obj); return obj;
 }
