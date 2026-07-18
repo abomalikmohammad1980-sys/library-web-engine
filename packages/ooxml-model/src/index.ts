@@ -53,6 +53,28 @@ export interface BodyParagraph {
   /** ضبط الأرملة/اليتيم (w:widowControl) — افتراضيّ Word مُفعَّل (true)؛ val=0 يعطّله.
    *  مُفعَّلًا: لا يُترَك سطرٌ وحيدٌ للفقرة أعلى صفحةٍ أو أسفلها عند الكسر. */
   widowControl: boolean;
+  /** توقّفات الجدولة المخصّصة (w:pPr/w:tabs/w:tab) — بالـtwips. */
+  tabStops: TabStop[];
+  /** صفُّ جدول محتوياتٍ (TOC): مدخلٌ / قائدٌ يتمدّد / رقمُ صفحة — من حصاد «الشاملة
+   *  الذهبية». يُكتشَف بنمطٍ toc أو بتوقّفٍ يمينيٍّ ذي leader مع w:tab فعليّ في رنّ.
+   *  حين يوجد، الفقرة **لا تُقصى** بل تُرسَم صفًّا ثلاثيًّا. */
+  toc: TocRow | null;
+}
+
+/** توقّف جدولةٍ مخصّص (§17.3.1.37) */
+export interface TabStop {
+  /** left/start · center · right/end · bar · clear */
+  val: string;
+  posTwips: number;
+  /** dot · hyphen · underscore · middleDot · heavy · none */
+  leader: string | null;
+}
+/** صفُّ فهرس: نصُّ المدخل، رقمُ الصفحة، حرفُ القائد، وموضع التوقّف اليمينيّ (twips) */
+export interface TocRow {
+  entry: string;
+  pageNum: string;
+  leader: string;
+  rightTabTwips: number;
 }
 
 /** عائم wp:anchor — الأبعاد بالـ twips (‏EMU ÷ 635) */
@@ -267,6 +289,21 @@ function indProps(pPr: XNode[] | null): { indLeft: number | null; indRight: numb
   };
 }
 
+/** توقّفات الجدولة من w:pPr/w:tabs (حصاد «الشاملة الذهبية»): val/pos/leader. */
+function parseTabStops(pPr: XNode[] | null): TabStop[] {
+  const tabsEl = pPr ? first(pPr, "w:tabs") : null;
+  if (!tabsEl) return [];
+  const out: TabStop[] = [];
+  for (const n of tabsEl) {
+    if (!("w:tab" in n)) continue;
+    const a = (n[":@"] as Record<string, string>) ?? {};
+    const val = a["@w:val"] ?? "left";
+    if (val === "clear") continue; // clear يُلغي توقّفًا موروثًا — لا يُرسَم
+    out.push({ val, posTwips: Number(a["@w:pos"] ?? 0), leader: a["@w:leader"] ?? null });
+  }
+  return out;
+}
+
 /** ‏w:spacing من pPr — مدخل الترصيف الرأسي (line بوحدة 240 لكل سطر مفرد،
  *  ‏lineRule: ‏auto (مضاعف) / exact / atLeast (twips)؛ ‏before/after بالـ twips) */
 export interface SpacingProps {
@@ -466,11 +503,21 @@ export function parseDocument(
     // كسرُ الصفحة الصريح (w:br type=page): قبل نصّ الفقرة = هي على صفحةٍ جديدة؛
     // بعد نصّها (أو فقرة فارغة) = التالية على صفحةٍ جديدة. sawText يفرّق الحالتين.
     let sawText = false, leadingPageBreak = false, trailingPageBreak = false, anyPageBreak = false;
+    const tabTextPositions: number[] = []; // مواضع w:tab في نصّ الفقرة (لتقسيم TOC)
+    let paraTextLen = 0; // طول نصّ الفقرة المتراكم عبر الرنّات (لموضع w:tab الصحيح)
+    // نُسطِّح الرنّات: المستوى الأعلى + رنّات داخل w:hyperlink (فهارس TOC تلفّ رقم
+    // الصفحة بـPAGEREF في hyperlink) + رنّات fldSimple. هكذا يكتمل نصّ صفّ الفهرس.
+    const runNodes: XNode[] = [];
     for (const rNode of p) {
-      if (!("w:r" in rNode)) {
-        if ("w:fldSimple" in rNode || "w:hyperlink" in rNode) excluded = excluded || "field";
-        continue;
+      if ("w:r" in rNode) runNodes.push(rNode);
+      else if ("w:hyperlink" in rNode)
+        for (const hr of rNode["w:hyperlink"] as XNode[]) if ("w:r" in hr) runNodes.push(hr);
+      else if ("w:fldSimple" in rNode) {
+        for (const fr of rNode["w:fldSimple"] as XNode[]) if ("w:r" in fr) runNodes.push(fr);
+        excluded = excluded || "field";
       }
+    }
+    for (const rNode of runNodes) {
       const r = rNode["w:r"] as XNode[];
       const rpr = first(r, "w:rPr");
       const own = rPrProps(rpr);
@@ -493,7 +540,9 @@ export function parseDocument(
         // تشكيلًا متعدد الخطوط؛ حتى حينه تُستبعد الفقرة (وإلا قِيس نصها أقصر
         // من الحقيقة وفسدت المحاذاة — درس sample-tadris para291).
         if ("w:sym" in t) excluded = excluded || "sym";
-        if ("w:tab" in t) excluded = excluded || "tab";
+        // ‏w:tab: نسجّل موضعه في النصّ (لتقسيم صفّ TOC لاحقًا). الإقصاء يُحسَم بعد
+        // الحلقة: صفوف الفهرس تُرصَّف، وبقيّة w:tab تُقصى (excluded=tab) مؤقّتًا.
+        if ("w:tab" in t) tabTextPositions.push(paraTextLen + text.length);
         if ("w:drawing" in t || "w:pict" in t) excluded = excluded || "drawing";
         // العائمات: هندسة wp:anchor (الامتداد والموضع والالتفاف) بالـ twips
         if ("w:drawing" in t) {
@@ -528,6 +577,7 @@ export function parseDocument(
         }
         if ("w:fldChar" in t || "w:instrText" in t) excluded = excluded || "field";
       }
+      if (!hidden) paraTextLen += text.length; // يوافق نصّ الفقرة (المرئيّ) لموضع w:tab
       if (!text) continue;
       runs.push({
         text,
@@ -540,6 +590,26 @@ export function parseDocument(
     }
     const text = runs.filter((r) => !r.hidden).map((r) => r.text).join("");
     if (!text.trim()) excluded = excluded || "empty";
+    // صفّ TOC (حصاد «الشاملة الذهبية»): توقّفٌ يمينيٌّ ذو leader (أو نمط toc) مع w:tab
+    // فعليّ في رنّ. التقسيم: **آخر** w:tab يفصل المدخل عن رقم الصفحة (الأسبق داخليّة).
+    const tabStops = parseTabStops(pPr);
+    const rightLeaderTab = tabStops.find(
+      (t) => (t.val === "right" || t.val === "end") && t.leader && t.leader !== "none");
+    const isTocStyle = /^toc/i.test(styleId ?? "");
+    let toc: TocRow | null = null;
+    if (tabTextPositions.length && (rightLeaderTab || isTocStyle) && text.trim()) {
+      const split = tabTextPositions[tabTextPositions.length - 1]!;
+      const entry = text.slice(0, split).trim();
+      const pageNum = text.slice(split).trim();
+      const rightTab = rightLeaderTab ?? tabStops.find((t) => t.val === "right" || t.val === "end");
+      if (entry && pageNum) {
+        toc = { entry, pageNum, leader: rightLeaderTab?.leader ?? "dot", rightTabTwips: rightTab?.posTwips ?? 0 };
+      }
+    }
+    // صفّ الفهرس يُرصَّف (يُلغى إقصاء field/hyperlink عنه — نصٌّ خالص)
+    if (toc) { if (excluded === "field") excluded = false; }
+    // بقيّة w:tab (لا فهرس): إقصاءٌ مؤقّت حتى نُعمّم التوقّفات المطلقة
+    else if (tabTextPositions.length) excluded = excluded || "tab";
     // ‏w:pageBreakBefore في pPr — كسرٌ صريحٌ قبل الفقرة (val=0/false/off يُبطله)
     const pbbVal = pPr ? findAttr(pPr, "w:pageBreakBefore")?.["@w:val"] : undefined;
     const pbbEl = pPr ? first(pPr, "w:pageBreakBefore") !== null : false;
@@ -572,7 +642,7 @@ export function parseDocument(
     paragraphs.push({
       index: idx, runs, text, styleId, jc, bidi,
       indLeft, indRight, indFirstLine, excluded, sectionIndex: -1, numbered, anchors,
-      spacing, markEmTwips, markAsciiFamily, pageBreakBefore, widowControl,
+      spacing, markEmTwips, markAsciiFamily, pageBreakBefore, widowControl, tabStops, toc,
     });
     // ‏sectPr داخل pPr يختم مقطعًا: هندسته تسري على هذه الفقرة وما سبقها
     const pSect = pPr ? first(pPr, "w:sectPr") : null;
