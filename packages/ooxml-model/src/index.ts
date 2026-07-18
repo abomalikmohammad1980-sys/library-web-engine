@@ -478,8 +478,23 @@ export function parseDocument(
   // كسرُ الصفحة المعلَّق: يُنقَل من فقرةٍ حاملةٍ للكسر (أو حدِّ مقطع) إلى الفقرة
   // المرصَّفة التالية. الفقرات غير المرصَّفة (فارغة/صور) لا تستهلكه بل تُمرِّره. generic.
   let pendingBreak = false;
-  for (const child of body) {
-    if (!("w:p" in child)) continue; // فقرات المستوى الأعلى فقط — الجداول تُقصى بنيويًا
+  // تسطيح الكتل: فقرات المستوى الأعلى + فقرات خلايا الجداول (w:tbl>w:tr>w:tc>w:p) بترتيب
+  // المستند — لإدراج محتوى الجداول في التدفّق (حصاد «الشاملة الذهبية»؛ التخطيط الشبكيّ
+  // الكامل لاحقًا، لكنّ المحتوى يحضر ويُقاس). التداخل يُعالَج تكراريًّا.
+  const flattenBlocks = (nodes: XNode[]): XNode[] => {
+    const out: XNode[] = [];
+    for (const n of nodes) {
+      if ("w:p" in n) out.push(n);
+      else if ("w:tbl" in n)
+        for (const row of n["w:tbl"] as XNode[])
+          if ("w:tr" in row)
+            for (const cell of row["w:tr"] as XNode[])
+              if ("w:tc" in cell) out.push(...flattenBlocks(cell["w:tc"] as XNode[]));
+    }
+    return out;
+  };
+  for (const child of flattenBlocks(body)) {
+    if (!("w:p" in child)) continue;
     const p = child["w:p"] as XNode[];
     idx++;
 
