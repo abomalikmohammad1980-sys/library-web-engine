@@ -302,7 +302,7 @@ for (let pi = 0; pi < paras.length; pi++) {
     // الموضع التراكميّ لا كلّ خطوة. مؤكَّد: 52 سطرًا مُنمّى بلا بولد = عبور نقطةٍ كسريّ.
     const yOut = process.env.DOTSNAP !== "1" ? baseline
       : pageAnchor + Math.round((baseline - pageAnchor) / 2.4) * 2.4;
-    pages[cur].push({ y: Math.round(yOut * 100) / 100, em, font: fo.file, glyphs });
+    pages[cur].push({ y: Math.round(yOut * 100) / 100, em, font: fo.file, glyphs, text: lineWords.join(" ") });
     // هبوط السابق الفعّال يشمل فجوة المضاعف: desc + (asc+desc)×(mult−1)
     if (BOX) { const mlt = lineMultiplier(p.spacing); prevDesc = box.desc + (box.asc + box.desc) * (mlt - 1); }
     else baseline += singlePitch(MET, em) * lineMultiplier(p.spacing);
