@@ -343,6 +343,26 @@ for (let pi = 0; pi < paras.length; pi++) {
     descs.push({ glyphs, asc: box.asc, desc: box.desc, extraWd: box.extraWd, mlt: lineMultiplier(p.spacing), text: lineWords.join(" ") });
   }
 
+  // صفّ فهرس (TOC، حصاد «الشاملة الذهبية»): سطرٌ واحد — المدخل يمينًا، رقمُ الصفحة عند
+  // الحافّة اليسرى (RTL)، والقائد (شرطة/نقطة) يملأ الوسط. يستبدل الأسطر العاديّة.
+  if (p.toc) {
+    const entryG = shapeWord(p.toc.entry, em, fo);
+    const pageG = shapeWord(p.toc.pageNum, em, fo);
+    const lch = p.toc.leader === "hyphen" ? "-" : p.toc.leader === "underscore" ? "_"
+      : p.toc.leader === "middleDot" ? "·" : ".";
+    const leadG = shapeWord(lch, em, fo); const leadW = leadG.width || em * 0.3;
+    const g = [];
+    let gx = rightEdge - entryG.width; const entryLeft = gx;
+    for (const gl of entryG.glyphs) { g.push({ gid: gl.gid, x: Math.round(gx * 100) / 100 }); gx += gl.adv; }
+    const colLeft = rightEdge - colBase; let px = colLeft; const pageRight = colLeft + pageG.width;
+    for (const gl of pageG.glyphs) { g.push({ gid: gl.gid, x: Math.round(px * 100) / 100 }); px += gl.adv; }
+    if (leadW > 0) for (let lx = pageRight + leadW * 0.4; lx + leadW <= entryLeft - leadW * 0.4; lx += leadW)
+      for (const gl of leadG.glyphs) g.push({ gid: gl.gid, x: Math.round(lx * 100) / 100 });
+    descs.length = 0;
+    descs.push({ glyphs: g, asc: MET.a * em, desc: (MET.d + MET.g) * em, extraWd: 0,
+      mlt: lineMultiplier(p.spacing), text: p.toc.entry + " " + p.toc.pageNum });
+  }
+
   // المرحلة 2: الإسناد إلى صفحاتٍ بتراكم float (آليّة A/B كما هي) + ضبط الأرملة/اليتيم
   // (widowControl، افتراضيّ Word ON): لا يُترَك سطرٌ وحيدٌ للفقرة أعلى صفحة (أرملة) أو
   // أسفلها (يتيم) — يُنقَل حدّ الكسر ليبقى ≥٢ سطرًا معًا. WIDOW=0 للتعطيل (تشخيصيّ).
