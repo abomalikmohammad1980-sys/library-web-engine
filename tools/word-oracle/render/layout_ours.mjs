@@ -11,6 +11,26 @@ import { unzipSync, strFromU8 } from "../../../node_modules/.pnpm/fflate@0.8.3/n
 
 // ── قراءة الترقيم (numbering.xml + numPr من document.xml) ──
 const ARA_ALPHA = "أبتثجحخدذرزسشصضطظعغفقكلمنهوي".split("");
+// ترتيب الأبجد (يختلف عن الألفبائيّ): أبجد هوز حطي كلمن سعفص قرشت ثخذ ضظغ
+const ARA_ABJAD = "أبجدهوزحطيكلمنسعفصقرشتثخذضظغ".split("");
+const LATIN = "abcdefghijklmnopqrstuvwxyz";
+const ROMAN = [[1000,"m"],[900,"cm"],[500,"d"],[400,"cd"],[100,"c"],[90,"xc"],[50,"l"],[40,"xl"],[10,"x"],[9,"ix"],[5,"v"],[4,"iv"],[1,"i"]];
+function toRoman(n){ if(n<1||n>3999) return String(n); let r=""; for(const [v,sy] of ROMAN){ while(n>=v){ r+=sy; n-=v; } } return r; }
+// تحويل عدّادٍ إلى نصّ العلامة حسب numFmt (حصاد «الشاملة الذهبية»، مُصحَّحًا)
+function formatNum(n, fmt){
+  switch(fmt){
+    case "decimal": return String(n);
+    case "decimalZero": return n<10 ? "0"+n : String(n);
+    case "lowerLetter": return LATIN[(n-1)%26]||String(n);
+    case "upperLetter": return (LATIN[(n-1)%26]||"").toUpperCase()||String(n);
+    case "lowerRoman": return toRoman(n);
+    case "upperRoman": return toRoman(n).toUpperCase();
+    case "arabicAlpha": return ARA_ALPHA[n-1]||String(n);
+    case "arabicAbjad": return ARA_ABJAD[n-1]||String(n);
+    case "none": return "";
+    default: return String(n);
+  }
+}
 function loadNumbering(docxPath) {
   const zip = unzipSync(readFileSync(docxPath));
   const num = zip["word/numbering.xml"] ? strFromU8(zip["word/numbering.xml"]) : "";
@@ -22,7 +42,8 @@ function loadNumbering(docxPath) {
     for (const l of a[2].matchAll(/<w:lvl[^>]*w:ilvl="(\d+)"[^>]*>([\s\S]*?)<\/w:lvl>/g)) {
       const fmt = (l[2].match(/<w:numFmt[^>]*w:val="([^"]+)"/) || [])[1] || "decimal";
       const text = (l[2].match(/<w:lvlText[^>]*w:val="([^"]*)"/) || [])[1] || "%1.";
-      abs[id][l[1]] = { fmt, text };
+      const start = +((l[2].match(/<w:start[^>]*w:val="(-?\d+)"/) || [])[1] ?? "1");
+      abs[id][l[1]] = { fmt, text, start };
     }
   }
   // num → abstractNumId
@@ -108,12 +129,17 @@ function paraWordMeta(paraRuns) {
 function markerText(numbering, numId, ilvl, counters) {
   const absId = numbering.numToAbs[numId]; const lvl = numbering.abs[absId]?.[ilvl];
   if (!lvl) return null;
-  const key = `${numId}:${ilvl}`; counters[key] = (counters[key] || 0) + 1;
+  // عدّاد هذا المستوى: يبدأ من start، ويتقدّم؛ ثمّ تُصفَّر المستويات الأعمق (قاعدة Word)
+  const key = `${numId}:${ilvl}`;
+  if (counters[key] == null) counters[key] = (lvl.start ?? 1) - 1;
+  counters[key]++;
   for (const k of Object.keys(counters)) { const [n, l] = k.split(":"); if (n === numId && +l > ilvl) delete counters[k]; }
-  const n = counters[key];
-  const val = lvl.fmt === "arabicAlpha" ? (ARA_ALPHA[n - 1] || String(n))
-    : lvl.fmt === "arabicAbjad" ? (ARA_ALPHA[n - 1] || String(n)) : String(n);
-  return lvl.text.replace(/%\d+/g, val);
+  // كلّ %N في lvlText يُستبدَل بعدّاد المستوى (N-1) منسَّقًا بـnumFmt الخاصّ به (هرميّ صحيح)
+  return lvl.text.replace(/%(\d+)/g, (_, d) => {
+    const li = +d - 1; const lc = numbering.abs[absId]?.[li];
+    const cnt = counters[`${numId}:${li}`] ?? (lc?.start ?? 1);
+    return formatNum(cnt, lc?.fmt || "decimal");
+  });
 }
 
 const BOOK = process.env.BOOK || "sample-muqtarah";
