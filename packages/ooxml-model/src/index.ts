@@ -177,6 +177,8 @@ export interface FloatAnchor {
   wrap: string;
   /** معرّف علاقة الصورة (a:blip r:embed) — لاستخراج البايت من word/media للعرض */
   rId: string | null;
+  /** الجزءُ المالك ("header1.xml"…) — rId يُحلّ من علاقاته. null = المستند. */
+  part?: string;
   /** محتوى مربّع نصٍّ (wps:txbx/v:textbox ← w:txbxContent) — فقراتٌ تُرصَف داخل الصندوق */
   textBox?: BodyParagraph[];
   /** شكلٌ متّجه (‏a:prstGeom أو VML): هندستُه ولونُ حشوه وحدّه. الرسمُ يحوّله
@@ -250,6 +252,8 @@ export interface DocumentModelV0 {
   headerFooters: Map<string, BodyParagraph[]>;
   /** rId → اسمُ الجزء (لحلّ مراجع المقطع) */
   relTargets: Map<string, string>;
+  /** علاقاتُ كلّ جزء: اسمُ الجزء → (rId → هدف). الصورةُ في ترويسةٍ تُحلّ من جزئها. */
+  partRels: Map<string, Map<string, string>>;
   /** w:evenAndOddHeaders — ترويسة/تذييل مختلفٌ للصفحات الزوجيّة */
   evenAndOddHeaders: boolean;
 }
@@ -332,6 +336,10 @@ export function openDocx(bytes: Uint8Array): {
   documentRels: Map<string, string>;
   /** ‏word/theme/theme1.xml — لحلّ w:themeColor */
   themeXml: string | null;
+  /** علاقاتُ **كلّ جزء**: اسمُ الجزء ("document.xml"/"header1.xml") → (rId → هدف).
+   *  لازمٌ لأنّ rId محلّيٌّ لجزئه: rId1 في ترويسة masjid صورةٌ، وفي المستند
+   *  عنصرُ customXml — فحلُّه من ملفٍّ واحدٍ يعطي هدفًا خاطئًا. */
+  partRels: Map<string, Map<string, string>>;
 } {
   const files = unzipSync(bytes);
   const dec = new TextDecoder("utf-8");
@@ -343,15 +351,24 @@ export function openDocx(bytes: Uint8Array): {
     const b = name.match(/^word\/((?:header|footer)\d+\.xml)$/);
     if (b && b[1]) headerFooterParts.set(b[1], dec.decode(files[name]!));
   }
-  // علاقاتُ المستند حصرًا (لا علاقات الترويسة) — تفاديًا لتصادم rId بين الأجزاء
-  const documentRels = new Map<string, string>();
-  const relsXml = get("word/_rels/document.xml.rels");
-  if (relsXml) {
-    for (const m of relsXml.match(/<Relationship [^>]*>/g) ?? []) {
+  // علاقاتُ **كلّ جزء** على حدة: rId محلّيٌّ لجزئه. (‏rId1 في ترويسة masjid
+  // صورةٌ، وفي المستند عنصرُ customXml — فحلُّه من ملفٍّ واحدٍ يعطي هدفًا خاطئًا.)
+  const partRels = new Map<string, Map<string, string>>();
+  const readRels = (relsPath: string): Map<string, string> => {
+    const out = new Map<string, string>();
+    const xml = get(relsPath);
+    if (!xml) return out;
+    for (const m of xml.match(/<Relationship [^>]*>/g) ?? []) {
       const id = m.match(/Id="([^"]+)"/); const tgt = m.match(/Target="([^"]+)"/);
-      if (id?.[1] && tgt?.[1]) documentRels.set(id[1], tgt[1].replace(/^\/?word\//, "").replace(/^\.\.\//, ""));
+      if (id?.[1] && tgt?.[1]) out.set(id[1], tgt[1].replace(/^\/?word\//, "").replace(/^\.\.\//, ""));
     }
+    return out;
+  };
+  for (const name of Object.keys(files)) {
+    const m = name.match(/^word\/_rels\/(.+)\.rels$/);
+    if (m?.[1]) partRels.set(m[1], readRels(name));
   }
+  const documentRels = partRels.get("document.xml") ?? new Map<string, string>();
   return {
     documentXml: dec.decode(doc),
     stylesXml: get("word/styles.xml"),
@@ -360,7 +377,7 @@ export function openDocx(bytes: Uint8Array): {
     numberingXml: get("word/numbering.xml"),
     footnotesXml: get("word/footnotes.xml"),
     endnotesXml: get("word/endnotes.xml"),
-    headerFooterParts, documentRels,
+    headerFooterParts, documentRels, partRels,
   };
 }
 
@@ -1266,7 +1283,7 @@ export function parseDocument(
   const section = sections[sections.length - 1]!;
   return { section, sections, paragraphs, compatibilityMode: 11, defaultTabStop: 720,
     footnotes: new Map(), endnotes: new Map(), headerFooters: new Map(), relTargets: new Map(),
-    evenAndOddHeaders: false };
+    evenAndOddHeaders: false, partRels: new Map() };
 }
 
 /** يحلّل word/footnotes.xml (أو endnotes) إلى: معرّف الحاشية → فقراتُها.
@@ -1315,7 +1332,7 @@ export function parseNotes(
  *  parseDocument كاملًا (لفُّ محتواه في body مؤقّت). حصاد «الشاملة الذهبية». */
 export function parseHeaderFooterPart(
   partXml: string, documentXml: string, styles: StyleTable, numbering: NumberingTable = new Map(),
-  theme: Map<string, string> = new Map(),
+  theme: Map<string, string> = new Map(), partName: string | null = null,
 ): BodyParagraph[] {
   const nsMatch = documentXml.match(/<w:document([^>]*)>/);
   const ns = nsMatch ? nsMatch[1] : ' xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"';
@@ -1327,13 +1344,16 @@ export function parseHeaderFooterPart(
   const inner = partXml.slice(gt + 1, closeAt);
   try {
     const wrapped = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document${ns}><w:body>${inner}</w:body></w:document>`;
-    return parseDocument(wrapped, styles, numbering, theme).paragraphs;
+    const ps = parseDocument(wrapped, styles, numbering, theme).paragraphs;
+    // ختمُ الجزء المالك على مراسيه: rId يُحلّ من علاقات هذا الجزء لا المستند
+    if (partName) for (const q of ps) for (const a of q.anchors ?? []) a.part = partName;
+    return ps;
   } catch { return []; }
 }
 
 export function extractFromDocx(bytes: Uint8Array): DocumentModelV0 {
   const { documentXml, stylesXml, settingsXml, numberingXml, footnotesXml, endnotesXml,
-    headerFooterParts, documentRels, themeXml } = openDocx(bytes);
+    headerFooterParts, documentRels, themeXml, partRels } = openDocx(bytes);
   const theme = parseTheme(themeXml);
   const styles = parseStyles(stylesXml, theme);
   const numbering = parseNumbering(numberingXml);
@@ -1345,8 +1365,9 @@ export function extractFromDocx(bytes: Uint8Array): DocumentModelV0 {
   model.endnotes = parseNotes(endnotesXml, documentXml, styles, numbering, "w:endnote", theme);
   // الترويسات/التذييلات: كلُّ جزءٍ يُحلَّل فقراتٍ، وrId يُربَط باسم جزئه
   model.relTargets = documentRels;
+  model.partRels = partRels;
   model.evenAndOddHeaders = (settingsXml ?? "").includes("<w:evenAndOddHeaders");
   for (const [name, xml] of headerFooterParts)
-    model.headerFooters.set(name, parseHeaderFooterPart(xml, documentXml, styles, numbering, theme));
+    model.headerFooters.set(name, parseHeaderFooterPart(xml, documentXml, styles, numbering, theme, name));
   return model;
 }

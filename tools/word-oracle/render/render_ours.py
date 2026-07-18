@@ -15,15 +15,23 @@ docx = data.get("docx")
 if docx:
     try:
         z = zipfile.ZipFile(docx)
-        rels = z.read("word/_rels/document.xml.rels").decode("utf-8")
-        r2t = dict(re.findall(r'Id="([^"]+)"[^>]*Target="([^"]+)"', rels))
-        for rid, tgt in r2t.items():
-            name = "word/" + tgt.lstrip("/").replace("../", "")
-            if name in z.namelist():
+        # ‏rId محلّيٌّ لجزئه: نبني خريطةً لكلّ جزءٍ على حدة. (‏rId1 في ترويسة
+        # ‏masjid صورةٌ، وفي المستند عنصرُ customXml — فالخريطةُ الواحدة تُخطئ.)
+        for rels_name in z.namelist():
+            m = re.match(r"word/_rels/(.+)\.rels$", rels_name)
+            if not m:
+                continue
+            part = m.group(1)
+            rels = z.read(rels_name).decode("utf-8")
+            for rid, tgt in re.findall(r'Id="([^"]+)"[^>]*Target="([^"]+)"', rels):
+                name = "word/" + tgt.lstrip("/").replace("../", "")
+                if name not in z.namelist():
+                    continue
                 ext = name.rsplit(".", 1)[-1].lower()
                 mime = {"png": "png", "jpeg": "jpeg", "jpg": "jpeg", "gif": "gif", "bmp": "bmp"}.get(ext)
                 if mime:
-                    _img[rid] = f"data:image/{mime};base64," + base64.b64encode(z.read(name)).decode()
+                    _img.setdefault(part, {})[rid] = (
+                        f"data:image/{mime};base64," + base64.b64encode(z.read(name)).decode())
     except Exception:
         pass
 # مستطيلات خلايا الجداول (تظليل + حدود من نمط الجدول) — تُرسَم قبل النصّ
@@ -84,7 +92,10 @@ for a in pg.get("anchors", []):
             el = f'<g transform="rotate({a["rot"]:.3f} {cx:.1f} {cy:.1f})">{el}</g>'
         imgs.append(el)
         continue
-    href = _img.get(a.get("rId"))
+    # الجزءُ المالك أوّلًا، ثمّ المستندُ احتياطًا (استرجاعُ العلاقات المكسورة)
+    part = a.get("part") or "document.xml"
+    href = (_img.get(part, {}).get(a.get("rId"))
+            or _img.get("document.xml", {}).get(a.get("rId")))
     if not href:
         continue
     x, y, w, h = a["x"], a["y"], a["w"], a["h"]

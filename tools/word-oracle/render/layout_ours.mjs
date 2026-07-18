@@ -441,9 +441,11 @@ for (let pi = 0; pi < paras.length; pi++) {
     // شكلٌ متّجه بلا صورة: يُرسَم هندسةً (إطاراتُ العناوين والزخارف)
     if (!a.rId && a.shape && (a.shape.fill || a.shape.stroke)) {
       imgAnchors.push({ page: cur, x: ax, y: ay, w: a.extentW, h: a.extentH,
-        rId: null, shape: a.shape, ...(a.rotDeg ? { rot: a.rotDeg } : {}) });
+        rId: null, shape: a.shape, ...(a.part ? { part: a.part } : {}),
+        ...(a.rotDeg ? { rot: a.rotDeg } : {}) });
     }
     if (a.rId) imgAnchors.push({ page: cur, x: ax, y: ay, w: a.extentW, h: a.extentH, rId: a.rId,
+      ...(a.part ? { part: a.part } : {}),
       ...(a.srcRect ? { srcRect: a.srcRect } : {}), ...(a.rotDeg ? { rot: a.rotDeg } : {}),
       ...(a.flipH ? { flipH: true } : {}), ...(a.flipV ? { flipV: true } : {}) });
     // مربّعُ نصٍّ في المتن (لوحاتُ الغلاف والترويسات): نصُّه كان يضيع كلّيًّا لأنّ فقرته
@@ -1056,6 +1058,13 @@ if (HF) {
         emitBoxLine(pi, hfText(par, pageNo, total), em, fo, base, par.jc, colL, colW, kind);
         // مربّعات النصّ المرساة في الجزء (masjid/tadris يضعان رقم الصفحة فيها)
         for (const a of par.anchors ?? []) {
+          // صورةٌ في الترويسة/التذييل: تُرسَم طبقةً على صفحتها (بجزئها لحلّ rId)
+          if (a.rId) {
+            const rr = pageW - gs.marRightTwips;
+            imgAnchors.push({ page: pi, x: rr - a.posHOffset - a.extentW,
+              y: (a.posVRel === "page" ? 0 : base) + a.posVOffset,
+              w: a.extentW, h: a.extentH, rId: a.rId, part: a.part ?? null });
+          }
           if (!a.textBox) continue;
           // RTL: إزاحةُ المرساة من حافة العمود — نفسُ قاعدة الصور العائمة
           const bx = colL + a.posHOffset, bw = a.extentW || colW;
