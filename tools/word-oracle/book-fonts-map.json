@@ -65,5 +65,9 @@
   "gap-group": {
     "family": "Traditional Arabic",
     "horizFont": "corpus/book-fonts/trado.ttf"
+  },
+  "gap-sect": {
+    "family": "Traditional Arabic",
+    "horizFont": "corpus/book-fonts/trado.ttf"
   }
 }

@@ -350,6 +350,7 @@ const pages = [[]]; let cur = 0;
 // Word: gap-cols2 عمودان بعرض ٤١٥٩ وفاصلٍ ٧٠٨، الأوّل يمينًا عند x=١٠٤٧١).
 let curCol = 0;
 let pendingColBreak = false;   // w:br type="column" — يُطبَّق على الفقرة التالية
+let prevSectionIdx = null;     // لكشف حدود المقاطع (w:sectPr/w:type)
 const slotCount = []; // خانة → عددُ أسطرها (للأرملة/اليتيم وبداية الصفحة)
 const pageSec = [];   // صفحة → فهرسُ مقطعها (لاختيار ترويستها/تذييلها)
 const fo0 = getFont(paras[0].runs[0]?.family || MAIN_FAMILY);
@@ -535,6 +536,25 @@ for (let pi = 0; pi < paras.length; pi++) {
     baseline = marT + pageStartAscent(MET, em, p.spacing, cal);
     prev = null; prevDesc = null; pendingGap = 0; pageAnchor = baseline;
   }
+  // حدُّ المقطع: نوعُ بدئه (w:sectPr/w:type) يفرض صفحةً جديدة. كان `sectStart`
+  // يُستخرَج ولا يُستعمَل، فحدودُ المقاطع لا تكسر صفحةً أصلًا. وevenPage/oddPage
+  // تزيد صفحةً بيضاءَ إن لم توافق الشفعيّةُ المطلوبة.
+  if (prevSectionIdx !== null && p.sectionIndex !== prevSectionIdx
+      && pages[cur].length > 0 && process.env.NOSECT !== "1") {
+    const st = (model.sections[p.sectionIndex] ?? sec).sectStart ?? "nextPage";
+    if (st !== "continuous") {
+      pages.push([]); cur++; curCol = 0;
+      const wantEven = st === "evenPage", wantOdd = st === "oddPage";
+      if (wantEven || wantOdd) {
+        const pageNo = cur + 1;                       // ترقيمٌ من ١
+        const isEven = pageNo % 2 === 0;
+        if ((wantEven && !isEven) || (wantOdd && isEven)) { pages.push([]); cur++; }
+      }
+      baseline = marT + pageStartAscent(MET, em, p.spacing, cal);
+      prev = null; prevDesc = null; pendingGap = 0; pageAnchor = baseline;
+    }
+  }
+  prevSectionIdx = p.sectionIndex;
   if (p.pageBreakBefore && pages[cur].length > 0 && process.env.NOPB !== "1") {
     pages.push([]); cur++; curCol = 0;
     baseline = marT + pageStartAscent(MET, em, p.spacing, cal);
