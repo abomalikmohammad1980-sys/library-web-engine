@@ -540,6 +540,9 @@ for (let pi = 0; pi < paras.length; pi++) {
     }
     if (a.rId) imgAnchors.push({ page: cur, x: ax, y: ay, w: a.extentW, h: a.extentH, rId: a.rId,
       ...(a.part ? { part: a.part } : {}),
+      // ترتيبُ الطبقات: خلفَ النصّ أوّلًا، ثمّ تصاعديًّا بـrelativeHeight
+      // (‏ParagraphFloatingImages.dart:100-116). كانت عائماتُ المتن بلا z أصلًا.
+      z: a.zOrder ?? 0, behind: !!a.behindDoc,
       ...(a.srcRect ? { srcRect: a.srcRect } : {}), ...(a.rotDeg ? { rot: a.rotDeg } : {}),
       ...(a.flipH ? { flipH: true } : {}), ...(a.flipV ? { flipV: true } : {}),
       ...(a.stretch ? { stretch: true } : {}) });

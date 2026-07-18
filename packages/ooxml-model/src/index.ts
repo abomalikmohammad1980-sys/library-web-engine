@@ -1464,7 +1464,34 @@ export function parseDocument(
             // رسمُ SmartArt **سطريّ** (masjid يضع رسومه هكذا لا مرساةً): نُنشئ له
             // مرساةً صوريّةً في تدفّق الفقرة ليُرصَف كبقيّة الرسوم.
             const dm = collectDeep(inl, "dgm:relIds")[0]?.attrs?.["@r:dm"];
-            if (!dm) continue;
+            if (!dm) {
+              // **صورةٌ سطريّةٌ عاديّة**: كنّا نحجز ارتفاعَها ولا نرسمها البتّة.
+              // تُرصَف في تدفّق الفقرة بمقاسها (‏ImageToWidget.dart:421-425).
+              const bl = collectDeep(inl, "a:blip")[0]?.attrs;
+              const rid = bl?.["@r:embed"] ?? bl?.["@r:link"];
+              if (rid) {
+                const isr = collectDeep(inl, "a:srcRect")[0]?.attrs;
+                const ixf = collectDeep(inl, "a:xfrm")[0]?.attrs;
+                const tru = (v: string | undefined) => v === "1" || v === "true";
+                anchors.push({
+                  extentW: ext?.["@cx"] ? Math.round(Number(ext["@cx"]) / 635) : 1500,
+                  extentH: cy != null ? Math.round(Number(cy) / 635) : 1500,
+                  posHRel: "column", posHOffset: 0, posVRel: "paragraph", posVOffset: 0,
+                  posHAlign: null, posVAlign: null, behindDoc: false, zOrder: 0,
+                  distL: 0, distR: 0, distT: 0, distB: 0,
+                  wrap: "", rId: rid, inlineFlow: true,
+                  ...(collectDeep(inl, "a:stretch").length ? { stretch: true } : {}),
+                  ...(ixf?.["@rot"] ? { rotDeg: Number(ixf["@rot"]) / 60000 } : {}),
+                  ...(tru(ixf?.["@flipH"]) ? { flipH: true } : {}),
+                  ...(tru(ixf?.["@flipV"]) ? { flipV: true } : {}),
+                  ...(isr && (isr["@l"] || isr["@t"] || isr["@r"] || isr["@b"])
+                    ? { srcRect: { l: Number(isr["@l"] ?? 0) / 100000,
+                        t: Number(isr["@t"] ?? 0) / 100000, r: Number(isr["@r"] ?? 0) / 100000,
+                        b: Number(isr["@b"] ?? 0) / 100000 } } : {}),
+                });
+              }
+              continue;
+            }
             const rels = partRelsRef.get(partNameRef ?? "document.xml")
               ?? partRelsRef.get("document.xml");
             const target = rels?.get(dm);

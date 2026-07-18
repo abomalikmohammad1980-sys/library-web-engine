@@ -61,12 +61,51 @@ def _resolve_target(z, tgt):
     return "data:image/%s;base64," % mime + base64.b64encode(data).decode()
 
 
+def _recover_rels(z):
+    """استردادُ العلاقات المكسورة (‏DocxImageRelationshipRecovery.dart:11-124).
+    ‏Word أحيانًا يُصدِر مستندًا معرّفاتُ `a:blip@r:embed` فيه مزاحةٌ عن معرّفات
+    ملفّ العلاقات بمقدارٍ ثابت، فتُشير كلُّ صورةٍ إلى هدفٍ ليس صورةً. الشروطُ
+    مشدَّدةٌ عمدًا حتّى لا نُفسد مستندًا سليمًا:
+      · تساوي طولَي القائمتين  · وجودُ مرجعٍ مكسورٍ فعلًا
+      · تطابقُ كلّ الفروق  · وأن يكون الفرقُ غيرَ صفريّ.
+    وتقتصر على المتن دون الترويسات."""
+    try:
+        doc = z.read("word/document.xml").decode("utf-8", "ignore")
+        rels = z.read("word/_rels/document.xml.rels").decode("utf-8")
+    except Exception:
+        return {}
+    seen, embeds = set(), []
+    for rid in re.findall(r'r:embed="(rId\d+)"', doc):
+        if rid not in seen:
+            seen.add(rid); embeds.append(rid)          # بترتيب المستند بلا تكرار
+    pairs = re.findall(r'Id="(rId\d+)"[^>]*Target="([^"]+)"', rels)
+    tmap = dict(pairs)
+    img_ids = sorted((i for i, t in pairs if _looks_image(t)),
+                     key=lambda r: int(r[3:]))          # ترتيبٌ **عدديٌّ** لا نصّيّ
+    if not embeds or not img_ids or len(embeds) != len(img_ids):
+        return {}
+    if not any(not _looks_image(tmap.get(e, "")) for e in embeds):
+        return {}                                      # لا كسرَ ⟵ لا استرداد
+    deltas = {int(img_ids[i][3:]) - int(embeds[i][3:]) for i in range(len(embeds))}
+    if len(deltas) != 1 or 0 in deltas:
+        return {}                                      # الفرقُ غيرُ ثابتٍ أو صفر
+    return {embeds[i]: img_ids[i] for i in range(len(embeds))}
+
+
+def _looks_image(tgt):
+    """هدفٌ يُعَدّ صورةً: يبدأ بـmedia/ أو ينتهي بامتدادٍ معروف."""
+    t = (tgt or "").lower().lstrip("/")
+    return t.startswith("media/") or t.rsplit(".", 1)[-1] in _IMG_EXT
+
+
 # خريطة rId → بايت صورة من word/media (لرسم الصور العائمة، حصاد «الشاملة الذهبية»)
 _img = {}
+_recovered = {}
 docx = data.get("docx")
 if docx:
     try:
         z = zipfile.ZipFile(docx)
+        _recovered = _recover_rels(z)
         # ‏rId محلّيٌّ لجزئه: نبني خريطةً لكلّ جزءٍ على حدة. (‏rId1 في ترويسة
         # ‏masjid صورةٌ، وفي المستند عنصرُ customXml — فالخريطةُ الواحدة تُخطئ.)
         for rels_name in z.namelist():
@@ -131,7 +170,16 @@ def shape_svg(a):
         return f'<polygon points="{pts}" {at}/>'
     return f'<rect x="{x:.1f}" y="{y:.1f}" width="{w:.1f}" height="{h:.1f}" {at}/>'
 
-for a in pg.get("anchors", []):
+# ترتيبُ الطبقات (‏ParagraphFloatingImages.dart:100-116): ما خلف النصّ أوّلًا،
+# ثمّ تصاعديًّا بـz؛ وعند التعادل تسبق أشكالُ الخطّ غيرَها؛ ثمّ استقرارٌ بترتيب
+# المصدر. كانت كلُّها تُرسَم بترتيب ورودها فتتراكب خطأً.
+def _layer_key(item):
+    i, a = item
+    return (0 if a.get("behind") else 1, a.get("z", 0) or 0,
+            0 if (a.get("shape") or {}).get("prst") == "line" else 1, i)
+
+
+for _, a in sorted(enumerate(pg.get("anchors", [])), key=_layer_key):
     if a.get("shape") and not a.get("rId"):
         el = shape_svg(a)
         if a.get("rot"):
@@ -141,8 +189,12 @@ for a in pg.get("anchors", []):
         continue
     # الجزءُ المالك أوّلًا، ثمّ المستندُ احتياطًا (استرجاعُ العلاقات المكسورة)
     part = a.get("part") or "document.xml"
-    href = (_img.get(part, {}).get(a.get("rId"))
-            or _img.get("document.xml", {}).get(a.get("rId")))
+    rid = a.get("rId")
+    # خريطةُ الاسترداد تُطبَّق على المتن وحده (لا على الترويسات)
+    if part == "document.xml" and rid in _recovered:
+        rid = _recovered[rid]
+    href = (_img.get(part, {}).get(rid)
+            or _img.get("document.xml", {}).get(rid))
     if not href:
         continue
     x, y, w, h = a["x"], a["y"], a["w"], a["h"]
