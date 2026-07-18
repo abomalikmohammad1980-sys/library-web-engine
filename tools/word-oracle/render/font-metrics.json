@@ -151,5 +151,23 @@
   "g": 0.032715,
   "wd": 0.211914,
   "wa": 0.905273
+ },
+ "Simplified Arabic": {
+  "file": "C:/Windows/Fonts/simpo.ttf",
+  "upem": 2048,
+  "a": 1.179688,
+  "d": 0.478027,
+  "g": 0.0,
+  "wd": 0.478027,
+  "wa": 1.179688
+ },
+ "Simplified Arabic|bold": {
+  "file": "C:/Windows/Fonts/simpbdo.ttf",
+  "upem": 2048,
+  "a": 1.179688,
+  "d": 0.48291,
+  "g": 0.0,
+  "wd": 0.48291,
+  "wa": 1.179688
  }
 }

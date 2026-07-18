@@ -15,6 +15,12 @@ import { XMLParser } from "fast-xml-parser";
 // ---------- الأنواع
 export interface EffectiveRun {
   text: string;
+  /** مرجعُ حاشية/تعليقٍ ختاميّ في هذا الرنّ (رقمُه التسلسليّ ومعرّفه) — أو null */
+  noteRef?: { id: string | null; num: number; kind: string } | null;
+  /** ‏w:vertAlign=superscript — علامةُ الحاشية تُرفَع وتُصغَّر (تدخل صندوق السطر) */
+  superscript?: boolean;
+  /** ‏w:b أو w:bCs — عريض (يرفع ارتفاع السطر: آليّة الصندوق) */
+  bold?: boolean;
   family: string | null;
   /** حجم الخط بالـ twips ‏(w:sz أنصاف نقاط × 10) — شبكة ADR-0004 */
   emTwips: number | null;
@@ -193,20 +199,20 @@ function findAttr(parent: XNode[], name: string): Record<string, string> | null 
 // ---------- فتح الأرشيف
 export function openDocx(bytes: Uint8Array): {
   documentXml: string; stylesXml: string | null; settingsXml: string | null;
-  numberingXml: string | null;
+  numberingXml: string | null; footnotesXml: string | null; endnotesXml: string | null;
 } {
   const files = unzipSync(bytes);
   const dec = new TextDecoder("utf-8");
   const doc = files["word/document.xml"];
   if (!doc) throw new Error("word/document.xml غير موجود");
-  const styles = files["word/styles.xml"];
-  const settings = files["word/settings.xml"];
-  const numbering = files["word/numbering.xml"];
+  const get = (n: string) => (files[n] ? dec.decode(files[n]!) : null);
   return {
     documentXml: dec.decode(doc),
-    stylesXml: styles ? dec.decode(styles) : null,
-    settingsXml: settings ? dec.decode(settings) : null,
-    numberingXml: numbering ? dec.decode(numbering) : null,
+    stylesXml: get("word/styles.xml"),
+    settingsXml: get("word/settings.xml"),
+    numberingXml: get("word/numbering.xml"),
+    footnotesXml: get("word/footnotes.xml"),
+    endnotesXml: get("word/endnotes.xml"),
   };
 }
 
@@ -507,6 +513,8 @@ export function parseDocument(
   // كسرُ الصفحة المعلَّق: يُنقَل من فقرةٍ حاملةٍ للكسر (أو حدِّ مقطع) إلى الفقرة
   // المرصَّفة التالية. الفقرات غير المرصَّفة (فارغة/صور) لا تستهلكه بل تُمرِّره. generic.
   let pendingBreak = false;
+  // عدّادا الحواشي/التعليقات: **تسلسليّان بترتيب الظهور** في المتن (لا بـw:id)
+  const footnoteSeq = { n: 0 }, endnoteSeq = { n: 0 };
   // تسطيح الكتل: فقرات المستوى الأعلى + فقرات خلايا الجداول (w:tbl>w:tr>w:tc>w:p) بترتيب
   // المستند — لإدراج محتوى الجداول في التدفّق (حصاد «الشاملة الذهبية»؛ التخطيط الشبكيّ
   // الكامل لاحقًا، لكنّ المحتوى يحضر ويُقاس). التداخل يُعالَج تكراريًّا.
@@ -619,6 +627,7 @@ export function parseDocument(
       const hidden = rpr ? rpr.some((n) => "w:vanish" in n) : false;
       let text = "";
       let symFont: string | null = null; // خطُّ رمزٍ w:sym (يتقدّم على خطّ الرن)
+      let noteRef: { id: string | null; num: number; kind: string } | null = null;
       for (const t of r) {
         if ("w:t" in t) {
           const parts = t["w:t"] as XNode[];
@@ -639,6 +648,16 @@ export function parseDocument(
           const a = (t[":@"] as Record<string, string> | undefined) ?? {};
           const ch = resolveSymChar(a["@w:font"], a["@w:char"]);
           if (ch) { text += ch; symFont = a["@w:font"] ?? null; sawText = true; }
+        }
+        // مرجعُ حاشية/تعليقٍ ختاميّ: Word يرسم **رقمًا تسلسليًّا** بترتيب الظهور (لا w:id).
+        // نحقنه نصًّا فيلتحم بقوسَي «(» و«)» المجاورتين طبيعيًّا فيصير «(N)» كما يعرضه Word.
+        if ("w:footnoteReference" in t || "w:endnoteReference" in t) {
+          const a = (t[":@"] as Record<string, string> | undefined) ?? {};
+          const isEnd = "w:endnoteReference" in t;
+          const refId = a["@w:id"] ?? null;
+          const num = isEnd ? ++endnoteSeq.n : ++footnoteSeq.n;
+          noteRef = { id: refId, num, kind: isEnd ? "endnote" : "footnote" };
+          text += String(num); sawText = true;
         }
         // ‏w:tab: نسجّل موضعه في النصّ (لتقسيم صفّ TOC لاحقًا). الإقصاء يُحسَم بعد
         // الحلقة: صفوف الفهرس تُرصَّف، وبقيّة w:tab تُقصى (excluded=tab) مؤقّتًا.
@@ -688,8 +707,17 @@ export function parseDocument(
       }
       if (!hidden) paraTextLen += text.length; // يوافق نصّ الفقرة (المرئيّ) لموضع w:tab
       if (!text) continue;
+      const vAlign = rpr ? (findAttr(rpr, "w:vertAlign")?.["@w:val"] ?? null) : null;
+      const boldOn = (nm: string) => {
+        if (!rpr || first(rpr, nm) === null) return false;
+        const v = findAttr(rpr, nm)?.["@w:val"];
+        return !["0", "false", "off"].includes(v ?? "");
+      };
       runs.push({
         text,
+        noteRef,
+        superscript: vAlign === "superscript",
+        bold: boldOn("w:b") || boldOn("w:bCs"),
         family: symFont ?? own.family ?? pPrRPr.family ?? styleProps.family,
         emTwips: (own.sz ?? pPrRPr.sz ?? styleProps.sz) != null
           ? (own.sz ?? pPrRPr.sz ?? styleProps.sz)! * 10

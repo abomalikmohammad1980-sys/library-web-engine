@@ -1,9 +1,37 @@
 {
-  "_note": "الخريطة القانونية كتاب→(عائلة، خط أصلي للتشكيل الأفقي، خط subset للمقاييس الرأسية). الأفقي يجب أن يشكّل بالخط الأصلي الكامل (GSUB/GPOS سليم)؛ الرأسي يقرأ hhea من الـsubset (غير مجرَّد). حُسم 2026-07-14.",
-  "sample-masjid":   { "family": "adwa-assalaf",            "horizFont": "corpus/book-fonts/adwa-assalaf.ttf",            "vertSubset": "corpus/ground-truth/fonts/sample-masjid/59045A05-7A12-79B7-875B-4E380A6E9130.ttf" },
-  "sample-ahadith":  { "family": "Al-Jazeera-Arabic-Regular","horizFont": "corpus/book-fonts/Al-Jazeera-Arabic-Regular.ttf","vertSubset": "corpus/ground-truth/fonts/sample-ahadith/27307E81-3059-396C-F865-B9283B68952F.ttf" },
-  "sample-muqtarah": { "family": "Al-Jazeera-Arabic-Light",  "horizFont": "corpus/book-fonts/Al-Jazeera-Arabic-Light.ttf",  "vertSubset": "corpus/ground-truth/fonts/sample-muqtarah/63DA0C2F-06E4-5758-3852-151274211F25.ttf" },
-  "sample-tadris":   { "family": "Traditional Arabic",       "horizFont": "corpus/book-fonts/trado.ttf",                   "vertSubset": "corpus/ground-truth/fonts/sample-tadris/526A4B1D-1409-14CB-141D-3A12B73FA92B.ttf" },
-  "sample-jalsa27":  { "family": "Traditional Arabic",       "horizFont": "corpus/book-fonts/trado.ttf",                   "vertSubset": "corpus/ground-truth/fonts/sample-jalsa27/3D5B1C68-1B9A-764B-E21B-4F08DF70561D.ttf" },
-  "sample-dawra":    { "family": "Traditional Arabic",       "horizFont": "corpus/book-fonts/trado.ttf",                   "vertSubset": "corpus/ground-truth/fonts/sample-dawra/6EE6468C-3F68-48A3-5A76-EC233E7EA170.ttf" }
+ "_note": "الخريطة القانونية كتاب→(عائلة، خط أصلي للتشكيل الأفقي، خط subset للمقاييس الرأسية). الأفقي يجب أن يشكّل بالخط الأصلي الكامل (GSUB/GPOS سليم)؛ الرأسي يقرأ hhea من الـsubset (غير مجرَّد). حُسم 2026-07-14.",
+ "sample-masjid": {
+  "family": "adwa-assalaf",
+  "horizFont": "corpus/book-fonts/adwa-assalaf.ttf",
+  "vertSubset": "corpus/ground-truth/fonts/sample-masjid/59045A05-7A12-79B7-875B-4E380A6E9130.ttf"
+ },
+ "sample-ahadith": {
+  "family": "Al-Jazeera-Arabic-Regular",
+  "horizFont": "corpus/book-fonts/Al-Jazeera-Arabic-Regular.ttf",
+  "vertSubset": "corpus/ground-truth/fonts/sample-ahadith/27307E81-3059-396C-F865-B9283B68952F.ttf"
+ },
+ "sample-muqtarah": {
+  "family": "Al-Jazeera-Arabic-Light",
+  "horizFont": "corpus/book-fonts/Al-Jazeera-Arabic-Light.ttf",
+  "vertSubset": "corpus/ground-truth/fonts/sample-muqtarah/63DA0C2F-06E4-5758-3852-151274211F25.ttf"
+ },
+ "sample-tadris": {
+  "family": "Traditional Arabic",
+  "horizFont": "corpus/book-fonts/trado.ttf",
+  "vertSubset": "corpus/ground-truth/fonts/sample-tadris/526A4B1D-1409-14CB-141D-3A12B73FA92B.ttf"
+ },
+ "sample-jalsa27": {
+  "family": "Traditional Arabic",
+  "horizFont": "corpus/book-fonts/trado.ttf",
+  "vertSubset": "corpus/ground-truth/fonts/sample-jalsa27/3D5B1C68-1B9A-764B-E21B-4F08DF70561D.ttf"
+ },
+ "sample-dawra": {
+  "family": "Traditional Arabic",
+  "horizFont": "corpus/book-fonts/trado.ttf",
+  "vertSubset": "corpus/ground-truth/fonts/sample-dawra/6EE6468C-3F68-48A3-5A76-EC233E7EA170.ttf"
+ },
+ "fn-test": {
+  "family": "Simplified Arabic",
+  "horizFont": "C:/Windows/Fonts/simpo.ttf"
+ }
 }

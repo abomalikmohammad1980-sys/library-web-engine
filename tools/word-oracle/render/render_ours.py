@@ -64,7 +64,10 @@ for ln in pg["lines"]:
         except Exception: pass
         d = pen.getCommands()
         if d:
-            paths.append(f'<path d="{d}" transform="translate({g["x"]:.2f} {y:.2f}) scale({scale:.5f} {-scale:.5f})"/>')
+            # حجمٌ ورفعٌ خاصّان بالمحرف (علامة حاشية مرفوعة: em أصغر و dy سالب)
+            gsc = (g["em"] / upem) if "em" in g else scale
+            gy = y + g.get("dy", 0)
+            paths.append(f'<path d="{d}" transform="translate({g["x"]:.2f} {gy:.2f}) scale({gsc:.5f} {-gsc:.5f})"/>')
 svg = (f'<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" '
        f'viewBox="0 0 {W} {H}" width="{W/20:.0f}" height="{H/20:.0f}">'
        f'<rect width="{W}" height="{H}" fill="white"/>{"".join(imgs)}{"".join(cells)}'

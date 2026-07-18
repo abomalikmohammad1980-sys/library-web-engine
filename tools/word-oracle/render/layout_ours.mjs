@@ -122,8 +122,10 @@ function loadRuns(docxPath) {
         || (/<w:bCs(\s|\/|>)/.test(rPr) && !/<w:bCs[^>]*w:val="(0|false)"/.test(rPr));
       const szCs = (rPr.match(/<w:szCs[^>]*w:val="(\d+)"/) || rPr.match(/<w:sz[^>]*w:val="(\d+)"/) || [])[1];
       const fam = (rPr.match(/<w:rFonts[^>]*w:cs="([^"]*)"/) || rPr.match(/<w:rFonts[^>]*w:ascii="([^"]*)"/) || [])[1] || null;
+      const sup = /<w:vertAlign[^>]*w:val="superscript"/.test(rPr);
+      const sub = /<w:vertAlign[^>]*w:val="subscript"/.test(rPr);
       const txt = [...r[1].matchAll(/<w:t[^>]*>([\s\S]*?)<\/w:t>/g)].map((m) => m[1]).join("");
-      if (txt) runs.push({ text: txt, bold, sz: szCs ? +szCs * 10 : null, fam });
+      if (txt) runs.push({ text: txt, bold, sz: szCs ? +szCs * 10 : null, fam, sup, sub });
     }
     const key = normKey(runs.map((r) => r.text).join(""));
     if (key && runs.length) byPara.set(key, runs);
@@ -138,8 +140,9 @@ function paraWordMeta(paraRuns) {
   for (const r of paraRuns) {
     for (const ch of r.text) {
       if (/\s/.test(ch)) { push(); continue; }
-      if (!cur) cur = { bold: false, sz: null, fam: null };
+      if (!cur) cur = { bold: false, sz: null, fam: null, sup: false, sub: false };
       cur.bold = cur.bold || r.bold;
+      cur.sup = cur.sup || !!r.sup; cur.sub = cur.sub || !!r.sub;
       if (r.sz && (!cur.sz || r.sz > cur.sz)) cur.sz = r.sz;
       if (r.fam && !cur.fam) cur.fam = r.fam;
     }
@@ -184,6 +187,8 @@ const tableCells = []; // مستطيلات خلايا الجداول {page,x,y,w
 const hasContextual = (p) => contextual.byText.has(contextual.norm(p.text)) || contextual.styleSet.has(p.styleId);
 // ضبط الأرملة/اليتيم مُفعَّلٌ ما لم يُعطَّل صراحةً (widowControl=false في النموذج)
 const widowCtl = (p) => p.widowControl !== false;
+// مقاييسُ الرفع/الخفض (مقيسةٌ من Word): الحجم ⅔ الأصل، والرفع ⅓ الأصل فوق الأساس
+const SUP_SCALE = 0.66, SUP_RISE = 1 / 3; // مقيسٌ من Word: 211/320 = 0.66
 const runsByPara = loadRuns(`corpus/books/${BOOK}.docx`);
 const counters = {};
 
@@ -386,8 +391,11 @@ for (let pi = 0; pi < paras.length; pi++) {
     }
   } else if (curTable) { finishRow(curTable); baseline = curTable.maxBottom; curTable = null; prevDesc = null; }
   const boldMet = metrics[`${p.runs[0]?.family || MAIN_FAMILY}|bold`];
-  const paraRuns = runsByPara.byPara.get(runsByPara.key(p.text));
-  const wMeta = paraRuns ? paraWordMeta(paraRuns) : null; // مقاييس كلّ كلمة (بولد/حجم/عائلة)
+  // مقاييسُ كلّ كلمة من **مقاطع النموذج نفسها** (مصدرٌ واحدٌ للحقيقة): نصُّها يطابق p.text
+  // تمامًا (بما فيه أرقامُ الحواشي المحقونة)، وعائلتُها محلولةٌ عبر سلسلة الأنماط.
+  const mRuns = p.runs.filter((r) => !r.hidden).map((r) => ({
+    text: r.text, bold: !!r.bold, sz: r.emTwips, fam: r.family, sup: !!r.superscript, sub: false }));
+  const wMeta = mRuns.length ? paraWordMeta(mRuns) : null;
   const cw = process.env.CTXW === "0" ? null : contextualWidths(words, em, fo);
   const PUNCT = "،؛:.!؟»)";
   const items = words.map((w, i) => {
@@ -398,6 +406,8 @@ for (let pi = 0; pi < paras.length; pi++) {
     // الفقرة (الذي يعطي .notdef فيفسد كسر السطر). حصاد «الشاملة الذهبية».
     const hasPua = [...w].some((c) => { const cp = c.codePointAt(0); return cp >= 0xf000 && cp <= 0xf0ff; });
     if (hasPua && wMeta?.[i]?.fam) width = shapeWord(w, em, getFont(wMeta[i].fam)).width;
+    // علامةُ الحاشية (superscript): Word يصغّرها إلى ⅔ ويرفعها ⅓ (قياسٌ: 211/320 و120/320)
+    if (wMeta?.[i]?.sup || wMeta?.[i]?.sub) width = shapeWord(w, em * SUP_SCALE, fo).width;
     return { width, spaceBefore: i ? (cw ? cw.spaceW : spaceW) : 0, blankBefore: i > 0, trailingOverhang: tov };
   });
   const lines = breakLines(items, { columnTwips: colBase, firstLineIndentTwips: p.indFirstLine || 0,
@@ -433,7 +443,14 @@ for (let pi = 0; pi < paras.length; pi++) {
   for (let li = 0; li < lines.length; li++) {
     const ln = lines[li];
     const lineWords = words.slice(ln.start, ln.end);
-    const shaped = lineWords.map((w) => shapeWord(w, em, fo));
+    const shaped = lineWords.map((w, k) => {
+      const wm = wMeta?.[ln.start + k];
+      const isSup = !!(wm && (wm.sup || wm.sub));
+      const wem = isSup ? em * SUP_SCALE : em;
+      const sh = shapeWord(w, wem, fo);
+      return { glyphs: sh.glyphs, width: sh.width, em: wem,
+        dy: wm?.sup ? -(em * SUP_RISE) : wm?.sub ? (em * SUP_RISE * 0.5) : 0 };
+    });
     const wordsW = shaped.reduce((a, s) => a + s.width, 0);
     const nSpaces = lineWords.length - 1;
     const natural = wordsW + nSpaces * spaceW;
@@ -447,6 +464,8 @@ for (let pi = 0; pi < paras.length; pi++) {
     let box = { asc: MET.a * em, desc: (MET.d + MET.g) * em, extraWd: 0 };
     // صورةٌ سطريّة على السطر الأوّل: ترفع صعوده لارتفاع الصورة (تحجز مساحتها). generic.
     if (li === 0 && p.inlineImageHTwips > 0) box.asc = Math.max(box.asc, p.inlineImageHTwips);
+    // علامةٌ مرفوعة: صعودُها = الرفع + صعودُ حجمها المصغَّر (قد يتجاوز صعود السطر)
+    for (const sh of shaped) if (sh.dy < 0) box.asc = Math.max(box.asc, -sh.dy + MET.a * sh.em);
     if (wMeta && process.env.BOLDBOX !== "0") {
       for (let gi = ln.start; gi < ln.end; gi++) {
         const wm = wMeta[gi]; if (!wm) continue;
@@ -481,7 +500,12 @@ for (let pi = 0; pi < paras.length; pi++) {
     for (const s of shaped) {
       const left = penX - s.width;
       let gx = left;
-      for (const g of s.glyphs) { glyphs.push({ gid: g.gid, x: Math.round(gx * 100) / 100 }); gx += g.adv; }
+      for (const g of s.glyphs) {
+        const go = { gid: g.gid, x: Math.round(gx * 100) / 100 };
+        if (s.em !== em) go.em = s.em;      // حجمٌ خاصّ (رفع/خفض)
+        if (s.dy) go.dy = Math.round(s.dy * 100) / 100;
+        glyphs.push(go); gx += g.adv;
+      }
       penX = left - gap;
     }
     descs.push({ glyphs, asc: box.asc, desc: box.desc, extraWd: box.extraWd, mlt: lineMultiplier(p.spacing), text: lineWords.join(" ") });
