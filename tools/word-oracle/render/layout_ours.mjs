@@ -263,6 +263,11 @@ const sec = model.sections?.[bodySecIdx] ?? model.section ?? model.sections[0];
 const { pageWTwips: pageW, pageHTwips: pageH, marRightTwips: marR, marTopTwips: marT, marBottomTwips: marB } = sec;
 
 const pages = [[]]; let cur = 0;
+// الأعمدة (w:cols): «الخانة» = صفحة×عددُ الأعمدة + العمود. المحتوى يملأ الخانةَ
+// إلى أسفلها ثمّ ينتقل إلى التالية؛ وفي RTL العمودُ الأوّل على اليمين (قياسٌ من
+// Word: gap-cols2 عمودان بعرض ٤١٥٩ وفاصلٍ ٧٠٨، الأوّل يمينًا عند x=١٠٤٧١).
+let curCol = 0;
+const slotCount = []; // خانة → عددُ أسطرها (للأرملة/اليتيم وبداية الصفحة)
 const pageSec = [];   // صفحة → فهرسُ مقطعها (لاختيار ترويستها/تذييلها)
 const fo0 = getFont(paras[0].runs[0]?.family || MAIN_FAMILY);
 let baseline = marT + pageStartAscent(fo0.met, paras[0].runs[0]?.emTwips || 200, paras[0].spacing, PS_CAL);
@@ -373,7 +378,7 @@ for (let pi = 0; pi < paras.length; pi++) {
   // الفقرة تبدأ صفحةً جديدة إن كانت الحاليّة غير فارغة — يطابق ترقيم صفحات Word.
   // تُكبَت مسافةُ before أعلى الصفحة (prev=null)، والأساس الأوّل من pageStartAscent.
   if (p.pageBreakBefore && pages[cur].length > 0 && process.env.NOPB !== "1") {
-    pages.push([]); cur++;
+    pages.push([]); cur++; curCol = 0;
     baseline = marT + pageStartAscent(MET, em, p.spacing, cal);
     prev = null; prevDesc = null; pendingGap = 0; pageAnchor = baseline;
   }
@@ -564,9 +569,14 @@ for (let pi = 0; pi < paras.length; pi++) {
   const pageBottom = pageH - marB;
   const WIDOW = process.env.WIDOW !== "0" && widowCtl(p);
   const curInit = cur, pageAnchorInit = pageAnchor;
-  const yArr = new Array(n), pgArr = new Array(n);
-  let b = baseline, pd = prevDesc, pg = pendingGap, page = cur;
-  let pageHasPrior = pages[cur].length > 0; // محتوًى سابقٌ (فقراتٌ أخرى) على صفحة البداية
+  const gsec = model.sections[p.sectionIndex] ?? sec;
+  const NCOL = Math.max(1, gsec.colCount || 1);
+  const COLSTEP = (gsec.colWidthTwips ?? sec.columnTwips) + (gsec.colSpaceTwips ?? 0);
+  const yArr = new Array(n), pgArr = new Array(n), colArr = new Array(n);
+  let b = baseline, pd = prevDesc, pg = pendingGap;
+  let slot = cur * NCOL + curCol;
+  const slotInit = slot;
+  let pageHasPrior = (slotCount[slot] ?? 0) > 0; // محتوًى سابقٌ في هذه الخانة
   let paraFirstOnPage = 0; // فهرس أوّل سطرٍ لهذه الفقرة على الصفحة الجارية
   let atPageTop = !pageHasPrior && pd === null; // سطرٌ أوّلُ صفحةٍ لا يُكسَر قبله (منع اللانهاية)
   for (let i = 0; i < n;) {
@@ -582,11 +592,13 @@ for (let pi = 0; pi < paras.length; pi++) {
           : (pageHasPrior ? paraFirstOnPage : i);
       }
       if (bi < paraFirstOnPage) bi = paraFirstOnPage;
-      page++; b = pageStartB; pd = null; pg = 0;
+      slot++; b = pageStartB; pd = null; pg = 0;   // الخانةُ التالية: عمودٌ ثمّ صفحة
       pageHasPrior = false; paraFirstOnPage = bi; i = bi; atPageTop = true;
       continue;
     }
-    yArr[i] = nb; pgArr[i] = page; pg = 0; atPageTop = false;
+    yArr[i] = nb; pgArr[i] = Math.floor(slot / NCOL); colArr[i] = slot % NCOL;
+    slotCount[slot] = (slotCount[slot] ?? 0) + 1;
+    pg = 0; atPageTop = false;
     b = nb;
     // هبوط السابق الفعّال يشمل فجوة المضاعف: desc + (asc+desc)×(mult−1)؛ ثمّ امتداد
     // الخطّ الاحتياطيّ (extraWd) يُضاف **بعد** المضاعف (قاعدة المختلطة، مؤكَّدةٌ تجريبيًّا).
@@ -601,7 +613,10 @@ for (let pi = 0; pi < paras.length; pi++) {
     const anchor = pgArr[i] === curInit ? pageAnchorInit : pageStartB;
     const yOut = process.env.DOTSNAP !== "1" ? yArr[i]
       : anchor + Math.round((yArr[i] - anchor) / 2.4) * 2.4;
-    const lineObj = { y: Math.round(yOut * 100) / 100, em, font: fo.file, glyphs: descs[i].glyphs, text: descs[i].text };
+    // المحارفُ رُصِفت على أنّها في العمود الأوّل؛ العمودُ c يُزاح يسارًا c×(عرض+فاصل)
+    const dx = colArr[i] ? -colArr[i] * COLSTEP : 0;
+    const gl = dx ? descs[i].glyphs.map((g) => ({ ...g, x: Math.round((g.x + dx) * 100) / 100 })) : descs[i].glyphs;
+    const lineObj = { y: Math.round(yOut * 100) / 100, em, font: fo.file, glyphs: gl, text: descs[i].text };
     pages[pgArr[i]].push(lineObj);
     if (curTable && p.tableCell) curTable.lines.push({ pg: pgArr[i], o: lineObj }); // لنقل الصفّ إن لزم
   }
@@ -612,14 +627,15 @@ for (let pi = 0; pi < paras.length; pi++) {
     if (!notesByPage.has(pg)) notesByPage.set(pg, []);
     notesByPage.get(pg).push(r.noteRef);
   }
-  baseline = b; prevDesc = pd; pendingGap = 0; cur = pgArr[n - 1];
+  baseline = b; prevDesc = pd; pendingGap = 0;
+  cur = pgArr[n - 1]; curCol = colArr[n - 1];
   if (curTable && p.tableCell) {
     curTable.maxBottom = Math.max(curTable.maxBottom, baseline + (prevDesc || 0));
     if (n > 0) { const top = yArr[0] - descs[0].asc; // أعلى أوّل سطرٍ فعليّ لهذه الخليّة
       curTable.rowTop = curTable.rowTop == null ? top : Math.min(curTable.rowTop, top); }
   }
   for (let q = curInit; q <= cur; q++) if (pageSec[q] === undefined) pageSec[q] = p.sectionIndex;
-  pageAnchor = cur === curInit ? pageAnchorInit : pageStartB;
+  pageAnchor = (cur * NCOL + curCol) === slotInit ? pageAnchorInit : pageStartB;
   prev = { spacing: p.spacing, after: p.spacing?.after, styleId: p.styleId, contextual: hasContextual(p) };
 }
 

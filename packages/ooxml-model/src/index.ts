@@ -152,6 +152,11 @@ export interface SectionGeometry {
   footerDistTwips?: number;
   /** ‏w:titlePg — صفحةٌ أولى بترويسةٍ/تذييلٍ مختلفَين */
   titlePg?: boolean;
+  /** ‏w:cols — عددُ الأعمدة (١ افتراضًا) والمسافةُ بينها وعرضُ العمود الواحد بالـtwips.
+   *  متساويةٌ ما لم يُصرَّح بغير ذلك؛ في RTL العمودُ الأوّل على اليمين. */
+  colCount: number;
+  colSpaceTwips: number;
+  colWidthTwips: number;
 }
 export interface DocumentModelV0 {
   /** ‏w:defaultTabStop — فاصل التوقفات التلقائية بالـ twips (افتراضي 720) */
@@ -578,6 +583,7 @@ export function parseDocument(
   const DEFAULT_GEO: SectionGeometry = {
     pageWTwips: 11906, pageHTwips: 16838, marLeftTwips: 1440, marRightTwips: 1440,
     marTopTwips: 1440, marBottomTwips: 1440, columnTwips: 9026,
+    colCount: 1, colSpaceTwips: 708, colWidthTwips: 9026,
   };
   function geomFrom(sectPr: XNode[] | null): SectionGeometry {
     if (!sectPr) return DEFAULT_GEO;
@@ -599,8 +605,16 @@ export function parseDocument(
         if (rid) (bag as Record<string, string>)[ty] = rid;
       }
     }
+    // ‏w:cols: أعمدةٌ متساوية (num/space). عرضُ العمود = (المتاح − الفواصل) ÷ العدد.
+    const colsAttr = findAttr(sectPr, "w:cols");
+    const colCount = Math.max(1, Number(colsAttr?.["@w:num"] ?? 1) || 1);
+    const colSpaceTwips = Number(colsAttr?.["@w:space"] ?? 708);
+    const usable = w - l - r;
+    const colWidthTwips = colCount > 1
+      ? Math.floor((usable - colSpaceTwips * (colCount - 1)) / colCount) : usable;
     return { pageWTwips: w, pageHTwips: h, marLeftTwips: l, marRightTwips: r,
-      marTopTwips: t, marBottomTwips: b, columnTwips: w - l - r,
+      marTopTwips: t, marBottomTwips: b, columnTwips: colWidthTwips,
+      colCount, colSpaceTwips, colWidthTwips,
       headerRefs, footerRefs,
       headerDistTwips: Number(pgMar?.["@w:header"] ?? 720),
       footerDistTwips: Number(pgMar?.["@w:footer"] ?? 720),
