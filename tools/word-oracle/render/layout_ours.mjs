@@ -80,44 +80,57 @@ const OUT = process.argv[2] || "ours.json";
 const bookMap = JSON.parse(readFileSync("tools/word-oracle/book-fonts-map.json", "utf-8"));
 const metrics = JSON.parse(readFileSync("tools/word-oracle/render/font-metrics.json", "utf-8"));
 const cfg = bookMap[BOOK];
-const FAMILY = cfg.family;
-const FONT_FILE = cfg.horizFont;
-const MET = metrics[FAMILY];
-const PS_CAL = (() => { try { return JSON.parse(readFileSync("tools/word-oracle/pagestart-cal.json", "utf-8"))[FAMILY]; } catch { return null; } })();
+const MAIN_FAMILY = cfg.family;
+const MAIN_FILE = cfg.horizFont;
+const PS_CAL = (() => { try { return JSON.parse(readFileSync("tools/word-oracle/pagestart-cal.json", "utf-8"))[MAIN_FAMILY]; } catch { return null; } })();
 
 const model = extractFromDocx(readFileSync(`corpus/books/${BOOK}.docx`));
 const numbering = loadNumbering(`corpus/books/${BOOK}.docx`);
 const contextual = loadContextual(`corpus/books/${BOOK}.docx`);
 const hasContextual = (p) => contextual.byText.has(contextual.norm(p.text)) || contextual.styleSet.has(p.styleId);
 const counters = {};
-const face = new Face(new Blob(readFileSync(FONT_FILE)), 0);
-const font = new Font(face); const upem = face.upem;
+
+// ── تعدّد الخطوط (generic): ذاكرةُ خطوطٍ لكلّ عائلة، مع احتياطيٍّ لخطّ المتن ──
+const fontCache = new Map();
+function getFont(family) {
+  const key = family || MAIN_FAMILY;
+  if (fontCache.has(key)) return fontCache.get(key);
+  const meta = metrics[key];
+  const file = (meta && meta.file) || MAIN_FILE;
+  let obj;
+  try {
+    const face = new Face(new Blob(readFileSync(file)), 0);
+    obj = { font: new Font(face), upem: face.upem, file, met: meta || metrics[MAIN_FAMILY] };
+  } catch { obj = getFont(MAIN_FAMILY); }
+  fontCache.set(key, obj); return obj;
+}
 
 /** يشكّل كلمةً مفردة (guessSegmentProperties يكتشف الاتّجاه: أرقام LTR، عربيّة RTL).
  *  HarfBuzz يُخرج المحارف دومًا بترتيبٍ بصريّ يسار→يمين مهما كان الاتّجاه. */
-function shapeWord(w, em) {
-  const b = new HbBuffer(); b.addText(w); b.guessSegmentProperties(); shape(font, b, []);
+function shapeWord(w, em, fo) {
+  const b = new HbBuffer(); b.addText(w); b.guessSegmentProperties(); shape(fo.font, b, []);
   const infos = b.getGlyphInfos(), poss = b.getGlyphPositions();
-  const glyphs = infos.map((g, i) => ({ gid: g.codepoint, adv: (poss[i].xAdvance / upem) * em }));
+  const glyphs = infos.map((g, i) => ({ gid: g.codepoint, adv: (poss[i].xAdvance / fo.upem) * em }));
   return { glyphs, width: glyphs.reduce((a, g) => a + g.adv, 0) };
 }
-const wordWidth = (w, em) => shapeWord(w, em).width;
 // ملاحظة: تكميم الخطوة على نقطة الجهاز (2.4tw) جُرِّب وأساء (muqtarah 98→65٪) —
 // النموذج الصحيح pitch عائمٌ + قنص إزاحةٍ عن مرساةٍ حقيقيّة (ICARRY في الأداة).
 
-const paras = model.paragraphs.filter((p) =>
-  !p.excluded && p.text.trim() &&
-  p.runs.every((r) => r.family === FAMILY && r.emTwips));
-const bodySecIdx = paras[0]?.sectionIndex ?? 0;
+const paras = model.paragraphs.filter((p) => !p.excluded && p.text.trim() && p.runs[0]?.emTwips);
+const bodySecIdx = (paras.find((p) => p.runs[0]?.family === MAIN_FAMILY) ?? paras[0])?.sectionIndex ?? 0;
 const sec = model.sections?.[bodySecIdx] ?? model.section ?? model.sections[0];
 const { pageWTwips: pageW, pageHTwips: pageH, marRightTwips: marR, marTopTwips: marT, marBottomTwips: marB } = sec;
 
 const pages = [[]]; let cur = 0;
-let baseline = marT + pageStartAscent(MET, paras[0].runs[0].emTwips, paras[0].spacing, PS_CAL);
+const fo0 = getFont(paras[0].runs[0].family);
+let baseline = marT + pageStartAscent(fo0.met, paras[0].runs[0].emTwips, paras[0].spacing, PS_CAL);
 let prev = null;
 
 for (let pi = 0; pi < paras.length; pi++) {
   const p = paras[pi]; const em = p.runs[0].emTwips;
+  const fo = getFont(p.runs[0].family); const MET = fo.met;
+  const cal = p.runs[0].family === MAIN_FAMILY ? PS_CAL : null;
+  const wordWidth = (w) => shapeWord(w, em, fo).width;
   const colBase = sec.columnTwips - p.indLeft - p.indRight;
   const rightEdge = pageW - marR;
   const spaceW = wordWidth(" ", em) || wordWidth(" ", em);
@@ -143,7 +156,7 @@ for (let pi = 0; pi < paras.length; pi++) {
     const ninfo = numbering.byText.get(numbering.norm(p.text));
     const mstr = ninfo ? markerText(numbering, ninfo.numId, ninfo.ilvl, counters) : null;
     if (mstr) {
-      const mg = shapeWord(mstr, em);
+      const mg = shapeWord(mstr, em, fo);
       const textStart = numTabTextStart({ indLeftTwips: p.indLeft,
         hangingTwips: p.indFirstLine < 0 ? -p.indFirstLine : 0,
         markerWidthTwips: mg.width, defaultTabStopTwips: model.defaultTabStop });
@@ -154,7 +167,7 @@ for (let pi = 0; pi < paras.length; pi++) {
   for (let li = 0; li < lines.length; li++) {
     const ln = lines[li];
     const lineWords = words.slice(ln.start, ln.end);
-    const shaped = lineWords.map((w) => shapeWord(w, em));
+    const shaped = lineWords.map((w) => shapeWord(w, em, fo));
     const wordsW = shaped.reduce((a, s) => a + s.width, 0);
     const nSpaces = lineWords.length - 1;
     const natural = wordsW + nSpaces * spaceW;
@@ -163,7 +176,7 @@ for (let pi = 0; pi < paras.length; pi++) {
     const extra = (!isLast && !ln.forced && nSpaces > 0) ? (W - natural) / nSpaces : 0;
     const gap = spaceW + extra;
 
-    if (baseline > pageH - marB) { pages.push([]); cur++; baseline = marT + pageStartAscent(MET, em, p.spacing, PS_CAL); }
+    if (baseline > pageH - marB) { pages.push([]); cur++; baseline = marT + pageStartAscent(MET, em, p.spacing, cal); }
 
     // وضعٌ RTL: أوّل كلمةٍ (منطقيًّا) أقصى اليمين؛ المحارف داخل الكلمة يسار→يمين
     const glyphs = [];
@@ -179,13 +192,13 @@ for (let pi = 0; pi < paras.length; pi++) {
       for (const g of s.glyphs) { glyphs.push({ gid: g.gid, x: Math.round(gx * 100) / 100 }); gx += g.adv; }
       penX = left - gap;
     }
-    pages[cur].push({ y: Math.round(baseline * 100) / 100, em, glyphs });
+    pages[cur].push({ y: Math.round(baseline * 100) / 100, em, font: fo.file, glyphs });
     baseline += singlePitch(MET, em) * lineMultiplier(p.spacing);
   }
   prev = { spacing: p.spacing, after: p.spacing?.after, styleId: p.styleId, contextual: hasContextual(p) };
 }
 
-const out = { source: "our-engine", unit: "twip", font: FONT_FILE, upem,
+const out = { source: "our-engine", unit: "twip", mainFont: MAIN_FILE,
   pageW, pageH, pages: pages.map((lines) => ({ w: pageW, h: pageH, lines })) };
 writeFileSync(OUT, JSON.stringify(out), "utf8");
 console.log(`محرّكنا: ${pages.length} صفحة، ${pages.reduce((a, p) => a + p.length, 0)} سطرًا -> ${OUT}`);

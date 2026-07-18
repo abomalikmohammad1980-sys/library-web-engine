@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-"""يرسم صفحةً من مخرجات محرّكنا (layout_ours.mjs): كلّ محرفٍ عند x,y المطلقين.
-الاستخدام: python render_ours.py <ours.json> <pageIndex> <out.svg>"""
+"""يرسم صفحةً من مخرجات محرّكنا (layout_ours.mjs): كلّ محرفٍ عند x,y المطلقين،
+بخطّ سطره (تعدّد الخطوط). الاستخدام: python render_ours.py <ours.json> <pageIndex> <out.svg>"""
 import sys, json
 from fontTools.ttLib import TTFont
 from fontTools.pens.svgPathPen import SVGPathPen
@@ -8,9 +8,17 @@ from fontTools.pens.svgPathPen import SVGPathPen
 data = json.load(open(sys.argv[1], encoding="utf-8"))
 pi = int(sys.argv[2]); out = sys.argv[3]
 pg = data["pages"][pi]; W, H = pg["w"], pg["h"]
-f = TTFont(data["font"]); gs = f.getGlyphSet(); order = f.getGlyphOrder(); upem = data["upem"]
+
+_cache = {}
+def load(path):
+    if path not in _cache:
+        f = TTFont(path or data["mainFont"])
+        _cache[path] = (f.getGlyphSet(), f.getGlyphOrder(), f["head"].unitsPerEm)
+    return _cache[path]
+
 paths = []
 for ln in pg["lines"]:
+    gs, order, upem = load(ln.get("font") or data["mainFont"])
     scale = ln["em"] / upem; y = ln["y"]
     for g in ln["glyphs"]:
         gid = g["gid"]

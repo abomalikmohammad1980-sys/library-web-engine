@@ -1,38 +1,92 @@
 {
+ "Farsi Simple Bold": {
+  "upem": 2048,
+  "a": 1.336914,
+  "d": 0.891113,
+  "g": 0.0,
+  "wd": 0.891113,
+  "wa": 1.336914,
+  "file": "C:/Windows/Fonts/FRSSPBL.TTF"
+ },
+ "PT Bold Heading": {
+  "upem": 2048,
+  "a": 1.302246,
+  "d": 0.473633,
+  "g": 0.0,
+  "wd": 0.473633,
+  "wa": 1.302246,
+  "file": "C:/Windows/Fonts/PTBLDHAD.TTF"
+ },
  "adwa-assalaf": {
-  "file": "corpus/book-fonts/adwa-assalaf.ttf",
   "upem": 2048,
   "a": 1.106934,
   "d": 0.775879,
   "g": 0.008789,
   "wd": 0.775879,
-  "wa": 1.106934
+  "wa": 1.106934,
+  "file": "corpus/book-fonts/adwa-assalaf.ttf"
+ },
+ "Sakkal Majalla": {
+  "upem": 2048,
+  "a": 0.883789,
+  "d": 0.512695,
+  "g": 0.0,
+  "wd": 0.512695,
+  "wa": 0.883789,
+  "file": "C:/Windows/Fonts/majalla.ttf"
  },
  "Al-Jazeera-Arabic-Regular": {
-  "file": "corpus/book-fonts/Al-Jazeera-Arabic-Regular.ttf",
   "upem": 1000,
   "a": 1.054,
   "d": 0.602,
   "g": 0.034,
   "wd": 0.294,
-  "wa": 1.054
+  "wa": 1.054,
+  "file": "corpus/book-fonts/Al-Jazeera-Arabic-Regular.ttf"
+ },
+ "Times New Roman": {
+  "upem": 2048,
+  "a": 0.891113,
+  "d": 0.216309,
+  "g": 0.04248,
+  "wd": 0.216309,
+  "wa": 0.891113,
+  "file": "C:/Windows/Fonts/times.ttf"
  },
  "Al-Jazeera-Arabic-Light": {
-  "file": "corpus/book-fonts/Al-Jazeera-Arabic-Light.ttf",
   "upem": 2048,
   "a": 1.054199,
   "d": 0.602051,
   "g": 0.03418,
   "wd": 0.293945,
-  "wa": 1.054199
+  "wa": 1.054199,
+  "file": "corpus/book-fonts/Al-Jazeera-Arabic-Light.ttf"
  },
  "Traditional Arabic": {
-  "file": "corpus/book-fonts/trado.ttf",
   "upem": 2048,
   "a": 0.994141,
   "d": 0.500488,
   "g": 0.0,
   "wd": 0.500488,
-  "wa": 0.994141
+  "wa": 0.994141,
+  "file": "corpus/book-fonts/trado.ttf"
+ },
+ "DecoType Naskh Extensions": {
+  "upem": 2048,
+  "a": 1.375,
+  "d": 0.743164,
+  "g": 0.0,
+  "wd": 0.743164,
+  "wa": 1.375,
+  "file": "C:/Windows/Fonts/DTNASKH3.TTF"
+ },
+ "Arial": {
+  "upem": 2048,
+  "a": 0.905273,
+  "d": 0.211914,
+  "g": 0.032715,
+  "wd": 0.211914,
+  "wa": 0.905273,
+  "file": "C:/Windows/Fonts/arial.ttf"
  }
 }
