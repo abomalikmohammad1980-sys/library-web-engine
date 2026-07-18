@@ -43,6 +43,27 @@ function loadNumbering(docxPath) {
   return { abs, numToAbs, byText,
     norm: (s) => s.replace(/[٠-٩]/g, (d) => String(d.charCodeAt(0) - 0x0660)).replace(/\s+/g, "").slice(0, 30) };
 }
+// ── قراءة contextualSpacing (من الأنماط + الفقرات المباشرة) — generic ──
+function loadContextual(docxPath) {
+  const zip = unzipSync(readFileSync(docxPath));
+  const styles = zip["word/styles.xml"] ? strFromU8(zip["word/styles.xml"]) : "";
+  const doc = strFromU8(zip["word/document.xml"]);
+  // أنماطٌ فيها w:contextualSpacing
+  const styleSet = new Set();
+  for (const s of styles.matchAll(/<w:style\b[^>]*w:styleId="([^"]+)"[^>]*>([\s\S]*?)<\/w:style>/g))
+    if (/<w:contextualSpacing(\s|\/|>)/.test(s[2]) && !/w:val="(0|false)"/.test((s[2].match(/<w:contextualSpacing[^>]*>/) || [""])[0])) styleSet.add(s[1]);
+  // فقراتٌ فيها contextualSpacing مباشرةً (بالنصّ المطبَّع)
+  const norm = (t) => t.replace(/<[^>]+>/g, "").replace(/[٠-٩]/g, (d) => String(d.charCodeAt(0) - 0x0660)).replace(/\s+/g, "").slice(0, 30);
+  const byText = new Set();
+  for (const p of doc.matchAll(/<w:p\b[^>]*>([\s\S]*?)<\/w:p>/g)) {
+    const pPr = (p[1].match(/<w:pPr>([\s\S]*?)<\/w:pPr>/) || [])[1] || "";
+    if (/<w:contextualSpacing(\s|\/|>)/.test(pPr) && !/<w:contextualSpacing[^>]*w:val="(0|false)"/.test(pPr)) {
+      const txt = norm([...p[1].matchAll(/<w:t[^>]*>([\s\S]*?)<\/w:t>/g)].map((m) => m[1]).join(""));
+      if (txt) byText.add(txt);
+    }
+  }
+  return { styleSet, byText, norm: (s) => s.replace(/[٠-٩]/g, (d) => String(d.charCodeAt(0) - 0x0660)).replace(/\s+/g, "").slice(0, 30) };
+}
 function markerText(numbering, numId, ilvl, counters) {
   const absId = numbering.numToAbs[numId]; const lvl = numbering.abs[absId]?.[ilvl];
   if (!lvl) return null;
@@ -66,6 +87,8 @@ const PS_CAL = (() => { try { return JSON.parse(readFileSync("tools/word-oracle/
 
 const model = extractFromDocx(readFileSync(`corpus/books/${BOOK}.docx`));
 const numbering = loadNumbering(`corpus/books/${BOOK}.docx`);
+const contextual = loadContextual(`corpus/books/${BOOK}.docx`);
+const hasContextual = (p) => contextual.byText.has(contextual.norm(p.text)) || contextual.styleSet.has(p.styleId);
 const counters = {};
 const face = new Face(new Blob(readFileSync(FONT_FILE)), 0);
 const font = new Font(face); const upem = face.upem;
@@ -79,6 +102,8 @@ function shapeWord(w, em) {
   return { glyphs, width: glyphs.reduce((a, g) => a + g.adv, 0) };
 }
 const wordWidth = (w, em) => shapeWord(w, em).width;
+// ملاحظة: تكميم الخطوة على نقطة الجهاز (2.4tw) جُرِّب وأساء (muqtarah 98→65٪) —
+// النموذج الصحيح pitch عائمٌ + قنص إزاحةٍ عن مرساةٍ حقيقيّة (ICARRY في الأداة).
 
 const paras = model.paragraphs.filter((p) =>
   !p.excluded && p.text.trim() &&
@@ -102,10 +127,15 @@ for (let pi = 0; pi < paras.length; pi++) {
   const lines = breakLines(items, { columnTwips: colBase, firstLineIndentTwips: p.indFirstLine || 0,
     justified: true, compatibilityMode: model.compatibilityMode });
 
-  // حدّ الفقرة: السطر الأخير للسابقة أضاف pitch سلفًا (خانة السطر التالي)؛
-  // فلا نضيف pitch ثانيةً — فقط فراغ التباعد الإضافيّ (after) إن وُجد. muqtarah
-  // متنُه بلا فراغٍ ظاهرٍ بين الفقرات (contextualSpacing) ⇒ الحدّ = pitch فقط.
-  if (pi > 0 && prev && process.env.PARA_AFTER === "1") baseline += (prev.after || 0);
+  // حدّ الفقرة (generic، قاعدة OOXML): السطر الأخير للسابقة أضاف pitch سلفًا؛
+  // نضيف فراغ التباعد = max(after السابقة, before اللاحقة). contextualSpacing
+  // يكبت الفراغ بين فقرتين **من نفس النمط** (الجانب المُعلَّم به contextual).
+  if (pi > 0 && prev) {
+    const sameStyle = prev.styleId === p.styleId;
+    const afterEff = (prev.contextual && sameStyle) ? 0 : (prev.after || 0);
+    const beforeEff = (hasContextual(p) && sameStyle) ? 0 : (p.spacing?.before || 0);
+    baseline += Math.max(afterEff, beforeEff);
+  }
 
   // علامة الترقيم (numPr): تُرسم على السطر الأوّل وتزيح بدايته (تعليق)
   let marker = null;
@@ -152,7 +182,7 @@ for (let pi = 0; pi < paras.length; pi++) {
     pages[cur].push({ y: Math.round(baseline * 100) / 100, em, glyphs });
     baseline += singlePitch(MET, em) * lineMultiplier(p.spacing);
   }
-  prev = { spacing: p.spacing, after: p.spacing?.after };
+  prev = { spacing: p.spacing, after: p.spacing?.after, styleId: p.styleId, contextual: hasContextual(p) };
 }
 
 const out = { source: "our-engine", unit: "twip", font: FONT_FILE, upem,
