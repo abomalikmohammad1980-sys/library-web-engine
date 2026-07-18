@@ -64,6 +64,28 @@ function loadContextual(docxPath) {
   }
   return { styleSet, byText, norm: (s) => s.replace(/[٠-٩]/g, (d) => String(d.charCodeAt(0) - 0x0660)).replace(/\s+/g, "").slice(0, 30) };
 }
+// ── كشف البولد لكلّ فقرة (generic، آليّة B): أيّ كلماتٍ بولد (نصّ مطبَّع) ──
+// ارتفاع السطر = max عبر مقاطعه؛ مقطعٌ بولد أطول (Traditional 1.5327 مقابل 1.4946).
+function loadBold(docxPath) {
+  const zip = unzipSync(readFileSync(docxPath));
+  const doc = strFromU8(zip["word/document.xml"]);
+  const normW = (t) => t.replace(/[٠-٩]/g, (d) => String(d.charCodeAt(0) - 0x0660)).replace(/[ـ\s]/g, "");
+  const byPara = new Map();
+  for (const p of doc.matchAll(/<w:p\b[^>]*>([\s\S]*?)<\/w:p>/g)) {
+    const paraTxt = normW([...p[1].matchAll(/<w:t[^>]*>([\s\S]*?)<\/w:t>/g)].map((m) => m[1]).join(""));
+    if (!paraTxt) continue;
+    const boldWords = new Set();
+    for (const r of p[1].matchAll(/<w:r\b[^>]*>([\s\S]*?)<\/w:r>/g)) {
+      const rPr = (r[1].match(/<w:rPr>([\s\S]*?)<\/w:rPr>/) || [])[1] || "";
+      const isBold = /<w:b(\s|\/|>)/.test(rPr) && !/<w:b[^>]*w:val="(0|false)"/.test(rPr);
+      if (!isBold) continue;
+      const rtRaw = [...r[1].matchAll(/<w:t[^>]*>([\s\S]*?)<\/w:t>/g)].map((m) => m[1]).join("");
+      for (const w of rtRaw.split(/\s+/)) { const nw = normW(w); if (nw) boldWords.add(nw); }
+    }
+    if (boldWords.size) byPara.set(paraTxt.slice(0, 40), boldWords);
+  }
+  return { byPara, norm: (s) => normW(s).slice(0, 40), normW };
+}
 function markerText(numbering, numId, ilvl, counters) {
   const absId = numbering.numToAbs[numId]; const lvl = numbering.abs[absId]?.[ilvl];
   if (!lvl) return null;
@@ -88,6 +110,7 @@ const model = extractFromDocx(readFileSync(`corpus/books/${BOOK}.docx`));
 const numbering = loadNumbering(`corpus/books/${BOOK}.docx`);
 const contextual = loadContextual(`corpus/books/${BOOK}.docx`);
 const hasContextual = (p) => contextual.byText.has(contextual.norm(p.text)) || contextual.styleSet.has(p.styleId);
+const bold = loadBold(`corpus/books/${BOOK}.docx`);
 const counters = {};
 
 // ── تعدّد الخطوط (generic): ذاكرةُ خطوطٍ لكلّ عائلة، مع احتياطيٍّ لخطّ المتن ──
@@ -128,7 +151,15 @@ const { pageWTwips: pageW, pageHTwips: pageH, marRightTwips: marR, marTopTwips: 
 const pages = [[]]; let cur = 0;
 const fo0 = getFont(paras[0].runs[0].family);
 let baseline = marT + pageStartAscent(fo0.met, paras[0].runs[0].emTwips, paras[0].spacing, PS_CAL);
-let prev = null;
+let prev = null, prevDesc = null, pendingGap = 0;
+// آليّة B (max عبر المقاطع): صندوق السطر — صعودٌ وهبوطٌ يأخذان أقصى مقطعٍ فيه
+// (بولد أطول). الخطوة = هبوط السابق + صعود الحاليّ (BOX=0 للعودة للـpitch الثابت).
+const BOX = process.env.BOX !== "0";
+const lineBoxAscDesc = (met, boldMet, em, hasBold) => {
+  const a = Math.max(met.a, hasBold && boldMet ? boldMet.a : 0) * em;
+  const dg = Math.max(met.d + met.g, hasBold && boldMet ? boldMet.d + boldMet.g : 0) * em;
+  return { asc: a, desc: dg };
+};
 
 for (let pi = 0; pi < paras.length; pi++) {
   const p = paras[pi]; const em = p.runs[0].emTwips;
@@ -151,8 +182,11 @@ for (let pi = 0; pi < paras.length; pi++) {
     const sameStyle = prev.styleId === p.styleId;
     const afterEff = (prev.contextual && sameStyle) ? 0 : (prev.after || 0);
     const beforeEff = (hasContextual(p) && sameStyle) ? 0 : (p.spacing?.before || 0);
-    baseline += Math.max(afterEff, beforeEff);
+    pendingGap += Math.max(afterEff, beforeEff);
   }
+  // بولد الفقرة (آليّة B): كلماتها العريضة
+  const boldMet = metrics[`${p.runs[0].family}|bold`];
+  const boldWords = bold.byPara.get(bold.norm(p.text));
 
   // علامة الترقيم (numPr): تُرسم على السطر الأوّل وتزيح بدايته (تعليق)
   let marker = null;
@@ -180,7 +214,15 @@ for (let pi = 0; pi < paras.length; pi++) {
     const extra = (!isLast && !ln.forced && nSpaces > 0) ? (W - natural) / nSpaces : 0;
     const gap = spaceW + extra;
 
-    if (baseline > pageH - marB) { pages.push([]); cur++; baseline = marT + pageStartAscent(MET, em, p.spacing, cal); }
+    // آليّة B: هل السطر يحوي كلمةً بولد؟ (يرفع صعوده/هبوطه)
+    const hasBold = process.env.BOLDBOX === "1" && !!boldWords && lineWords.some((w) => boldWords.has(bold.normW(w)));
+    const box = lineBoxAscDesc(MET, boldMet, em, hasBold);
+    // الخطوة (نموذج الصندوق): هبوط السابق + صعود الحاليّ + فراغ الحدّ المعلَّق
+    if (BOX && prevDesc !== null) baseline += prevDesc + box.asc + pendingGap;
+    else if (!BOX) baseline += pendingGap;
+    pendingGap = 0;
+
+    if (baseline > pageH - marB) { pages.push([]); cur++; baseline = marT + pageStartAscent(MET, em, p.spacing, cal); prevDesc = null; }
 
     // وضعٌ RTL: أوّل كلمةٍ (منطقيًّا) أقصى اليمين؛ المحارف داخل الكلمة يسار→يمين
     const glyphs = [];
@@ -196,8 +238,14 @@ for (let pi = 0; pi < paras.length; pi++) {
       for (const g of s.glyphs) { glyphs.push({ gid: g.gid, x: Math.round(gx * 100) / 100 }); gx += g.adv; }
       penX = left - gap;
     }
-    pages[cur].push({ y: Math.round(baseline * 100) / 100, em, font: fo.file, glyphs });
-    baseline += singlePitch(MET, em) * lineMultiplier(p.spacing);
+    // آليّة A (Word، مؤكَّدة بوكيلَي LibreOffice+الشبكة): تراكمٌ float + قنص الأساس
+    // المرسوم لشبكة نقطة الجهاز (2.4tw @ 600dpi) نسبةً للهامش العلويّ. DOTSNAP=0 للتعطيل.
+    const yOut = process.env.DOTSNAP !== "1" ? baseline
+      : marT + Math.round((baseline - marT) / 2.4) * 2.4;
+    pages[cur].push({ y: Math.round(yOut * 100) / 100, em, font: fo.file, glyphs });
+    // هبوط السابق الفعّال يشمل فجوة المضاعف: desc + (asc+desc)×(mult−1)
+    if (BOX) { const mlt = lineMultiplier(p.spacing); prevDesc = box.desc + (box.asc + box.desc) * (mlt - 1); }
+    else baseline += singlePitch(MET, em) * lineMultiplier(p.spacing);
   }
   prev = { spacing: p.spacing, after: p.spacing?.after, styleId: p.styleId, contextual: hasContextual(p) };
 }

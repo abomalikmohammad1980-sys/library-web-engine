@@ -88,5 +88,68 @@
   "wd": 0.211914,
   "wa": 0.905273,
   "file": "C:/Windows/Fonts/arial.ttf"
+ },
+ "adwa-assalaf|bold": {
+  "file": "corpus/book-fonts/adwa-assalaf.ttf",
+  "upem": 2048,
+  "a": 1.106934,
+  "d": 0.775879,
+  "g": 0.008789,
+  "wd": 0.775879,
+  "wa": 1.106934
+ },
+ "Sakkal Majalla|bold": {
+  "file": "C:/Windows/Fonts/majallab.ttf",
+  "upem": 2048,
+  "a": 0.883789,
+  "d": 0.512695,
+  "g": 0.0,
+  "wd": 0.512695,
+  "wa": 0.883789
+ },
+ "Al-Jazeera-Arabic-Regular|bold": {
+  "file": "corpus/book-fonts/Al-Jazeera-Arabic-Bold.ttf",
+  "upem": 1000,
+  "a": 1.054,
+  "d": 0.602,
+  "g": 0.034,
+  "wd": 0.294,
+  "wa": 1.054
+ },
+ "Times New Roman|bold": {
+  "file": "C:/Windows/Fonts/timesbd.ttf",
+  "upem": 2048,
+  "a": 0.891113,
+  "d": 0.216309,
+  "g": 0.04248,
+  "wd": 0.216309,
+  "wa": 0.891113
+ },
+ "Al-Jazeera-Arabic-Light|bold": {
+  "file": "corpus/book-fonts/Al-Jazeera-Arabic-Bold.ttf",
+  "upem": 1000,
+  "a": 1.054,
+  "d": 0.602,
+  "g": 0.034,
+  "wd": 0.294,
+  "wa": 1.054
+ },
+ "Traditional Arabic|bold": {
+  "file": "C:/Windows/Fonts/tradbdo.ttf",
+  "upem": 2048,
+  "a": 1.022949,
+  "d": 0.509766,
+  "g": 0.0,
+  "wd": 0.509766,
+  "wa": 1.022949
+ },
+ "Arial|bold": {
+  "file": "C:/Windows/Fonts/arialbd.ttf",
+  "upem": 2048,
+  "a": 0.905273,
+  "d": 0.211914,
+  "g": 0.032715,
+  "wd": 0.211914,
+  "wa": 0.905273
  }
 }
