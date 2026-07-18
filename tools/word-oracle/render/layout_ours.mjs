@@ -64,27 +64,44 @@ function loadContextual(docxPath) {
   }
   return { styleSet, byText, norm: (s) => s.replace(/[٠-٩]/g, (d) => String(d.charCodeAt(0) - 0x0660)).replace(/\s+/g, "").slice(0, 30) };
 }
-// ── كشف البولد لكلّ فقرة (generic، آليّة B): أيّ كلماتٍ بولد (نصّ مطبَّع) ──
-// ارتفاع السطر = max عبر مقاطعه؛ مقطعٌ بولد أطول (Traditional 1.5327 مقابل 1.4946).
-function loadBold(docxPath) {
+// ── استخراج مقاطع (runs) كلّ فقرة بخصائصها (generic، آليّة B) ──
+// ارتفاع السطر = max عبر مقاطعه الفعليّة (بولد/حجم/خطّ). نبني، لكلّ فقرة، مصفوفةً
+// من المقاطع {len, bold, sz} بترتيبها — فنُسقِطها على مدى أحرف كلّ سطر لاحقًا.
+function loadRuns(docxPath) {
   const zip = unzipSync(readFileSync(docxPath));
   const doc = strFromU8(zip["word/document.xml"]);
-  const normW = (t) => t.replace(/[٠-٩]/g, (d) => String(d.charCodeAt(0) - 0x0660)).replace(/[ـ\s]/g, "");
+  const normKey = (t) => t.replace(/[٠-٩]/g, (d) => String(d.charCodeAt(0) - 0x0660)).replace(/[ـ\s]/g, "").slice(0, 40);
   const byPara = new Map();
   for (const p of doc.matchAll(/<w:p\b[^>]*>([\s\S]*?)<\/w:p>/g)) {
-    const paraTxt = normW([...p[1].matchAll(/<w:t[^>]*>([\s\S]*?)<\/w:t>/g)].map((m) => m[1]).join(""));
-    if (!paraTxt) continue;
-    const boldWords = new Set();
+    const runs = [];
     for (const r of p[1].matchAll(/<w:r\b[^>]*>([\s\S]*?)<\/w:r>/g)) {
       const rPr = (r[1].match(/<w:rPr>([\s\S]*?)<\/w:rPr>/) || [])[1] || "";
-      const isBold = /<w:b(\s|\/|>)/.test(rPr) && !/<w:b[^>]*w:val="(0|false)"/.test(rPr);
-      if (!isBold) continue;
-      const rtRaw = [...r[1].matchAll(/<w:t[^>]*>([\s\S]*?)<\/w:t>/g)].map((m) => m[1]).join("");
-      for (const w of rtRaw.split(/\s+/)) { const nw = normW(w); if (nw) boldWords.add(nw); }
+      const bold = (/<w:b(\s|\/|>)/.test(rPr) && !/<w:b[^>]*w:val="(0|false)"/.test(rPr))
+        || (/<w:bCs(\s|\/|>)/.test(rPr) && !/<w:bCs[^>]*w:val="(0|false)"/.test(rPr));
+      const szCs = (rPr.match(/<w:szCs[^>]*w:val="(\d+)"/) || rPr.match(/<w:sz[^>]*w:val="(\d+)"/) || [])[1];
+      const txt = [...r[1].matchAll(/<w:t[^>]*>([\s\S]*?)<\/w:t>/g)].map((m) => m[1]).join("");
+      if (txt) runs.push({ text: txt, bold, sz: szCs ? +szCs * 10 : null });
     }
-    if (boldWords.size) byPara.set(paraTxt.slice(0, 40), boldWords);
+    const key = normKey(runs.map((r) => r.text).join(""));
+    if (key && runs.length) byPara.set(key, runs);
   }
-  return { byPara, norm: (s) => normW(s).slice(0, 40), normW };
+  return { byPara, key: normKey };
+}
+/** مقاييس كلّ كلمة (بولد/حجم) بالمشي عبر مقاطع الفقرة — يوازي words الناتجة من
+ *  p.text.split(/\s+/). الكلمة الممتدّة عبر مقاطع تأخذ أطولها (أقصى pitch). */
+function paraWordMeta(paraRuns) {
+  const meta = []; let cur = null;
+  const push = () => { if (cur) { meta.push(cur); cur = null; } };
+  for (const r of paraRuns) {
+    for (const ch of r.text) {
+      if (/\s/.test(ch)) { push(); continue; }
+      if (!cur) cur = { bold: false, sz: null };
+      cur.bold = cur.bold || r.bold;
+      if (r.sz && (!cur.sz || r.sz > cur.sz)) cur.sz = r.sz;
+    }
+  }
+  push();
+  return meta;
 }
 function markerText(numbering, numId, ilvl, counters) {
   const absId = numbering.numToAbs[numId]; const lvl = numbering.abs[absId]?.[ilvl];
@@ -110,7 +127,7 @@ const model = extractFromDocx(readFileSync(`corpus/books/${BOOK}.docx`));
 const numbering = loadNumbering(`corpus/books/${BOOK}.docx`);
 const contextual = loadContextual(`corpus/books/${BOOK}.docx`);
 const hasContextual = (p) => contextual.byText.has(contextual.norm(p.text)) || contextual.styleSet.has(p.styleId);
-const bold = loadBold(`corpus/books/${BOOK}.docx`);
+const runsByPara = loadRuns(`corpus/books/${BOOK}.docx`);
 const counters = {};
 
 // ── تعدّد الخطوط (generic): ذاكرةُ خطوطٍ لكلّ عائلة، مع احتياطيٍّ لخطّ المتن ──
@@ -155,10 +172,13 @@ let prev = null, prevDesc = null, pendingGap = 0;
 // آليّة B (max عبر المقاطع): صندوق السطر — صعودٌ وهبوطٌ يأخذان أقصى مقطعٍ فيه
 // (بولد أطول). الخطوة = هبوط السابق + صعود الحاليّ (BOX=0 للعودة للـpitch الثابت).
 const BOX = process.env.BOX !== "0";
-const lineBoxAscDesc = (met, boldMet, em, hasBold) => {
-  const a = Math.max(met.a, hasBold && boldMet ? boldMet.a : 0) * em;
-  const dg = Math.max(met.d + met.g, hasBold && boldMet ? boldMet.d + boldMet.g : 0) * em;
-  return { asc: a, desc: dg };
+const lineBoxAscDesc = (met, boldMet, em, hasBold, sizeEm) => {
+  // max عبر المقاطع: عاديّ@em، بولد@em، عاديّ@sizeEm، بولد@sizeEm (أيّها موجود)
+  let asc = met.a * em, dg = (met.d + met.g) * em;
+  const consider = (m, e) => { asc = Math.max(asc, m.a * e); dg = Math.max(dg, (m.d + m.g) * e); };
+  if (hasBold && boldMet) consider(boldMet, em);
+  if (sizeEm && sizeEm > em) { consider(met, sizeEm); if (hasBold && boldMet) consider(boldMet, sizeEm); }
+  return { asc, desc: dg };
 };
 
 for (let pi = 0; pi < paras.length; pi++) {
@@ -186,7 +206,8 @@ for (let pi = 0; pi < paras.length; pi++) {
   }
   // بولد الفقرة (آليّة B): كلماتها العريضة
   const boldMet = metrics[`${p.runs[0].family}|bold`];
-  const boldWords = bold.byPara.get(bold.norm(p.text));
+  const paraRuns = runsByPara.byPara.get(runsByPara.key(p.text));
+  const wMeta = paraRuns ? paraWordMeta(paraRuns) : null; // مقاييس كلّ كلمة (بولد/حجم)
 
   // علامة الترقيم (numPr): تُرسم على السطر الأوّل وتزيح بدايته (تعليق)
   let marker = null;
@@ -215,8 +236,15 @@ for (let pi = 0; pi < paras.length; pi++) {
     const gap = spaceW + extra;
 
     // آليّة B: هل السطر يحوي كلمةً بولد؟ (يرفع صعوده/هبوطه)
-    const hasBold = process.env.BOLDBOX === "1" && !!boldWords && lineWords.some((w) => boldWords.has(bold.normW(w)));
-    const box = lineBoxAscDesc(MET, boldMet, em, hasBold);
+    // آليّة B (max عبر مقاطع السطر الفعليّة): بولد/حجمٌ أكبر يرفع السطر
+    let hasBold = false, lineMaxSz = 0;
+    if (wMeta && process.env.BOLDBOX === "1") {
+      for (let gi = ln.start; gi < ln.end; gi++) {
+        if (wMeta[gi]?.bold) hasBold = true;
+        if (wMeta[gi]?.sz && wMeta[gi].sz > lineMaxSz) lineMaxSz = wMeta[gi].sz;
+      }
+    }
+    const box = lineBoxAscDesc(MET, boldMet, em, hasBold, lineMaxSz);
     // الخطوة (نموذج الصندوق): هبوط السابق + صعود الحاليّ + فراغ الحدّ المعلَّق
     if (BOX && prevDesc !== null) baseline += prevDesc + box.asc + pendingGap;
     else if (!BOX) baseline += pendingGap;
