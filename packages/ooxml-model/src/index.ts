@@ -63,6 +63,8 @@ export interface BodyParagraph {
   widowControl: boolean;
   /** توقّفات الجدولة المخصّصة (w:pPr/w:tabs/w:tab) — بالـtwips. */
   tabStops: TabStop[];
+  /** مواضعُ w:tab داخل نصّ الفقرة (فهارس محارف) — للقفز إلى التوقّف التالي. */
+  tabAt: number[];
   /** صفُّ جدول محتوياتٍ (TOC): مدخلٌ / قائدٌ يتمدّد / رقمُ صفحة — من حصاد «الشاملة
    *  الذهبية». يُكتشَف بنمطٍ toc أو بتوقّفٍ يمينيٍّ ذي leader مع w:tab فعليّ في رنّ.
    *  حين يوجد، الفقرة **لا تُقصى** بل تُرسَم صفًّا ثلاثيًّا. */
@@ -861,8 +863,9 @@ export function parseDocument(
     }
     // صفّ الفهرس يُرصَّف (يُلغى إقصاء field/hyperlink عنه — نصٌّ خالص)
     if (toc) { if (excluded === "field") excluded = false; }
-    // بقيّة w:tab (لا فهرس): إقصاءٌ مؤقّت حتى نُعمّم التوقّفات المطلقة
-    else if (tabTextPositions.length) excluded = excluded || "tab";
+    // بقيّةُ w:tab (لا فهرس): كانت الفقرةُ **تُقصى بأكملها** فيضيع نصّها (masjid ٣ فقرات،
+    // dawra ١). لا نُسقِط نصًّا: تتدفّق الفقرة، ويُصدَّر موضعُ كلّ w:tab في نصّها ليصنع
+    // المُركِّبُ قفزةَ الجدولة. الجدولةُ نفسها فاصلٌ كالفراغ في كسر السطر.
     // الصور/الأشكال: تُقصى الفقرةُ فقط إن كانت **صورةً خالصةً بلا نصّ** (طبقةُ overlay).
     // فقرةٌ فيها صورةٌ عائمة (wrapNone) **مع نصّ** يتدفّق نصّها (الصورة طبقةٌ منفصلة)؛ وصورةٌ
     // سطريّة تحجز صندوقَ سطرٍ. حصاد «الشاملة الذهبية» (tadris 8 فقرات نصّ كانت تُسقَط).
@@ -902,6 +905,7 @@ export function parseDocument(
       index: idx, runs, text, styleId, jc, bidi,
       indLeft, indRight, indFirstLine, excluded, sectionIndex: -1, numbered, anchors,
       spacing, markEmTwips, markAsciiFamily, pageBreakBefore, widowControl, tabStops, toc, inlineImageHTwips, tableCell,
+      tabAt: tabTextPositions,
     });
     // ‏sectPr داخل pPr يختم مقطعًا: هندسته تسري على هذه الفقرة وما سبقها
     const pSect = pPr ? first(pPr, "w:sectPr") : null;

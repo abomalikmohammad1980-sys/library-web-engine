@@ -412,8 +412,27 @@ for (let pi = 0; pi < paras.length; pi++) {
     if (wMeta?.[i]?.sup || wMeta?.[i]?.sub) width = shapeWord(w, em * SUP_SCALE, fo).width;
     return { width, spaceBefore: i ? (cw ? cw.spaceW : spaceW) : 0, blankBefore: i > 0, trailingOverhang: tov };
   });
-  const lines = breakLines(items, { columnTwips: colBase, firstLineIndentTwips: p.indFirstLine || 0,
-    justified: true, compatibilityMode: model.compatibilityMode });
+  // فواصلُ الأسطر اليدويّة (w:br غير type=page) — يمثّلها النموذج بمحرف سطرٍ جديد.
+  // Word يقطع
+  // السطر عندها قطعًا، والسطرُ المنتهي بها **لا يُسوَّغ** (كآخر سطرٍ في فقرة). نكسر
+  // كلَّ مقطعٍ على حدةٍ ثمّ نُزيح فهارسه — فينتج الأمران معًا بلا حالةٍ خاصّة.
+  // (‏tadris ٣٢ فاصلًا، muqtarah ٤، ahadith ٣ — كانت تُدمَج فراغًا عاديًّا.)
+  const segCounts = p.text.trim().split("\n")
+    .map((sg) => sg.trim().split(/\s+/).filter(Boolean).length).filter((n) => n > 0);
+  let lines;
+  if (segCounts.length > 1) {
+    lines = []; let off = 0;
+    for (const n of segCounts) {
+      const sub = breakLines(items.slice(off, off + n).map((it, k) => (k ? it : { ...it, spaceBefore: 0, blankBefore: false })),
+        { columnTwips: colBase, firstLineIndentTwips: off === 0 ? (p.indFirstLine || 0) : 0,
+          justified: true, compatibilityMode: model.compatibilityMode });
+      for (const l of sub) lines.push({ ...l, start: l.start + off, end: l.end + off });
+      off += n;
+    }
+  } else {
+    lines = breakLines(items, { columnTwips: colBase, firstLineIndentTwips: p.indFirstLine || 0,
+      justified: true, compatibilityMode: model.compatibilityMode });
+  }
 
   // حدّ الفقرة (generic، قاعدة OOXML): السطر الأخير للسابقة أضاف pitch سلفًا؛
   // نضيف فراغ التباعد = max(after السابقة, before اللاحقة). contextualSpacing
