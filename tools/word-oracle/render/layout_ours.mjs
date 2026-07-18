@@ -280,7 +280,14 @@ const lineBoxAscDesc = (met, boldMet, em, hasBold, sizeEm) => {
 };
 
 // يختم ارتفاعات خلايا الصفّ عند انتهائه (أطول خليّة تحدّد ارتفاع الصفّ)
-function finishRow(t) { if (!t) return; for (const c of t.cells) c.h = Math.max(120, (t.maxBottom + 80) - c.y); }
+// يختم هندسة الصفّ: أعلاه = أعلى أوّل سطرٍ فعليّ عبر خلاياه (baseline − ascent)، وأسفله =
+// أسفل أطول خليّة (baseline + descent). هوامش الخليّة الرأسيّة صفرٌ في Word (لا حشوَ مصطنعًا).
+function finishRow(t) {
+  if (!t) return;
+  const top = t.rowTop != null ? t.rowTop : t.startBaseline;
+  const bottom = Math.max(t.maxBottom, top + 1);
+  for (const c of t.cells) { c.y = top; c.h = bottom - top; }
+}
 for (let pi = 0; pi < paras.length; pi++) {
   const p = paras[pi]; const em = p.runs[0]?.emTwips || 200; // احتياطٌ لفقرة صورةٍ خالصة
   const fo = getFont(p.runs[0]?.family || MAIN_FAMILY); const MET = fo.met;
@@ -330,14 +337,14 @@ for (let pi = 0; pi < paras.length; pi++) {
     if (!curTable || curTable.id !== tc.tableId || curTable.row !== tc.row) {
       if (curTable) { finishRow(curTable); baseline = curTable.maxBottom; }
       curTable = { id: tc.tableId, row: tc.row, startBaseline: baseline, maxBottom: baseline,
-        rowTop: baseline - MET.a * em, cells: [] };
+        rowTop: null, cells: [] }; // rowTop يُحسَب من أعلى أوّل سطرٍ فعليّ لكلّ خليّة
       prevDesc = null; pendingGap = 0;
     } else if (tc.firstInCell) { baseline = curTable.startBaseline; prevDesc = null; pendingGap = 0; }
     // مستطيلُ الخليّة (تظليلٌ + حدود من نمط الجدول) — يُختَم ارتفاعُه عند نهاية الصفّ
     if (tc.firstInCell) {
       const bs = tableBorders[tc.tblStyleId] || null;
       const bside = bs && (bs.insideH || bs.top || bs.left);
-      const rect = { page: cur, x: rightEdge - tc.colWTwips, y: curTable.rowTop, w: tc.colWTwips, h: 0,
+      const rect = { page: cur, x: rightEdge - tc.colWTwips, y: 0, w: tc.colWTwips, h: 0,
         fill: tc.shdFill || null, bw: bside ? bside.w : 0, bc: bside ? bside.color : "000000" };
       curTable.cells.push(rect); tableCells.push(rect);
     }
@@ -513,7 +520,11 @@ for (let pi = 0; pi < paras.length; pi++) {
   }
   // حالة ما بعد الفقرة (للفقرة التالية)
   baseline = b; prevDesc = pd; pendingGap = 0; cur = pgArr[n - 1];
-  if (curTable && p.tableCell) curTable.maxBottom = Math.max(curTable.maxBottom, baseline + (prevDesc || 0));
+  if (curTable && p.tableCell) {
+    curTable.maxBottom = Math.max(curTable.maxBottom, baseline + (prevDesc || 0));
+    if (n > 0) { const top = yArr[0] - descs[0].asc; // أعلى أوّل سطرٍ فعليّ لهذه الخليّة
+      curTable.rowTop = curTable.rowTop == null ? top : Math.min(curTable.rowTop, top); }
+  }
   pageAnchor = cur === curInit ? pageAnchorInit : pageStartB;
   prev = { spacing: p.spacing, after: p.spacing?.after, styleId: p.styleId, contextual: hasContextual(p) };
 }
