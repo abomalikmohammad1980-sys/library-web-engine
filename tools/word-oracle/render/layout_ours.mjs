@@ -263,6 +263,7 @@ const sec = model.sections?.[bodySecIdx] ?? model.section ?? model.sections[0];
 const { pageWTwips: pageW, pageHTwips: pageH, marRightTwips: marR, marTopTwips: marT, marBottomTwips: marB } = sec;
 
 const pages = [[]]; let cur = 0;
+const pageSec = [];   // صفحة → فهرسُ مقطعها (لاختيار ترويستها/تذييلها)
 const fo0 = getFont(paras[0].runs[0]?.family || MAIN_FAMILY);
 let baseline = marT + pageStartAscent(fo0.met, paras[0].runs[0]?.emTwips || 200, paras[0].spacing, PS_CAL);
 let prev = null, prevDesc = null, pendingGap = 0, pageAnchor = baseline;
@@ -594,6 +595,7 @@ for (let pi = 0; pi < paras.length; pi++) {
     if (n > 0) { const top = yArr[0] - descs[0].asc; // أعلى أوّل سطرٍ فعليّ لهذه الخليّة
       curTable.rowTop = curTable.rowTop == null ? top : Math.min(curTable.rowTop, top); }
   }
+  for (let q = curInit; q <= cur; q++) if (pageSec[q] === undefined) pageSec[q] = p.sectionIndex;
   pageAnchor = cur === curInit ? pageAnchorInit : pageStartB;
   prev = { spacing: p.spacing, after: p.spacing?.after, styleId: p.styleId, contextual: hasContextual(p) };
 }
@@ -641,6 +643,98 @@ for (const [pgIdx, refs] of notesByPage) {
     fy += lineH(b);
   }
 }
+// ── الترويسة والتذييل (حصاد «الشاملة الذهبية»؛ مقيساً على Word) ──
+// الاختيار لكلّ صفحة: first (مع titlePg) ← even (مع evenAndOddHeaders) ← default.
+// الرأسيّ: قيسَ من ahadith (الأساس 16010.4 ثابتاً في كلّ الصفحات):
+//   أسفلُ صندوق سطر التذييل ينطبق على (pageH − footerDist)، فالأساس = ذلك − (d+g)×em.
+//   (16838 − 708 − 0.500488×240 = 16009.9 مقابل 16010.4 في Word — فرق 0.5tw.)
+// والترويسة بالعكس: أعلى صندوقها عند headerDist فالأساس = headerDist + a×em.
+const HF = process.env.HF !== "0";
+// مرجعٌ من نوعٍ ما: إن أغفله المقطع ورثه من سابقه (‏Link to Previous في Word).
+function refFor(kind, si, type) {
+  for (let i = si; i >= 0; i--) {
+    const r = (kind === "header" ? model.sections[i]?.headerRefs : model.sections[i]?.footerRefs) ?? {};
+    if (r[type]) return r[type];
+  }
+  return null;
+}
+function hfParas(kind, pageNo, si) {
+  const gs = model.sections[si] ?? sec;
+  let rid;
+  if (gs.titlePg && pageNo === 1) rid = refFor(kind, si, "first"); // صفحةُ العنوان تخلو إن غاب first
+  else if (model.evenAndOddHeaders && pageNo % 2 === 0)
+    rid = refFor(kind, si, "even") ?? refFor(kind, si, "default");
+  else rid = refFor(kind, si, "default");
+  if (!rid) return [];
+  const tgt = model.relTargets?.get(rid);
+  if (!tgt) return [];
+  return model.headerFooters.get(tgt.split("/").pop()) ?? [];
+}
+/** نصُّ فقرةٍ بعد حلّ حقولها: رنُّ نتيجة PAGE/NUMPAGES يُستبدل بالرقم الفعليّ. */
+function hfText(par, pageNo, total) {
+  let out = "";
+  for (const r of par.runs) {
+    if (r.hidden) continue;
+    if (r.fieldResult === "PAGE") out += String(pageNo);
+    else if (r.fieldResult === "NUMPAGES") out += String(total);
+    else out += r.text;
+  }
+  return out;
+}
+/** يرصّف سطراً مفرداً (ترويسة/تذييل/مربّع نصّ) ويدفعه إلى صفحته. */
+function emitHFLine(pgIdx, text, em, fo, baseline, jc, boxLeft, boxWidth, tag) {
+  const words = text.trim().split(/\s+/).filter(Boolean);
+  if (!words.length) return;
+  const sp = shapeWord(" ", em, fo).width;
+  const shaped = words.map((w) => shapeWord(w, em, fo));
+  const width = shaped.reduce((a, sh) => a + sh.width, 0) + sp * (words.length - 1);
+  // المحاذاة داخل صندوقه (RTL: القلم يبدأ من يمين المحتوى)
+  let penX = boxLeft + boxWidth;                                  // right / الافتراضيّ في RTL
+  if (jc === "center") penX = boxLeft + (boxWidth + width) / 2;
+  else if (jc === "left") penX = boxLeft + width;
+  const glyphs = [];
+  for (const sh of shaped) {
+    const left = penX - sh.width; let gx = left;
+    for (const g of sh.glyphs) { glyphs.push({ gid: g.gid, x: Math.round(gx * 100) / 100 }); gx += g.adv; }
+    penX = left - sp;
+  }
+  while (pages.length <= pgIdx) pages.push([]);
+  pages[pgIdx].push({ y: Math.round(baseline * 100) / 100, em, font: fo.file, glyphs, text, [tag]: true });
+}
+if (HF) {
+  const total = pages.length;
+  for (let pi = 0; pi < total; pi++) {
+    const pageNo = pi + 1;
+    const si = pageSec[pi] ?? pageSec.slice(0, pi).filter((x) => x !== undefined).pop() ?? 0;
+    const gs = model.sections[si] ?? sec;
+    const colL = gs.marLeftTwips, colW = gs.columnTwips;
+    for (const kind of ["header", "footer"]) {
+      for (const par of hfParas(kind, pageNo, si)) {
+        const r0 = par.runs.find((r) => !r.hidden) ?? par.runs[0];
+        const em = r0?.emTwips || 240;
+        const fo = getFont(r0?.family || MAIN_FAMILY);
+        const base = kind === "footer"
+          ? (gs.pageHTwips - (gs.footerDistTwips ?? 720)) - (fo.met.d + fo.met.g) * em
+          : (gs.headerDistTwips ?? 720) + fo.met.a * em;
+        emitHFLine(pi, hfText(par, pageNo, total), em, fo, base, par.jc, colL, colW, kind);
+        // مربّعات النصّ المرساة في الجزء (masjid/tadris يضعان رقم الصفحة فيها)
+        for (const a of par.anchors ?? []) {
+          if (!a.textBox) continue;
+          // RTL: إزاحةُ المرساة من حافة العمود — نفسُ قاعدة الصور العائمة
+          const bx = colL + a.posHOffset, bw = a.extentW || colW;
+          for (const q of a.textBox) {
+            const q0 = q.runs.find((r) => !r.hidden) ?? q.runs[0];
+            const qem = q0?.emTwips || em;
+            const qfo = getFont(q0?.family || r0?.family || MAIN_FAMILY);
+            const qb = base + a.posVOffset + qfo.met.a * qem;
+            emitHFLine(pi, hfText(q, pageNo, total), qem, qfo, qb, q.jc, bx, bw, kind);
+          }
+        }
+      }
+    }
+  }
+}
+
 const out = { source: "our-engine", unit: "twip", mainFont: MAIN_FILE,
   pageW, pageH, docx: `corpus/books/${BOOK}.docx`,
   pages: pages.map((lines, pi) => ({ w: pageW, h: pageH, lines,

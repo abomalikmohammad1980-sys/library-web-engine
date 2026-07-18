@@ -10,7 +10,7 @@
  * ما يحتاجه كاسر الأسطر v1. الجداول/الصور/الحقول تُقصى وتُعلَّم.
  */
 import { unzipSync } from "fflate";
-import { XMLParser } from "fast-xml-parser";
+import { XMLParser, XMLBuilder } from "fast-xml-parser";
 
 // ---------- الأنواع
 export interface EffectiveRun {
@@ -21,6 +21,8 @@ export interface EffectiveRun {
   superscript?: boolean;
   /** ‏w:b أو w:bCs — عريض (يرفع ارتفاع السطر: آليّة الصندوق) */
   bold?: boolean;
+  /** رنُّ **نتيجةِ حقل** (PAGE/NUMPAGES) — يُستبدَل نصُّه وقت الترصيف */
+  fieldResult?: string | null;
   family: string | null;
   /** حجم الخط بالـ twips ‏(w:sz أنصاف نقاط × 10) — شبكة ADR-0004 */
   emTwips: number | null;
@@ -123,6 +125,8 @@ export interface FloatAnchor {
   wrap: string;
   /** معرّف علاقة الصورة (a:blip r:embed) — لاستخراج البايت من word/media للعرض */
   rId: string | null;
+  /** محتوى مربّع نصٍّ (wps:txbx/v:textbox ← w:txbxContent) — فقراتٌ تُرصَف داخل الصندوق */
+  textBox?: BodyParagraph[];
 }
 export interface SectionGeometry {
   pageWTwips: number;
@@ -134,6 +138,14 @@ export interface SectionGeometry {
   marBottomTwips: number;
   /** عرض عمود المتن = العرض − الهامشان */
   columnTwips: number;
+  /** مراجعُ الترويسة/التذييل لهذا المقطع: النوع (default/even/first) → rId */
+  headerRefs?: Record<string, string>;
+  footerRefs?: Record<string, string>;
+  /** مسافةُ الترويسة/التذييل عن حافّة الصفحة (w:pgMar@header/@footer) بالـtwips */
+  headerDistTwips?: number;
+  footerDistTwips?: number;
+  /** ‏w:titlePg — صفحةٌ أولى بترويسةٍ/تذييلٍ مختلفَين */
+  titlePg?: boolean;
 }
 export interface DocumentModelV0 {
   /** ‏w:defaultTabStop — فاصل التوقفات التلقائية بالـ twips (افتراضي 720) */
@@ -151,6 +163,12 @@ export interface DocumentModelV0 {
   footnotes: Map<string, BodyParagraph[]>;
   /** التعليقات الختاميّة: معرّف → فقرات (من endnotes.xml) */
   endnotes: Map<string, BodyParagraph[]>;
+  /** الترويسات/التذييلات: اسمُ الجزء (header1.xml…) → فقراتُه */
+  headerFooters: Map<string, BodyParagraph[]>;
+  /** rId → اسمُ الجزء (لحلّ مراجع المقطع) */
+  relTargets: Map<string, string>;
+  /** w:evenAndOddHeaders — ترويسة/تذييل مختلفٌ للصفحات الزوجيّة */
+  evenAndOddHeaders: boolean;
 }
 
 // ---------- أدوات XML
@@ -159,6 +177,12 @@ const parser = new XMLParser({
   attributeNamePrefix: "@",
   preserveOrder: true,
   trimValues: false,
+});
+const builder = new XMLBuilder({
+  ignoreAttributes: false,
+  attributeNamePrefix: "@",
+  preserveOrder: true,
+  suppressEmptyNode: false,
 });
 type XNode = Record<string, unknown>;
 
@@ -195,6 +219,21 @@ function collectDeep(nodes: XNode[], name: string): { node: XNode[]; attrs: Reco
   return out;
 }
 
+/** جذورُ الرسم داخل رنٍّ: ‏w:drawing مباشرةً، أو داخل mc:AlternateContent.
+ *  في الأخير نُفضّل mc:Choice (‏DrawingML الحديث) ونتجاهل mc:Fallback (‏VML) كي لا نعدّ الشكلَ مرّتين؛
+ *  فإن غاب الـChoice رجعنا إلى الـFallback حتّى لا نُسقِط الشكلَ في المستندات القديمة. */
+function drawingRoots(t: XNode): XNode[][] {
+  if ("w:drawing" in t) return [t["w:drawing"] as XNode[]];
+  if ("mc:AlternateContent" in t) {
+    const alt = t["mc:AlternateContent"] as XNode[];
+    const choice = collectDeep(alt, "mc:Choice")[0]?.node;
+    const root = choice ?? collectDeep(alt, "mc:Fallback")[0]?.node;
+    return root ? [root] : [];
+  }
+  if ("w:pict" in t) return [t["w:pict"] as XNode[]];
+  return [];
+}
+
 function findAttr(parent: XNode[], name: string): Record<string, string> | null {
   for (const n of parent) if (name in n) return ((n[":@"] as Record<string, string>) ?? {});
   return null;
@@ -204,12 +243,30 @@ function findAttr(parent: XNode[], name: string): Record<string, string> | null 
 export function openDocx(bytes: Uint8Array): {
   documentXml: string; stylesXml: string | null; settingsXml: string | null;
   numberingXml: string | null; footnotesXml: string | null; endnotesXml: string | null;
+  /** أجزاءُ الترويسة/التذييل: اسمُ الجزء (مثل "header1.xml") → محتواه */
+  headerFooterParts: Map<string, string>;
+  /** علاقاتُ المستند: rId → هدفُه (لحلّ headerReference/footerReference) */
+  documentRels: Map<string, string>;
 } {
   const files = unzipSync(bytes);
   const dec = new TextDecoder("utf-8");
   const doc = files["word/document.xml"];
   if (!doc) throw new Error("word/document.xml غير موجود");
   const get = (n: string) => (files[n] ? dec.decode(files[n]!) : null);
+  const headerFooterParts = new Map<string, string>();
+  for (const name of Object.keys(files)) {
+    const b = name.match(/^word\/((?:header|footer)\d+\.xml)$/);
+    if (b && b[1]) headerFooterParts.set(b[1], dec.decode(files[name]!));
+  }
+  // علاقاتُ المستند حصرًا (لا علاقات الترويسة) — تفاديًا لتصادم rId بين الأجزاء
+  const documentRels = new Map<string, string>();
+  const relsXml = get("word/_rels/document.xml.rels");
+  if (relsXml) {
+    for (const m of relsXml.match(/<Relationship [^>]*>/g) ?? []) {
+      const id = m.match(/Id="([^"]+)"/); const tgt = m.match(/Target="([^"]+)"/);
+      if (id?.[1] && tgt?.[1]) documentRels.set(id[1], tgt[1].replace(/^\/?word\//, "").replace(/^\.\.\//, ""));
+    }
+  }
   return {
     documentXml: dec.decode(doc),
     stylesXml: get("word/styles.xml"),
@@ -217,6 +274,7 @@ export function openDocx(bytes: Uint8Array): {
     numberingXml: get("word/numbering.xml"),
     footnotesXml: get("word/footnotes.xml"),
     endnotesXml: get("word/endnotes.xml"),
+    headerFooterParts, documentRels,
   };
 }
 
@@ -483,6 +541,25 @@ function resolveViaStyle(table: StyleTable, styleId: string | null) {
 }
 
 // ---------- المستند
+/** فقراتُ مربّع نصٍّ داخل شكل (‏wps:txbx أو v:textbox ← w:txbxContent).
+ *  نُعيد تسلسلَ محتواه إلى XML ثمّ نمرّره على parseDocument نفسِه، فتنطبق عليه
+ *  كلُّ قواعد الفقرة (الأنماط، الحقول، الترقيم) بلا ازدواجِ منطق. */
+function parseTextBox(
+  shape: XNode[], styles: StyleTable, numbering: NumberingTable,
+): BodyParagraph[] | undefined {
+  const box = collectDeep(shape, "w:txbxContent")[0]?.node;
+  if (!box || !box.length) return undefined;
+  try {
+    const inner = builder.build(box) as string;
+    const xml = `<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">`
+      + `<w:body>${inner}</w:body></w:document>`;
+    const paras = parseDocument(xml, styles, numbering).paragraphs;
+    return paras.length ? paras : undefined;
+  } catch {
+    return undefined; // مربّعٌ لا يُعاد تسلسلُه: نتجاهله ولا نُسقِط بقيّة الصفحة
+  }
+}
+
 export function parseDocument(
   documentXml: string, styles: StyleTable,
   numbering: NumberingTable = new Map(),
@@ -506,8 +583,22 @@ export function parseDocument(
     const r = Number(pgMar?.["@w:right"] ?? DEFAULT_GEO.marRightTwips);
     const t = Number(pgMar?.["@w:top"] ?? DEFAULT_GEO.marTopTwips);
     const b = Number(pgMar?.["@w:bottom"] ?? DEFAULT_GEO.marBottomTwips);
+    const headerRefs: Record<string, string> = {}, footerRefs: Record<string, string> = {};
+    for (const node of sectPr) {
+      for (const [key, bag] of [["w:headerReference", headerRefs], ["w:footerReference", footerRefs]] as const) {
+        if (!(key in node)) continue;
+        const a = (node[":@"] as Record<string, string>) ?? {};
+        const ty = a["@w:type"] ?? "default";
+        const rid = a["@r:id"];
+        if (rid) (bag as Record<string, string>)[ty] = rid;
+      }
+    }
     return { pageWTwips: w, pageHTwips: h, marLeftTwips: l, marRightTwips: r,
-      marTopTwips: t, marBottomTwips: b, columnTwips: w - l - r };
+      marTopTwips: t, marBottomTwips: b, columnTwips: w - l - r,
+      headerRefs, footerRefs,
+      headerDistTwips: Number(pgMar?.["@w:header"] ?? 720),
+      footerDistTwips: Number(pgMar?.["@w:footer"] ?? 720),
+      titlePg: first(sectPr, "w:titlePg") !== null };
   }
   const sections: SectionGeometry[] = [];
   let pendingFrom = 0; // أول فقرة لم يُسند مقطعها بعد
@@ -612,6 +703,7 @@ export function parseDocument(
     let paraTextLen = 0; // طول نصّ الفقرة المتراكم عبر الرنّات (لموضع w:tab الصحيح)
     let inlineImageHTwips = 0; // أطول صورةٍ سطريّة (تحجز صندوق سطر)
     let hasDrawing = false; // صورة/شكل — يُقصى فقط إن كانت الفقرة صورةً خالصةً بلا نصّ
+    let fldDepth = 0, fldInResult = false; let fldKind: string | null = null;
     // نُسطِّح الرنّات: المستوى الأعلى + رنّات داخل w:hyperlink (فهارس TOC تلفّ رقم
     // الصفحة بـPAGEREF في hyperlink) + رنّات fldSimple. هكذا يكتمل نصّ صفّ الفهرس.
     const runNodes: XNode[] = [];
@@ -668,16 +760,16 @@ export function parseDocument(
         if ("w:tab" in t) tabTextPositions.push(paraTextLen + text.length);
         if ("w:drawing" in t || "w:pict" in t) hasDrawing = true;
         // صورةٌ سطريّة (wp:inline): تحجز صندوقَ سطرٍ بارتفاعها — نلتقط أطولها.
-        if ("w:drawing" in t) {
-          for (const { node: inl } of collectDeep(t["w:drawing"] as XNode[], "wp:inline")) {
+        for (const root of drawingRoots(t)) {
+          for (const { node: inl } of collectDeep(root, "wp:inline")) {
             const cy = collectDeep(inl, "wp:extent")[0]?.attrs?.["@cy"];
             if (cy != null) inlineImageHTwips = Math.max(inlineImageHTwips, Math.round(Number(cy) / 635));
           }
         }
         // العائمات: هندسة wp:anchor (الامتداد والموضع والالتفاف) بالـ twips
-        if ("w:drawing" in t) {
+        for (const root of drawingRoots(t)) {
           const EMU = 635;
-          for (const { node: anc, attrs: a } of collectDeep(t["w:drawing"] as XNode[], "wp:anchor")) {
+          for (const { node: anc, attrs: a } of collectDeep(root, "wp:anchor")) {
             const ext = collectDeep(anc, "wp:extent")[0]?.attrs;
             const posH = collectDeep(anc, "wp:positionH")[0];
             const posV = collectDeep(anc, "wp:positionV")[0];
@@ -704,10 +796,29 @@ export function parseDocument(
               wrap: wrap.replace("wp:wrap", ""),
               rId: collectDeep(anc, "a:blip")[0]?.attrs?.["@r:embed"]
                 ?? collectDeep(anc, "a:blip")[0]?.attrs?.["@r:link"] ?? null,
+              ...(() => { const tb = parseTextBox(anc, styles, numbering);
+                return tb ? { textBox: tb } : {}; })(),
             });
           }
         }
-        if ("w:fldChar" in t || "w:instrText" in t) excluded = excluded || "field";
+        // آلةُ حالة الحقول (حصاد «الشاملة الذهبية»): begin → instrText → separate → **النتيجة** → end.
+        // نعلّم رنَّ النتيجة بنوع حقله ليستبدله المُركِّب (رقمُ الصفحة مثلًا).
+        if ("w:fldChar" in t) {
+          const ft = (t[":@"] as Record<string, string> | undefined)?.["@w:fldCharType"];
+          if (ft === "begin") { fldDepth++; fldKind = null; fldInResult = false; }
+          else if (ft === "separate") { fldInResult = true; }
+          else if (ft === "end") { fldDepth = Math.max(0, fldDepth - 1); fldInResult = false; if (!fldDepth) fldKind = null; }
+          excluded = excluded || "field";
+        }
+        if ("w:instrText" in t) {
+          const parts = t["w:instrText"] as XNode[];
+          let instr = "";
+          for (const seg of parts) if ("#text" in seg) instr += String(seg["#text"]);
+          const INS = instr.toUpperCase();
+          if (INS.includes("NUMPAGES")) fldKind = "NUMPAGES";   // قبل PAGE (يحتويها)
+          else if (INS.includes("PAGE")) fldKind = "PAGE";
+          excluded = excluded || "field";
+        }
       }
       if (!hidden) paraTextLen += text.length; // يوافق نصّ الفقرة (المرئيّ) لموضع w:tab
       if (!text) continue;
@@ -719,6 +830,7 @@ export function parseDocument(
       };
       runs.push({
         text,
+        fieldResult: fldInResult && fldKind ? fldKind : null,
         noteRef,
         superscript: vAlign === "superscript",
         bold: boldOn("w:b") || boldOn("w:bCs"),
@@ -810,7 +922,8 @@ export function parseDocument(
     paragraphs[k]!.sectionIndex = sections.length - 1;
   const section = sections[sections.length - 1]!;
   return { section, sections, paragraphs, compatibilityMode: 11, defaultTabStop: 720,
-    footnotes: new Map(), endnotes: new Map() };
+    footnotes: new Map(), endnotes: new Map(), headerFooters: new Map(), relTargets: new Map(),
+    evenAndOddHeaders: false };
 }
 
 /** يحلّل word/footnotes.xml (أو endnotes) إلى: معرّف الحاشية → فقراتُها.
@@ -854,8 +967,28 @@ export function parseNotes(
   return out;
 }
 
+/** يحلّل جزءَ ترويسةٍ/تذييل (جذرُه w:hdr أو w:ftr) إلى فقرات، بإعادة استعمال
+ *  parseDocument كاملًا (لفُّ محتواه في body مؤقّت). حصاد «الشاملة الذهبية». */
+export function parseHeaderFooterPart(
+  partXml: string, documentXml: string, styles: StyleTable, numbering: NumberingTable = new Map(),
+): BodyParagraph[] {
+  const nsMatch = documentXml.match(/<w:document([^>]*)>/);
+  const ns = nsMatch ? nsMatch[1] : ' xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"';
+  const openAt = partXml.indexOf("<w:hdr") >= 0 ? partXml.indexOf("<w:hdr") : partXml.indexOf("<w:ftr");
+  if (openAt < 0) return [];
+  const gt = partXml.indexOf(">", openAt);
+  const closeAt = partXml.lastIndexOf("</");
+  if (gt < 0 || closeAt < 0) return [];
+  const inner = partXml.slice(gt + 1, closeAt);
+  try {
+    const wrapped = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document${ns}><w:body>${inner}</w:body></w:document>`;
+    return parseDocument(wrapped, styles, numbering).paragraphs;
+  } catch { return []; }
+}
+
 export function extractFromDocx(bytes: Uint8Array): DocumentModelV0 {
-  const { documentXml, stylesXml, settingsXml, numberingXml, footnotesXml, endnotesXml } = openDocx(bytes);
+  const { documentXml, stylesXml, settingsXml, numberingXml, footnotesXml, endnotesXml,
+    headerFooterParts, documentRels } = openDocx(bytes);
   const styles = parseStyles(stylesXml);
   const numbering = parseNumbering(numberingXml);
   const model = parseDocument(documentXml, styles, numbering);
@@ -864,5 +997,10 @@ export function extractFromDocx(bytes: Uint8Array): DocumentModelV0 {
   // نصوصُ الحواشي/التعليقات — تُرصَّف أسفل الصفحة التي فيها مرجعُها
   model.footnotes = parseNotes(footnotesXml, documentXml, styles, numbering, "w:footnote");
   model.endnotes = parseNotes(endnotesXml, documentXml, styles, numbering, "w:endnote");
+  // الترويسات/التذييلات: كلُّ جزءٍ يُحلَّل فقراتٍ، وrId يُربَط باسم جزئه
+  model.relTargets = documentRels;
+  model.evenAndOddHeaders = (settingsXml ?? "").includes("<w:evenAndOddHeaders");
+  for (const [name, xml] of headerFooterParts)
+    model.headerFooters.set(name, parseHeaderFooterPart(xml, documentXml, styles, numbering));
   return model;
 }
