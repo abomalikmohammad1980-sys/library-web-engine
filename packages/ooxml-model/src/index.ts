@@ -199,6 +199,8 @@ export interface FloatAnchor {
   textBox?: BodyParagraph[];
   /** الرسمُ سطريٌّ في تدفّق الفقرة (‏wp:inline) لا مرساةً عائمة */
   inlineFlow?: boolean;
+  /** الشكلُ من مسار VML (‏w:pict) لا من DrawingML — هندستُه من سمة style */
+  vml?: boolean;
   /** أشكالُ رسم SmartArt (‏dsp:sp في diagrams/drawingN.xml): لكلٍّ موضعُه وحجمُه
    *  وهندستُه ونصُّه — بالـtwips نسبيّةً إلى ركن الرسم. */
   diagram?: { x: number; y: number; w: number; h: number;
@@ -206,7 +208,11 @@ export interface FloatAnchor {
   /** شكلٌ متّجه (‏a:prstGeom أو VML): هندستُه ولونُ حشوه وحدّه. الرسمُ يحوّله
    *  إلى SVG. ‏prst أسماءُ OOXML الثابتة (rect/roundRect/ellipse/diamond/…). */
   shape?: { prst: string; fill: string | null; stroke: string | null;
-    strokeW: number; adj: number | null };
+    strokeW: number; adj: number | null;
+    /** ‏v:stroke@dashstyle محلولًا إلى أطوالٍ بالـtwips (مضاعفاتُ سُمك الخطّ) */
+    dash?: number[];
+    /** ‏v:stroke@endcap — الافتراضيّ **flat** (butt) لا round */
+    endcap?: string };
   /** مجموعةُ أشكال (‏a:grpSp/wpg:wgp): أبناءٌ لكلٍّ موضعُه وحجمُه **بعد** تحويل
    *  فضاء إحداثيّات المجموعة (‏chOff/chExt ⟵ off/ext) — بالـtwips، نسبيّةً
    *  إلى ركن المجموعة. */
@@ -788,6 +794,308 @@ function resolveViaStyle(table: StyleTable, styleId: string | null) {
 }
 
 // ---------- المستند
+// ═══════════ نظامُ VML (‏w:pict) — حصادُ «الشاملة الذهبية»، كتلة ١ ═══════════
+// خلافَ DrawingML الذي يصف الهندسةَ بعناصرَ ووحداتِ EMU، يصف VML شكلَه بسمة
+// ‏`style` نصّيّةٍ شبيهةٍ بـCSS وبوحداتٍ مطبعيّة. فلا `wp:extent` ولا `wp:posOffset`.
+
+/** يفكّ سمةَ `style` في VML: `a:b;c:d` ⟵ خريطةٌ مصغَّرةُ المفاتيح والقيم.
+ *  ‏ImageParser.dart:866-875 */
+function parseVmlStyle(style: string | undefined): Map<string, string> {
+  const out = new Map<string, string>();
+  if (!style) return out;
+  for (const part of style.split(";")) {
+    const i = part.indexOf(":");
+    if (i < 0) continue;
+    const k = part.slice(0, i).trim().toLowerCase();
+    const v = part.slice(i + 1).trim().toLowerCase();
+    if (k) out.set(k, v);
+  }
+  return out;
+}
+
+/** محوّلُ وحدات VML ⟵ **twips**. المرجعُ يحوّل إلى بكسلات ٩٦dpi؛ ونحن نبقى في
+ *  شبكة الـtwips (‏ADR-0004) فنضرب مباشرةً: نقطةٌ=٢٠ · بكسل=١٥ · بوصةٌ=١٤٤٠ ·
+ *  سم=٥٦٦٫٩٢٩ · مم=٥٦٫٦٩٣. والمجرَّدُ بكسلٌ. ‏ImageParser.dart:1054-1071 */
+function vmlUnit(tok: string | undefined): number {
+  if (!tok) return 0;
+  const t = tok.trim().toLowerCase();
+  const num = parseFloat(t);
+  if (!isFinite(num)) return 0;
+  if (t.endsWith("pt")) return num * 20;
+  if (t.endsWith("in")) return num * 1440;
+  if (t.endsWith("cm")) return num * 566.9291;
+  if (t.endsWith("mm")) return num * 56.69291;
+  if (t.endsWith("px")) return num * 15;
+  return num * 15;                                  // مجرَّدٌ = بكسل
+}
+
+/** ألوانُ HTML الستّةَ عشرَ التي يعرفها VML. ‏VmlColorResolver.dart:5-58 */
+const VML_NAMED: Record<string, string> = {
+  aqua: "00FFFF", black: "000000", blue: "0000FF", fuchsia: "FF00FF",
+  gray: "808080", grey: "808080", green: "008000", lime: "00FF00",
+  maroon: "800000", navy: "000080", olive: "808000", purple: "800080",
+  red: "FF0000", silver: "C0C0C0", teal: "008080", white: "FFFFFF",
+  yellow: "FFFF00",
+};
+/** ألوانُ نظام Windows التي يستعملها Word في VML. ‏VmlColorResolver.dart:20-58 */
+const VML_SYS: Record<string, string> = {
+  windowtext: "000000", window: "FFFFFF", buttonface: "F0F0F0",
+  buttontext: "000000", buttonshadow: "A0A0A0", buttonhighlight: "FFFFFF",
+  highlight: "0078D7", highlighttext: "FFFFFF", graytext: "6D6D6D",
+  infobackground: "FFFFE1", infotext: "000000", menu: "F0F0F0",
+  menutext: "000000", scrollbar: "C8C8C8", background: "000000",
+  activecaption: "99B4D1", inactivecaption: "BFCDDB", captiontext: "000000",
+  inactivecaptiontext: "434E54", activeborder: "B4B4B4", inactiveborder: "F4F7FC",
+  appworkspace: "ABABAB", threeddarkshadow: "696969", threedlightshadow: "E3E3E3",
+};
+/** أسماءُ ألوان السمة في VML (‏scheme.* والمفهرسة scheme(N)).
+ *  ‏VmlColorResolver.dart:60-71,141-184 */
+const VML_SCHEME: Record<string, string> = {
+  "scheme.background": "lt1", "scheme.fill": "lt1", "scheme.text": "dk1",
+  "scheme.shadow": "dk1", "scheme.title": "dk1", "scheme.accent": "accent1",
+  "scheme.hyperlink": "hlink", "scheme.followed": "folHlink",
+};
+const VML_SCHEME_IDX = ["lt1", "dk1", "dk1", "dk1", "lt1", "accent1", "hlink", "folHlink"];
+
+/** يحلّ رمزَ لونٍ في VML (‏fillcolor/strokecolor/v:fill@color2/v:shadow@color).
+ *  **الأهمّ**: Word يخزّن فهرسَ Office بعد اللون (`white [3212]`) فيجب قشرُه
+ *  أوّلًا، وإلّا سقط كلُّ لونٍ كهذا. ‏VmlColorResolver.dart:5-125 */
+function vmlColor(raw: string | undefined, theme: Map<string, string>): string | null {
+  if (!raw) return null;
+  // قشرُ لاحقة فهرس Office في آخر السلسلة: `#f2f2f2 [3041]`
+  let t = raw.trim().toLowerCase().replace(/\s+\[[^\]]*\]$/, "").trim();
+  if (!t || t === "none" || t === "auto") return null;
+  if (VML_NAMED[t]) return VML_NAMED[t]!;
+  if (VML_SYS[t]) return VML_SYS[t]!;
+  if (VML_SCHEME[t]) return theme.get(VML_SCHEME[t]!)?.toUpperCase() ?? null;
+  const idx = t.match(/^scheme\s*\(\s*(\d+)\s*\)$/);
+  if (idx) {
+    const nm = VML_SCHEME_IDX[Number(idx[1])];
+    return nm ? (theme.get(nm)?.toUpperCase() ?? null) : null;
+  }
+  const rgbFn = t.match(/^rgb\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)$/);
+  if (rgbFn) {
+    const cl = (v: string) => Math.max(0, Math.min(255, Number(v))).toString(16).padStart(2, "0");
+    return (cl(rgbFn[1]!) + cl(rgbFn[2]!) + cl(rgbFn[3]!)).toUpperCase();
+  }
+  if (t.startsWith("#")) t = t.slice(1);
+  if (/^[0-9a-f]{3}$/.test(t)) return t.split("").map((c) => c + c).join("").toUpperCase();
+  if (/^[0-9a-f]{6}$/.test(t)) return t.toUpperCase();
+  return null;
+}
+
+/** ‏arcsize بثلاث صيغ: لاحقة `f` كسرٌ ثابتٌ ١٦٫١٦ (÷65536) · `%` ÷100 ·
+ *  ومجرَّدٌ كسرٌ مباشر · والافتراضيّ ٠٫٢. ‏VmlShapeDataParser.dart:26-31,81-95 */
+function vmlArcSize(raw: string | undefined): number {
+  if (!raw) return 0.2;
+  const t = raw.trim().toLowerCase();
+  const n = parseFloat(t);
+  if (!isFinite(n)) return 0.2;
+  if (t.endsWith("f")) return n / 65536;
+  if (t.endsWith("%")) return n / 100;
+  return n;
+}
+
+/** نمطُ التشريط: صيغةٌ رقميّةٌ (مضاعفاتُ سُمك الخطّ) أو اسمٌ معروف.
+ *  ‏VmlDashPatternResolver.dart:41-83 */
+function vmlDash(style: string | undefined, w: number): number[] | null {
+  if (!style) return null;
+  const t = style.trim().toLowerCase();
+  const u = w > 0 ? w : 1;
+  if (/^[\d.\s]+$/.test(t)) {
+    const nums = t.split(/\s+/).map(Number).filter((n) => isFinite(n) && n > 0);
+    return nums.length ? nums.map((n) => n * u) : null;
+  }
+  switch (t) {
+    case "dash": case "shortdash": case "longdash": return [3 * u, 2 * u];
+    case "dot": case "shortdot": return [u, 1.5 * u];
+    case "dashdot": case "shortdashdot": case "longdashdot": return [3 * u, 1.5 * u, u, 1.5 * u];
+    case "dashdotdot": case "shortdashdotdot": case "longdashdotdot":
+      return [3 * u, 1.5 * u, u, 1.5 * u, u, 1.5 * u];
+    default: return null;                            // مجهولٌ ⟵ مصمت
+  }
+}
+
+/** عناصرُ VML التي تُعَدّ أشكالًا. ‏ImageParser.dart:634-644 */
+const VML_SHAPE_TAGS = ["v:shape", "v:rect", "v:roundrect", "v:oval", "v:line",
+  "v:polyline", "v:curve", "v:arc", "v:image"];
+/** ‏o:spt ⟵ نوعُ الشكل (يُقرأ بالاسم المحلّيّ). ‏VmlShapeTypeResolver.dart:32-48 */
+const VML_SPT: Record<string, string> = { "110": "diamond", "202": "rect",
+  "75": "picture", "20": "line", "32": "line" };
+
+/** يستخرج أشكالَ VML من `w:pict` ويحوّلها إلى مراسٍ بهندسةٍ بالـtwips.
+ *  هذا المسارُ كان **غائبًا بالكامل**: `drawingRoots` تُعيد شجرةَ w:pict لكنّ
+ *  مستهلكَيها الوحيدَين حلقتا wp:anchor/wp:inline ولا تردان تحتها. */
+function parseVmlShapes(
+  pict: XNode[], styles: StyleTable, numbering: NumberingTable,
+  theme: Map<string, string>,
+): FloatAnchor[] {
+  const out: FloatAnchor[] = [];
+  // ‏v:shapetype قد يرد بعيدًا عن v:shape الذي يشير إليه، فنجمعها كلَّها أوّلًا
+  const types = new Map<string, Record<string, string>>();
+  for (const st of collectDeep(pict, "v:shapetype")) {
+    const id = st.attrs["@id"];
+    if (id) types.set(id, st.attrs);
+  }
+  // ‏v:group يعرّف **فضاءَ إحداثيّاتٍ منطقيًّا** لأبنائه: صندوقُه بالوحدات
+  // الحقيقيّة من style، وأبناؤه بأعدادٍ مجرَّدةٍ تُسقَط عليه بـcoordsize/coordorigin.
+  // فقراءةُ قيم الأبناء أطوالًا تعطي أرقامًا هذيانيّة (١٥٢٨٥٠tw في تذييل jalsa27).
+  const groups = collectDeep(pict, "v:group");
+  const inGroup = new Set<XNode[]>();
+  for (const { node: g, attrs: ga } of groups) {
+    const gst = parseVmlStyle(ga["@style"]);
+    const gw = vmlUnit(gst.get("width")), gh = vmlUnit(gst.get("height"));
+    const gx = (() => { const a1 = gst.get("left"), a2 = gst.get("margin-left");
+      return a1 != null && a2 != null ? vmlUnit(a1) + vmlUnit(a2) : vmlUnit(a1 ?? a2); })();
+    const gy = (() => { const a1 = gst.get("top"), a2 = gst.get("margin-top");
+      return a1 != null && a2 != null ? vmlUnit(a1) + vmlUnit(a2) : vmlUnit(a1 ?? a2); })();
+    const [csx, csy] = (ga["@coordsize"] ?? "1,1").split(",").map(Number);
+    const [cox, coy] = (ga["@coordorigin"] ?? "0,0").split(",").map(Number);
+    const cx = csx || 1, cy = csy || 1;              // حرسُ القسمة على صفر
+    // إطارُ المجموعة ومحاذاتُها يرثهما الأبناء
+    const REL_H0: Record<string, string> = { page: "page", margin: "margin", text: "column" };
+    const REL_V0: Record<string, string> = { page: "page", margin: "margin",
+      text: "paragraph", line: "line" };
+    const grh = gst.get("mso-position-horizontal-relative");
+    const grv = gst.get("mso-position-vertical-relative");
+    const gz = gst.get("z-index") ? Number(gst.get("z-index")!.replace(/[^0-9.-]/g, "")) : 0;
+    for (const tag of VML_SHAPE_TAGS) {
+      for (const { node: ch, attrs: ca } of collectDeep(g, tag)) {
+        inGroup.add(ch);
+        const cst = parseVmlStyle(ca["@style"]);
+        // قيمُ الابن **أعدادٌ منطقيّةٌ مجرَّدة** ما لم تحمل لاحقةَ وحدة
+        const logical = (v: string | undefined) => {
+          if (v == null) return 0;
+          const t = v.trim().toLowerCase();
+          return /(pt|px|in|cm|mm)$/.test(t) ? vmlUnit(t) : (parseFloat(t) || 0);
+        };
+        const lx = logical(cst.get("left")), ly = logical(cst.get("top"));
+        const lw = logical(cst.get("width")), lh = logical(cst.get("height"));
+        const chKind = tag === "v:shape"
+          ? (collectDeep(ch, "v:imagedata").length ? "picture" : "rect")
+          : tag.slice(2);
+        const chStroke = vmlColor(ca["@strokecolor"], theme);
+        const chFill = ca["@filled"] === "f" || ca["@filled"] === "false"
+          ? null : vmlColor(ca["@fillcolor"], theme);
+        out.push({
+          extentW: Math.round((lw * gw) / cx), extentH: Math.round((lh * gh) / cy),
+          posHRel: grh ? (REL_H0[grh] ?? "column") : "column",
+          posHOffset: Math.round(gx + ((lx - (cox || 0)) * gw) / cx),
+          posVRel: grv ? (REL_V0[grv] ?? "paragraph") : "paragraph",
+          posVOffset: Math.round(gy + ((ly - (coy || 0)) * gh) / cy),
+          posHAlign: null, posVAlign: null,
+          behindDoc: gz < 0, zOrder: gz,
+          distL: 0, distR: 0, distT: 0, distB: 0, wrap: "",
+          rId: collectDeep(ch, "v:imagedata")[0]?.attrs?.["@r:id"] ?? null,
+          shape: { prst: chKind, fill: chFill, stroke: chStroke,
+            strokeW: ca["@stroked"] === "f" ? 0 : 15, adj: null },
+          vml: true,
+        });
+      }
+    }
+  }
+  for (const tag of VML_SHAPE_TAGS) {
+    for (const { node: sh, attrs: a } of collectDeep(pict, tag)) {
+      if (inGroup.has(sh)) continue;                 // عُولج ضمن مجموعته
+      const st = parseVmlStyle(a["@style"]);
+      // مربّعُ النصّ: قد يرد v:textbox بعيدًا عن الشكل فنبحث عميقًا
+      const tbNode = collectDeep(sh, "v:textbox")[0];
+      const hasBox = collectDeep(sh, "w:txbxContent").length > 0;
+      // النوعُ: o:spt، وإلّا الاسمُ المحلّيّ، وإلّا وجودُ صورةٍ ⟵ picture
+      const tRef = (a["@type"] ?? "").replace(/^#/, "");
+      const tAttrs = tRef ? types.get(tRef) : undefined;
+      const spt = a["@o:spt"] ?? a["@spt"] ?? tAttrs?.["@o:spt"] ?? tAttrs?.["@spt"];
+      const local = tag.slice(2);
+      let kind = spt && VML_SPT[spt] ? VML_SPT[spt]!
+        : local !== "shape" ? local
+        : collectDeep(sh, "v:imagedata").length ? "picture" : "rect";
+      if (hasBox && kind === "rect") kind = "rect";
+      // القياسُ من style (لا wp:extent في VML)
+      let w = vmlUnit(st.get("width")), h = vmlUnit(st.get("height"));
+      // الموضع: left وmargin-left **يُجمعان** إن وُجدا معًا (‏ImageParser.dart:746-762)
+      const sum = (k1: string, k2: string) => {
+        const v1 = st.get(k1), v2 = st.get(k2);
+        if (v1 != null && v2 != null) return vmlUnit(v1) + vmlUnit(v2);
+        return vmlUnit(v1 ?? v2);
+      };
+      let x = sum("left", "margin-left"), y = sum("top", "margin-top");
+      // ‏v:line هندستُه من from/to لا من القياس (‏ImageParser.dart:789-808)
+      if (kind === "line" && (a["@from"] || a["@to"])) {
+        const pt = (v: string | undefined) => (v ?? "0,0").split(",").map((c) => vmlUnit(c.trim()));
+        const [fx, fy] = pt(a["@from"]) as [number, number];
+        const [tx, ty] = pt(a["@to"]) as [number, number];
+        w = Math.max(1, Math.abs(tx - fx)); h = Math.max(1, Math.abs(ty - fy));
+        if (x <= 0) x = Math.min(fx, tx);
+        if (y <= 0) y = Math.min(fy, ty);
+      }
+      // ‏z-index: سالبٌ ⟵ خلف النصّ (‏ImageParser.dart:1040-1052)
+      const zRaw = st.get("z-index");
+      const z = zRaw ? Number(zRaw.replace(/[^0-9.-]/g, "")) : 0;
+      // الإطارُ المرجعيّ والمحاذاة (‏ImageParser.dart:885-925)
+      const REL_H: Record<string, string> = { page: "page", margin: "margin", text: "column" };
+      const REL_V: Record<string, string> = { page: "page", margin: "margin",
+        text: "paragraph", line: "line" };
+      const alignH = st.get("mso-position-horizontal") ?? null;
+      const alignV = st.get("mso-position-vertical") ?? null;
+      const relHRaw = st.get("mso-position-horizontal-relative");
+      const relVRaw = st.get("mso-position-vertical-relative");
+      // **قاعدةٌ تخالف DrawingML**: محاذاةٌ موجودةٌ و-relative غائبة ⟵ page
+      const posHRel = relHRaw ? (REL_H[relHRaw] ?? "column") : (alignH ? "page" : "column");
+      const posVRel = relVRaw ? (REL_V[relVRaw] ?? "paragraph") : "paragraph";
+      // ‏w10:wrap هو نموذجُ الالتفاف؛ وغيابُه على شكلٍ مطلقٍ ⟵ بلا التفاف
+      const wrapNode = collectDeep(sh, "w10:wrap")[0] ?? collectDeep(pict, "w10:wrap")[0];
+      const wt = (wrapNode?.attrs?.["@type"] ?? "").toLowerCase();
+      const WRAP: Record<string, string> = { square: "Square", tight: "Tight",
+        through: "Through", topandbottom: "TopAndBottom" };
+      const wrap = WRAP[wt] ?? "None";
+      // الحشوُ والخطّ: يُورَثان من v:shapetype عند غياب السمة
+      const attrOf = (nm: string) => a[nm] ?? tAttrs?.[nm];
+      const offish = (v: string | undefined) => v === "f" || v === "false";
+      const isFilled = !offish(attrOf("@filled"));
+      const isStroked = !offish(attrOf("@stroked"));
+      const fillColor = isFilled ? vmlColor(attrOf("@fillcolor"), theme) : null;
+      const strokeColor = isStroked ? vmlColor(attrOf("@strokecolor"), theme) : null;
+      const strokeNode = collectDeep(sh, "v:stroke")[0];
+      const strokeW = attrOf("@strokeweight") ? vmlUnit(attrOf("@strokeweight")) : 15;
+      const dash = vmlDash(strokeNode?.attrs?.["@dashstyle"], strokeW);
+      const endcap = strokeNode?.attrs?.["@endcap"] ?? "flat";
+      // حشوُ الشكل الافتراضيّ (‏VmlShapeFillResolver.dart:10-34): صورةٌ بلا مربّع
+      // نصٍّ ⟵ **شفّاف** (لئلّا يُخترع مستطيلٌ أبيضُ خلف PNG شفّافة)، وإلّا أبيض.
+      const effFill = !isFilled ? null
+        : fillColor ?? (kind === "picture" && !hasBox ? null : "FFFFFF");
+      const tb = hasBox ? parseTextBox(sh, styles, numbering, theme) : undefined;
+      // حشواتُ مربّع النصّ: ترتيبُ VML يسار/أعلى/يمين/أسفل وافتراضاتُه تخالف
+      // ‏DrawingML قيمةً وترتيبًا (‏0.1in,0.05in,0.1in,0.05in).
+      let ins: FloatAnchor["boxIns"] | undefined;
+      if (tb) {
+        const parts = (tbNode?.attrs?.["@inset"] ?? "").split(/[,\s]+/).filter((x) => x !== "");
+        const DEF = [144, 72, 144, 72];              // ‏0.1in/0.05in بالـtwips
+        const g = (i: number) => (parts[i] ? vmlUnit(parts[i]) : DEF[i]!);
+        ins = { l: g(0), t: g(1), r: g(2), b: g(3) };
+      }
+      if (!tb && !w && !h) continue;                 // لا هندسةَ ولا محتوًى
+      out.push({
+        extentW: Math.round(w), extentH: Math.round(h),
+        posHRel, posHOffset: Math.round(x), posVRel, posVOffset: Math.round(y),
+        distL: 0, distR: 0, distT: 0, distB: 0,
+        wrap: wrap === "None" ? "" : wrap,
+        rId: collectDeep(sh, "v:imagedata")[0]?.attrs?.["@r:id"] ?? null,
+        behindDoc: z < 0,
+        posHAlign: alignH && ["left", "center", "right"].includes(alignH) ? alignH : null,
+        posVAlign: alignV && ["top", "center", "bottom"].includes(alignV) ? alignV : null,
+        zOrder: z,
+        ...(tb ? { textBox: tb } : {}), ...(ins ? { boxIns: ins, boxAnchor: "t" } : {}),
+        shape: { prst: kind, fill: effFill, stroke: strokeColor,
+          strokeW: isStroked ? Math.round(strokeW) : 0,
+          adj: kind === "roundrect" ? vmlArcSize(attrOf("@arcsize")) : null,
+          ...(dash ? { dash } : {}), endcap },
+        vml: true,
+      });
+    }
+  }
+  return out;
+}
+
 /** فقراتُ مربّع نصٍّ داخل شكل (‏wps:txbx أو v:textbox ← w:txbxContent).
  *  نُعيد تسلسلَ محتواه إلى XML ثمّ نمرّره على parseDocument نفسِه، فتنطبق عليه
  *  كلُّ قواعد الفقرة (الأنماط، الحقول، الترقيم) بلا ازدواجِ منطق. */
@@ -1163,6 +1471,12 @@ export function parseDocument(
               distL: 0, distR: 0, distT: 0, distB: 0,
               wrap: "TopAndBottom", rId: null, diagram: shapes, inlineFlow: true,
             });
+          }
+        }
+        // مسارُ VML (‏w:pict): هندستُه من سمة style لا من wp:extent/wp:posOffset
+        if ("w:pict" in t) {
+          for (const va of parseVmlShapes(t["w:pict"] as XNode[], styles, numbering, theme)) {
+            anchors.push(va);
           }
         }
         // العائمات: هندسة wp:anchor (الامتداد والموضع والالتفاف) بالـ twips
