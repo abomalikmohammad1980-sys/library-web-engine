@@ -22,7 +22,7 @@ for (let pi = 0; pi < ours.pages.length; pi++) for (const l of ours.pages[pi].li
 let wp = 0; const pairs = [];
 for (const o of O) {
   let j = -1;
-  for (let k = wp; k < Math.min(wp + 40, W.length); k++) if (W[k].t === o.t) { j = k; break; }
+  for (let k = wp; k < Math.min(wp + 40, W.length); k++) if (W[k].t === o.t || (W[k].t.length < o.t.length + 8 && W[k].t.endsWith(o.t))) { j = k; break; }
   if (j >= 0) { pairs.push({ o, w: W[j] }); wp = j + 1; }
 }
 // دقّة الخطوة: أزواجٌ متتاليةٌ متطابقة، كلاهما نفس الصفحة في الجانبين
