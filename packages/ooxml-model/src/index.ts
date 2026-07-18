@@ -81,6 +81,11 @@ export interface TableCellCtx {
   shdFill: string | null;
   /** نمط الجدول (w:tblStyle) — تُحلّ منه الحدود إن غابت المباشرة */
   tblStyleId: string | null;
+  /** مجموع أعمدة tblGrid (twips) — أساسُ معامل القياس إلى عرض العمود المتاح */
+  totalGridTwips: number;
+  /** عرض الجدول w:tblW: القيمة والنوع (pct مقياسه 5000=100٪، أو dxa، أو auto) */
+  tblWVal: number;
+  tblWType: string;
 }
 
 /** توقّف جدولةٍ مخصّص (§17.3.1.37) */
@@ -511,6 +516,9 @@ export function parseDocument(
         const tbl = n["w:tbl"] as XNode[];
         const tblPr = first(tbl, "w:tblPr");
         const tblStyleId = tblPr ? (findAttr(tblPr, "w:tblStyle")?.["@w:val"] ?? null) : null;
+        const tblWAttr = tblPr ? findAttr(tblPr, "w:tblW") : null;
+        const tblWVal = Number(tblWAttr?.["@w:w"] ?? 0);
+        const tblWType = tblWAttr?.["@w:type"] ?? "auto";
         const grid = collectDeep(tbl, "w:gridCol").map((g) => Number(g.attrs["@w:w"] ?? 0));
         const colX: number[] = []; let acc = 0;
         for (const w of grid) { colX.push(acc); acc += w; }
@@ -529,7 +537,7 @@ export function parseDocument(
             const shdFill = rawFill && !["auto", "FFFFFF", "ffffff"].includes(rawFill) ? rawFill : null;
             const cc: TableCellCtx = { tableId, row, col, colXTwips: colX[col] ?? 0, colWTwips,
               firstInCell: false, firstInRow: ci === 0, lastInRow: ci === cells.length - 1,
-              shdFill, tblStyleId };
+              shdFill, tblStyleId, totalGridTwips: acc, tblWVal, tblWType };
             const cellParas = flattenBlocks(tc, cc);
             if (cellParas[0]?.cell) cellParas[0].cell = { ...cellParas[0].cell, firstInCell: true };
             out.push(...cellParas);

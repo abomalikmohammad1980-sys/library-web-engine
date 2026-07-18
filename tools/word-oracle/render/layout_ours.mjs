@@ -296,9 +296,23 @@ for (let pi = 0; pi < paras.length; pi++) {
   const wordWidth = (w) => shapeWord(w, em, fo).width;
   let colBase = sec.columnTwips - p.indLeft - p.indRight;
   let rightEdge = pageW - marR;
-  if (p.tableCell) { // خليّةُ جدول: عمودٌ ضيّق، حافّته اليمنى (RTL) بإزاحة colX عن يمين الصفحة
-    rightEdge = (pageW - marR) - p.tableCell.colXTwips;
-    colBase = Math.max(200, p.tableCell.colWTwips - p.indLeft - p.indRight);
+  // هامشُ الخليّة الأفقيّ الافتراضيّ في Word: start/end = 108tw (الرأسيّ صفر)
+  const CELL_MAR = Number(process.env.CELLMAR ?? "108");
+  let cellOuterRight = 0, cellW = 0;
+  if (p.tableCell) {
+    const tc = p.tableCell;
+    // معامل قياس الجدول (حصاد §1.2): الهدفُ من w:tblW (pct مقياسه **5000 = 100٪**، أو dxa)
+    // مقصورًا على العرض المتاح؛ وإن غاب الهدف يُضغَط الجدولُ الطبيعيّ إن تجاوز المتاح.
+    // بدونه كانت أعمدةُ muqtarah أعرضَ من المتاح بـ~55٪ (grid 13948 مقابل متاح 9026).
+    const usable = sec.columnTwips;
+    const target = tc.tblWType === "pct" ? usable * (tc.tblWVal / 5000)
+      : tc.tblWType === "dxa" ? tc.tblWVal : null;
+    const finalW = target != null ? Math.min(target, usable) : Math.min(tc.totalGridTwips, usable);
+    const sf = tc.totalGridTwips > 0 ? finalW / tc.totalGridTwips : 1;
+    cellW = tc.colWTwips * sf;
+    cellOuterRight = (pageW - marR) - tc.colXTwips * sf; // حافّة الخليّة (للمستطيل)
+    rightEdge = cellOuterRight - CELL_MAR;               // بداية النصّ بعد الهامش
+    colBase = Math.max(200, cellW - 2 * CELL_MAR - p.indLeft - p.indRight);
   }
   const spaceW = wordWidth(" ", em) || wordWidth(" ", em);
   const words = p.text.trim().split(/\s+/).filter(Boolean);
@@ -344,7 +358,7 @@ for (let pi = 0; pi < paras.length; pi++) {
     if (tc.firstInCell) {
       const bs = tableBorders[tc.tblStyleId] || null;
       const bside = bs && (bs.insideH || bs.top || bs.left);
-      const rect = { page: cur, x: rightEdge - tc.colWTwips, y: 0, w: tc.colWTwips, h: 0,
+      const rect = { page: cur, x: cellOuterRight - cellW, y: 0, w: cellW, h: 0,
         fill: tc.shdFill || null, bw: bside ? bside.w : 0, bc: bside ? bside.color : "000000" };
       curTable.cells.push(rect); tableCells.push(rect);
     }
