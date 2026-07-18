@@ -113,8 +113,12 @@ function shapeWord(w, em, fo) {
   const glyphs = infos.map((g, i) => ({ gid: g.codepoint, adv: (poss[i].xAdvance / fo.upem) * em }));
   return { glyphs, width: glyphs.reduce((a, g) => a + g.adv, 0) };
 }
-// ملاحظة: تكميم الخطوة على نقطة الجهاز (2.4tw) جُرِّب وأساء (muqtarah 98→65٪) —
-// النموذج الصحيح pitch عائمٌ + قنص إزاحةٍ عن مرساةٍ حقيقيّة (ICARRY في الأداة).
+// em الجهاز (generic، من تفكيك MSLS70): Word يقرّب حجم الخطّ لبكسل الجهاز أوّلًا
+// (ppem = round(pt·dpi/72))، ثم يشتقّ كلّ المقاييس العموديّة منه. عند 600dpi:
+// emDev = round(emTw·600/1440)·2.4. يفسّر انجراف ~1tw/سطر (20pt → 400.8tw لا 400).
+const DPI = Number(process.env.DPI ?? "600");
+const emDevice = (emTw) => Math.round((emTw * DPI) / 1440) * (1440 / DPI);
+const pitchV = (met, emTw, sp) => (met.a + met.d + met.g) * emDevice(emTw) * lineMultiplier(sp);
 
 const paras = model.paragraphs.filter((p) => !p.excluded && p.text.trim() && p.runs[0]?.emTwips);
 const bodySecIdx = (paras.find((p) => p.runs[0]?.family === MAIN_FAMILY) ?? paras[0])?.sectionIndex ?? 0;
