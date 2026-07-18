@@ -62,6 +62,21 @@ export interface BodyParagraph {
   /** ارتفاع أطولِ صورةٍ سطريّة (wp:inline) في الفقرة بالـtwips — تحجز صندوقَ سطرٍ
    *  بارتفاعها (تؤثّر في التدفّق العموديّ). 0 إن لا صورة سطريّة. حصاد «الشاملة الذهبية». */
   inlineImageHTwips: number;
+  /** موضعُ الفقرة في جدولٍ (خليّة) — للتخطيط الشبكيّ في المُركِّب. null لغير الجداول.
+   *  حصاد «الشاملة الذهبية»: عرضُ العمود وموضعُه من tblGrid، وحدود الصفّ/الخليّة. */
+  tableCell: TableCellCtx | null;
+}
+
+/** سياقُ خليّة جدولٍ لفقرةٍ (من tblGrid + gridSpan) — بالـtwips من يسار الجدول */
+export interface TableCellCtx {
+  tableId: number;
+  row: number;
+  col: number;
+  colXTwips: number; // إزاحة يسار العمود عن يسار الجدول
+  colWTwips: number; // عرض الخليّة (مجموع أعمدة span)
+  firstInCell: boolean; // أوّل فقرةٍ في الخليّة (تبدأ عند أعلى الصفّ)
+  firstInRow: boolean;
+  lastInRow: boolean;
 }
 
 /** توقّف جدولةٍ مخصّص (§17.3.1.37) */
@@ -483,21 +498,42 @@ export function parseDocument(
   // تسطيح الكتل: فقرات المستوى الأعلى + فقرات خلايا الجداول (w:tbl>w:tr>w:tc>w:p) بترتيب
   // المستند — لإدراج محتوى الجداول في التدفّق (حصاد «الشاملة الذهبية»؛ التخطيط الشبكيّ
   // الكامل لاحقًا، لكنّ المحتوى يحضر ويُقاس). التداخل يُعالَج تكراريًّا.
-  const flattenBlocks = (nodes: XNode[]): XNode[] => {
-    const out: XNode[] = [];
+  let tableCounter = 0;
+  const flattenBlocks = (nodes: XNode[], ctx: TableCellCtx | null = null): { node: XNode; cell: TableCellCtx | null }[] => {
+    const out: { node: XNode; cell: TableCellCtx | null }[] = [];
     for (const n of nodes) {
-      if ("w:p" in n) out.push(n);
-      else if ("w:tbl" in n)
-        for (const row of n["w:tbl"] as XNode[])
-          if ("w:tr" in row)
-            for (const cell of row["w:tr"] as XNode[])
-              if ("w:tc" in cell) out.push(...flattenBlocks(cell["w:tc"] as XNode[]));
+      if ("w:p" in n) out.push({ node: n, cell: ctx });
+      else if ("w:tbl" in n) {
+        const tbl = n["w:tbl"] as XNode[];
+        const grid = collectDeep(tbl, "w:gridCol").map((g) => Number(g.attrs["@w:w"] ?? 0));
+        const colX: number[] = []; let acc = 0;
+        for (const w of grid) { colX.push(acc); acc += w; }
+        const tableId = tableCounter++;
+        let row = 0;
+        for (const tr of tbl) {
+          if (!("w:tr" in tr)) continue;
+          const cells = (tr["w:tr"] as XNode[]).filter((c) => "w:tc" in c);
+          let col = 0;
+          cells.forEach((cell, ci) => {
+            const tc = cell["w:tc"] as XNode[];
+            const span = Number(findAttr(first(tc, "w:tcPr") ?? tc, "w:gridSpan")?.["@w:val"] ?? 1);
+            const colWTwips = grid.slice(col, col + span).reduce((a, b) => a + b, 0) || 0;
+            const cc: TableCellCtx = { tableId, row, col, colXTwips: colX[col] ?? 0, colWTwips,
+              firstInCell: false, firstInRow: ci === 0, lastInRow: ci === cells.length - 1 };
+            const cellParas = flattenBlocks(tc, cc);
+            if (cellParas[0]?.cell) cellParas[0].cell = { ...cellParas[0].cell, firstInCell: true };
+            out.push(...cellParas);
+            col += span;
+          });
+          row++;
+        }
+      }
     }
     return out;
   };
   for (const child of flattenBlocks(body)) {
-    if (!("w:p" in child)) continue;
-    const p = child["w:p"] as XNode[];
+    const tableCell = child.cell;
+    const p = child.node["w:p"] as XNode[];
     idx++;
 
     const pPr = first(p, "w:pPr");
@@ -694,7 +730,7 @@ export function parseDocument(
     paragraphs.push({
       index: idx, runs, text, styleId, jc, bidi,
       indLeft, indRight, indFirstLine, excluded, sectionIndex: -1, numbered, anchors,
-      spacing, markEmTwips, markAsciiFamily, pageBreakBefore, widowControl, tabStops, toc, inlineImageHTwips,
+      spacing, markEmTwips, markAsciiFamily, pageBreakBefore, widowControl, tabStops, toc, inlineImageHTwips, tableCell,
     });
     // ‏sectPr داخل pPr يختم مقطعًا: هندسته تسري على هذه الفقرة وما سبقها
     const pSect = pPr ? first(pPr, "w:sectPr") : null;
