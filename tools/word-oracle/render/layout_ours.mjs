@@ -349,7 +349,7 @@ for (let pi = 0; pi < paras.length; pi++) {
   if (!words.length && (p.inlineImageHTwips > 0 || p.excluded === "empty")) words.push(" ");
   // صورٌ عائمة (wp:anchor): طبقةٌ على الصفحة الحاليّة بموضعها المحلول (page/margin/paragraph).
   if (p.anchors && p.anchors.length) for (const a of p.anchors) {
-    if (!a.rId) continue;
+    if (!a.rId && !a.textBox) continue;
     // أفقيًّا (RTL، حصاد «الشاملة الذهبية»): الإزاحة تُقاس من الحافّة اليمنى للمرجع نحو
     // اليسار؛ الإزاحة السالبة تدفع الصورة يمينًا (داخل الهامش) — ١٤٢ حالةً في masjid.
     const refRight = a.posHRel === "page" ? pageW : (pageW - marR);
@@ -362,7 +362,11 @@ for (let pi = 0; pi < paras.length; pi++) {
     const marginArea = pageH - marT - marB;
     if (a.posVRel === "margin" && a.wrap !== "None" && a.extentH > marginArea && a.extentH <= pageH && ay < 0)
       ay = (pageH - a.extentH) / 2;
-    imgAnchors.push({ page: cur, x: ax, y: ay, w: a.extentW, h: a.extentH, rId: a.rId });
+    if (a.rId) imgAnchors.push({ page: cur, x: ax, y: ay, w: a.extentW, h: a.extentH, rId: a.rId });
+    // مربّعُ نصٍّ في المتن (لوحاتُ الغلاف والترويسات): نصُّه كان يضيع كلّيًّا لأنّ فقرته
+    // تُقصى «drawing» والمرساةُ بلا rId. حصاد «الشاملة الذهبية»: tadris ٥ مربّعات،
+    // muqtarah ٢ (٢٨٥ محرفًا).
+    else if (a.textBox) emitBoxParas(cur, a.textBox, ax, ay, a.extentW, a.extentH, a.boxIns, a.boxAnchor, cur + 1, pages.length, "textbox");
   }
   if (!words.length) continue;
   // كسرُ صفحةٍ صريح (w:br type=page / w:pageBreakBefore / حدّ مقطع nextPage):
@@ -668,6 +672,55 @@ for (const [pgIdx, refs] of notesByPage) {
 //   أسفلُ صندوق سطر التذييل ينطبق على (pageH − footerDist)، فالأساس = ذلك − (d+g)×em.
 //   (16838 − 708 − 0.500488×240 = 16009.9 مقابل 16010.4 في Word — فرق 0.5tw.)
 // والترويسة بالعكس: أعلى صندوقها عند headerDist فالأساس = headerDist + a×em.
+/** يرصّف فقرات مربّع نصٍّ داخل صندوقه: لفٌّ عند عرضه الداخليّ، واحترامُ فواصل
+ *  الأسطر اليدويّة. الحشواتُ الافتراضيّة في OOXML: ‏tIns/bIns=45720EMU=72tw،
+ *  ‏lIns/rIns=91440EMU=144tw (وهي ما يستعمله Word ما لم يُصرَّح بغيرها). */
+/** يرصّف فقرات مربّع نصٍّ داخل صندوقه: لفٌّ عند عرضه الداخليّ، واحترامُ فواصل
+ *  الأسطر اليدويّة، والرسوّ العموديّ من wps:bodyPr@anchor (‏tadris وmuqtarah
+ *  يوسّطان: anchor="ctr"). الحشواتُ من bodyPr أيضًا لا مُقدَّرة. */
+function emitBoxParas(pgIdx, paras, boxLeft, boxTop, boxWidth, boxHeight, ins, anchor, pageNo, total, tag) {
+  const I = ins ?? { t: 72, b: 72, l: 144, r: 144 };
+  const inner = Math.max(200, boxWidth - I.l - I.r);
+  // مرحلة ١: نبني الأسطر ونقيس ارتفاعها الكلّيّ (يلزم للرسوّ الأوسط/الأسفل).
+  const built = [];
+  for (const q of paras) {
+    const q0 = q.runs.find((r) => !r.hidden) ?? q.runs[0];
+    const qem = q0?.emTwips || 200;
+    const qfo = getFont(q0?.family || MAIN_FAMILY);
+    const mlt = lineMultiplier(q.spacing);
+    for (const segment of hfText(q, pageNo, total).split("\n")) {
+      const words = segment.trim().split(/\s+/).filter(Boolean);
+      if (!words.length) { built.push({ blank: true, qem, qfo, mlt, jc: q.jc }); continue; }
+      const sp = shapeWord(" ", qem, qfo).width;
+      const items = words.map((w, i) => ({ width: shapeWord(w, qem, qfo).width,
+        spaceBefore: i ? sp : 0, blankBefore: i > 0, trailingOverhang: 0 }));
+      const ls = breakLines(items, { columnTwips: inner, firstLineIndentTwips: 0,
+        justified: false, compatibilityMode: model.compatibilityMode });
+      for (const l of ls)
+        built.push({ text: words.slice(l.start, l.end).join(" "), qem, qfo, mlt, jc: q.jc });
+    }
+  }
+  if (!built.length) return;
+  const lineH = (b) => (b.qfo.met.a + b.qfo.met.d + b.qfo.met.g) * b.qem * b.mlt;
+  const totalH = built.reduce((a, b) => a + lineH(b), 0);
+  // مرحلة ٢: الرسوّ العموديّ (wps:bodyPr@anchor) — ctr يوسّط الكتلة في الصندوق الداخليّ.
+  // الصندوقُ ينمو لنصّه (‏vertOverflow="overflow" وautofit في Word): إن فاض النصُّ
+  // عن extentH فالارتفاعُ الفعليّ هو ارتفاعُ النصّ، فيصير الرسوّ الأوسط بلا أثرٍ
+  // ويبدأ النصّ من الأعلى — وهو ما يفعله Word. (قياسٌ: التوسيطُ بـextentH وحده
+  // رفع أسطر tadris ١٠٧٠tw عن مواضعها في Word.)
+  const effH = Math.max(boxHeight || 0, totalH + I.t + I.b);
+  const availTop = boxTop + I.t, availH = Math.max(0, effH - I.t - I.b);
+  let y = anchor === "ctr" ? availTop + (availH - totalH) / 2
+        : anchor === "b" ? availTop + (availH - totalH)
+        : availTop;
+  for (const b of built) {
+    if (!b.blank) {
+      emitBoxLine(pgIdx, b.text, b.qem, b.qfo, y + b.qfo.met.a * b.qem * b.mlt,
+        b.jc, boxLeft + I.l, inner, tag);
+    }
+    y += lineH(b);
+  }
+}
 const HF = process.env.HF !== "0";
 // مرجعٌ من نوعٍ ما: إن أغفله المقطع ورثه من سابقه (‏Link to Previous في Word).
 function refFor(kind, si, type) {
@@ -701,7 +754,7 @@ function hfText(par, pageNo, total) {
   return out;
 }
 /** يرصّف سطراً مفرداً (ترويسة/تذييل/مربّع نصّ) ويدفعه إلى صفحته. */
-function emitHFLine(pgIdx, text, em, fo, baseline, jc, boxLeft, boxWidth, tag) {
+function emitBoxLine(pgIdx, text, em, fo, baseline, jc, boxLeft, boxWidth, tag) {
   const words = text.trim().split(/\s+/).filter(Boolean);
   if (!words.length) return;
   const sp = shapeWord(" ", em, fo).width;
@@ -735,7 +788,7 @@ if (HF) {
         const base = kind === "footer"
           ? (gs.pageHTwips - (gs.footerDistTwips ?? 720)) - (fo.met.d + fo.met.g) * em
           : (gs.headerDistTwips ?? 720) + fo.met.a * em;
-        emitHFLine(pi, hfText(par, pageNo, total), em, fo, base, par.jc, colL, colW, kind);
+        emitBoxLine(pi, hfText(par, pageNo, total), em, fo, base, par.jc, colL, colW, kind);
         // مربّعات النصّ المرساة في الجزء (masjid/tadris يضعان رقم الصفحة فيها)
         for (const a of par.anchors ?? []) {
           if (!a.textBox) continue;
@@ -746,7 +799,7 @@ if (HF) {
             const qem = q0?.emTwips || em;
             const qfo = getFont(q0?.family || r0?.family || MAIN_FAMILY);
             const qb = base + a.posVOffset + qfo.met.a * qem;
-            emitHFLine(pi, hfText(q, pageNo, total), qem, qfo, qb, q.jc, bx, bw, kind);
+            emitBoxLine(pi, hfText(q, pageNo, total), qem, qfo, qb, q.jc, bx, bw, kind);
           }
         }
       }

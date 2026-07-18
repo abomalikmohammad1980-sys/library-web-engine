@@ -129,6 +129,10 @@ export interface FloatAnchor {
   rId: string | null;
   /** محتوى مربّع نصٍّ (wps:txbx/v:textbox ← w:txbxContent) — فقراتٌ تُرصَف داخل الصندوق */
   textBox?: BodyParagraph[];
+  /** ‏wps:bodyPr@anchor — رسوُّ النصّ في الصندوق عموديًّا: t (أعلى) / ctr (وسط) / b (أسفل) */
+  boxAnchor?: string;
+  /** حشواتُ الصندوق بالـtwips (‏tIns/bIns/lIns/rIns؛ الافتراضيّ ٧٢ و١٤٤) */
+  boxIns?: { t: number; b: number; l: number; r: number };
 }
 export interface SectionGeometry {
   pageWTwips: number;
@@ -798,8 +802,18 @@ export function parseDocument(
               wrap: wrap.replace("wp:wrap", ""),
               rId: collectDeep(anc, "a:blip")[0]?.attrs?.["@r:embed"]
                 ?? collectDeep(anc, "a:blip")[0]?.attrs?.["@r:link"] ?? null,
-              ...(() => { const tb = parseTextBox(anc, styles, numbering);
-                return tb ? { textBox: tb } : {}; })(),
+              ...(() => {
+                const tb = parseTextBox(anc, styles, numbering);
+                if (!tb) return {};
+                // ‏bodyPr: الرسوّ العموديّ والحشوات. الافتراضيّات في ECMA-376:
+                // ‏lIns/rIns=91440EMU=144tw، tIns/bIns=45720EMU=72tw، anchor=t.
+                const bp = collectDeep(anc, "wps:bodyPr")[0]?.attrs ?? {};
+                const ins = (k: string, dflt: number) =>
+                  bp[k] != null ? Math.round(Number(bp[k]) / EMU) : dflt;
+                return { textBox: tb, boxAnchor: bp["@anchor"] ?? "t",
+                  boxIns: { t: ins("@tIns", 72), b: ins("@bIns", 72),
+                    l: ins("@lIns", 144), r: ins("@rIns", 144) } };
+              })(),
             });
           }
         }
