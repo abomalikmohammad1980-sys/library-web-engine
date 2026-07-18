@@ -428,11 +428,25 @@ for (let pi = 0; pi < paras.length; pi++) {
     if (!a.rId && !a.textBox) continue;
     // أفقيًّا (RTL، حصاد «الشاملة الذهبية»): الإزاحة تُقاس من الحافّة اليمنى للمرجع نحو
     // اليسار؛ الإزاحة السالبة تدفع الصورة يمينًا (داخل الهامش) — ١٤٢ حالةً في masjid.
+    // ‏wp:align بديلٌ عن الإزاحة: التوسيطُ/المحاذاة إلى المرجع (صفحةً أو منطقةَ
+    // الهوامش). قراءةُ الإزاحة وحدَها كانت تضع الشكلَ عند الحافّة خطأً.
     const refRight = a.posHRel === "page" ? pageW : (pageW - marR);
-    const ax = refRight - a.posHOffset - a.extentW;
+    let ax;
+    if (a.posHAlign && !a.posHOffset) {
+      const bandL = a.posHRel === "page" ? 0 : sec.marLeftTwips;
+      const bandR = a.posHRel === "page" ? pageW : (pageW - marR);
+      ax = a.posHAlign === "center" ? bandL + (bandR - bandL - a.extentW) / 2
+        : a.posHAlign === "right" ? bandR - a.extentW : bandL;
+    } else ax = refRight - a.posHOffset - a.extentW;
     // عموديًّا: page من أعلى الصفحة، margin من الهامش العلويّ، paragraph من **أعلى الفقرة**
     const paraTop = baseline - MET.a * em;
-    let ay = a.posVRel === "page" ? a.posVOffset
+    let ay;
+    if (a.posVAlign && !a.posVOffset) {
+      const bandT = a.posVRel === "page" ? 0 : marT;
+      const bandB = a.posVRel === "page" ? pageH : (pageH - marB);
+      ay = a.posVAlign === "center" ? bandT + (bandB - bandT - a.extentH) / 2
+        : a.posVAlign === "bottom" ? bandB - a.extentH : bandT;
+    } else ay = a.posVRel === "page" ? a.posVOffset
       : a.posVRel === "margin" ? marT + a.posVOffset : paraTop + a.posVOffset;
     // (AGENTS §23) صورةٌ أطول من منطقة الهوامش بإزاحةٍ سالبة تبقى داخل الصفحة: تُوسَّط عموديًّا
     const marginArea = pageH - marT - marB;
@@ -1068,10 +1082,20 @@ if (HF) {
         for (const a of par.anchors ?? []) {
           // صورةٌ في الترويسة/التذييل: تُرسَم طبقةً على صفحتها (بجزئها لحلّ rId)
           if (a.rId) {
-            const rr = pageW - gs.marRightTwips;
-            imgAnchors.push({ page: pi, x: rr - a.posHOffset - a.extentW,
-              y: (a.posVRel === "page" ? 0 : base) + a.posVOffset,
-              w: a.extentW, h: a.extentH, rId: a.rId, part: a.part ?? null });
+            const bL = a.posHRel === "page" ? 0 : gs.marLeftTwips;
+            const bR = a.posHRel === "page" ? gs.pageWTwips : (gs.pageWTwips - gs.marRightTwips);
+            const hx = (a.posHAlign && !a.posHOffset)
+              ? (a.posHAlign === "center" ? bL + (bR - bL - a.extentW) / 2
+                : a.posHAlign === "right" ? bR - a.extentW : bL)
+              : bR - a.posHOffset - a.extentW;
+            const tB = a.posVRel === "page" ? 0 : gs.marTopTwips;
+            const bB = a.posVRel === "page" ? gs.pageHTwips : (gs.pageHTwips - gs.marBottomTwips);
+            const hy = (a.posVAlign && !a.posVOffset)
+              ? (a.posVAlign === "center" ? tB + (bB - tB - a.extentH) / 2
+                : a.posVAlign === "bottom" ? bB - a.extentH : tB)
+              : (a.posVRel === "page" ? 0 : base) + a.posVOffset;
+            imgAnchors.push({ page: pi, x: hx, y: hy, w: a.extentW, h: a.extentH,
+              rId: a.rId, part: a.part ?? null, z: a.zOrder ?? 0, behind: !!a.behindDoc });
           }
           if (!a.textBox) continue;
           // RTL: إزاحةُ المرساة من حافة العمود — نفسُ قاعدة الصور العائمة
@@ -1092,7 +1116,8 @@ if (HF) {
 const out = { source: "our-engine", unit: "twip", mainFont: MAIN_FILE,
   pageW, pageH, docx: `corpus/books/${BOOK}.docx`,
   pages: pages.map((lines, pi) => ({ w: pageW, h: pageH, lines,
-    anchors: imgAnchors.filter((a) => a.page === pi),
+    anchors: imgAnchors.filter((a) => a.page === pi)
+      .sort((x, y) => (x.behind === y.behind ? (x.z ?? 0) - (y.z ?? 0) : (x.behind ? -1 : 1))),
     cells: tableCells.filter((c) => c.page === pi && c.h > 0) })) };
 writeFileSync(OUT, JSON.stringify(out), "utf8");
 console.log(`محرّكنا: ${pages.length} صفحة، ${pages.reduce((a, p) => a + p.length, 0)} سطرًا -> ${OUT}`);

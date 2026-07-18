@@ -172,6 +172,14 @@ export interface FloatAnchor {
   extentW: number; extentH: number;
   posHRel: string; posHOffset: number;
   posVRel: string; posVOffset: number;
+  /** ‏wp:align بدل wp:posOffset — محاذاةٌ نسبيّةٌ إلى المرجع (‏left/center/right،
+   *  و‏top/center/bottom رأسيًّا). قراءةُ الإزاحة وحدَها تضع الشكلَ عند الصفر خطأً. */
+  posHAlign: string | null;
+  posVAlign: string | null;
+  /** ‏wp:anchor@behindDoc — طبقةٌ خلف النصّ لا أمامه */
+  behindDoc: boolean;
+  /** ‏wp:anchor@relativeHeight — ترتيبُ التراكب (الأصغر أسفل) */
+  zOrder: number;
   distL: number; distR: number; distT: number; distB: number;
   /** ‏Square / Tight / Through / TopAndBottom / None */
   wrap: string;
@@ -1055,6 +1063,13 @@ export function parseDocument(
             const ext = collectDeep(anc, "wp:extent")[0]?.attrs;
             const posH = collectDeep(anc, "wp:positionH")[0];
             const posV = collectDeep(anc, "wp:positionV")[0];
+            // ‏wp:align نصٌّ داخل positionH/V — بديلٌ عن posOffset لا مكمّلٌ له
+            const alignOf = (w: { node: XNode[] } | undefined) => {
+              if (!w) return null;
+              const al = collectDeep(w.node, "wp:align")[0];
+              const txt = al?.node.find((n) => "#text" in n)?.["#text"];
+              return txt != null ? String(txt).trim() : null;
+            };
             const off = (w: { node: XNode[] } | undefined) => {
               if (!w) return 0;
               const o = collectDeep(w.node, "wp:posOffset")[0];
@@ -1071,6 +1086,10 @@ export function parseDocument(
               posHOffset: off(posH),
               posVRel: posV?.attrs["@relativeFrom"] ?? "paragraph",
               posVOffset: off(posV),
+              posHAlign: alignOf(posH),
+              posVAlign: alignOf(posV),
+              behindDoc: a["@behindDoc"] === "1",
+              zOrder: Number(a["@relativeHeight"] ?? 0),
               distL: Math.round(Number(a["@distL"] ?? 0) / EMU),
               distR: Math.round(Number(a["@distR"] ?? 0) / EMU),
               distT: Math.round(Number(a["@distT"] ?? 0) / EMU),
