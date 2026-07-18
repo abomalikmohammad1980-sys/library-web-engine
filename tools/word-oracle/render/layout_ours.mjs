@@ -450,7 +450,7 @@ for (let pi = 0; pi < paras.length; pi++) {
   if (!words.length && (p.inlineImageHTwips > 0 || p.excluded === "empty")) words.push(" ");
   // صورٌ عائمة (wp:anchor): طبقةٌ على الصفحة الحاليّة بموضعها المحلول (page/margin/paragraph).
   if (p.anchors && p.anchors.length) for (const a of p.anchors) {
-    if (!a.rId && !a.textBox) continue;
+    if (!a.rId && !a.textBox && !a.diagram && !a.shape && !a.groupChildren) continue;
     // أفقيًّا (RTL، حصاد «الشاملة الذهبية»): الإزاحة تُقاس من الحافّة اليمنى للمرجع نحو
     // اليسار؛ الإزاحة السالبة تدفع الصورة يمينًا (داخل الهامش) — ١٤٢ حالةً في masjid.
     // ‏wp:align بديلٌ عن الإزاحة: التوسيطُ/المحاذاة إلى المرجع (صفحةً أو منطقةَ
@@ -485,6 +485,25 @@ for (let pi = 0; pi < paras.length; pi++) {
       imgAnchors.push({ page: cur, x: ax, y: ay, w: a.extentW, h: a.extentH,
         rId: null, shape: a.shape, ...(a.part ? { part: a.part } : {}),
         ...(a.rotDeg ? { rot: a.rotDeg } : {}) });
+    }
+    // رسمُ SmartArt: أشكالُه بمواضعها ونصوصِها من الجزء المرسوم. السطريُّ منها
+    // يبدأ عند أعلى الفقرة (يحجز ارتفاعَه عبر inlineImageHTwips).
+    if (a.diagram?.length) {
+      const dx0 = a.inlineFlow ? (pageW - marR - a.extentW) : ax;
+      const dy0 = a.inlineFlow ? paraTop : ay;
+      for (const sh of a.diagram) {
+        if (sh.fill || sh.prst !== "rect") {
+          imgAnchors.push({ page: cur, x: dx0 + sh.x, y: dy0 + sh.y, w: sh.w, h: sh.h,
+            rId: null, shape: { prst: sh.prst, fill: sh.fill, stroke: null, strokeW: 0, adj: null },
+            z: -1, behind: true });
+        }
+        if (!sh.text) continue;
+        // نصُّ الشكل: يُوسَّط أفقيًّا ورأسيًّا في صندوقه (سلوكُ SmartArt)
+        const dfo = getFont(MAIN_FAMILY);
+        const dem = sh.em || 200;
+        const base = dy0 + sh.y + (sh.h - (dfo.met.a + dfo.met.d) * dem) / 2 + dfo.met.a * dem;
+        emitBoxLine(cur, sh.text, dem, dfo, base, "center", dx0 + sh.x, sh.w, "diagram");
+      }
     }
     // مجموعة: كلُّ ابنٍ يُرسَم عند ركن المجموعة + إزاحته المحوَّلة
     if (a.groupChildren?.length) {

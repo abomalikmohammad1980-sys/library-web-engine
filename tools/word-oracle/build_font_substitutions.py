@@ -22,6 +22,8 @@ from fontTools.ttLib import TTFont
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 RENDER = os.path.join(ROOT, "tools", "word-oracle", "render")
 OUT_PATH = os.path.join(RENDER, "font-substitutions.json")
+# أدنى عددِ شواهدَ لقبول قيدٍ: دونه يكون الوصلُ بالنصّ ظنًّا لا قياسًا (مقيس)
+MIN_WITNESSES = 20
 
 
 def norm(s: str) -> str:
@@ -127,8 +129,18 @@ def main(books: list[str]) -> None:
             # عائلةٌ نملك مقاييسَها ويوافقها Word: لا حاجة لتسجيلها
             if sum_ours is not None and abs(sum_word - sum_ours) < 0.002:
                 continue
-            # ثقةٌ ضعيفةٌ أو شواهدُ قليلة: لا نبدّل مقاييسَ نملكها بناءً على ظنّ
-            if sum_ours is not None and (met["_confidence"] < 0.75 or total < 20):
+            # حدُّ الشواهد يسري على **كلّ** قيد، لا على المُبدَّل وحدَه. القياس:
+            # قيودُ muqtarah الأربعة كلُّها بشاهدٍ إلى خمسة، وأنزلت اتّفاقَ حدّ
+            # صفحتها ٩٦٪ ⟶ ٩٢٪. الوصلُ بالنصّ يُخطئ حين يقلّ الشاهد.
+            # حارسان مختلفان:
+            # (أ) حدُّ الشواهد يسري على **كلّ** قيد — دونه الوصلُ بالنصّ ظنٌّ لا قياس.
+            #     (قيودُ muqtarah الأربعة بشاهدٍ إلى خمسة أنزلت اتّفاقَ صفحتها ٩٦⟶٩٢٪.)
+            # (ب) حدُّ الثقة يسري على **المُبدَّل** وحدَه: خطٌّ مفقودٌ لا بديلَ لنا عنه،
+            #     فثقةٌ متوسّطةٌ خيرٌ من السقوط إلى خطّ المتن. (‏Khalid Art bold ثقتُه
+            #     ٦٦٪ لكنّ شواهدَه ٥٦١١، وإسقاطُه أعاد masjid من ٥٠٪ إلى ٠٪.)
+            if total < MIN_WITNESSES:
+                continue
+            if sum_ours is not None and met["_confidence"] < 0.75:
                 continue
             table.setdefault(book, {})[family] = met
             tag = "مفقود" if ours is None else ("مختلف %.4f⟶%.4f" % (sum_ours, sum_word))

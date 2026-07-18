@@ -197,6 +197,12 @@ export interface FloatAnchor {
   part?: string;
   /** محتوى مربّع نصٍّ (wps:txbx/v:textbox ← w:txbxContent) — فقراتٌ تُرصَف داخل الصندوق */
   textBox?: BodyParagraph[];
+  /** الرسمُ سطريٌّ في تدفّق الفقرة (‏wp:inline) لا مرساةً عائمة */
+  inlineFlow?: boolean;
+  /** أشكالُ رسم SmartArt (‏dsp:sp في diagrams/drawingN.xml): لكلٍّ موضعُه وحجمُه
+   *  وهندستُه ونصُّه — بالـtwips نسبيّةً إلى ركن الرسم. */
+  diagram?: { x: number; y: number; w: number; h: number;
+    prst: string; fill: string | null; text: string; em: number }[];
   /** شكلٌ متّجه (‏a:prstGeom أو VML): هندستُه ولونُ حشوه وحدّه. الرسمُ يحوّله
    *  إلى SVG. ‏prst أسماءُ OOXML الثابتة (rect/roundRect/ellipse/diamond/…). */
   shape?: { prst: string; fill: string | null; stroke: string | null;
@@ -356,6 +362,8 @@ export function openDocx(bytes: Uint8Array): {
   documentRels: Map<string, string>;
   /** ‏word/theme/theme1.xml — لحلّ w:themeColor */
   themeXml: string | null;
+  /** أجزاءُ رسوم SmartArt المرسومة: "diagrams/drawing1.xml" → محتواه */
+  diagramDrawings: Map<string, string>;
   /** علاقاتُ **كلّ جزء**: اسمُ الجزء ("document.xml"/"header1.xml") → (rId → هدف).
    *  لازمٌ لأنّ rId محلّيٌّ لجزئه: rId1 في ترويسة masjid صورةٌ، وفي المستند
    *  عنصرُ customXml — فحلُّه من ملفٍّ واحدٍ يعطي هدفًا خاطئًا. */
@@ -389,6 +397,12 @@ export function openDocx(bytes: Uint8Array): {
     if (m?.[1]) partRels.set(m[1], readRels(name));
   }
   const documentRels = partRels.get("document.xml") ?? new Map<string, string>();
+  // رسومُ SmartArt: الجزءُ المرسوم يحمل الأشكالَ بمواضعها ونصوصِها جاهزةً
+  const diagramDrawings = new Map<string, string>();
+  for (const name of Object.keys(files)) {
+    const m = name.match(/^word\/(diagrams\/drawing\d+\.xml)$/);
+    if (m?.[1]) diagramDrawings.set(m[1], dec.decode(files[name]!));
+  }
   return {
     documentXml: dec.decode(doc),
     stylesXml: get("word/styles.xml"),
@@ -397,7 +411,7 @@ export function openDocx(bytes: Uint8Array): {
     numberingXml: get("word/numbering.xml"),
     footnotesXml: get("word/footnotes.xml"),
     endnotesXml: get("word/endnotes.xml"),
-    headerFooterParts, documentRels, partRels,
+    headerFooterParts, documentRels, partRels, diagramDrawings,
   };
 }
 
@@ -794,6 +808,53 @@ function parseTextBox(
   }
 }
 
+// سياقُ الحزمة أثناء التحليل: علاقاتُ الأجزاء ورسومُ SmartArt والجزءُ الجاري.
+// يُضبَط في extractFromDocx قبل التحليل — لأنّ parseDocument يعمل على XML مفردٍ
+// لا يعرف حزمتَه، والمرساةُ تحتاج علاقاتِ جزئها لتحلّ رسمَها.
+let partRelsRef: Map<string, Map<string, string>> = new Map();
+let diagramsRef: Map<string, string> = new Map();
+let partNameRef: string | null = null;
+
+/** أشكالُ رسم SmartArt من diagrams/drawingN.xml. الجزءُ المرسوم يحمل النتيجةَ
+ *  النهائيّة (مواضعُ وأحجامٌ ونصوص) فلا نحتاج إعادةَ حساب التخطيط الدلاليّ. */
+function parseDiagramDrawing(
+  xml: string, theme: Map<string, string>, scale: number,
+): NonNullable<FloatAnchor["diagram"]> {
+  const out: NonNullable<FloatAnchor["diagram"]> = [];
+  const root = parser.parse(xml) as XNode[];
+  for (const { node: sp } of collectDeep(root, "dsp:sp")) {
+    const spPr = collectDeep(sp, "dsp:spPr")[0]?.node ?? sp;
+    const xfrm = collectDeep(spPr, "a:xfrm")[0]?.node ?? [];
+    const off = collectDeep(xfrm, "a:off")[0]?.attrs;
+    const ext = collectDeep(xfrm, "a:ext")[0]?.attrs;
+    if (!off || !ext) continue;
+    // اللون: حشوٌ صريح، وإلّا أوّلُ محطّةٍ في التدرّج (تقريبٌ معلَن للتدرّج)
+    const clrNode = collectDeep(spPr, "a:solidFill")[0]?.node
+      ?? collectDeep(spPr, "a:gs")[0]?.node;
+    const srgb = clrNode ? collectDeep(clrNode, "a:srgbClr")[0]?.attrs?.["@val"] : undefined;
+    const sch = clrNode ? collectDeep(clrNode, "a:schemeClr")[0]?.attrs?.["@val"] : undefined;
+    const fill = srgb ? srgb.toUpperCase() : (sch ? theme.get(sch) ?? null : null);
+    // النصّ: كلُّ a:t في dsp:txBody، وحجمُه من a:rPr@sz (مئاتُ النقطة ⟵ twips ÷٥)
+    const tx = collectDeep(sp, "dsp:txBody")[0]?.node ?? [];
+    let text = "";
+    for (const { node: t } of collectDeep(tx, "a:t")) {
+      const seg = t.find((n) => "#text" in n)?.["#text"];
+      if (seg != null) text += String(seg);
+    }
+    const szAttr = collectDeep(tx, "a:rPr")[0]?.attrs?.["@sz"];
+    out.push({
+      x: Math.round(Number(off["@x"]) * scale / 635),
+      y: Math.round(Number(off["@y"]) * scale / 635),
+      w: Math.round(Number(ext["@cx"]) * scale / 635),
+      h: Math.round(Number(ext["@cy"]) * scale / 635),
+      prst: collectDeep(spPr, "a:prstGeom")[0]?.attrs?.["@prst"] ?? "rect",
+      fill, text: text.trim(),
+      em: szAttr ? Math.round(Number(szAttr) / 5) : 200,
+    });
+  }
+  return out;
+}
+
 export function parseDocument(
   documentXml: string, styles: StyleTable,
   numbering: NumberingTable = new Map(),
@@ -1073,8 +1134,29 @@ export function parseDocument(
         // صورةٌ سطريّة (wp:inline): تحجز صندوقَ سطرٍ بارتفاعها — نلتقط أطولها.
         for (const root of drawingRoots(t)) {
           for (const { node: inl } of collectDeep(root, "wp:inline")) {
-            const cy = collectDeep(inl, "wp:extent")[0]?.attrs?.["@cy"];
+            const ext = collectDeep(inl, "wp:extent")[0]?.attrs;
+            const cy = ext?.["@cy"];
             if (cy != null) inlineImageHTwips = Math.max(inlineImageHTwips, Math.round(Number(cy) / 635));
+            // رسمُ SmartArt **سطريّ** (masjid يضع رسومه هكذا لا مرساةً): نُنشئ له
+            // مرساةً صوريّةً في تدفّق الفقرة ليُرصَف كبقيّة الرسوم.
+            const dm = collectDeep(inl, "dgm:relIds")[0]?.attrs?.["@r:dm"];
+            if (!dm) continue;
+            const rels = partRelsRef.get(partNameRef ?? "document.xml")
+              ?? partRelsRef.get("document.xml");
+            const target = rels?.get(dm);
+            if (!target) continue;
+            const drawXml = diagramsRef.get(target.replace(/data(\d+)\.xml$/, "drawing$1.xml"));
+            if (!drawXml) continue;
+            const shapes = parseDiagramDrawing(drawXml, theme, 1);
+            if (!shapes.length) continue;
+            anchors.push({
+              extentW: ext?.["@cx"] ? Math.round(Number(ext["@cx"]) / 635) : 0,
+              extentH: cy != null ? Math.round(Number(cy) / 635) : 0,
+              posHRel: "column", posHOffset: 0, posVRel: "paragraph", posVOffset: 0,
+              posHAlign: null, posVAlign: null, behindDoc: false, zOrder: 0,
+              distL: 0, distR: 0, distT: 0, distB: 0,
+              wrap: "TopAndBottom", rId: null, diagram: shapes, inlineFlow: true,
+            });
           }
         }
         // العائمات: هندسة wp:anchor (الامتداد والموضع والالتفاف) بالـ twips
@@ -1118,6 +1200,22 @@ export function parseDocument(
               wrap: wrap.replace("wp:wrap", ""),
               rId: collectDeep(anc, "a:blip")[0]?.attrs?.["@r:embed"]
                 ?? collectDeep(anc, "a:blip")[0]?.attrs?.["@r:link"] ?? null,
+              ...(() => {
+                // ‏SmartArt: dgm:relIds@r:dm ⟵ diagrams/dataN.xml، والمرسومُ
+                // diagrams/drawingN.xml (اصطلاحُ التسمية نفسُه). الجزءُ المرسوم
+                // يحمل الأشكالَ بمواضعها ونصوصِها جاهزةً.
+                const dm = collectDeep(anc, "dgm:relIds")[0]?.attrs?.["@r:dm"];
+                if (!dm) return {};
+                const rels = partRelsRef.get(partNameRef ?? "document.xml")
+                  ?? partRelsRef.get("document.xml");
+                const dataTarget = rels?.get(dm);
+                if (!dataTarget) return {};
+                const drawName = dataTarget.replace(/data(\d+)\.xml$/, "drawing$1.xml");
+                const drawXml = diagramsRef.get(drawName);
+                if (!drawXml) return {};
+                const shapes = parseDiagramDrawing(drawXml, theme, 1);
+                return shapes.length ? { diagram: shapes } : {};
+              })(),
               ...(() => {
                 // مجموعةُ أشكال: كلُّ ابنٍ يُحوَّل من فضاء إحداثيّات المجموعة إلى
                 // فضاء الصفحة. القاعدة (‏DrawingML): الابنُ عند chOff يقع عند off،
@@ -1439,7 +1537,8 @@ export function parseHeaderFooterPart(
 
 export function extractFromDocx(bytes: Uint8Array): DocumentModelV0 {
   const { documentXml, stylesXml, settingsXml, numberingXml, footnotesXml, endnotesXml,
-    headerFooterParts, documentRels, themeXml, partRels } = openDocx(bytes);
+    headerFooterParts, documentRels, themeXml, partRels, diagramDrawings } = openDocx(bytes);
+  partRelsRef = partRels; diagramsRef = diagramDrawings; partNameRef = "document.xml";
   const theme = parseTheme(themeXml);
   const styles = parseStyles(stylesXml, theme);
   const numbering = parseNumbering(numberingXml);
