@@ -777,7 +777,10 @@ export function parseDocument(
         }
         // ‏w:tab: نسجّل موضعه في النصّ (لتقسيم صفّ TOC لاحقًا). الإقصاء يُحسَم بعد
         // الحلقة: صفوف الفهرس تُرصَّف، وبقيّة w:tab تُقصى (excluded=tab) مؤقّتًا.
-        if ("w:tab" in t) tabTextPositions.push(paraTextLen + text.length);
+        // الجدولةُ تفصل الكلمات: نُدخلها محرفَ جدولةٍ فعليًّا في نصّ الرنّ كي يبقى
+        // نصُّ الفقرة ومقاطعُها متوافقَين، ولئلّا تلتحم الكلمتان حولها
+        // (كانت «بابٌ الأولى» + «ألف» تصير كلمةً واحدة).
+        if ("w:tab" in t) { tabTextPositions.push(paraTextLen + text.length); text += "\t"; }
         if ("w:drawing" in t || "w:pict" in t) hasDrawing = true;
         // صورةٌ سطريّة (wp:inline): تحجز صندوقَ سطرٍ بارتفاعها — نلتقط أطولها.
         for (const root of drawingRoots(t)) {
@@ -880,7 +883,11 @@ export function parseDocument(
       (t) => (t.val === "right" || t.val === "end") && t.leader && t.leader !== "none");
     const isTocStyle = /^toc/i.test(styleId ?? "");
     let toc: TocRow | null = null;
-    if (tabTextPositions.length && (rightLeaderTab || isTocStyle) && text.trim()) {
+    // صفُّ الفهرس = مدخلٌ + جدولةٌ واحدة + رقمُ صفحة. أكثرُ من جدولةٍ يعني جدولًا
+    // نصّيًّا بأعمدةٍ متعدّدة فيمرّ على المسار العامّ (قياسٌ: صفوفُ masjid الـ٦٦
+    // كلُّها جدولةٌ واحدة، وgap-tabs أربع).
+    if (tabTextPositions.length && (tabTextPositions.length === 1 || isTocStyle)
+        && (rightLeaderTab || isTocStyle) && text.trim()) {
       const split = tabTextPositions[tabTextPositions.length - 1]!;
       const entry = text.slice(0, split).trim();
       const pageNum = text.slice(split).trim();

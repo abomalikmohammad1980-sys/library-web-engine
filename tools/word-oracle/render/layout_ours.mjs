@@ -421,6 +421,48 @@ for (let pi = 0; pi < paras.length; pi++) {
     if (wMeta?.[i]?.sup || wMeta?.[i]?.sub) width = shapeWord(w, em * SUP_SCALE, fo).width;
     return { width, spaceBefore: i ? (cw ? cw.spaceW : spaceW) : 0, blankBefore: i > 0, trailingOverhang: tov };
   });
+  // ── قفزةُ الجدولة (w:tab) — القاعدة مقيسةٌ من Word على gap-tabs.docx ──
+  // في مقطعٍ RTL تُقاس الوقفةُ **يسارًا من الهامش الأيمن**، والدلالةُ مرآتيّة:
+  //   left/الافتراضيّ ⟶ الحافّةُ اليمنى للمقطع عند الوقفة   (قِيس Δ=+٣tw)
+  //   right/end       ⟶ الحافّةُ اليسرى عندها (المقطعُ ينتهي بها)  (Δ=+٣tw)
+  //   center          ⟶ المقطعُ متوسّطٌ عليها
+  // وعند غياب التوقّفات المخصّصة: شبكةُ defaultTabStop (٧٢٠tw) — قِيس Δ=+٥tw.
+  const tabGap = [], tabLead = [];
+  if (p.tabAt?.length && !p.toc) {
+    const stops = (p.tabStops || []).filter((t) => (t.posTwips ?? 0) > 0)
+      .sort((a, b) => a.posTwips - b.posTwips);
+    const DTS = model.defaultTabStop || 720;
+    const nextStop = (pos) => {
+      for (const st of stops) if (st.posTwips > pos + 1) return st;
+      return { posTwips: (Math.floor(pos / DTS) + 1) * DTS, val: "left" };
+    };
+    const starts = []; { const re = /\S+/g; let m; while ((m = re.exec(p.text))) starts.push(m.index); }
+    const tabBefore = new Set();
+    for (const off of p.tabAt) {
+      const wi = starts.findIndex((st) => st >= off);
+      if (wi >= 0 && wi < words.length) tabBefore.add(wi);
+    }
+    let pos = Math.max(0, p.indFirstLine || 0);
+    for (let i = 0; i < words.length; i++) {
+      if (tabBefore.has(i)) {
+        const st = nextStop(pos);
+        let segW = 0;                       // عرضُ المقطع حتى الجدولة التالية
+        for (let j = i; j < words.length; j++) {
+          if (j > i && tabBefore.has(j)) break;
+          segW += items[j].width + (j > i ? spaceW : 0);
+        }
+        const v = st.val;
+        const target = (v === "right" || v === "end") ? st.posTwips - segW
+          : v === "center" ? st.posTwips - segW / 2 : st.posTwips;
+        tabGap[i] = Math.max(0, target - pos);
+        if (st.leader && st.leader !== "none") tabLead[i] = st.leader;
+        pos = Math.max(pos, target);
+      } else if (i) pos += spaceW;
+      pos += items[i].width;
+    }
+    for (let i = 0; i < words.length; i++)
+      if (tabGap[i] != null) items[i].spaceBefore = tabGap[i];
+  }
   // فواصلُ الأسطر اليدويّة (w:br غير type=page) — يمثّلها النموذج بمحرف سطرٍ جديد.
   // Word يقطع
   // السطر عندها قطعًا، والسطرُ المنتهي بها **لا يُسوَّغ** (كآخر سطرٍ في فقرة). نكسر
@@ -486,7 +528,9 @@ for (let pi = 0; pi < paras.length; pi++) {
     const natural = wordsW + nSpaces * spaceW;
     const isLast = li === lines.length - 1;
     const W = colBase - (li === 0 ? Math.max(0, p.indFirstLine || 0) : 0);
-    const extra = (!isLast && !ln.forced && nSpaces > 0) ? (W - natural) / nSpaces : 0;
+    let hasTab = false;
+    for (let gi = ln.start; gi < ln.end; gi++) if (tabGap[gi] != null) { hasTab = true; break; }
+    const extra = (!isLast && !ln.forced && nSpaces > 0 && !hasTab) ? (W - natural) / nSpaces : 0;
     const gap = spaceW + extra;
 
     // آليّة B (max عبر خطوط السطر الفعليّة): صعود/هبوط = أقصى مقطعٍ فيه بخطّه الحقيقيّ
@@ -527,7 +571,8 @@ for (let pi = 0; pi < paras.length; pi++) {
       for (const g of marker.glyphs) { glyphs.push({ gid: g.gid, x: Math.round(gx * 100) / 100 }); gx += g.adv; }
     }
     let penX = rightEdge;
-    for (const s of shaped) {
+    for (let k = 0; k < shaped.length; k++) {
+      const s = shaped[k];
       const left = penX - s.width;
       let gx = left;
       for (const g of s.glyphs) {
@@ -536,7 +581,24 @@ for (let pi = 0; pi < paras.length; pi++) {
         if (s.dy) go.dy = Math.round(s.dy * 100) / 100;
         glyphs.push(go); gx += g.adv;
       }
-      penX = left - gap;
+      const gi2 = ln.start + k + 1;
+      const nxt = tabGap[gi2];
+      penX = left - (nxt != null ? nxt : gap);
+      // قائدُ الجدولة (نقاط/شرطات) يملأ الفجوة — نفسُ محارف مسار الفهرس
+      if (nxt != null && tabLead[gi2] && nxt > 0) {
+        const lch = tabLead[gi2] === "hyphen" ? "-" : tabLead[gi2] === "underscore" ? "_"
+          : tabLead[gi2] === "middleDot" ? "·" : ".";
+        const lg = shapeWord(lch, em, fo);
+        if (lg.width > 0) {
+          const n = Math.floor(nxt / lg.width);
+          let lx = left - lg.width;          // من حافّة الكلمة الحاليّة نحو اليسار
+          for (let d = 0; d < n; d++) {
+            let gx = lx;
+            for (const g of lg.glyphs) { glyphs.push({ gid: g.gid, x: Math.round(gx * 100) / 100 }); gx += g.adv; }
+            lx -= lg.width;
+          }
+        }
+      }
     }
     descs.push({ glyphs, asc: box.asc, desc: box.desc, extraWd: box.extraWd, mlt: lineMultiplier(p.spacing), text: lineWords.join(" ") });
   }
