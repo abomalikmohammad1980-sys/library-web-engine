@@ -289,6 +289,18 @@ function indProps(pPr: XNode[] | null): { indLeft: number | null; indRight: numb
   };
 }
 
+/** حلّ رمز w:sym (حصاد «الشاملة الذهبية»): (خطٌّ رمزيّ + كودٌ ستّ-عشريّ) → محرفٌ فعليّ.
+ *  إزاحة المنطقة الخاصّة PUA: خطوط AGA/Wingdings ترمّز عند 0x20-0xFF بينما الغليفات
+ *  عند U+F020-F0FF؛ فإن كان الكود < 0xF000 نضيف 0xF000. لا يُفسَّر الكود كـUnicode عاديّ. */
+function resolveSymChar(font: string | undefined, charHex: string | undefined): string | null {
+  if (!charHex) return null;
+  const cp = parseInt(charHex, 16);
+  if (!Number.isFinite(cp)) return null;
+  const isSym = /aga|arabesque|wingding|webding|symbol|marlett/i.test(font ?? "");
+  const resolved = isSym && cp < 0xf000 ? 0xf000 + cp : cp;
+  return String.fromCodePoint(resolved);
+}
+
 /** توقّفات الجدولة من w:pPr/w:tabs (حصاد «الشاملة الذهبية»): val/pos/leader. */
 function parseTabStops(pPr: XNode[] | null): TabStop[] {
   const tabsEl = pPr ? first(pPr, "w:tabs") : null;
@@ -523,6 +535,7 @@ export function parseDocument(
       const own = rPrProps(rpr);
       const hidden = rpr ? rpr.some((n) => "w:vanish" in n) : false;
       let text = "";
+      let symFont: string | null = null; // خطُّ رمزٍ w:sym (يتقدّم على خطّ الرن)
       for (const t of r) {
         if ("w:t" in t) {
           const parts = t["w:t"] as XNode[];
@@ -536,10 +549,14 @@ export function parseDocument(
           if (brType === "page") { anyPageBreak = true; if (sawText) trailingPageBreak = true; else leadingPageBreak = true; }
           else text += "\n";
         }
-        // ‏w:sym: حرف بخط رمزي (ﷺ ونحوه بـAGA Arabesque) — قياسه الصادق يتطلب
-        // تشكيلًا متعدد الخطوط؛ حتى حينه تُستبعد الفقرة (وإلا قِيس نصها أقصر
-        // من الحقيقة وفسدت المحاذاة — درس sample-tadris para291).
-        if ("w:sym" in t) excluded = excluded || "sym";
+        // ‏w:sym: حرفٌ بخطٍّ رمزيّ (ﷺ/زخارف AGA) — يُحلّ لمحرفٍ فعليّ (إزاحة PUA)
+        // ويُضاف للنصّ بخطّه الرمزيّ (لا يُقصى بعد اليوم؛ حصاد «الشاملة الذهبية»).
+        // الخطّ الرمزيّ متوفّرٌ في subset-metrics فيُشكَّل بعرضه الصحيح.
+        if ("w:sym" in t) {
+          const a = (t[":@"] as Record<string, string> | undefined) ?? {};
+          const ch = resolveSymChar(a["@w:font"], a["@w:char"]);
+          if (ch) { text += ch; symFont = a["@w:font"] ?? null; sawText = true; }
+        }
         // ‏w:tab: نسجّل موضعه في النصّ (لتقسيم صفّ TOC لاحقًا). الإقصاء يُحسَم بعد
         // الحلقة: صفوف الفهرس تُرصَّف، وبقيّة w:tab تُقصى (excluded=tab) مؤقّتًا.
         if ("w:tab" in t) tabTextPositions.push(paraTextLen + text.length);
@@ -581,7 +598,7 @@ export function parseDocument(
       if (!text) continue;
       runs.push({
         text,
-        family: own.family ?? pPrRPr.family ?? styleProps.family,
+        family: symFont ?? own.family ?? pPrRPr.family ?? styleProps.family,
         emTwips: (own.sz ?? pPrRPr.sz ?? styleProps.sz) != null
           ? (own.sz ?? pPrRPr.sz ?? styleProps.sz)! * 10
           : null,

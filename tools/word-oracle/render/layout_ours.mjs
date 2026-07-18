@@ -247,12 +247,20 @@ for (let pi = 0; pi < paras.length; pi++) {
     baseline = marT + pageStartAscent(MET, em, p.spacing, cal);
     prev = null; prevDesc = null; pendingGap = 0; pageAnchor = baseline;
   }
+  const boldMet = metrics[`${p.runs[0].family}|bold`];
+  const paraRuns = runsByPara.byPara.get(runsByPara.key(p.text));
+  const wMeta = paraRuns ? paraWordMeta(paraRuns) : null; // مقاييس كلّ كلمة (بولد/حجم/عائلة)
   const cw = process.env.CTXW === "0" ? null : contextualWidths(words, em, fo);
   const PUNCT = "،؛:.!؟»)";
   const items = words.map((w, i) => {
     const lc = w[w.length - 1];
     const tov = PUNCT.includes(lc) ? Math.min(shapeWord(lc, em, fo).width, 12) : 0;
-    return { width: cw ? cw.wordW[i] : wordWidth(w, em), spaceBefore: i ? (cw ? cw.spaceW : spaceW) : 0, blankBefore: i > 0, trailingOverhang: tov };
+    let width = cw ? cw.wordW[i] : wordWidth(w, em);
+    // كلمةٌ فيها رمزٌ PUA (w:sym): تُشكَّل بخطّها الرمزيّ (AGA…) لعرضٍ صحيح — لا خطّ
+    // الفقرة (الذي يعطي .notdef فيفسد كسر السطر). حصاد «الشاملة الذهبية».
+    const hasPua = [...w].some((c) => { const cp = c.codePointAt(0); return cp >= 0xf000 && cp <= 0xf0ff; });
+    if (hasPua && wMeta?.[i]?.fam) width = shapeWord(w, em, getFont(wMeta[i].fam)).width;
+    return { width, spaceBefore: i ? (cw ? cw.spaceW : spaceW) : 0, blankBefore: i > 0, trailingOverhang: tov };
   });
   const lines = breakLines(items, { columnTwips: colBase, firstLineIndentTwips: p.indFirstLine || 0,
     justified: true, compatibilityMode: model.compatibilityMode });
@@ -266,10 +274,6 @@ for (let pi = 0; pi < paras.length; pi++) {
     const beforeEff = (hasContextual(p) && sameStyle) ? 0 : (p.spacing?.before || 0);
     pendingGap += Math.max(afterEff, beforeEff);
   }
-  // بولد الفقرة (آليّة B): كلماتها العريضة
-  const boldMet = metrics[`${p.runs[0].family}|bold`];
-  const paraRuns = runsByPara.byPara.get(runsByPara.key(p.text));
-  const wMeta = paraRuns ? paraWordMeta(paraRuns) : null; // مقاييس كلّ كلمة (بولد/حجم)
 
   // علامة الترقيم (numPr): تُرسم على السطر الأوّل وتزيح بدايته (تعليق)
   let marker = null;
