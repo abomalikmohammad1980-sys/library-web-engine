@@ -133,6 +133,8 @@ const model = extractFromDocx(readFileSync(`corpus/books/${BOOK}.docx`));
 const numbering = loadNumbering(`corpus/books/${BOOK}.docx`);
 const contextual = loadContextual(`corpus/books/${BOOK}.docx`);
 const hasContextual = (p) => contextual.byText.has(contextual.norm(p.text)) || contextual.styleSet.has(p.styleId);
+// ضبط الأرملة/اليتيم مُفعَّلٌ ما لم يُعطَّل صراحةً (widowControl=false في النموذج)
+const widowCtl = (p) => p.widowControl !== false;
 const runsByPara = loadRuns(`corpus/books/${BOOK}.docx`);
 const counters = {};
 
@@ -268,6 +270,9 @@ for (let pi = 0; pi < paras.length; pi++) {
     }
   }
 
+  // المرحلة 1: بناء واصفات الأسطر (رسومها وصندوقها ومضاعفها) دون إسناد صفحة —
+  // ليتمكّن ضبط الأرملة/اليتيم من نقل حدّ الكسر بمعرفة كلّ أسطر الفقرة.
+  const descs = [];
   for (let li = 0; li < lines.length; li++) {
     const ln = lines[li];
     const lineWords = words.slice(ln.start, ln.end);
@@ -293,13 +298,6 @@ for (let pi = 0; pi < paras.length; pi++) {
         box.desc = Math.max(box.desc, (wmet.d + wmet.g) * wsz);
       }
     }
-    // الخطوة (نموذج الصندوق): هبوط السابق + صعود الحاليّ + فراغ الحدّ المعلَّق
-    if (BOX && prevDesc !== null) baseline += prevDesc + box.asc + pendingGap;
-    else if (!BOX) baseline += pendingGap;
-    pendingGap = 0;
-
-    if (baseline > pageH - marB) { pages.push([]); cur++; baseline = marT + pageStartAscent(MET, em, p.spacing, cal); prevDesc = null; pageAnchor = baseline; }
-
     // وضعٌ RTL: أوّل كلمةٍ (منطقيًّا) أقصى اليمين؛ المحارف داخل الكلمة يسار→يمين
     const glyphs = [];
     // العلامة تتدلّى يمين حافّة النصّ (في الهامش) — لا تُزيح النصّ نفسه
@@ -314,16 +312,58 @@ for (let pi = 0; pi < paras.length; pi++) {
       for (const g of s.glyphs) { glyphs.push({ gid: g.gid, x: Math.round(gx * 100) / 100 }); gx += g.adv; }
       penX = left - gap;
     }
-    // آليّة A (Word، مؤكَّدة LibreOffice+الشبكة+القياس): تراكمٌ float ثم قنص **الإزاحة
-    // عن مرساة الصفحة الحقيقيّة** لشبكة نقطة الجهاز (2.4tw @600dpi). LibreOffice: قنص
-    // الموضع التراكميّ لا كلّ خطوة. مؤكَّد: 52 سطرًا مُنمّى بلا بولد = عبور نقطةٍ كسريّ.
-    const yOut = process.env.DOTSNAP !== "1" ? baseline
-      : pageAnchor + Math.round((baseline - pageAnchor) / 2.4) * 2.4;
-    pages[cur].push({ y: Math.round(yOut * 100) / 100, em, font: fo.file, glyphs, text: lineWords.join(" ") });
-    // هبوط السابق الفعّال يشمل فجوة المضاعف: desc + (asc+desc)×(mult−1)
-    if (BOX) { const mlt = lineMultiplier(p.spacing); prevDesc = box.desc + (box.asc + box.desc) * (mlt - 1); }
-    else baseline += singlePitch(MET, em) * lineMultiplier(p.spacing);
+    descs.push({ glyphs, asc: box.asc, desc: box.desc, mlt: lineMultiplier(p.spacing), text: lineWords.join(" ") });
   }
+
+  // المرحلة 2: الإسناد إلى صفحاتٍ بتراكم float (آليّة A/B كما هي) + ضبط الأرملة/اليتيم
+  // (widowControl، افتراضيّ Word ON): لا يُترَك سطرٌ وحيدٌ للفقرة أعلى صفحة (أرملة) أو
+  // أسفلها (يتيم) — يُنقَل حدّ الكسر ليبقى ≥٢ سطرًا معًا. WIDOW=0 للتعطيل (تشخيصيّ).
+  const n = descs.length;
+  const pageStartB = marT + pageStartAscent(MET, em, p.spacing, cal);
+  const pageBottom = pageH - marB;
+  const WIDOW = process.env.WIDOW !== "0" && widowCtl(p);
+  const curInit = cur, pageAnchorInit = pageAnchor;
+  const yArr = new Array(n), pgArr = new Array(n);
+  let b = baseline, pd = prevDesc, pg = pendingGap, page = cur;
+  let pageHasPrior = pages[cur].length > 0; // محتوًى سابقٌ (فقراتٌ أخرى) على صفحة البداية
+  let paraFirstOnPage = 0; // فهرس أوّل سطرٍ لهذه الفقرة على الصفحة الجارية
+  let atPageTop = !pageHasPrior && pd === null; // سطرٌ أوّلُ صفحةٍ لا يُكسَر قبله (منع اللانهاية)
+  for (let i = 0; i < n;) {
+    const d = descs[i];
+    const nb = (BOX && pd !== null) ? b + pd + d.asc + pg : (BOX ? b : b + pg);
+    if (!atPageTop && nb > pageBottom) {
+      // فيض: احسب حدّ الكسر الطبيعيّ i ثم اضبطه للأرملة/اليتيم
+      let bi = i;
+      const above = i - paraFirstOnPage, below = n - i;
+      if (WIDOW) {
+        if (above === 1 && pageHasPrior) bi = paraFirstOnPage;            // يتيمٌ أسفل: انقل الفقرة كلَّها
+        else if (below === 1 && above >= 2) bi = (above >= 3) ? i - 1     // أرملةٌ أعلى: اجذب سطرًا
+          : (pageHasPrior ? paraFirstOnPage : i);
+      }
+      if (bi < paraFirstOnPage) bi = paraFirstOnPage;
+      page++; b = pageStartB; pd = null; pg = 0;
+      pageHasPrior = false; paraFirstOnPage = bi; i = bi; atPageTop = true;
+      continue;
+    }
+    yArr[i] = nb; pgArr[i] = page; pg = 0; atPageTop = false;
+    b = nb;
+    // هبوط السابق الفعّال يشمل فجوة المضاعف: desc + (asc+desc)×(mult−1)
+    pd = BOX ? d.desc + (d.asc + d.desc) * (d.mlt - 1) : null;
+    if (!BOX) b += singlePitch(MET, em) * d.mlt;
+    i++;
+  }
+
+  // الإصدار: ادفع الأسطر إلى صفحاتها المُسنَدة (تُنشأ الصفحات عند الحاجة بالترتيب)
+  for (let i = 0; i < n; i++) {
+    while (pages.length <= pgArr[i]) pages.push([]);
+    const anchor = pgArr[i] === curInit ? pageAnchorInit : pageStartB;
+    const yOut = process.env.DOTSNAP !== "1" ? yArr[i]
+      : anchor + Math.round((yArr[i] - anchor) / 2.4) * 2.4;
+    pages[pgArr[i]].push({ y: Math.round(yOut * 100) / 100, em, font: fo.file, glyphs: descs[i].glyphs, text: descs[i].text });
+  }
+  // حالة ما بعد الفقرة (للفقرة التالية)
+  baseline = b; prevDesc = pd; pendingGap = 0; cur = pgArr[n - 1];
+  pageAnchor = cur === curInit ? pageAnchorInit : pageStartB;
   prev = { spacing: p.spacing, after: p.spacing?.after, styleId: p.styleId, contextual: hasContextual(p) };
 }
 

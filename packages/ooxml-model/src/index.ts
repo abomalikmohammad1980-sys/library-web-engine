@@ -50,6 +50,9 @@ export interface BodyParagraph {
   /** يجب أن تبدأ هذه الفقرة في صفحةٍ جديدة — من w:pageBreakBefore، أو كسرِ
    *  صفحةٍ صريح (w:br type=page) قبلها، أو حدِّ مقطعٍ (sectPr nextPage). generic. */
   pageBreakBefore: boolean;
+  /** ضبط الأرملة/اليتيم (w:widowControl) — افتراضيّ Word مُفعَّل (true)؛ val=0 يعطّله.
+   *  مُفعَّلًا: لا يُترَك سطرٌ وحيدٌ للفقرة أعلى صفحةٍ أو أسفلها عند الكسر. */
+  widowControl: boolean;
 }
 
 /** عائم wp:anchor — الأبعاد بالـ twips (‏EMU ÷ 635) */
@@ -541,6 +544,10 @@ export function parseDocument(
     const pbbVal = pPr ? findAttr(pPr, "w:pageBreakBefore")?.["@w:val"] : undefined;
     const pbbEl = pPr ? first(pPr, "w:pageBreakBefore") !== null : false;
     const ppPageBreak = pbbEl && !["0", "false", "off"].includes(pbbVal ?? "");
+    // ‏w:widowControl: مُفعَّلٌ افتراضًا (Word)؛ حضورُه بـval=0/false/off يعطّله
+    const wcVal = pPr ? findAttr(pPr, "w:widowControl")?.["@w:val"] : undefined;
+    const wcEl = pPr ? first(pPr, "w:widowControl") !== null : false;
+    const widowControl = !wcEl || !["0", "false", "off"].includes(wcVal ?? "");
     // حسم كسرِ الصفحة: الفقرة المرصَّفة تستهلك المعلَّق (وتبدأ صفحةً)؛ غير المرصَّفة
     // تُمرِّره. كسرٌ لاحقٌ لنصّها (أو فارغة حاملة) يدفع التالية.
     let pageBreakBefore = false;
@@ -565,7 +572,7 @@ export function parseDocument(
     paragraphs.push({
       index: idx, runs, text, styleId, jc, bidi,
       indLeft, indRight, indFirstLine, excluded, sectionIndex: -1, numbered, anchors,
-      spacing, markEmTwips, markAsciiFamily, pageBreakBefore,
+      spacing, markEmTwips, markAsciiFamily, pageBreakBefore, widowControl,
     });
     // ‏sectPr داخل pPr يختم مقطعًا: هندسته تسري على هذه الفقرة وما سبقها
     const pSect = pPr ? first(pPr, "w:sectPr") : null;
