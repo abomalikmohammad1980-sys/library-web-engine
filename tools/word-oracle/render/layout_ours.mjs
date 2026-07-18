@@ -153,6 +153,20 @@ function getFont(family) {
   fontCache.set(key, obj); return obj;
 }
 
+// قاعدة الخطوط المختلطة: هبوطُ الخطّ الاحتياطيّ للعربيّة (Sakkal Majalla في Windows).
+// إن غاب من المقاييس نأخذ قيمته المعروفة (0.5127em @upem2048).
+const FALLBACK_WD = (metrics["Sakkal Majalla"]?.wd) ?? 0.5127;
+// تغطية الخطّ لمحرفٍ (nominalGlyph≠0) — مُخزَّنة. false = غير مُغطًّى (يسقط للاحتياط).
+const coverCache = new Map();
+function fontCovers(family, cp) {
+  const k = family + " " + cp;
+  const c = coverCache.get(k);
+  if (c !== undefined) return c;
+  let ok = true;
+  try { ok = getFont(family).font.nominalGlyph(cp) !== 0; } catch { ok = true; }
+  coverCache.set(k, ok); return ok;
+}
+
 /** يشكّل كلمةً مفردة (guessSegmentProperties يكتشف الاتّجاه: أرقام LTR، عربيّة RTL).
  *  HarfBuzz يُخرج المحارف دومًا بترتيبٍ بصريّ يسار→يمين مهما كان الاتّجاه. */
 function shapeWord(w, em, fo) {
@@ -217,6 +231,7 @@ const lineBoxAscDesc = (met, boldMet, em, hasBold, sizeEm) => {
 for (let pi = 0; pi < paras.length; pi++) {
   const p = paras[pi]; const em = p.runs[0].emTwips;
   const fo = getFont(p.runs[0].family); const MET = fo.met;
+  const MAIN_WD = MET.wd ?? (MET.d + MET.g); // هبوط winDescent للخطّ الرئيس (قاعدة المختلطة)
   const cal = p.runs[0].family === MAIN_FAMILY ? PS_CAL : null;
   const wordWidth = (w) => shapeWord(w, em, fo).width;
   const colBase = sec.columnTwips - p.indLeft - p.indRight;
@@ -287,7 +302,7 @@ for (let pi = 0; pi < paras.length; pi++) {
 
     // آليّة B (max عبر خطوط السطر الفعليّة): صعود/هبوط = أقصى مقطعٍ فيه بخطّه الحقيقيّ
     // (عائلة/بولد/حجم لكلّ كلمة). خطُّ العنوان الأصغر يخفض، البولد يرفع — كلاهما generic.
-    let box = { asc: MET.a * em, desc: (MET.d + MET.g) * em };
+    let box = { asc: MET.a * em, desc: (MET.d + MET.g) * em, extraWd: 0 };
     if (wMeta && process.env.BOLDBOX !== "0") {
       for (let gi = ln.start; gi < ln.end; gi++) {
         const wm = wMeta[gi]; if (!wm) continue;
@@ -296,6 +311,19 @@ for (let pi = 0; pi < paras.length; pi++) {
         const wmet = (wm.bold && metrics[`${fam}|bold`]) || metrics[fam] || MET;
         box.asc = Math.max(box.asc, wmet.a * wsz);
         box.desc = Math.max(box.desc, (wmet.d + wmet.g) * wsz);
+        // قاعدة ارتفاع سطر الخطوط المختلطة (Word، مكشوفةٌ بالتجربة على محرّك Word نفسه
+        // 2026-07-18): محرفٌ يُرسَم بخطٍّ احتياطيّ (fallback) أكبرَ هبوطًا (usWinDescent)
+        // يمتدّ هبوطُ السطر بفارق (fallbackWinDesc − mainWinDesc) × em بعد المضاعف.
+        // المحفِّز في كتبنا: قوس الآية ﴿﴾ (مُعلَنٌ Times) يسقط إلى Sakkal Majalla.
+        // generic: أيّ محرفٍ لا يغطّيه خطّه المُعلَن يسقط للاحتياط (العربيّة → Sakkal).
+        if (process.env.WINDESC !== "0") {
+          let renderWd = (metrics[fam]?.wd ?? MAIN_WD);
+          const w = words[gi];
+          if (w) for (const ch of w) {
+            if (fontCovers(fam, ch.codePointAt(0)) === false) { renderWd = Math.max(renderWd, FALLBACK_WD); break; }
+          }
+          box.extraWd = Math.max(box.extraWd, Math.max(0, renderWd - MAIN_WD) * wsz);
+        }
       }
     }
     // وضعٌ RTL: أوّل كلمةٍ (منطقيًّا) أقصى اليمين؛ المحارف داخل الكلمة يسار→يمين
@@ -312,7 +340,7 @@ for (let pi = 0; pi < paras.length; pi++) {
       for (const g of s.glyphs) { glyphs.push({ gid: g.gid, x: Math.round(gx * 100) / 100 }); gx += g.adv; }
       penX = left - gap;
     }
-    descs.push({ glyphs, asc: box.asc, desc: box.desc, mlt: lineMultiplier(p.spacing), text: lineWords.join(" ") });
+    descs.push({ glyphs, asc: box.asc, desc: box.desc, extraWd: box.extraWd, mlt: lineMultiplier(p.spacing), text: lineWords.join(" ") });
   }
 
   // المرحلة 2: الإسناد إلى صفحاتٍ بتراكم float (آليّة A/B كما هي) + ضبط الأرملة/اليتيم
@@ -347,8 +375,9 @@ for (let pi = 0; pi < paras.length; pi++) {
     }
     yArr[i] = nb; pgArr[i] = page; pg = 0; atPageTop = false;
     b = nb;
-    // هبوط السابق الفعّال يشمل فجوة المضاعف: desc + (asc+desc)×(mult−1)
-    pd = BOX ? d.desc + (d.asc + d.desc) * (d.mlt - 1) : null;
+    // هبوط السابق الفعّال يشمل فجوة المضاعف: desc + (asc+desc)×(mult−1)؛ ثمّ امتداد
+    // الخطّ الاحتياطيّ (extraWd) يُضاف **بعد** المضاعف (قاعدة المختلطة، مؤكَّدةٌ تجريبيًّا).
+    pd = BOX ? d.desc + (d.asc + d.desc) * (d.mlt - 1) + (d.extraWd || 0) : null;
     if (!BOX) b += singlePitch(MET, em) * d.mlt;
     i++;
   }
