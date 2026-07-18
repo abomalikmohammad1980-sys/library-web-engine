@@ -170,7 +170,7 @@ function paraWordMeta(paraRuns) {
       if (/\s/.test(ch)) { push(); continue; }
       if (!cur) cur = { bold: false, sz: null, fam: null, sup: false, sub: false,
         color: null, highlight: null, underline: null, ucolor: null,
-        strike: false, dstrike: false, italic: false, pos: 0 };
+        strike: false, dstrike: false, italic: false, pos: 0, csp: 0 };
       cur.bold = cur.bold || r.bold;
       cur.sup = cur.sup || !!r.sup; cur.sub = cur.sub || !!r.sub;
       if (r.sz && (!cur.sz || r.sz > cur.sz)) cur.sz = r.sz;
@@ -182,6 +182,7 @@ function paraWordMeta(paraRuns) {
       cur.strike = cur.strike || !!r.strike; cur.dstrike = cur.dstrike || !!r.dstrike;
       cur.italic = cur.italic || !!r.italic;
       if (r.pos && !cur.pos) cur.pos = r.pos;
+      if (r.csp && !cur.csp) cur.csp = r.csp;
     }
   }
   push();
@@ -233,6 +234,7 @@ function borderH(tc, which) {
 }
 const tableCells = []; // مستطيلات خلايا الجداول {page,x,y,w,h,fill,bw,bc}
 const notesByPage = new Map(); // صفحة → مراجعُ الحواشي الواقعة فيها
+const endnoteRefs = [];        // التعليقاتُ الختاميّة بترتيبها (تُرصَف في آخر المستند)
 const hasContextual = (p) => contextual.byText.has(contextual.norm(p.text)) || contextual.styleSet.has(p.styleId);
 // ضبط الأرملة/اليتيم مُفعَّلٌ ما لم يُعطَّل صراحةً (widowControl=false في النموذج)
 const widowCtl = (p) => p.widowControl !== false;
@@ -315,6 +317,7 @@ const pages = [[]]; let cur = 0;
 // إلى أسفلها ثمّ ينتقل إلى التالية؛ وفي RTL العمودُ الأوّل على اليمين (قياسٌ من
 // Word: gap-cols2 عمودان بعرض ٤١٥٩ وفاصلٍ ٧٠٨، الأوّل يمينًا عند x=١٠٤٧١).
 let curCol = 0;
+let pendingColBreak = false;   // w:br type="column" — يُطبَّق على الفقرة التالية
 const slotCount = []; // خانة → عددُ أسطرها (للأرملة/اليتيم وبداية الصفحة)
 const pageSec = [];   // صفحة → فهرسُ مقطعها (لاختيار ترويستها/تذييلها)
 const fo0 = getFont(paras[0].runs[0]?.family || MAIN_FAMILY);
@@ -433,6 +436,15 @@ for (let pi = 0; pi < paras.length; pi++) {
   // كسرُ صفحةٍ صريح (w:br type=page / w:pageBreakBefore / حدّ مقطع nextPage):
   // الفقرة تبدأ صفحةً جديدة إن كانت الحاليّة غير فارغة — يطابق ترقيم صفحات Word.
   // تُكبَت مسافةُ before أعلى الصفحة (prev=null)، والأساس الأوّل من pageStartAscent.
+  // كسرُ عمودٍ سابق (w:br type="column"): ابدأ الخانةَ التالية قبل هذه الفقرة
+  if (pendingColBreak) {
+    pendingColBreak = false;
+    const nc = Math.max(1, (model.sections[p.sectionIndex] ?? sec).colCount || 1);
+    if (curCol + 1 < nc) { curCol++; }
+    else { pages.push([]); cur++; curCol = 0; }
+    baseline = marT + pageStartAscent(MET, em, p.spacing, cal);
+    prev = null; prevDesc = null; pendingGap = 0; pageAnchor = baseline;
+  }
   if (p.pageBreakBefore && pages[cur].length > 0 && process.env.NOPB !== "1") {
     pages.push([]); cur++; curCol = 0;
     baseline = marT + pageStartAscent(MET, em, p.spacing, cal);
@@ -483,7 +495,7 @@ for (let pi = 0; pi < paras.length; pi++) {
     text: r.text, bold: !!r.bold, sz: r.emTwips, fam: r.family, sup: !!r.superscript,
     sub: !!r.subscript, color: r.color ?? null, highlight: r.highlight ?? null,
     underline: r.underline ?? null, ucolor: r.underlineColor ?? null,
-    strike: !!r.strike, dstrike: !!r.doubleStrike, italic: !!r.italic, pos: r.position ?? 0 }));
+    strike: !!r.strike, dstrike: !!r.doubleStrike, italic: !!r.italic, pos: r.position ?? 0, csp: r.charSpacing ?? 0 }));
   const wMeta = mRuns.length ? paraWordMeta(mRuns) : null;
   const cw = process.env.CTXW === "0" ? null : contextualWidths(words, em, fo);
   const PUNCT = "،؛:.!؟»)";
@@ -497,6 +509,7 @@ for (let pi = 0; pi < paras.length; pi++) {
     if (hasPua && wMeta?.[i]?.fam) width = shapeWord(w, em, getFont(wMeta[i].fam)).width;
     // علامةُ الحاشية (superscript): Word يصغّرها إلى ⅔ ويرفعها ⅓ (قياسٌ: 211/320 و120/320)
     if (wMeta?.[i]?.sup || wMeta?.[i]?.sub) width = shapeWord(w, em * SUP_SCALE, fo).width;
+    if (wMeta?.[i]?.csp) width += wMeta[i].csp * [...w].length;
     return { width, spaceBefore: i ? (cw ? cw.spaceW : spaceW) : 0, blankBefore: i > 0, trailingOverhang: tov };
   });
   // ── قفزةُ الجدولة (w:tab) — القاعدة مقيسةٌ من Word على gap-tabs.docx ──
@@ -572,6 +585,8 @@ for (let pi = 0; pi < paras.length; pi++) {
     const beforeEff = (hasContextual(p) && sameStyle) ? 0 : (p.spacing?.before || 0);
     pendingGap += Math.max(afterEff, beforeEff);
   }
+  // حدُّ الفقرة العلويّ يزيد الفراغَ فوقها بسُمكه + w:space (والسفليّ بعدها)
+  if (p.pBdr?.top) pendingGap += p.pBdr.top.wTwips + p.pBdr.top.spaceTwips;
 
   // علامة الترقيم (numPr): تُرسم على السطر الأوّل وتزيح بدايته (تعليق)
   let marker = null;
@@ -598,9 +613,11 @@ for (let pi = 0; pi < paras.length; pi++) {
       const isSup = !!(wm && (wm.sup || wm.sub));
       const wem = isSup ? em * SUP_SCALE : em;
       const sh = shapeWord(w, wem, fo);
+      // ‏w:spacing (rPr): تباعدٌ يُضاف بعد كلّ محرف — يوسّع الكلمة بمجموعه
+      const csp = wm?.csp || 0;
       // ‏w:position يرفع/يخفض الأساس بمقداره (twips، موجبٌ يرفع)
       const dyBase = wm?.sup ? -(em * SUP_RISE) : wm?.sub ? (em * SUP_RISE * 0.5) : 0;
-      return { glyphs: sh.glyphs, width: sh.width, em: wem,
+      return { glyphs: sh.glyphs, width: sh.width + csp * sh.glyphs.length, csp, em: wem,
         dy: dyBase - (wm?.pos || 0),
         color: wm?.color ?? null, highlight: wm?.highlight ?? null,
         underline: wm?.underline ?? null, ucolor: wm?.ucolor ?? null,
@@ -663,7 +680,7 @@ for (let pi = 0; pi < paras.length; pi++) {
         if (s.em !== em) go.em = s.em;      // حجمٌ خاصّ (رفع/خفض)
         if (s.dy) go.dy = Math.round(s.dy * 100) / 100;
         if (s.color) go.fill = s.color;     // لونُ النصّ (w:color/themeColor)
-        glyphs.push(go); gx += g.adv;
+        glyphs.push(go); gx += g.adv + (s.csp || 0);
       }
       // زخارفُ الكلمة: تظليلٌ خلفها، وتسطيرٌ/شطبٌ خطوطًا — بإحداثيّات السطر
       if (s.highlight || s.underline || s.strike || s.dstrike) {
@@ -780,12 +797,15 @@ for (let pi = 0; pi < paras.length; pi++) {
   }
   // حالة ما بعد الفقرة (للفقرة التالية)
   // حواشي هذه الفقرة تنتمي إلى الصفحة التي وقع فيها سطرُها الأوّل
-  if (n > 0) for (const r of p.runs) if (r.noteRef && r.noteRef.kind === "footnote") {
-    const pg = pgArr[0];
-    if (!notesByPage.has(pg)) notesByPage.set(pg, []);
-    notesByPage.get(pg).push(r.noteRef);
+  if (n > 0) for (const r of p.runs) if (r.noteRef) {
+    if (r.noteRef.kind === "footnote") {
+      const pg = pgArr[0];
+      if (!notesByPage.has(pg)) notesByPage.set(pg, []);
+      notesByPage.get(pg).push(r.noteRef);
+    } else endnoteRefs.push(r.noteRef);   // الختاميّة تُرصَف في آخر المستند
   }
   baseline = b; prevDesc = pd; pendingGap = 0;
+  if (p.pBdr?.bottom) pendingGap += p.pBdr.bottom.wTwips + p.pBdr.bottom.spaceTwips;
   cur = pgArr[n - 1]; curCol = colArr[n - 1];
   if (curTable && p.tableCell) {
     curTable.maxBottom = Math.max(curTable.maxBottom, baseline + (prevDesc || 0));
@@ -794,6 +814,7 @@ for (let pi = 0; pi < paras.length; pi++) {
   }
   for (let q = curInit; q <= cur; q++) if (pageSec[q] === undefined) pageSec[q] = p.sectionIndex;
   pageAnchor = (cur * NCOL + curCol) === slotInit ? pageAnchorInit : pageStartB;
+  if (p.columnBreak) pendingColBreak = true;
   prev = { spacing: p.spacing, after: p.spacing?.after, styleId: p.styleId, contextual: hasContextual(p) };
 }
 
@@ -840,6 +861,34 @@ for (const [pgIdx, refs] of notesByPage) {
     fy += lineH(b);
   }
 }
+// ── التعليقاتُ الختاميّة (endnotes): تُرصَف متتابعةً في آخر المستند ──
+// خلافُ الحاشية التي تلزم صفحةَ مرجعها، الختاميّةُ تُجمَع كلُّها في نهايته.
+if (endnoteRefs.length && process.env.ENDNOTES !== "0") {
+  let ey = null, epage = pages.length - 1;
+  for (const ref of endnoteRefs) {
+    for (const ep of model.endnotes.get(String(ref.id)) || []) {
+      const eem = ep.runs[0]?.emTwips || 200;
+      const efo = getFont(ep.runs[0]?.family || MAIN_FAMILY);
+      const words = (String(ref.num) + " " + ep.text).trim().split(/\s+/).filter(Boolean);
+      if (!words.length) continue;
+      const esp = shapeWord(" ", eem, efo).width;
+      const items = words.map((w, i) => ({ width: shapeWord(w, eem, efo).width,
+        spaceBefore: i ? esp : 0, blankBefore: i > 0, trailingOverhang: 0 }));
+      const els = breakLines(items, { columnTwips: sec.columnTwips, firstLineIndentTwips: 0,
+        justified: false, compatibilityMode: model.compatibilityMode });
+      const mlt = lineMultiplier(ep.spacing);
+      const pitch = (efo.met.a + efo.met.d + efo.met.g) * eem * mlt;
+      for (const l of els) {
+        if (ey == null) ey = marT + efo.met.a * eem;      // نبدأ من أعلى منطقة النصّ
+        if (ey > pageH - marB) { pages.push([]); epage = pages.length - 1; ey = marT + efo.met.a * eem; }
+        emitBoxLine(epage, words.slice(l.start, l.end).join(" "), eem, efo, ey, ep.jc,
+          sec.marLeftTwips, sec.columnTwips, "endnote");
+        ey += pitch;
+      }
+    }
+  }
+}
+
 // ── الترويسة والتذييل (حصاد «الشاملة الذهبية»؛ مقيساً على Word) ──
 // الاختيار لكلّ صفحة: first (مع titlePg) ← even (مع evenAndOddHeaders) ← default.
 // الرأسيّ: قيسَ من ahadith (الأساس 16010.4 ثابتاً في كلّ الصفحات):
