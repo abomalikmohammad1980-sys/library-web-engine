@@ -519,7 +519,7 @@ for (let pi = 0; pi < paras.length; pi++) {
   //   center          ⟶ المقطعُ متوسّطٌ عليها
   // وعند غياب التوقّفات المخصّصة: شبكةُ defaultTabStop (٧٢٠tw) — قِيس Δ=+٥tw.
   const tabGap = [], tabLead = [];
-  if (p.tabAt?.length && !p.toc) {
+  if ((p.tabAt?.length || p.ptabAt?.length) && !p.toc) {
     const stops = (p.tabStops || []).filter((t) => (t.posTwips ?? 0) > 0)
       .sort((a, b) => a.posTwips - b.posTwips);
     const DTS = model.defaultTabStop || 720;
@@ -528,15 +528,29 @@ for (let pi = 0; pi < paras.length; pi++) {
       return { posTwips: (Math.floor(pos / DTS) + 1) * DTS, val: "left" };
     };
     const starts = []; { const re = /\S+/g; let m; while ((m = re.exec(p.text))) starts.push(m.index); }
+    // ‏w:ptab: موضعٌ مطلقٌ من المرجع لا توقّفٌ من الشبكة. في RTL نقيس من الحافّة
+    // اليمنى: يسار⟶العرضُ كلُّه، وسط⟶نصفُه، يمين⟶الصفر (بدايةُ السطر).
+    const ptabStop = new Map();
+    for (const pt of p.ptabAt ?? []) {
+      const width = pt.relativeTo === "indent" ? colBase : sec.columnTwips;
+      const posTwips = pt.alignment === "center" ? width / 2
+        : pt.alignment === "right" ? width : 0;
+      ptabStop.set(pt.at, { posTwips, val: "left", leader: pt.leader });
+    }
     const tabBefore = new Set();
     for (const off of p.tabAt) {
       const wi = starts.findIndex((st) => st >= off);
       if (wi >= 0 && wi < words.length) tabBefore.add(wi);
     }
+    const ptabByWord = new Map();
+    for (const [at, st] of ptabStop) {
+      const wi = starts.findIndex((x) => x >= at);
+      if (wi >= 0 && wi < words.length) { tabBefore.add(wi); ptabByWord.set(wi, st); }
+    }
     let pos = Math.max(0, p.indFirstLine || 0);
     for (let i = 0; i < words.length; i++) {
       if (tabBefore.has(i)) {
-        const st = nextStop(pos);
+        const st = ptabByWord.get(i) ?? nextStop(pos);   // ‏ptab يتقدّم على الشبكة
         let segW = 0;                       // عرضُ المقطع حتى الجدولة التالية
         for (let j = i; j < words.length; j++) {
           if (j > i && tabBefore.has(j)) break;

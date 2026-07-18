@@ -94,6 +94,9 @@ export interface BodyParagraph {
   tabStops: TabStop[];
   /** مواضعُ w:tab داخل نصّ الفقرة (فهارس محارف) — للقفز إلى التوقّف التالي. */
   tabAt: number[];
+  /** ‏w:ptab — جدولةٌ **مطلقةُ الموضع** لا تتبع شبكةَ التوقّفات: تقفز إلى موضعٍ
+   *  محسوبٍ من المرجع (‏margin/indent/leftMargin) بمحاذاةٍ (left/center/right). */
+  ptabAt: { at: number; relativeTo: string; alignment: string; leader: string | null }[];
   /** صفُّ جدول محتوياتٍ (TOC): مدخلٌ / قائدٌ يتمدّد / رقمُ صفحة — من حصاد «الشاملة
    *  الذهبية». يُكتشَف بنمطٍ toc أو بتوقّفٍ يمينيٍّ ذي leader مع w:tab فعليّ في رنّ.
    *  حين يوجد، الفقرة **لا تُقصى** بل تُرسَم صفًّا ثلاثيًّا. */
@@ -925,6 +928,7 @@ export function parseDocument(
     let sawText = false, leadingPageBreak = false, trailingPageBreak = false, anyPageBreak = false;
     let columnBreak = false;
     const tabTextPositions: number[] = []; // مواضع w:tab في نصّ الفقرة (لتقسيم TOC)
+    const ptabPositions: BodyParagraph["ptabAt"] = []; // مواضعُ w:ptab المطلقة
     let paraTextLen = 0; // طول نصّ الفقرة المتراكم عبر الرنّات (لموضع w:tab الصحيح)
     let inlineImageHTwips = 0; // أطول صورةٍ سطريّة (تحجز صندوق سطر)
     let hasDrawing = false; // صورة/شكل — يُقصى فقط إن كانت الفقرة صورةً خالصةً بلا نصّ
@@ -992,6 +996,15 @@ export function parseDocument(
         // نصُّ الفقرة ومقاطعُها متوافقَين، ولئلّا تلتحم الكلمتان حولها
         // (كانت «بابٌ الأولى» + «ألف» تصير كلمةً واحدة).
         if ("w:tab" in t) { tabTextPositions.push(paraTextLen + text.length); text += "\t"; }
+        // ‏w:ptab: تقفز إلى موضعٍ مطلقٍ من المرجع لا إلى التوقّف التالي
+        if ("w:ptab" in t) {
+          const a = (t[":@"] as Record<string, string> | undefined) ?? {};
+          ptabPositions.push({ at: paraTextLen + text.length,
+            relativeTo: a["@w:relativeTo"] ?? "margin",
+            alignment: a["@w:alignment"] ?? "left",
+            leader: (a["@w:leader"] && a["@w:leader"] !== "none") ? a["@w:leader"] : null });
+          text += "\t";
+        }
         if ("w:drawing" in t || "w:pict" in t) hasDrawing = true;
         // صورةٌ سطريّة (wp:inline): تحجز صندوقَ سطرٍ بارتفاعها — نلتقط أطولها.
         for (const root of drawingRoots(t)) {
@@ -1183,7 +1196,7 @@ export function parseDocument(
       index: idx, runs, text, styleId, jc, bidi,
       indLeft, indRight, indFirstLine, excluded, sectionIndex: -1, numbered, anchors,
       spacing, markEmTwips, markAsciiFamily, pageBreakBefore, widowControl, tabStops, toc, inlineImageHTwips, tableCell,
-      tabAt: tabTextPositions, columnBreak, pBdr,
+      tabAt: tabTextPositions, ptabAt: ptabPositions, columnBreak, pBdr,
     });
     // ‏sectPr داخل pPr يختم مقطعًا: هندسته تسري على هذه الفقرة وما سبقها
     const pSect = pPr ? first(pPr, "w:sectPr") : null;
