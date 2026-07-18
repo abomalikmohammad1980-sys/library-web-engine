@@ -201,6 +201,9 @@ export interface FloatAnchor {
   inlineFlow?: boolean;
   /** الشكلُ من مسار VML (‏w:pict) لا من DrawingML — هندستُه من سمة style */
   vml?: boolean;
+  /** ‏a:stretch (‏+a:fillRect): الصورةُ **تُمَدّ** لتملأ الامتداد. وغيابُها يعني
+   *  أنّها **تُحتوى** بنسبتها الأصليّة — كنّا نمدّ دائمًا فنشوّه. */
+  stretch?: boolean;
   /** أشكالُ رسم SmartArt (‏dsp:sp في diagrams/drawingN.xml): لكلٍّ موضعُه وحجمُه
    *  وهندستُه ونصُّه — بالـtwips نسبيّةً إلى ركن الرسم. */
   diagram?: { x: number; y: number; w: number; h: number;
@@ -216,7 +219,11 @@ export interface FloatAnchor {
   /** مجموعةُ أشكال (‏a:grpSp/wpg:wgp): أبناءٌ لكلٍّ موضعُه وحجمُه **بعد** تحويل
    *  فضاء إحداثيّات المجموعة (‏chOff/chExt ⟵ off/ext) — بالـtwips، نسبيّةً
    *  إلى ركن المجموعة. */
-  groupChildren?: { x: number; y: number; w: number; h: number; rId: string | null }[];
+  groupChildren?: { x: number; y: number; w: number; h: number; rId: string | null;
+    /** دورانُ الابن وانعكاسُه وقصُّه — كنّا نُسقِطها فتُرسَم أبناءُ المجموعة
+     *  معتدلةً بلا قصّ (‏ImageParser.dart:54-159) */
+    rotDeg?: number; flipH?: boolean; flipV?: boolean;
+    srcRect?: { l: number; t: number; r: number; b: number } }[];
   /** ‏a:srcRect — قصُّ الصورة من أطرافها، كسورًا من ١ (‏OOXML يخزّنها بأجزاء
    *  المئة الألفيّة: ٢١٥٩٦ = ٢١٫٥٩٦٪). الرسمُ يعرض الجزءَ الباقي مُمَدَّدًا. */
   srcRect?: { l: number; t: number; r: number; b: number };
@@ -1444,7 +1451,10 @@ export function parseDocument(
             leader: (a["@w:leader"] && a["@w:leader"] !== "none") ? a["@w:leader"] : null });
           text += "\t";
         }
-        if ("w:drawing" in t || "w:pict" in t) hasDrawing = true;
+        // الرسمُ قد يسكن داخل mc:AlternateContent أو w:object فالفحصُ السطحيّ
+        // يُخطئه (‏ImageParser.dart:1664-1669).
+        if ("w:drawing" in t || "w:pict" in t || "mc:AlternateContent" in t
+            || "w:object" in t) hasDrawing = true;
         // صورةٌ سطريّة (wp:inline): تحجز صندوقَ سطرٍ بارتفاعها — نلتقط أطولها.
         for (const root of drawingRoots(t)) {
           for (const { node: inl } of collectDeep(root, "wp:inline")) {
@@ -1483,7 +1493,10 @@ export function parseDocument(
         for (const root of drawingRoots(t)) {
           const EMU = 635;
           for (const { node: anc, attrs: a } of collectDeep(root, "wp:anchor")) {
-            const ext = collectDeep(anc, "wp:extent")[0]?.attrs;
+            // يُختار أوّلُ wp:extent يحمل cx **وَ**cy معًا؛ وعند الغياب ١٠٠px
+            // (١٥٠٠tw) لا صفرًا — الصفرُ ينهار بالشكل. ‏ImageParser.dart:1220-1238
+            const ext = collectDeep(anc, "wp:extent")
+              .map((e) => e.attrs).find((at) => at?.["@cx"] != null && at?.["@cy"] != null);
             const posH = collectDeep(anc, "wp:positionH")[0];
             const posV = collectDeep(anc, "wp:positionV")[0];
             // ‏wp:align نصٌّ داخل positionH/V — بديلٌ عن posOffset لا مكمّلٌ له
@@ -1503,8 +1516,8 @@ export function parseDocument(
               "wp:wrapTopAndBottom", "wp:wrapNone"]
               .find((n) => collectDeep(anc, n).length > 0) ?? "";
             anchors.push({
-              extentW: ext ? Math.round(Number(ext["@cx"]) / EMU) : 0,
-              extentH: ext ? Math.round(Number(ext["@cy"]) / EMU) : 0,
+              extentW: ext ? Math.round(Number(ext["@cx"]) / EMU) : 1500,
+              extentH: ext ? Math.round(Number(ext["@cy"]) / EMU) : 1500,
               posHRel: posH?.attrs["@relativeFrom"] ?? "column",
               posHOffset: off(posH),
               posVRel: posV?.attrs["@relativeFrom"] ?? "paragraph",
@@ -1559,6 +1572,25 @@ export function parseDocument(
                     w: Math.round((num(kx, "a:ext", "@cx") * sx) / EMU),
                     h: Math.round((num(kx, "a:ext", "@cy") * sy) / EMU),
                     rId: collectDeep(sp.node, "a:blip")[0]?.attrs?.["@r:embed"] ?? null,
+                    ...(() => {
+                      // الدورانُ والانعكاسُ والقصُّ لكلّ ابنٍ على حدة
+                      const xa = (() => { for (const n of sp.node) {
+                        const found = collectDeep([n], "a:xfrm")[0];
+                        if (found) return found.attrs;
+                      } return {} as Record<string, string>; })();
+                      const csr = collectDeep(sp.node, "a:srcRect")[0]?.attrs;
+                      const tru = (v: string | undefined) => v === "1" || v === "true";
+                      const o: Record<string, unknown> = {};
+                      if (xa["@rot"]) o["rotDeg"] = Number(xa["@rot"]) / 60000;
+                      if (tru(xa["@flipH"])) o["flipH"] = true;
+                      if (tru(xa["@flipV"])) o["flipV"] = true;
+                      if (csr && (csr["@l"] || csr["@t"] || csr["@r"] || csr["@b"])) {
+                        o["srcRect"] = { l: Number(csr["@l"] ?? 0) / 100000,
+                          t: Number(csr["@t"] ?? 0) / 100000, r: Number(csr["@r"] ?? 0) / 100000,
+                          b: Number(csr["@b"] ?? 0) / 100000 };
+                      }
+                      return o;
+                    })(),
                   });
                 }
                 return kids.length ? { groupChildren: kids } : {};
@@ -1619,9 +1651,17 @@ export function parseDocument(
                   o["srcRect"] = { l: Number(sr["@l"] ?? 0) / 100000, t: Number(sr["@t"] ?? 0) / 100000,
                     r: Number(sr["@r"] ?? 0) / 100000, b: Number(sr["@b"] ?? 0) / 100000 };
                 }
+                // الدورانُ لا يسكن a:xfrm وحدها: أوّلُ سليلٍ يحمل @rot يحسم
+                // (‏ImageParser.dart:1080-1108)، و@flipH/@flipV تقبل "1" و"true".
+                const rotHost = xf?.["@rot"] ? xf
+                  : collectDeep(anc, "a:off").length ? undefined : undefined;
+                void rotHost;
                 if (xf?.["@rot"]) o["rotDeg"] = Number(xf["@rot"]) / 60000;
-                if (xf?.["@flipH"] === "1") o["flipH"] = true;
-                if (xf?.["@flipV"] === "1") o["flipV"] = true;
+                const truthy = (v: string | undefined) => v === "1" || v === "true";
+                if (truthy(xf?.["@flipH"])) o["flipH"] = true;
+                if (truthy(xf?.["@flipV"])) o["flipV"] = true;
+                // ‏a:stretch يمدّ الصورة؛ وغيابُه يعني الاحتواءَ بالنسبة
+                if (collectDeep(anc, "a:stretch").length) o["stretch"] = true;
                 return o;
               })(),
               ...(() => {

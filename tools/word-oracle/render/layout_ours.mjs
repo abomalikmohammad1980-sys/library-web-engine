@@ -531,13 +531,18 @@ for (let pi = 0; pi < paras.length; pi++) {
       for (const k of a.groupChildren) {
         if (!k.rId) continue;
         imgAnchors.push({ page: cur, x: ax + k.x, y: ay + k.y, w: k.w, h: k.h,
-          rId: k.rId, ...(a.part ? { part: a.part } : {}) });
+          rId: k.rId, ...(a.part ? { part: a.part } : {}),
+          // دورانُ الابن وانعكاسُه وقصُّه — لا يرثها من المجموعة بل تخصّه
+          ...(k.srcRect ? { srcRect: k.srcRect } : {}), ...(k.rotDeg ? { rot: k.rotDeg } : {}),
+          ...(k.flipH ? { flipH: true } : {}), ...(k.flipV ? { flipV: true } : {}),
+          ...(a.stretch ? { stretch: true } : {}) });
       }
     }
     if (a.rId) imgAnchors.push({ page: cur, x: ax, y: ay, w: a.extentW, h: a.extentH, rId: a.rId,
       ...(a.part ? { part: a.part } : {}),
       ...(a.srcRect ? { srcRect: a.srcRect } : {}), ...(a.rotDeg ? { rot: a.rotDeg } : {}),
-      ...(a.flipH ? { flipH: true } : {}), ...(a.flipV ? { flipV: true } : {}) });
+      ...(a.flipH ? { flipH: true } : {}), ...(a.flipV ? { flipV: true } : {}),
+      ...(a.stretch ? { stretch: true } : {}) });
     // مربّعُ نصٍّ في المتن (لوحاتُ الغلاف والترويسات): نصُّه كان يضيع كلّيًّا لأنّ فقرته
     // تُقصى «drawing» والمرساةُ بلا rId. حصاد «الشاملة الذهبية»: tadris ٥ مربّعات،
     // muqtarah ٢ (٢٨٥ محرفًا).

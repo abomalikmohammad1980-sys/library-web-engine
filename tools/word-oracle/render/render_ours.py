@@ -9,6 +9,58 @@ data = json.load(open(sys.argv[1], encoding="utf-8"))
 pi = int(sys.argv[2]); out = sys.argv[3]
 pg = data["pages"][pi]; W, H = pg["w"], pg["h"]
 
+# امتداداتُ الصور التي يعرفها Word (‏ImageParser.dart:1516-1530). كنّا نعرف
+# خمسةً فقط، فتسقط webp وtiff وwmf وemf صامتةً — وفي مدوّنتنا ٤ ملفّاتِ emf.
+_IMG_EXT = {"png": "png", "jpeg": "jpeg", "jpg": "jpeg", "gif": "gif", "bmp": "bmp",
+            "webp": "webp", "tif": "tiff", "tiff": "tiff", "wmf": None, "emf": None}
+
+
+def _extract_from_emf(data):
+    """يستخرج PNG/JPEG مضمَّنًا داخل EMF. ‏Word يغلّف كثيرًا من الصور بـEMF،
+    و‏SVG لا يرسم EMF — لكنّ الحمولة الداخليّة صورةٌ عاديّةٌ نرسمها.
+    (‏ParagraphFloatingImages.dart:313-323)"""
+    for sig, mime in ((b"\x89PNG\r\n\x1a\n", "png"), (b"\xff\xd8\xff", "jpeg")):
+        i = data.find(sig)
+        if i >= 0:
+            return "data:image/%s;base64," % mime + base64.b64encode(data[i:]).decode()
+    return None
+
+
+def _resolve_target(z, tgt):
+    """سلسلةُ حلّ بايتات الصورة (‏ImageParser.dart:1582-1661): تسويةُ المسار،
+    ثمّ **الاسمُ المجرَّد إلى media/**، ثمّ حسمُ النوع **بالبايتات السحريّة**
+    لا بالامتداد (ملفّاتٌ كثيرةٌ في مستندات Word مسمّاةٌ خطأً)."""
+    tgt = tgt.lstrip("/").replace("../", "")
+    names = set(z.namelist())
+    cands = ["word/" + tgt, tgt]
+    if "/" not in tgt:
+        cands.append("word/media/" + tgt)
+    name = next((c for c in cands if c in names), None)
+    if not name:
+        return None
+    ext = name.rsplit(".", 1)[-1].lower()
+    if ext not in _IMG_EXT:
+        return None
+    data = z.read(name)
+    if data[:8] == b"\x89PNG\r\n\x1a\n":
+        mime = "png"
+    elif data[:3] == b"\xff\xd8\xff":
+        mime = "jpeg"
+    elif data[:4] == b"GIF8":
+        mime = "gif"
+    elif data[:4] == b"RIFF" and data[8:12] == b"WEBP":
+        mime = "webp"
+    elif data[:2] == b"BM":
+        mime = "bmp"
+    elif data[:4] == b"\x01\x00\x00\x00":        # EMF: ارسمِ المضمَّنَ داخله
+        return _extract_from_emf(data)
+    else:
+        mime = _IMG_EXT.get(ext)
+        if not mime:
+            return None
+    return "data:image/%s;base64," % mime + base64.b64encode(data).decode()
+
+
 # خريطة rId → بايت صورة من word/media (لرسم الصور العائمة، حصاد «الشاملة الذهبية»)
 _img = {}
 docx = data.get("docx")
@@ -24,14 +76,9 @@ if docx:
             part = m.group(1)
             rels = z.read(rels_name).decode("utf-8")
             for rid, tgt in re.findall(r'Id="([^"]+)"[^>]*Target="([^"]+)"', rels):
-                name = "word/" + tgt.lstrip("/").replace("../", "")
-                if name not in z.namelist():
-                    continue
-                ext = name.rsplit(".", 1)[-1].lower()
-                mime = {"png": "png", "jpeg": "jpeg", "jpg": "jpeg", "gif": "gif", "bmp": "bmp"}.get(ext)
-                if mime:
-                    _img.setdefault(part, {})[rid] = (
-                        f"data:image/{mime};base64," + base64.b64encode(z.read(name)).decode())
+                blob = _resolve_target(z, tgt)
+                if blob:
+                    _img.setdefault(part, {})[rid] = blob
     except Exception:
         pass
 # مستطيلات خلايا الجداول (تظليل + حدود من نمط الجدول) — تُرسَم قبل النصّ
@@ -99,7 +146,10 @@ for a in pg.get("anchors", []):
     if not href:
         continue
     x, y, w, h = a["x"], a["y"], a["w"], a["h"]
-    el = f'<image x="{x:.1f}" y="{y:.1f}" width="{w:.1f}" height="{h:.1f}" href="{href}" preserveAspectRatio="none"/>'
+    # ‏a:stretch ⟵ تُمَدّ لتملأ الامتداد؛ وغيابُه ⟵ **تُحتوى** بنسبتها الأصليّة.
+    # كنّا نمدّ دائمًا فنشوّه كلَّ صورةٍ نسبتُها تخالف wp:extent.
+    par = "none" if a.get("stretch") else "xMidYMid meet"
+    el = f'<image x="{x:.1f}" y="{y:.1f}" width="{w:.1f}" height="{h:.1f}" href="{href}" preserveAspectRatio="{par}"/>'
     # القصُّ (a:srcRect): الجزءُ الباقي من الصورة يُمَدَّد ليملأ الامتداد. نرسم الصورةَ
     # كاملةً مكبَّرةً ونقصّها بـclipPath على المستطيل المطلوب — يكافئ ما يفعله Word.
     sr = a.get("srcRect")
@@ -111,7 +161,7 @@ for a in pg.get("anchors", []):
         cid = f"clip{len(imgs)}"
         el = (f'<clipPath id="{cid}"><rect x="{x:.1f}" y="{y:.1f}" width="{w:.1f}" height="{h:.1f}"/></clipPath>'
               f'<image x="{fx:.1f}" y="{fy:.1f}" width="{fw:.1f}" height="{fh:.1f}" href="{href}" '
-              f'preserveAspectRatio="none" clip-path="url(#{cid})"/>')
+              f'preserveAspectRatio="{par}" clip-path="url(#{cid})"/>')
     # الدورانُ والانعكاس حول مركز الصورة (a:xfrm@rot/@flipH/@flipV)
     tf = []
     if a.get("rot"):
