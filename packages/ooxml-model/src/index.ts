@@ -59,6 +59,9 @@ export interface BodyParagraph {
    *  الذهبية». يُكتشَف بنمطٍ toc أو بتوقّفٍ يمينيٍّ ذي leader مع w:tab فعليّ في رنّ.
    *  حين يوجد، الفقرة **لا تُقصى** بل تُرسَم صفًّا ثلاثيًّا. */
   toc: TocRow | null;
+  /** ارتفاع أطولِ صورةٍ سطريّة (wp:inline) في الفقرة بالـtwips — تحجز صندوقَ سطرٍ
+   *  بارتفاعها (تؤثّر في التدفّق العموديّ). 0 إن لا صورة سطريّة. حصاد «الشاملة الذهبية». */
+  inlineImageHTwips: number;
 }
 
 /** توقّف جدولةٍ مخصّص (§17.3.1.37) */
@@ -517,6 +520,7 @@ export function parseDocument(
     let sawText = false, leadingPageBreak = false, trailingPageBreak = false, anyPageBreak = false;
     const tabTextPositions: number[] = []; // مواضع w:tab في نصّ الفقرة (لتقسيم TOC)
     let paraTextLen = 0; // طول نصّ الفقرة المتراكم عبر الرنّات (لموضع w:tab الصحيح)
+    let inlineImageHTwips = 0; // أطول صورةٍ سطريّة (تحجز صندوق سطر)
     // نُسطِّح الرنّات: المستوى الأعلى + رنّات داخل w:hyperlink (فهارس TOC تلفّ رقم
     // الصفحة بـPAGEREF في hyperlink) + رنّات fldSimple. هكذا يكتمل نصّ صفّ الفهرس.
     const runNodes: XNode[] = [];
@@ -561,6 +565,13 @@ export function parseDocument(
         // الحلقة: صفوف الفهرس تُرصَّف، وبقيّة w:tab تُقصى (excluded=tab) مؤقّتًا.
         if ("w:tab" in t) tabTextPositions.push(paraTextLen + text.length);
         if ("w:drawing" in t || "w:pict" in t) excluded = excluded || "drawing";
+        // صورةٌ سطريّة (wp:inline): تحجز صندوقَ سطرٍ بارتفاعها — نلتقط أطولها.
+        if ("w:drawing" in t) {
+          for (const { node: inl } of collectDeep(t["w:drawing"] as XNode[], "wp:inline")) {
+            const cy = collectDeep(inl, "wp:extent")[0]?.attrs?.["@cy"];
+            if (cy != null) inlineImageHTwips = Math.max(inlineImageHTwips, Math.round(Number(cy) / 635));
+          }
+        }
         // العائمات: هندسة wp:anchor (الامتداد والموضع والالتفاف) بالـ twips
         if ("w:drawing" in t) {
           const EMU = 635;
@@ -627,6 +638,9 @@ export function parseDocument(
     if (toc) { if (excluded === "field") excluded = false; }
     // بقيّة w:tab (لا فهرس): إقصاءٌ مؤقّت حتى نُعمّم التوقّفات المطلقة
     else if (tabTextPositions.length) excluded = excluded || "tab";
+    // صورةٌ سطريّة: لا تُقصى (تحجز صندوق سطرٍ بارتفاعها)؛ العائمة (anchor) تبقى مُقصاةً
+    // من التدفّق (طبقةٌ منفصلة). حصاد «الشاملة الذهبية».
+    if (inlineImageHTwips > 0 && excluded === "drawing") excluded = false;
     // ‏w:pageBreakBefore في pPr — كسرٌ صريحٌ قبل الفقرة (val=0/false/off يُبطله)
     const pbbVal = pPr ? findAttr(pPr, "w:pageBreakBefore")?.["@w:val"] : undefined;
     const pbbEl = pPr ? first(pPr, "w:pageBreakBefore") !== null : false;
@@ -659,7 +673,7 @@ export function parseDocument(
     paragraphs.push({
       index: idx, runs, text, styleId, jc, bidi,
       indLeft, indRight, indFirstLine, excluded, sectionIndex: -1, numbered, anchors,
-      spacing, markEmTwips, markAsciiFamily, pageBreakBefore, widowControl, tabStops, toc,
+      spacing, markEmTwips, markAsciiFamily, pageBreakBefore, widowControl, tabStops, toc, inlineImageHTwips,
     });
     // ‏sectPr داخل pPr يختم مقطعًا: هندسته تسري على هذه الفقرة وما سبقها
     const pSect = pPr ? first(pPr, "w:sectPr") : null;

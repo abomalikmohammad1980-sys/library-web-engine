@@ -227,14 +227,14 @@ const DPI = Number(process.env.DPI ?? "600");
 const emDevice = (emTw) => Math.round((emTw * DPI) / 1440) * (1440 / DPI);
 const pitchV = (met, emTw, sp) => (met.a + met.d + met.g) * emDevice(emTw) * lineMultiplier(sp);
 
-const paras = model.paragraphs.filter((p) => !p.excluded && p.text.trim() && p.runs[0]?.emTwips);
+const paras = model.paragraphs.filter((p) => !p.excluded && (p.text.trim() || p.inlineImageHTwips > 0) && (p.runs[0]?.emTwips || p.inlineImageHTwips > 0));
 const bodySecIdx = (paras.find((p) => p.runs[0]?.family === MAIN_FAMILY) ?? paras[0])?.sectionIndex ?? 0;
 const sec = model.sections?.[bodySecIdx] ?? model.section ?? model.sections[0];
 const { pageWTwips: pageW, pageHTwips: pageH, marRightTwips: marR, marTopTwips: marT, marBottomTwips: marB } = sec;
 
 const pages = [[]]; let cur = 0;
-const fo0 = getFont(paras[0].runs[0].family);
-let baseline = marT + pageStartAscent(fo0.met, paras[0].runs[0].emTwips, paras[0].spacing, PS_CAL);
+const fo0 = getFont(paras[0].runs[0]?.family || MAIN_FAMILY);
+let baseline = marT + pageStartAscent(fo0.met, paras[0].runs[0]?.emTwips || 200, paras[0].spacing, PS_CAL);
 let prev = null, prevDesc = null, pendingGap = 0, pageAnchor = baseline;
 // آليّة B (max عبر المقاطع): صندوق السطر — صعودٌ وهبوطٌ يأخذان أقصى مقطعٍ فيه
 // (بولد أطول). الخطوة = هبوط السابق + صعود الحاليّ (BOX=0 للعودة للـpitch الثابت).
@@ -255,15 +255,17 @@ const lineBoxAscDesc = (met, boldMet, em, hasBold, sizeEm) => {
 };
 
 for (let pi = 0; pi < paras.length; pi++) {
-  const p = paras[pi]; const em = p.runs[0].emTwips;
-  const fo = getFont(p.runs[0].family); const MET = fo.met;
+  const p = paras[pi]; const em = p.runs[0]?.emTwips || 200; // احتياطٌ لفقرة صورةٍ خالصة
+  const fo = getFont(p.runs[0]?.family || MAIN_FAMILY); const MET = fo.met;
   const MAIN_WD = MET.wd ?? (MET.d + MET.g); // هبوط winDescent للخطّ الرئيس (قاعدة المختلطة)
-  const cal = p.runs[0].family === MAIN_FAMILY ? PS_CAL : null;
+  const cal = (p.runs[0]?.family || MAIN_FAMILY) === MAIN_FAMILY ? PS_CAL : null;
   const wordWidth = (w) => shapeWord(w, em, fo).width;
   const colBase = sec.columnTwips - p.indLeft - p.indRight;
   const rightEdge = pageW - marR;
   const spaceW = wordWidth(" ", em) || wordWidth(" ", em);
   const words = p.text.trim().split(/\s+/).filter(Boolean);
+  // فقرةُ صورةٍ سطريّةٍ خالصة: كلمةٌ نائبة (nbsp) لتنتج سطرًا واحدًا يحجز ارتفاع الصورة.
+  if (!words.length && p.inlineImageHTwips > 0) words.push(" ");
   if (!words.length) continue;
   // كسرُ صفحةٍ صريح (w:br type=page / w:pageBreakBefore / حدّ مقطع nextPage):
   // الفقرة تبدأ صفحةً جديدة إن كانت الحاليّة غير فارغة — يطابق ترقيم صفحات Word.
@@ -273,7 +275,7 @@ for (let pi = 0; pi < paras.length; pi++) {
     baseline = marT + pageStartAscent(MET, em, p.spacing, cal);
     prev = null; prevDesc = null; pendingGap = 0; pageAnchor = baseline;
   }
-  const boldMet = metrics[`${p.runs[0].family}|bold`];
+  const boldMet = metrics[`${p.runs[0]?.family || MAIN_FAMILY}|bold`];
   const paraRuns = runsByPara.byPara.get(runsByPara.key(p.text));
   const wMeta = paraRuns ? paraWordMeta(paraRuns) : null; // مقاييس كلّ كلمة (بولد/حجم/عائلة)
   const cw = process.env.CTXW === "0" ? null : contextualWidths(words, em, fo);
@@ -333,6 +335,8 @@ for (let pi = 0; pi < paras.length; pi++) {
     // آليّة B (max عبر خطوط السطر الفعليّة): صعود/هبوط = أقصى مقطعٍ فيه بخطّه الحقيقيّ
     // (عائلة/بولد/حجم لكلّ كلمة). خطُّ العنوان الأصغر يخفض، البولد يرفع — كلاهما generic.
     let box = { asc: MET.a * em, desc: (MET.d + MET.g) * em, extraWd: 0 };
+    // صورةٌ سطريّة على السطر الأوّل: ترفع صعوده لارتفاع الصورة (تحجز مساحتها). generic.
+    if (li === 0 && p.inlineImageHTwips > 0) box.asc = Math.max(box.asc, p.inlineImageHTwips);
     if (wMeta && process.env.BOLDBOX !== "0") {
       for (let gi = ln.start; gi < ln.end; gi++) {
         const wm = wMeta[gi]; if (!wm) continue;
