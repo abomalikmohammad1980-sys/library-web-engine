@@ -89,6 +89,8 @@ export interface BodyParagraph {
   snapToGrid?: boolean;
   /** ‏w:br type="column" في الفقرة — تبدأ التاليةُ عمودًا جديدًا */
   columnBreak?: boolean;
+  /** تظليلُ الفقرة (‏w:pPr/w:shd@w:fill أو themeFill محلولًا) — RRGGBB أو null */
+  shd?: string | null;
   /** ‏w:pBdr — حدودُ الفقرة (تزيد ارتفاعها بسُمكها + w:space) */
   pBdr?: { top: BorderSide | null; bottom: BorderSide | null;
     left: BorderSide | null; right: BorderSide | null } | null;
@@ -133,6 +135,12 @@ export interface TableCellCtx {
   /** ‏w:cantSplit على الصفّ: يمنع انشقاقه عبر الصفحات. **الافتراضيّ في OOXML/Word أنّ
    *  الصفوف تنشقّ**، فلا يُنقَل الصفّ إلّا إن كان هذا العلَم مضبوطًا. */
   cantSplit: boolean;
+  /** ‏w:bidiVisual — أوّلُ خليّةٍ تُرسَم يمينًا (الافتراضيّ عند غياب tblPr كلّيًّا) */
+  bidiVisual: boolean;
+  /** ‏w:tblInd — إزاحةُ الجدول بالـtwips (٠ إن كان النوعُ pct/auto/nil) */
+  tblIndTwips: number;
+  /** ‏w:tblPr/w:jc — محاذاةُ الجدول (start/end نسبيّةٌ للاتّجاه، left/right مطلقة) */
+  tblJc: string | null;
   /** ‏w:vMerge — "restart" تبدأ دمجًا عموديًّا، و"continue" استمرارُه (لا تُرسَم حدودُه
    *  الداخليّة ولا يُكرَّر نصُّه)، وnull لا دمج. */
   vMerge: "restart" | "continue" | null;
@@ -674,7 +682,8 @@ function rPrProps(rpr: XNode[] | null): { sz: number | null; family: string | nu
     // ‏szCs للنص المركّب (العربية) مقدَّم عند وجوده — سلوك المحرك المرجعي (RPr.dart)
     if ("w:szCs" in n && a["@w:val"]) sz = Number(a["@w:val"]);
     else if ("w:sz" in n && sz == null && a["@w:val"]) sz = Number(a["@w:val"]);
-    if ("w:rFonts" in n) family = a["@w:cs"] ?? a["@w:ascii"] ?? a["@w:hAnsi"] ?? family;
+    if ("w:rFonts" in n)
+      family = a["@w:cs"] ?? a["@w:ascii"] ?? a["@w:hAnsi"] ?? a["@w:eastAsia"] ?? family;
   }
   return { sz, family };
 }
@@ -870,6 +879,17 @@ export function parseDocument(
         const tblWVal = Number(tblWAttr?.["@w:w"] ?? 0);
         const tblWType = tblWAttr?.["@w:type"] ?? "auto";
         const tblPrNode = first(tbl, "w:tblPr");
+        // ‏w:bidiVisual: ترتيبُ الخلايا بصريًّا (أوّلُ خليّةٍ يمينًا). غيابُ tblPr
+        // بالكلّيّة ⟵ true (انحيازٌ للمستندات العربيّة)، ووجودُه بلا الوسم ⟵ false.
+        const bidiVisual = !tblPrNode ? true
+          : (first(tblPrNode, "w:bidiVisual") !== null
+            && !["0", "false"].includes(findAttr(tblPrNode, "w:bidiVisual")?.["@w:val"] ?? ""));
+        // ‏w:tblInd: إزاحةُ الجدول — تُهمَل إن كان النوعُ pct/auto/nil أو القيمةُ ≤ ٠
+        const indAttr = tblPrNode ? findAttr(tblPrNode, "w:tblInd") : null;
+        const indType = indAttr?.["@w:type"] ?? "dxa";
+        const rawInd = Number(indAttr?.["@w:w"] ?? 0);
+        const tblIndTwips = (["pct", "auto", "nil"].includes(indType) || rawInd <= 0) ? 0 : rawInd;
+        const tblJc = tblPrNode ? (findAttr(tblPrNode, "w:jc")?.["@w:val"] ?? null) : null;
         const tblCellMar = tblPrNode ? first(tblPrNode, "w:tblCellMar") : null;
         const grid = collectDeep(tbl, "w:gridCol").map((g) => Number(g.attrs["@w:w"] ?? 0));
         const colX: number[] = []; let acc = 0;
@@ -914,6 +934,7 @@ export function parseDocument(
             const cc: TableCellCtx = { tableId, row, col, colXTwips: colX[col] ?? 0, colWTwips,
               firstInCell: false, firstInRow: ci === 0, lastInRow: ci === cells.length - 1,
               shdFill, tblStyleId, totalGridTwips: acc, tblWVal, tblWType, cantSplit,
+              bidiVisual, tblIndTwips, tblJc,
               vMerge, vAlign, textDirection, rowHeight, rowHeightRule,
               marTop: cellMar("top", 0), marBottom: cellMar("bottom", 0),
               marLeft: cellMar("left", 108), marRight: cellMar("right", 108) };
@@ -1247,6 +1268,17 @@ export function parseDocument(
     };
     const pBdr = pBdrNode ? { top: bdrSide("top"), bottom: bdrSide("bottom"),
       left: bdrSide("left"), right: bdrSide("right") } : null;
+    // تظليلُ الفقرة: w:fill مباشرًا أو themeFill محلولًا بالسمة (بأولويّة السمة)
+    const pShdAttrs = pPr ? findAttr(pPr, "w:shd") : null;
+    let pShd: string | null = null;
+    if (pShdAttrs) {
+      const tf = pShdAttrs["@w:themeFill"];
+      const base = tf ? theme.get(tf) : undefined;
+      pShd = base
+        ? applyTintShade(base, pShdAttrs["@w:themeFillTint"], pShdAttrs["@w:themeFillShade"])
+        : ((pShdAttrs["@w:fill"] && !["auto", "FFFFFF", "ffffff"].includes(pShdAttrs["@w:fill"]))
+          ? pShdAttrs["@w:fill"].toUpperCase() : null);
+    }
     const tabStops = parseTabStops(pPr);
     const rightLeaderTab = tabStops.find(
       (t) => (t.val === "right" || t.val === "end") && t.leader && t.leader !== "none");
@@ -1309,7 +1341,7 @@ export function parseDocument(
       index: idx, runs, text, styleId, jc, bidi,
       indLeft, indRight, indFirstLine, excluded, sectionIndex: -1, numbered, anchors,
       spacing, markEmTwips, markAsciiFamily, pageBreakBefore, widowControl, tabStops, toc, inlineImageHTwips, tableCell,
-      tabAt: tabTextPositions, ptabAt: ptabPositions, columnBreak, pBdr,
+      tabAt: tabTextPositions, ptabAt: ptabPositions, columnBreak, pBdr, shd: pShd,
       snapToGrid: pPr && first(pPr, "w:snapToGrid") !== null
         ? !["0", "false", "off"].includes(findAttr(pPr, "w:snapToGrid")?.["@w:val"] ?? "") : true,
     });

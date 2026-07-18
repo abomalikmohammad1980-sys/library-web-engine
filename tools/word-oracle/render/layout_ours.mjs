@@ -415,7 +415,8 @@ for (let pi = 0; pi < paras.length; pi++) {
     const finalW = target != null ? Math.min(target, usable) : Math.min(tc.totalGridTwips, usable);
     const sf = tc.totalGridTwips > 0 ? finalW / tc.totalGridTwips : 1;
     cellW = tc.colWTwips * sf;
-    cellOuterRight = (pageW - marR) - tc.colXTwips * sf; // حافّة الخليّة (للمستطيل)
+    // ‏w:tblInd: إزاحةُ الجدول عن حافّة البداية (اليمين في RTL) قبل إزاحة العمود
+    cellOuterRight = (pageW - marR) - (tc.tblIndTwips || 0) - tc.colXTwips * sf;
     rightEdge = cellOuterRight - CM_R;                   // بداية النصّ بعد الهامش
     colBase = Math.max(200, cellW - CM_L - CM_R - p.indLeft - p.indRight);
   }
@@ -855,6 +856,11 @@ for (let pi = 0; pi < paras.length; pi++) {
     const dx = colArr[i] ? -colArr[i] * COLSTEP : 0;
     const gl = dx ? descs[i].glyphs.map((g) => ({ ...g, x: Math.round((g.x + dx) * 100) / 100 })) : descs[i].glyphs;
     const lineObj = { y: Math.round(yOut * 100) / 100, em, font: fo.file, glyphs: gl, text: descs[i].text };
+    // تظليلُ الفقرة: شريطٌ بعرض عمودها خلف كلّ سطرٍ منها
+    if (p.shd) {
+      lineObj.shd = p.shd; lineObj.shdX = rightEdge - colBase + dx;
+      lineObj.shdW = colBase; lineObj.shdAsc = descs[i].asc; lineObj.shdDesc = descs[i].desc;
+    }
     if (descs[i].decos?.length) lineObj.decos = dx
       ? descs[i].decos.map((d) => ({ ...d, x: Math.round((d.x + dx) * 100) / 100 }))
       : descs[i].decos;

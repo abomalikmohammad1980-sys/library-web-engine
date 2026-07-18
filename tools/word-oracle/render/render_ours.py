@@ -141,6 +141,13 @@ HL = {"yellow": "FFFF00", "green": "00FF00", "cyan": "00FFFF", "magenta": "FF00F
 # زخارفُ النصّ: تظليلٌ خلف الكلمة، وتسطيرٌ/شطبٌ خطوطًا. تُرسَم قبل المحارف
 # (التظليل) وبعدها (الخطوط) فلا تحجب الحرف.
 hl_rects, deco_lines = [], []
+# تظليلُ الفقرة (w:pPr/w:shd) — شريطٌ خلف السطر بعرض العمود
+for ln in pg["lines"]:
+    if ln.get("shd"):
+        y = ln["y"]
+        hl_rects.append(f'<rect x="{ln["shdX"]:.1f}" y="{y - ln["shdAsc"]:.1f}" '
+                        f'width="{ln["shdW"]:.1f}" height="{ln["shdAsc"] + ln["shdDesc"]:.1f}" '
+                        f'fill="#{ln["shd"]}"/>')
 for ln in pg["lines"]:
     y = ln["y"]
     for d in ln.get("decos", []):
