@@ -73,5 +73,9 @@
   "gap-cellsz": {
     "family": "Traditional Arabic",
     "horizFont": "corpus/book-fonts/trado.ttf"
+  },
+  "gap-boxline": {
+    "family": "Traditional Arabic",
+    "horizFont": "corpus/book-fonts/trado.ttf"
   }
 }
