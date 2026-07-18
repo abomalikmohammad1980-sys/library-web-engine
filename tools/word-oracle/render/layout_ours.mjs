@@ -237,6 +237,7 @@ const pages = [[]]; let cur = 0;
 const fo0 = getFont(paras[0].runs[0]?.family || MAIN_FAMILY);
 let baseline = marT + pageStartAscent(fo0.met, paras[0].runs[0]?.emTwips || 200, paras[0].spacing, PS_CAL);
 let prev = null, prevDesc = null, pendingGap = 0, pageAnchor = baseline;
+let curTable = null; // {id,row,startBaseline,maxBottom} — التخطيط الشبكيّ للجداول
 // آليّة B (max عبر المقاطع): صندوق السطر — صعودٌ وهبوطٌ يأخذان أقصى مقطعٍ فيه
 // (بولد أطول). الخطوة = هبوط السابق + صعود الحاليّ (BOX=0 للعودة للـpitch الثابت).
 const BOX = process.env.BOX !== "0";
@@ -261,8 +262,12 @@ for (let pi = 0; pi < paras.length; pi++) {
   const MAIN_WD = MET.wd ?? (MET.d + MET.g); // هبوط winDescent للخطّ الرئيس (قاعدة المختلطة)
   const cal = (p.runs[0]?.family || MAIN_FAMILY) === MAIN_FAMILY ? PS_CAL : null;
   const wordWidth = (w) => shapeWord(w, em, fo).width;
-  const colBase = sec.columnTwips - p.indLeft - p.indRight;
-  const rightEdge = pageW - marR;
+  let colBase = sec.columnTwips - p.indLeft - p.indRight;
+  let rightEdge = pageW - marR;
+  if (p.tableCell) { // خليّةُ جدول: عمودٌ ضيّق، حافّته اليمنى (RTL) بإزاحة colX عن يمين الصفحة
+    rightEdge = (pageW - marR) - p.tableCell.colXTwips;
+    colBase = Math.max(200, p.tableCell.colWTwips - p.indLeft - p.indRight);
+  }
   const spaceW = wordWidth(" ", em) || wordWidth(" ", em);
   const words = p.text.trim().split(/\s+/).filter(Boolean);
   // فقرةُ صورةٍ سطريّةٍ خالصة: كلمةٌ نائبة (nbsp) لتنتج سطرًا واحدًا يحجز ارتفاع الصورة.
@@ -284,6 +289,16 @@ for (let pi = 0; pi < paras.length; pi++) {
     baseline = marT + pageStartAscent(MET, em, p.spacing, cal);
     prev = null; prevDesc = null; pendingGap = 0; pageAnchor = baseline;
   }
+  // تخطيطٌ شبكيّ للجداول (حصاد «الشاملة الذهبية»): صفٌّ = خلايا جنبًا لجنب من نفس
+  // startBaseline؛ الصفّ يتقدّم بأطول خليّة. خارج الجدول: نُنهي الصفّ الأخير.
+  if (p.tableCell) {
+    const tc = p.tableCell;
+    if (!curTable || curTable.id !== tc.tableId || curTable.row !== tc.row) {
+      if (curTable) baseline = curTable.maxBottom; // أنهِ الصفّ السابق
+      curTable = { id: tc.tableId, row: tc.row, startBaseline: baseline, maxBottom: baseline };
+      prevDesc = null; pendingGap = 0;
+    } else if (tc.firstInCell) { baseline = curTable.startBaseline; prevDesc = null; pendingGap = 0; }
+  } else if (curTable) { baseline = curTable.maxBottom; curTable = null; prevDesc = null; }
   const boldMet = metrics[`${p.runs[0]?.family || MAIN_FAMILY}|bold`];
   const paraRuns = runsByPara.byPara.get(runsByPara.key(p.text));
   const wMeta = paraRuns ? paraWordMeta(paraRuns) : null; // مقاييس كلّ كلمة (بولد/حجم/عائلة)
@@ -455,6 +470,7 @@ for (let pi = 0; pi < paras.length; pi++) {
   }
   // حالة ما بعد الفقرة (للفقرة التالية)
   baseline = b; prevDesc = pd; pendingGap = 0; cur = pgArr[n - 1];
+  if (curTable && p.tableCell) curTable.maxBottom = Math.max(curTable.maxBottom, baseline + (prevDesc || 0));
   pageAnchor = cur === curInit ? pageAnchorInit : pageStartB;
   prev = { spacing: p.spacing, after: p.spacing?.after, styleId: p.styleId, contextual: hasContextual(p) };
 }
