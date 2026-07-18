@@ -147,6 +147,10 @@ export interface DocumentModelV0 {
   paragraphs: BodyParagraph[];
   /** من settings.xml؛ ‏11 عند الغياب (ما قبل 2010) — مفتاح القاعدة 16 */
   compatibilityMode: number;
+  /** الحواشي: معرّفُ الحاشية → فقراتُها (من footnotes.xml). فارغةٌ إن لا حواشي. */
+  footnotes: Map<string, BodyParagraph[]>;
+  /** التعليقات الختاميّة: معرّف → فقرات (من endnotes.xml) */
+  endnotes: Map<string, BodyParagraph[]>;
 }
 
 // ---------- أدوات XML
@@ -805,13 +809,60 @@ export function parseDocument(
   for (let k = pendingFrom; k < paragraphs.length; k++)
     paragraphs[k]!.sectionIndex = sections.length - 1;
   const section = sections[sections.length - 1]!;
-  return { section, sections, paragraphs, compatibilityMode: 11, defaultTabStop: 720 };
+  return { section, sections, paragraphs, compatibilityMode: 11, defaultTabStop: 720,
+    footnotes: new Map(), endnotes: new Map() };
+}
+
+/** يحلّل word/footnotes.xml (أو endnotes) إلى: معرّف الحاشية → فقراتُها.
+ *  يُعيد استعمال parseDocument كاملًا (الخطوط/التباعد/الأنماط) بلفّ فقرات كلّ حاشيةٍ في
+ *  body مؤقّت — فتُعامَل الحاشيةُ كنصٍّ كامل الحقوق لا كنصٍّ خام. حصاد «الشاملة الذهبية».
+ *  الفواصل (separator/continuationSeparator) تُتجاهَل: لا تُربَط بمرجعٍ في المتن. */
+export function parseNotes(
+  notesXml: string | null, documentXml: string, styles: StyleTable,
+  numbering: NumberingTable = new Map(), tag = "w:footnote",
+): Map<string, BodyParagraph[]> {
+  const out = new Map<string, BodyParagraph[]>();
+  if (!notesXml) return out;
+  // نلتقط تصريحات النطاقات من جذر المستند ليُحلَّل XML الحاشية بنفس البادئات
+  const nsMatch = documentXml.match(/<w:document([^>]*)>/);
+  const ns = nsMatch ? nsMatch[1] : ' xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"';
+  // مسحٌ نصّيٌّ بحدود وسمٍ حقيقيّة: «<w:footnote » أو «<w:footnote>» فقط — لا الجذر
+  // «<w:footnotes>» ولا «<w:footnoteRef/>» الواقع **داخل** الحاشية (وهو ما يكسر أيّ split).
+  const open = "<" + tag, close = "</" + tag + ">";
+  let pos = 0;
+  for (;;) {
+    const i = notesXml.indexOf(open, pos);
+    if (i < 0) break;
+    const after = notesXml[i + open.length];
+    if (after !== " " && after !== ">") { pos = i + open.length; continue; }
+    const e = notesXml.indexOf(close, i);
+    if (e < 0) break;
+    const m = notesXml.slice(i, e + close.length);
+    pos = e + close.length;
+    const idM = m.match(/w:id="(-?\d+)"/);
+    if (!idM) continue;
+    if (/w:type="(separator|continuationSeparator)"/.test(m)) continue;
+    // نزعُ وسمِ الحاشية بلا regex (أسلمُ من الهروب داخل RegExp)
+    const inner = m.slice(m.indexOf(">") + 1, m.lastIndexOf("</"));
+    const id = idM[1];
+    if (!id) continue;
+    try {
+      const wrapped = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document${ns}><w:body>${inner}</w:body></w:document>`;
+      out.set(id, parseDocument(wrapped, styles, numbering).paragraphs);
+    } catch { /* حاشيةٌ لا تُحلَّل: تُتجاهَل بدل إسقاط المستند */ }
+  }
+  return out;
 }
 
 export function extractFromDocx(bytes: Uint8Array): DocumentModelV0 {
-  const { documentXml, stylesXml, settingsXml, numberingXml } = openDocx(bytes);
-  const model = parseDocument(documentXml, parseStyles(stylesXml), parseNumbering(numberingXml));
+  const { documentXml, stylesXml, settingsXml, numberingXml, footnotesXml, endnotesXml } = openDocx(bytes);
+  const styles = parseStyles(stylesXml);
+  const numbering = parseNumbering(numberingXml);
+  const model = parseDocument(documentXml, styles, numbering);
   model.compatibilityMode = compatibilityMode(settingsXml);
   model.defaultTabStop = defaultTabStop(settingsXml);
+  // نصوصُ الحواشي/التعليقات — تُرصَّف أسفل الصفحة التي فيها مرجعُها
+  model.footnotes = parseNotes(footnotesXml, documentXml, styles, numbering, "w:footnote");
+  model.endnotes = parseNotes(endnotesXml, documentXml, styles, numbering, "w:endnote");
   return model;
 }
