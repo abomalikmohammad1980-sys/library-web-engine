@@ -536,6 +536,7 @@ export function parseDocument(
     const tabTextPositions: number[] = []; // مواضع w:tab في نصّ الفقرة (لتقسيم TOC)
     let paraTextLen = 0; // طول نصّ الفقرة المتراكم عبر الرنّات (لموضع w:tab الصحيح)
     let inlineImageHTwips = 0; // أطول صورةٍ سطريّة (تحجز صندوق سطر)
+    let hasDrawing = false; // صورة/شكل — يُقصى فقط إن كانت الفقرة صورةً خالصةً بلا نصّ
     // نُسطِّح الرنّات: المستوى الأعلى + رنّات داخل w:hyperlink (فهارس TOC تلفّ رقم
     // الصفحة بـPAGEREF في hyperlink) + رنّات fldSimple. هكذا يكتمل نصّ صفّ الفهرس.
     const runNodes: XNode[] = [];
@@ -579,7 +580,7 @@ export function parseDocument(
         // ‏w:tab: نسجّل موضعه في النصّ (لتقسيم صفّ TOC لاحقًا). الإقصاء يُحسَم بعد
         // الحلقة: صفوف الفهرس تُرصَّف، وبقيّة w:tab تُقصى (excluded=tab) مؤقّتًا.
         if ("w:tab" in t) tabTextPositions.push(paraTextLen + text.length);
-        if ("w:drawing" in t || "w:pict" in t) excluded = excluded || "drawing";
+        if ("w:drawing" in t || "w:pict" in t) hasDrawing = true;
         // صورةٌ سطريّة (wp:inline): تحجز صندوقَ سطرٍ بارتفاعها — نلتقط أطولها.
         if ("w:drawing" in t) {
           for (const { node: inl } of collectDeep(t["w:drawing"] as XNode[], "wp:inline")) {
@@ -653,9 +654,10 @@ export function parseDocument(
     if (toc) { if (excluded === "field") excluded = false; }
     // بقيّة w:tab (لا فهرس): إقصاءٌ مؤقّت حتى نُعمّم التوقّفات المطلقة
     else if (tabTextPositions.length) excluded = excluded || "tab";
-    // صورةٌ سطريّة: لا تُقصى (تحجز صندوق سطرٍ بارتفاعها)؛ العائمة (anchor) تبقى مُقصاةً
-    // من التدفّق (طبقةٌ منفصلة). حصاد «الشاملة الذهبية».
-    if (inlineImageHTwips > 0 && excluded === "drawing") excluded = false;
+    // الصور/الأشكال: تُقصى الفقرةُ فقط إن كانت **صورةً خالصةً بلا نصّ** (طبقةُ overlay).
+    // فقرةٌ فيها صورةٌ عائمة (wrapNone) **مع نصّ** يتدفّق نصّها (الصورة طبقةٌ منفصلة)؛ وصورةٌ
+    // سطريّة تحجز صندوقَ سطرٍ. حصاد «الشاملة الذهبية» (tadris 8 فقرات نصّ كانت تُسقَط).
+    if (hasDrawing && !text.trim() && inlineImageHTwips === 0) excluded = excluded || "drawing";
     // ‏w:pageBreakBefore في pPr — كسرٌ صريحٌ قبل الفقرة (val=0/false/off يُبطله)
     const pbbVal = pPr ? findAttr(pPr, "w:pageBreakBefore")?.["@w:val"] : undefined;
     const pbbEl = pPr ? first(pPr, "w:pageBreakBefore") !== null : false;
