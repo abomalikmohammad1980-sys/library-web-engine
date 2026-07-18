@@ -179,6 +179,10 @@ export interface FloatAnchor {
   rId: string | null;
   /** محتوى مربّع نصٍّ (wps:txbx/v:textbox ← w:txbxContent) — فقراتٌ تُرصَف داخل الصندوق */
   textBox?: BodyParagraph[];
+  /** شكلٌ متّجه (‏a:prstGeom أو VML): هندستُه ولونُ حشوه وحدّه. الرسمُ يحوّله
+   *  إلى SVG. ‏prst أسماءُ OOXML الثابتة (rect/roundRect/ellipse/diamond/…). */
+  shape?: { prst: string; fill: string | null; stroke: string | null;
+    strokeW: number; adj: number | null };
   /** ‏a:srcRect — قصُّ الصورة من أطرافها، كسورًا من ١ (‏OOXML يخزّنها بأجزاء
    *  المئة الألفيّة: ٢١٥٩٦ = ٢١٫٥٩٦٪). الرسمُ يعرض الجزءَ الباقي مُمَدَّدًا. */
   srcRect?: { l: number; t: number; r: number; b: number };
@@ -1053,6 +1057,38 @@ export function parseDocument(
               wrap: wrap.replace("wp:wrap", ""),
               rId: collectDeep(anc, "a:blip")[0]?.attrs?.["@r:embed"]
                 ?? collectDeep(anc, "a:blip")[0]?.attrs?.["@r:link"] ?? null,
+              ...(() => {
+                // شكلٌ متّجه: هندستُه من a:prstGeom (أو VML)، وحشوُه وحدُّه من
+                // a:solidFill/a:ln. ‏a:noFill يعني بلا حشوٍ لا أسودَ مفروضًا.
+                const geom = collectDeep(anc, "a:prstGeom")[0];
+                const vml = collectDeep(anc, "v:shape")[0] ?? collectDeep(anc, "v:rect")[0]
+                  ?? collectDeep(anc, "v:line")[0] ?? collectDeep(anc, "v:roundrect")[0]
+                  ?? collectDeep(anc, "v:oval")[0];
+                if (!geom && !vml) return {};
+                const spPr = collectDeep(anc, "wps:spPr")[0]?.node
+                  ?? collectDeep(anc, "pic:spPr")[0]?.node ?? anc;
+                // لونُ حشوٍ صريح؛ وschemeClr يُحلّ بالسمة
+                const solid = collectDeep(spPr, "a:solidFill")[0]?.node;
+                const clrOf = (node: XNode[] | undefined): string | null => {
+                  if (!node) return null;
+                  const srgb = collectDeep(node, "a:srgbClr")[0]?.attrs?.["@val"];
+                  if (srgb) return srgb.toUpperCase();
+                  const sch = collectDeep(node, "a:schemeClr")[0]?.attrs?.["@val"];
+                  if (sch) return theme.get(sch) ?? null;
+                  return null;
+                };
+                const hasNoFill = collectDeep(spPr, "a:noFill").length > 0 && !solid;
+                const lnNode = collectDeep(spPr, "a:ln")[0];
+                const strokeW = lnNode?.attrs?.["@w"]
+                  ? Math.max(10, Math.round(Number(lnNode.attrs["@w"]) / EMU)) : 0;
+                const adjVal = collectDeep(geom?.node ?? [], "a:gd")[0]?.attrs?.["@fmla"];
+                const adj = adjVal ? Number(String(adjVal).replace(/[^0-9.-]/g, "")) / 100000 : null;
+                return { shape: {
+                  prst: geom?.attrs?.["@prst"] ?? (vml ? "rect" : "rect"),
+                  fill: hasNoFill ? null : clrOf(solid),
+                  stroke: clrOf(lnNode?.node) ?? (strokeW ? "000000" : null),
+                  strokeW: strokeW || (lnNode ? 12 : 0), adj } };
+              })(),
               ...(() => {
                 // القصُّ والدوران: قيمُ OOXML بأجزاء المئة الألفيّة وأجزاء الستّين ألفًا
                 const sr = collectDeep(anc, "a:srcRect")[0]?.attrs;

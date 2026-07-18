@@ -38,7 +38,52 @@ for c in pg.get("cells", []):
                  f'height="{c["h"]:.1f}" fill="{fill}" stroke="{stroke}" stroke-width="{bw}"/>')
 # عناصر الصور العائمة (طبقةٌ خلفيّة: تُرسَم قبل النصّ ليعلوها)
 imgs = []
+def shape_svg(a):
+    """شكلٌ متّجه (a:prstGeom) ⟵ SVG. أسماءُ prst ثابتةٌ في OOXML، فالتحويلُ
+    قاموسيٌّ لا تخمينيّ. ما لا نعرفه يُرسَم مستطيلًا (أقربُ تقريبٍ آمن)."""
+    sh = a["shape"]
+    x, y, w, h = a["x"], a["y"], a["w"], a["h"]
+    fill = f'#{sh["fill"]}' if sh.get("fill") else "none"
+    stroke = f'#{sh["stroke"]}' if sh.get("stroke") else "none"
+    sw = sh.get("strokeW", 0) or 0
+    prst = sh.get("prst", "rect")
+    at = f'fill="{fill}" stroke="{stroke}" stroke-width="{sw}"'
+    if prst in ("ellipse", "oval"):
+        return f'<ellipse cx="{x + w / 2:.1f}" cy="{y + h / 2:.1f}" rx="{w / 2:.1f}" ry="{h / 2:.1f}" {at}/>'
+    if prst in ("roundRect", "round1Rect", "round2DiagRect", "round2SameRect", "snip2SameRect"):
+        r = min(w, h) * (sh.get("adj") or 0.16)
+        return f'<rect x="{x:.1f}" y="{y:.1f}" width="{w:.1f}" height="{h:.1f}" rx="{r:.1f}" ry="{r:.1f}" {at}/>'
+    if prst == "diamond":
+        pts = f"{x + w / 2:.1f},{y:.1f} {x + w:.1f},{y + h / 2:.1f} {x + w / 2:.1f},{y + h:.1f} {x:.1f},{y + h / 2:.1f}"
+        return f'<polygon points="{pts}" {at}/>'
+    if prst == "triangle":
+        pts = f"{x + w / 2:.1f},{y:.1f} {x + w:.1f},{y + h:.1f} {x:.1f},{y + h:.1f}"
+        return f'<polygon points="{pts}" {at}/>'
+    if prst == "line" or prst == "straightConnector1":
+        return f'<line x1="{x:.1f}" y1="{y:.1f}" x2="{x + w:.1f}" y2="{y + h:.1f}" stroke="{stroke}" stroke-width="{max(sw, 10)}"/>'
+    if prst == "wave":
+        # موجةٌ جيبيّة بمنحنيَين مكعّبَين — تقريبُ شكل Word
+        amp, mid = h * 0.25, y + h / 2
+        d = (f"M {x:.1f} {mid:.1f} C {x + w * 0.25:.1f} {mid - amp:.1f} {x + w * 0.25:.1f} {mid + amp:.1f} {x + w * 0.5:.1f} {mid:.1f} "
+             f"C {x + w * 0.75:.1f} {mid - amp:.1f} {x + w * 0.75:.1f} {mid + amp:.1f} {x + w:.1f} {mid:.1f}")
+        return f'<path d="{d}" fill="none" stroke="{stroke if stroke != "none" else "#000000"}" stroke-width="{max(sw, 10)}"/>'
+    if prst == "leftRightArrow":
+        hy, ah = h * 0.3, w * 0.2
+        pts = (f"{x:.1f},{y + h / 2:.1f} {x + ah:.1f},{y:.1f} {x + ah:.1f},{y + h / 2 - hy:.1f} "
+               f"{x + w - ah:.1f},{y + h / 2 - hy:.1f} {x + w - ah:.1f},{y:.1f} {x + w:.1f},{y + h / 2:.1f} "
+               f"{x + w - ah:.1f},{y + h:.1f} {x + w - ah:.1f},{y + h / 2 + hy:.1f} "
+               f"{x + ah:.1f},{y + h / 2 + hy:.1f} {x + ah:.1f},{y + h:.1f}")
+        return f'<polygon points="{pts}" {at}/>'
+    return f'<rect x="{x:.1f}" y="{y:.1f}" width="{w:.1f}" height="{h:.1f}" {at}/>'
+
 for a in pg.get("anchors", []):
+    if a.get("shape") and not a.get("rId"):
+        el = shape_svg(a)
+        if a.get("rot"):
+            cx, cy = a["x"] + a["w"] / 2, a["y"] + a["h"] / 2
+            el = f'<g transform="rotate({a["rot"]:.3f} {cx:.1f} {cy:.1f})">{el}</g>'
+        imgs.append(el)
+        continue
     href = _img.get(a.get("rId"))
     if not href:
         continue

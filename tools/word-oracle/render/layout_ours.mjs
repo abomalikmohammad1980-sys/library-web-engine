@@ -425,6 +425,11 @@ for (let pi = 0; pi < paras.length; pi++) {
     const marginArea = pageH - marT - marB;
     if (a.posVRel === "margin" && a.wrap !== "None" && a.extentH > marginArea && a.extentH <= pageH && ay < 0)
       ay = (pageH - a.extentH) / 2;
+    // شكلٌ متّجه بلا صورة: يُرسَم هندسةً (إطاراتُ العناوين والزخارف)
+    if (!a.rId && a.shape && (a.shape.fill || a.shape.stroke)) {
+      imgAnchors.push({ page: cur, x: ax, y: ay, w: a.extentW, h: a.extentH,
+        rId: null, shape: a.shape, ...(a.rotDeg ? { rot: a.rotDeg } : {}) });
+    }
     if (a.rId) imgAnchors.push({ page: cur, x: ax, y: ay, w: a.extentW, h: a.extentH, rId: a.rId,
       ...(a.srcRect ? { srcRect: a.srcRect } : {}), ...(a.rotDeg ? { rot: a.rotDeg } : {}),
       ...(a.flipH ? { flipH: true } : {}), ...(a.flipV ? { flipV: true } : {}) });
