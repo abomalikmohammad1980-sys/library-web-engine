@@ -227,7 +227,8 @@ const DPI = Number(process.env.DPI ?? "600");
 const emDevice = (emTw) => Math.round((emTw * DPI) / 1440) * (1440 / DPI);
 const pitchV = (met, emTw, sp) => (met.a + met.d + met.g) * emDevice(emTw) * lineMultiplier(sp);
 
-const paras = model.paragraphs.filter((p) => !p.excluded && (p.text.trim() || p.inlineImageHTwips > 0) && (p.runs[0]?.emTwips || p.inlineImageHTwips > 0));
+const paras = model.paragraphs.filter((p) => (!p.excluded && (p.text.trim() || p.inlineImageHTwips > 0) && (p.runs[0]?.emTwips || p.inlineImageHTwips > 0)) || (p.anchors?.length > 0));
+const imgAnchors = []; // صورٌ عائمة: {page,x,y,w,h,rId} — تُرسَم طبقةً على الصفحة
 const bodySecIdx = (paras.find((p) => p.runs[0]?.family === MAIN_FAMILY) ?? paras[0])?.sectionIndex ?? 0;
 const sec = model.sections?.[bodySecIdx] ?? model.section ?? model.sections[0];
 const { pageWTwips: pageW, pageHTwips: pageH, marRightTwips: marR, marTopTwips: marT, marBottomTwips: marB } = sec;
@@ -266,6 +267,14 @@ for (let pi = 0; pi < paras.length; pi++) {
   const words = p.text.trim().split(/\s+/).filter(Boolean);
   // فقرةُ صورةٍ سطريّةٍ خالصة: كلمةٌ نائبة (nbsp) لتنتج سطرًا واحدًا يحجز ارتفاع الصورة.
   if (!words.length && p.inlineImageHTwips > 0) words.push(" ");
+  // صورٌ عائمة (wp:anchor): طبقةٌ على الصفحة الحاليّة بموضعها المحلول (page/margin/paragraph).
+  if (p.anchors && p.anchors.length) for (const a of p.anchors) {
+    if (!a.rId) continue;
+    const ax = a.posHRel === "page" ? a.posHOffset : (sec.marLeftTwips + a.posHOffset);
+    const ay = a.posVRel === "page" ? a.posVOffset
+      : a.posVRel === "margin" ? marT + a.posVOffset : baseline + a.posVOffset;
+    imgAnchors.push({ page: cur, x: ax, y: ay, w: a.extentW, h: a.extentH, rId: a.rId });
+  }
   if (!words.length) continue;
   // كسرُ صفحةٍ صريح (w:br type=page / w:pageBreakBefore / حدّ مقطع nextPage):
   // الفقرة تبدأ صفحةً جديدة إن كانت الحاليّة غير فارغة — يطابق ترقيم صفحات Word.
@@ -451,7 +460,8 @@ for (let pi = 0; pi < paras.length; pi++) {
 }
 
 const out = { source: "our-engine", unit: "twip", mainFont: MAIN_FILE,
-  pageW, pageH, pages: pages.map((lines) => ({ w: pageW, h: pageH, lines })) };
+  pageW, pageH, docx: `corpus/books/${BOOK}.docx`,
+  pages: pages.map((lines, pi) => ({ w: pageW, h: pageH, lines, anchors: imgAnchors.filter((a) => a.page === pi) })) };
 writeFileSync(OUT, JSON.stringify(out), "utf8");
 console.log(`محرّكنا: ${pages.length} صفحة، ${pages.reduce((a, p) => a + p.length, 0)} سطرًا -> ${OUT}`);
 console.log(`صفحة 1: ${pages[1]?.length ?? 0} سطر، أول baseline=${pages[1]?.[0]?.y?.toFixed(1)}`);
