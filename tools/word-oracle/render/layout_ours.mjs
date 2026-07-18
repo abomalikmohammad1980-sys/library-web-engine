@@ -153,6 +153,25 @@ function shapeWord(w, em, fo) {
   const glyphs = infos.map((g, i) => ({ gid: g.codepoint, adv: (poss[i].xAdvance / fo.upem) * em }));
   return { glyphs, width: glyphs.reduce((a, g) => a + g.adv, 0) };
 }
+/** عرضُ كلّ كلمةٍ من **تشكيل النصّ الكامل سياقيًّا** (كـbreak_lines، أدقّ من المعزول
+ *  بـ34٪ على dawra). يشكّل words.join(" ") ويوزّع تقدّم كلّ عنقودٍ على مرساه (cluster).
+ *  يرجع {wordW[], spaceW} — للكسر فقط (الرسم يبقى per-word للـbidi البصريّ الصحيح). */
+function contextualWidths(words, em, fo) {
+  const fullText = words.join(" ");
+  const b = new HbBuffer(); b.addText(fullText); b.guessSegmentProperties(); shape(fo.font, b, []);
+  const infos = b.getGlyphInfos(), poss = b.getGlyphPositions();
+  const advAt = new Float64Array(fullText.length + 1);
+  for (let g = 0; g < infos.length; g++) advAt[infos[g].cluster] += (poss[g].xAdvance / fo.upem) * em;
+  const prefix = new Float64Array(fullText.length + 1);
+  for (let c = 0; c < fullText.length; c++) prefix[c + 1] = prefix[c] + advAt[c];
+  const wordW = []; let cur = 0;
+  for (const w of words) {
+    const s = fullText.indexOf(w, cur), e = s + w.length;
+    wordW.push(prefix[e] - prefix[s]); cur = e;
+  }
+  const spaceW = words.length > 1 ? (prefix[words[0].length + 1] - prefix[words[0].length]) : shapeWord(" ", em, fo).width;
+  return { wordW, spaceW };
+}
 // em الجهاز (generic، من تفكيك MSLS70): Word يقرّب حجم الخطّ لبكسل الجهاز أوّلًا
 // (ppem = round(pt·dpi/72))، ثم يشتقّ كلّ المقاييس العموديّة منه. عند 600dpi:
 // emDev = round(emTw·600/1440)·2.4. يفسّر انجراف ~1tw/سطر (20pt → 400.8tw لا 400).
