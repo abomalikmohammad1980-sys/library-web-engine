@@ -444,6 +444,14 @@ for (let pi = 0; pi < paras.length; pi++) {
         rId: null, shape: a.shape, ...(a.part ? { part: a.part } : {}),
         ...(a.rotDeg ? { rot: a.rotDeg } : {}) });
     }
+    // مجموعة: كلُّ ابنٍ يُرسَم عند ركن المجموعة + إزاحته المحوَّلة
+    if (a.groupChildren?.length) {
+      for (const k of a.groupChildren) {
+        if (!k.rId) continue;
+        imgAnchors.push({ page: cur, x: ax + k.x, y: ay + k.y, w: k.w, h: k.h,
+          rId: k.rId, ...(a.part ? { part: a.part } : {}) });
+      }
+    }
     if (a.rId) imgAnchors.push({ page: cur, x: ax, y: ay, w: a.extentW, h: a.extentH, rId: a.rId,
       ...(a.part ? { part: a.part } : {}),
       ...(a.srcRect ? { srcRect: a.srcRect } : {}), ...(a.rotDeg ? { rot: a.rotDeg } : {}),

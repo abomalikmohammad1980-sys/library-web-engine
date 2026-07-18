@@ -185,6 +185,10 @@ export interface FloatAnchor {
    *  إلى SVG. ‏prst أسماءُ OOXML الثابتة (rect/roundRect/ellipse/diamond/…). */
   shape?: { prst: string; fill: string | null; stroke: string | null;
     strokeW: number; adj: number | null };
+  /** مجموعةُ أشكال (‏a:grpSp/wpg:wgp): أبناءٌ لكلٍّ موضعُه وحجمُه **بعد** تحويل
+   *  فضاء إحداثيّات المجموعة (‏chOff/chExt ⟵ off/ext) — بالـtwips، نسبيّةً
+   *  إلى ركن المجموعة. */
+  groupChildren?: { x: number; y: number; w: number; h: number; rId: string | null }[];
   /** ‏a:srcRect — قصُّ الصورة من أطرافها، كسورًا من ١ (‏OOXML يخزّنها بأجزاء
    *  المئة الألفيّة: ٢١٥٩٦ = ٢١٫٥٩٦٪). الرسمُ يعرض الجزءَ الباقي مُمَدَّدًا. */
   srcRect?: { l: number; t: number; r: number; b: number };
@@ -1074,6 +1078,33 @@ export function parseDocument(
               wrap: wrap.replace("wp:wrap", ""),
               rId: collectDeep(anc, "a:blip")[0]?.attrs?.["@r:embed"]
                 ?? collectDeep(anc, "a:blip")[0]?.attrs?.["@r:link"] ?? null,
+              ...(() => {
+                // مجموعةُ أشكال: كلُّ ابنٍ يُحوَّل من فضاء إحداثيّات المجموعة إلى
+                // فضاء الصفحة. القاعدة (‏DrawingML): الابنُ عند chOff يقع عند off،
+                // والمقياسُ ext/chExt. بلا هذا التحويل تتكدّس الأبناءُ في الركن.
+                const grp = collectDeep(anc, "a:grpSp")[0]?.node
+                  ?? collectDeep(anc, "wpg:wgp")[0]?.node;
+                if (!grp) return {};
+                const gx = collectDeep(grp, "a:xfrm")[0]?.node ?? [];
+                const num = (n: XNode[] | undefined, tag: string, at: string) =>
+                  Number(collectDeep(n ?? [], tag)[0]?.attrs?.[at] ?? 0);
+                const chOffX = num(gx, "a:chOff", "@x"), chOffY = num(gx, "a:chOff", "@y");
+                const chExtX = num(gx, "a:chExt", "@cx") || 1, chExtY = num(gx, "a:chExt", "@cy") || 1;
+                const extX = num(gx, "a:ext", "@cx"), extY = num(gx, "a:ext", "@cy");
+                const sx = extX ? extX / chExtX : 1, sy = extY ? extY / chExtY : 1;
+                const kids: NonNullable<FloatAnchor["groupChildren"]> = [];
+                for (const sp of [...collectDeep(grp, "pic:pic"), ...collectDeep(grp, "wps:wsp")]) {
+                  const kx = collectDeep(sp.node, "a:xfrm")[0]?.node ?? [];
+                  kids.push({
+                    x: Math.round(((num(kx, "a:off", "@x") - chOffX) * sx) / EMU),
+                    y: Math.round(((num(kx, "a:off", "@y") - chOffY) * sy) / EMU),
+                    w: Math.round((num(kx, "a:ext", "@cx") * sx) / EMU),
+                    h: Math.round((num(kx, "a:ext", "@cy") * sy) / EMU),
+                    rId: collectDeep(sp.node, "a:blip")[0]?.attrs?.["@r:embed"] ?? null,
+                  });
+                }
+                return kids.length ? { groupChildren: kids } : {};
+              })(),
               ...(() => {
                 // شكلٌ متّجه: هندستُه من a:prstGeom (أو VML)، وحشوُه وحدُّه من
                 // a:solidFill/a:ln. ‏a:noFill يعني بلا حشوٍ لا أسودَ مفروضًا.
