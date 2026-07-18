@@ -300,9 +300,18 @@ for (let pi = 0; pi < paras.length; pi++) {
   // صورٌ عائمة (wp:anchor): طبقةٌ على الصفحة الحاليّة بموضعها المحلول (page/margin/paragraph).
   if (p.anchors && p.anchors.length) for (const a of p.anchors) {
     if (!a.rId) continue;
-    const ax = a.posHRel === "page" ? a.posHOffset : (sec.marLeftTwips + a.posHOffset);
-    const ay = a.posVRel === "page" ? a.posVOffset
-      : a.posVRel === "margin" ? marT + a.posVOffset : baseline + a.posVOffset;
+    // أفقيًّا (RTL، حصاد «الشاملة الذهبية»): الإزاحة تُقاس من الحافّة اليمنى للمرجع نحو
+    // اليسار؛ الإزاحة السالبة تدفع الصورة يمينًا (داخل الهامش) — ١٤٢ حالةً في masjid.
+    const refRight = a.posHRel === "page" ? pageW : (pageW - marR);
+    const ax = refRight - a.posHOffset - a.extentW;
+    // عموديًّا: page من أعلى الصفحة، margin من الهامش العلويّ، paragraph من **أعلى الفقرة**
+    const paraTop = baseline - MET.a * em;
+    let ay = a.posVRel === "page" ? a.posVOffset
+      : a.posVRel === "margin" ? marT + a.posVOffset : paraTop + a.posVOffset;
+    // (AGENTS §23) صورةٌ أطول من منطقة الهوامش بإزاحةٍ سالبة تبقى داخل الصفحة: تُوسَّط عموديًّا
+    const marginArea = pageH - marT - marB;
+    if (a.posVRel === "margin" && a.wrap !== "None" && a.extentH > marginArea && a.extentH <= pageH && ay < 0)
+      ay = (pageH - a.extentH) / 2;
     imgAnchors.push({ page: cur, x: ax, y: ay, w: a.extentW, h: a.extentH, rId: a.rId });
   }
   if (!words.length) continue;
