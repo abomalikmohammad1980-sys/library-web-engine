@@ -17,6 +17,19 @@ const LATIN = "abcdefghijklmnopqrstuvwxyz";
 const ROMAN = [[1000,"m"],[900,"cm"],[500,"d"],[400,"cd"],[100,"c"],[90,"xc"],[50,"l"],[40,"xl"],[10,"x"],[9,"ix"],[5,"v"],[4,"iv"],[1,"i"]];
 function toRoman(n){ if(n<1||n>3999) return String(n); let r=""; for(const [v,sy] of ROMAN){ while(n>=v){ r+=sy; n-=v; } } return r; }
 // تحويل عدّادٍ إلى نصّ العلامة حسب numFmt (حصاد «الشاملة الذهبية»، مُصحَّحًا)
+// ── الأرقامُ الهنديّة (حصاد «الشاملة الذهبية»: DiplayWordNumber/GlyphEncodedDigitFonts) ──
+// الكتبُ العربيّة تعرض أرقامَ الصفحات والترقيم بالهنديّة. الاستثناءُ مهمّ: خطوطٌ
+// تُرمِّز الأرقامَ في محارفها (مثل QCF_BSML لمصاحف الشاملة) تفسد إن بُدِّلت،
+// فتبقى بالغربيّة. ARNUM=1 للتفعيل (سلوكُ عرضٍ لا تخطيط).
+const GLYPH_DIGIT_FONTS = new Set(["QCF_BSML"]);
+const AR_DIGITS = "٠١٢٣٤٥٦٧٨٩";
+function toArabicDigits(str, family) {
+  if (!str) return str;
+  if (family && GLYPH_DIGIT_FONTS.has(String(family).trim().toUpperCase())) return str;
+  return String(str).replace(/[0-9]/g, (d) => AR_DIGITS[+d]);
+}
+const ARNUM = process.env.ARNUM === "1";
+
 function formatNum(n, fmt){
   switch(fmt){
     case "decimal": return String(n);
@@ -999,8 +1012,8 @@ function hfText(par, pageNo, total) {
   let out = "";
   for (const r of par.runs) {
     if (r.hidden) continue;
-    if (r.fieldResult === "PAGE") out += String(pageNo);
-    else if (r.fieldResult === "NUMPAGES") out += String(total);
+    if (r.fieldResult === "PAGE") out += ARNUM ? toArabicDigits(String(pageNo), r.family) : String(pageNo);
+    else if (r.fieldResult === "NUMPAGES") out += ARNUM ? toArabicDigits(String(total), r.family) : String(total);
     else out += r.text;
   }
   return out;
