@@ -304,7 +304,9 @@ for (let pi = 0; pi < paras.length; pi++) {
     // معامل قياس الجدول (حصاد §1.2): الهدفُ من w:tblW (pct مقياسه **5000 = 100٪**، أو dxa)
     // مقصورًا على العرض المتاح؛ وإن غاب الهدف يُضغَط الجدولُ الطبيعيّ إن تجاوز المتاح.
     // بدونه كانت أعمدةُ muqtarah أعرضَ من المتاح بـ~55٪ (grid 13948 مقابل متاح 9026).
-    const usable = sec.columnTwips;
+    // العرضُ المتاح من **مقطع الفقرة نفسها** لا مقطع المتن (muqtarah: جدولٌ في مقطعٍ
+    // عرضيّ 13958 بينما المتن عموديّ 8306 — القياس بمقطع المتن كان يضغطه 40٪ خطأً).
+    const usable = (model.sections[p.sectionIndex] ?? sec).columnTwips;
     const target = tc.tblWType === "pct" ? usable * (tc.tblWVal / 5000)
       : tc.tblWType === "dxa" ? tc.tblWVal : null;
     const finalW = target != null ? Math.min(target, usable) : Math.min(tc.totalGridTwips, usable);
