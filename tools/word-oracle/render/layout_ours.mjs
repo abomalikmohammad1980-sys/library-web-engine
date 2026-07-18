@@ -405,7 +405,12 @@ function finishRow(t) {
   for (const c of t.cells) { c.y = top; c.h = bottom - top; }
 }
 for (let pi = 0; pi < paras.length; pi++) {
-  const p = paras[pi]; const em = p.runs[0]?.emTwips || 200; // احتياطٌ لفقرة صورةٍ خالصة
+  // حجمُ الفقرة الفارغة: نظريًّا حجمُ **علامة فقرتها** (‏p.markEmTwips)، لكنّ
+  // القياس نفى نفعَه: لا يحسّن شيئًا ويكلّف tadris صفحةً (٣٤ ⟵ ٣٥ مقابل ٣٤ عند
+  // Word)، وكلُّ تحسّنِ مربّعات النصّ جاء من إصلاح «أعلى الفقرة» وحدَه. MARKEM=1
+  // لتجريبه.
+  const p = paras[pi];
+  const em = p.runs[0]?.emTwips || (process.env.MARKEM === "1" ? (p.markEmTwips || 200) : 200);
   const fo = getFont(p.runs[0]?.family || MAIN_FAMILY); const MET = fo.met;
   const MAIN_WD = MET.wd ?? (MET.d + MET.g); // هبوط winDescent للخطّ الرئيس (قاعدة المختلطة)
   const cal = (p.runs[0]?.family || MAIN_FAMILY) === MAIN_FAMILY ? PS_CAL : null;
@@ -455,7 +460,10 @@ for (let pi = 0; pi < paras.length; pi++) {
         : a.posHAlign === "right" ? bandR - a.extentW : bandL;
     } else ax = refRight - a.posHOffset - a.extentW;
     // عموديًّا: page من أعلى الصفحة، margin من الهامش العلويّ، paragraph من **أعلى الفقرة**
-    const paraTop = baseline - MET.a * em;
+    // أعلى صندوق سطر **هذه** الفقرة = أساسُ السابقة + هبوطُها + فراغُ التباعد.
+    // كان يُحسَب `baseline − asc` بأساسِ الفقرة **السابقة** وحجمٍ احتياطيّ (٢٠٠)،
+    // فيقع أعلى الموضع الصحيح. مرجعُ wp:anchor «paragraph» هو هذا الأعلى.
+    const paraTop = baseline + (prevDesc || 0) + pendingGap;
     let ay;
     if (a.posVAlign && !a.posVOffset) {
       const bandT = a.posVRel === "page" ? 0 : marT;
