@@ -222,6 +222,14 @@ for (let pi = 0; pi < paras.length; pi++) {
   const spaceW = wordWidth(" ", em) || wordWidth(" ", em);
   const words = p.text.trim().split(/\s+/).filter(Boolean);
   if (!words.length) continue;
+  // كسرُ صفحةٍ صريح (w:br type=page / w:pageBreakBefore / حدّ مقطع nextPage):
+  // الفقرة تبدأ صفحةً جديدة إن كانت الحاليّة غير فارغة — يطابق ترقيم صفحات Word.
+  // تُكبَت مسافةُ before أعلى الصفحة (prev=null)، والأساس الأوّل من pageStartAscent.
+  if (p.pageBreakBefore && pages[cur].length > 0 && process.env.NOPB !== "1") {
+    pages.push([]); cur++;
+    baseline = marT + pageStartAscent(MET, em, p.spacing, cal);
+    prev = null; prevDesc = null; pendingGap = 0; pageAnchor = baseline;
+  }
   const cw = process.env.CTXW === "0" ? null : contextualWidths(words, em, fo);
   const PUNCT = "،؛:.!؟»)";
   const items = words.map((w, i) => {

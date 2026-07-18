@@ -47,6 +47,9 @@ export interface BodyParagraph {
   /** خط علامة الترقيم بشريحة ASCII (rFonts ascii من rPr علامة الفقرة) —
    *  أرقام العلامة «1.» لاتينية فتُرسم به وترفع ascent سطرها (لغز 586) */
   markAsciiFamily: string | null;
+  /** يجب أن تبدأ هذه الفقرة في صفحةٍ جديدة — من w:pageBreakBefore، أو كسرِ
+   *  صفحةٍ صريح (w:br type=page) قبلها، أو حدِّ مقطعٍ (sectPr nextPage). generic. */
+  pageBreakBefore: boolean;
 }
 
 /** عائم wp:anchor — الأبعاد بالـ twips (‏EMU ÷ 635) */
@@ -417,6 +420,9 @@ export function parseDocument(
 
   const paragraphs: BodyParagraph[] = [];
   let idx = 0;
+  // كسرُ الصفحة المعلَّق: يُنقَل من فقرةٍ حاملةٍ للكسر (أو حدِّ مقطع) إلى الفقرة
+  // المرصَّفة التالية. الفقرات غير المرصَّفة (فارغة/صور) لا تستهلكه بل تُمرِّره. generic.
+  let pendingBreak = false;
   for (const child of body) {
     if (!("w:p" in child)) continue; // فقرات المستوى الأعلى فقط — الجداول تُقصى بنيويًا
     const p = child["w:p"] as XNode[];
@@ -454,6 +460,9 @@ export function parseDocument(
     let excluded: BodyParagraph["excluded"] = false;
     const runs: EffectiveRun[] = [];
     const anchors: FloatAnchor[] = [];
+    // كسرُ الصفحة الصريح (w:br type=page): قبل نصّ الفقرة = هي على صفحةٍ جديدة؛
+    // بعد نصّها (أو فقرة فارغة) = التالية على صفحةٍ جديدة. sawText يفرّق الحالتين.
+    let sawText = false, leadingPageBreak = false, trailingPageBreak = false, anyPageBreak = false;
     for (const rNode of p) {
       if (!("w:r" in rNode)) {
         if ("w:fldSimple" in rNode || "w:hyperlink" in rNode) excluded = excluded || "field";
@@ -468,9 +477,15 @@ export function parseDocument(
         if ("w:t" in t) {
           const parts = t["w:t"] as XNode[];
           for (const seg of parts) if ("#text" in seg) text += String(seg["#text"]);
+          if (text.trim()) sawText = true;
         }
-        // فاصل سطر يدوي (w:br بأنواعه) — يُمثَّل بـ\n: نقطة كسر إجبارية للكاسر
-        if ("w:br" in t) text += "\n";
+        // ‏w:br: كسرُ صفحةٍ (type=page) ليس فاصل سطر — يُرصَد ولا يدخل النصّ؛
+        // غيره (الافتراضي/textWrapping/column) فاصل سطرٍ يدويّ يُمثَّل بـ\n.
+        if ("w:br" in t) {
+          const brType = (t[":@"] as Record<string, string> | undefined)?.["@w:type"];
+          if (brType === "page") { anyPageBreak = true; if (sawText) trailingPageBreak = true; else leadingPageBreak = true; }
+          else text += "\n";
+        }
         // ‏w:sym: حرف بخط رمزي (ﷺ ونحوه بـAGA Arabesque) — قياسه الصادق يتطلب
         // تشكيلًا متعدد الخطوط؛ حتى حينه تُستبعد الفقرة (وإلا قِيس نصها أقصر
         // من الحقيقة وفسدت المحاذاة — درس sample-tadris para291).
@@ -522,6 +537,19 @@ export function parseDocument(
     }
     const text = runs.filter((r) => !r.hidden).map((r) => r.text).join("");
     if (!text.trim()) excluded = excluded || "empty";
+    // ‏w:pageBreakBefore في pPr — كسرٌ صريحٌ قبل الفقرة (val=0/false/off يُبطله)
+    const pbbVal = pPr ? findAttr(pPr, "w:pageBreakBefore")?.["@w:val"] : undefined;
+    const pbbEl = pPr ? first(pPr, "w:pageBreakBefore") !== null : false;
+    const ppPageBreak = pbbEl && !["0", "false", "off"].includes(pbbVal ?? "");
+    // حسم كسرِ الصفحة: الفقرة المرصَّفة تستهلك المعلَّق (وتبدأ صفحةً)؛ غير المرصَّفة
+    // تُمرِّره. كسرٌ لاحقٌ لنصّها (أو فارغة حاملة) يدفع التالية.
+    let pageBreakBefore = false;
+    if (excluded) {
+      pendingBreak = pendingBreak || ppPageBreak || anyPageBreak;
+    } else {
+      pageBreakBefore = pendingBreak || ppPageBreak || leadingPageBreak;
+      pendingBreak = trailingPageBreak;
+    }
     // ‏w:spacing: وراثة سمّية — سمات المباشر تتقدم وتُكمَّل من السلسلة
     const ownSp = spacingProps(pPr);
     const chain = styleProps.spacing;
@@ -537,7 +565,7 @@ export function parseDocument(
     paragraphs.push({
       index: idx, runs, text, styleId, jc, bidi,
       indLeft, indRight, indFirstLine, excluded, sectionIndex: -1, numbered, anchors,
-      spacing, markEmTwips, markAsciiFamily,
+      spacing, markEmTwips, markAsciiFamily, pageBreakBefore,
     });
     // ‏sectPr داخل pPr يختم مقطعًا: هندسته تسري على هذه الفقرة وما سبقها
     const pSect = pPr ? first(pPr, "w:sectPr") : null;
@@ -546,6 +574,10 @@ export function parseDocument(
       for (let k = pendingFrom; k < paragraphs.length; k++)
         paragraphs[k]!.sectionIndex = sections.length - 1;
       pendingFrom = paragraphs.length;
+      // مقطعٌ من نوع nextPage/even/odd (الافتراضي nextPage) يدفع التالية لصفحةٍ
+      // جديدة؛ continuous لا يكسر. (المقطع الأخير للـbody بلا تالية فلا أثر).
+      const sType = findAttr(pSect, "w:type")?.["@w:val"] ?? "nextPage";
+      if (sType !== "continuous") pendingBreak = true;
     }
   }
   // ‏sectPr الـbody يختم المقطع الأخير (البقية كلها له)
