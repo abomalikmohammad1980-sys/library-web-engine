@@ -49,5 +49,17 @@
   "gap-vmerge": {
     "family": "Traditional Arabic",
     "horizFont": "corpus/book-fonts/trado.ttf"
+  },
+  "gap-vmerge-b0": {
+    "family": "Traditional Arabic",
+    "horizFont": "corpus/book-fonts/trado.ttf"
+  },
+  "gap-vmerge-b1": {
+    "family": "Traditional Arabic",
+    "horizFont": "corpus/book-fonts/trado.ttf"
+  },
+  "gap-vmerge-b3": {
+    "family": "Traditional Arabic",
+    "horizFont": "corpus/book-fonts/trado.ttf"
   }
 }

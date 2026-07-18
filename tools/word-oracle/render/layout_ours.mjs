@@ -99,12 +99,36 @@ function loadTableBorders(docxPath) {
       if (!m || /w:val="(none|nil)"/.test(m[0])) return null;
       const sz = Number((m[0].match(/w:sz="(\d+)"/) || [])[1] || 4);
       const col = (m[0].match(/w:color="([^"]+)"/) || [])[1] || "auto";
-      return { w: Math.min(60, Math.max(10, Math.round((sz / 8) * 20))), color: col === "auto" ? "000000" : col };
+      return { w: Math.min(60, Math.max(10, Math.round((sz / 8) * 20))),
+        wRaw: Math.round((sz / 8) * 20), color: col === "auto" ? "000000" : col };
     };
     byStyle[st[1]] = { top: side("top"), bottom: side("bottom"), left: side("left"),
       right: side("right"), insideH: side("insideH"), insideV: side("insideV") };
   }
   return byStyle;
+}
+/** حدودُ كلّ جدولٍ المُصرَّحة في w:tblPr مباشرةً، مرتّبةً بترتيب ظهور الجداول
+ *  (يوافق tableId في النموذج). تتقدّم على حدود النمط عند التعارض.
+ *  ملحوظة: الجداولُ المتداخلة تُزيح الترتيب — لا تَرِد في كتبنا. */
+function loadDirectTableBorders(docxPath) {
+  const zip = unzipSync(readFileSync(docxPath));
+  const doc = zip["word/document.xml"] ? strFromU8(zip["word/document.xml"]) : "";
+  const out = [];
+  for (const m of doc.matchAll(/<w:tblPr>([\s\S]*?)<\/w:tblPr>/g)) {
+    const tb = m[1].match(/<w:tblBorders>([\s\S]*?)<\/w:tblBorders>/);
+    if (!tb) { out.push(null); continue; }
+    const side = (nm) => {
+      const t = tb[1].match(new RegExp("<w:" + nm + "[ /][^>]*>"));
+      if (!t || /w:val="(none|nil)"/.test(t[0])) return null;
+      const sz = Number((t[0].match(/w:sz="(\d+)"/) || [])[1] || 4);
+      const col = (t[0].match(/w:color="([^"]+)"/) || [])[1] || "auto";
+      return { w: Math.min(60, Math.max(10, Math.round((sz / 8) * 20))),
+        wRaw: Math.round((sz / 8) * 20), color: col === "auto" ? "000000" : col };
+    };
+    out.push({ top: side("top"), bottom: side("bottom"), left: side("left"),
+      right: side("right"), insideH: side("insideH"), insideV: side("insideV") });
+  }
+  return out;
 }
 // ── استخراج مقاطع (runs) كلّ فقرة بخصائصها (generic، آليّة B) ──
 // ارتفاع السطر = max عبر مقاطعه الفعليّة (بولد/حجم/خطّ). نبني، لكلّ فقرة، مصفوفةً
@@ -183,6 +207,17 @@ const model = extractFromDocx(readFileSync(`corpus/books/${BOOK}.docx`));
 const numbering = loadNumbering(`corpus/books/${BOOK}.docx`);
 const contextual = loadContextual(`corpus/books/${BOOK}.docx`);
 const tableBorders = loadTableBorders(`corpus/books/${BOOK}.docx`);
+const tableDirect = loadDirectTableBorders(`corpus/books/${BOOK}.docx`);
+// سُمكُ الحدّ الأفقيّ يزيد تباعدَ الصفوف بمقداره — قاعدةٌ مقيسةٌ على Word بثلاث
+// نسخٍ من نفس الجدول (بلا حدّ / ١pt / ٣pt): الزيادةُ ٠ ثمّ ٢٠ ثمّ **٦٠٫٠tw**
+// بالضبط، أي عرضُ الحدّ نفسه. الحدُّ العلويّ عند بدء الجدول، وinsideH بين
+// الصفوف، والسفليّ عند الخروج منه.
+function borderH(tc, which) {
+  const d = tableDirect[tc.tableId] ?? null;
+  const st = tableBorders[tc.tblStyleId] ?? null;
+  const b = (d && d[which]) || (st && st[which]) || null;
+  return b ? (b.wRaw ?? b.w ?? 0) : 0;
+}
 const tableCells = []; // مستطيلات خلايا الجداول {page,x,y,w,h,fill,bw,bc}
 const notesByPage = new Map(); // صفحة → مراجعُ الحواشي الواقعة فيها
 const hasContextual = (p) => contextual.byText.has(contextual.norm(p.text)) || contextual.styleSet.has(p.styleId);
@@ -387,11 +422,20 @@ for (let pi = 0; pi < paras.length; pi++) {
   if (p.tableCell) {
     const tc = p.tableCell;
     if (!curTable || curTable.id !== tc.tableId || curTable.row !== tc.row) {
-      if (curTable) { finishRow(curTable); baseline = curTable.maxBottom; }
-      curTable = { id: tc.tableId, row: tc.row, startBaseline: baseline, maxBottom: baseline,
-        rowTop: null, cells: [], lines: [], startPage: cur, cantSplit: !!tc.cantSplit }; // rowTop من أعلى أوّل سطر
-      prevDesc = null; pendingGap = 0;
-    } else if (tc.firstInCell) { baseline = curTable.startBaseline; prevDesc = null; pendingGap = 0; }
+      const sameTbl = curTable && curTable.id === tc.tableId;
+      if (curTable) { finishRow(curTable); baseline = curTable.maxBottom; prevDesc = 0; }
+      // الحدُّ الأفقيّ: العلويُّ عند دخول الجدول، وinsideH بين صفّين منه
+      baseline += sameTbl ? borderH(tc, "insideH") : borderH(tc, "top");
+      // صفٌّ جديد: نحفظ أساسَه **وهبوطَ ما قبله** معًا. كان prevDesc يُصفَّر إلى null
+      // فيصير nb = b بلا صعود، فتقع أوّلُ أسطر الصفّ **على** أساس ما قبله ولا ينزل
+      // الجدولُ أصلًا (قِيس على gap-vmerge: صفوفُنا ١٧١٨٫٤ و١٨٥٨٫٥ مقابل ٢١٥٨ و٢٥٩٤٫٨).
+      curTable = { id: tc.tableId, row: tc.row, startBaseline: baseline, startPd: prevDesc ?? 0,
+        maxBottom: baseline, rowTop: null, cells: [], lines: [], startPage: cur,
+        cantSplit: !!tc.cantSplit, botBorder: borderH(tc, "bottom") }; // rowTop من أعلى أوّل سطر
+      pendingGap = 0;
+    } else if (tc.firstInCell) {
+      baseline = curTable.startBaseline; prevDesc = curTable.startPd; pendingGap = 0;
+    }
     // مستطيلُ الخليّة (تظليلٌ + حدود من نمط الجدول) — يُختَم ارتفاعُه عند نهاية الصفّ
     if (tc.firstInCell) {
       const bs = tableBorders[tc.tblStyleId] || null;
@@ -400,7 +444,11 @@ for (let pi = 0; pi < paras.length; pi++) {
         fill: tc.shdFill || null, bw: bside ? bside.w : 0, bc: bside ? bside.color : "000000" };
       curTable.cells.push(rect); tableCells.push(rect);
     }
-  } else if (curTable) { finishRow(curTable); baseline = curTable.maxBottom; curTable = null; prevDesc = null; }
+  } else if (curTable) {
+    finishRow(curTable);
+    baseline = curTable.maxBottom + (curTable.botBorder || 0);   // الحدُّ السفليّ عند الخروج
+    curTable = null; prevDesc = 0;
+  }
   const boldMet = metrics[`${p.runs[0]?.family || MAIN_FAMILY}|bold`];
   // مقاييسُ كلّ كلمة من **مقاطع النموذج نفسها** (مصدرٌ واحدٌ للحقيقة): نصُّها يطابق p.text
   // تمامًا (بما فيه أرقامُ الحواشي المحقونة)، وعائلتُها محلولةٌ عبر سلسلة الأنماط.
