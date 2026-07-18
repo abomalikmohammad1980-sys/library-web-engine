@@ -269,7 +269,7 @@ for (let pi = 0; pi < paras.length; pi++) {
     // آليّة B: هل السطر يحوي كلمةً بولد؟ (يرفع صعوده/هبوطه)
     // آليّة B (max عبر مقاطع السطر الفعليّة): بولد/حجمٌ أكبر يرفع السطر
     let hasBold = false, lineMaxSz = 0;
-    if (wMeta && process.env.BOLDBOX === "1") {
+    if (wMeta && process.env.BOLDBOX !== "0") {
       for (let gi = ln.start; gi < ln.end; gi++) {
         if (wMeta[gi]?.bold) hasBold = true;
         if (wMeta[gi]?.sz && wMeta[gi].sz > lineMaxSz) lineMaxSz = wMeta[gi].sz;
