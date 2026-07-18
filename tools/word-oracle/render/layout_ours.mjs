@@ -210,7 +210,13 @@ for (let pi = 0; pi < paras.length; pi++) {
   const spaceW = wordWidth(" ", em) || wordWidth(" ", em);
   const words = p.text.trim().split(/\s+/).filter(Boolean);
   if (!words.length) continue;
-  const items = words.map((w, i) => ({ width: wordWidth(w, em), spaceBefore: i ? spaceW : 0, blankBefore: i > 0 }));
+  const cw = process.env.CTXW === "0" ? null : contextualWidths(words, em, fo);
+  const PUNCT = "،؛:.!؟»)";
+  const items = words.map((w, i) => {
+    const lc = w[w.length - 1];
+    const tov = PUNCT.includes(lc) ? Math.min(shapeWord(lc, em, fo).width, 12) : 0;
+    return { width: cw ? cw.wordW[i] : wordWidth(w, em), spaceBefore: i ? (cw ? cw.spaceW : spaceW) : 0, blankBefore: i > 0, trailingOverhang: tov };
+  });
   const lines = breakLines(items, { columnTwips: colBase, firstLineIndentTwips: p.indFirstLine || 0,
     justified: true, compatibilityMode: model.compatibilityMode });
 
