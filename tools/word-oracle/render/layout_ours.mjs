@@ -256,7 +256,12 @@ const SUP_SCALE = 0.66, SUP_RISE = 1 / 3; // مقيسٌ من Word: 211/320 = 0.6
 const runsByPara = loadRuns(`corpus/books/${BOOK}.docx`);
 const counters = {};
 
-const FONTSUB = process.env.FONTSUB === "1"; // بديلُ الخطّ المفقود — **مطفأ**: القاعدة ليست عامّة (انظر التعليق في getFont)
+const FONTSUB = process.env.FONTSUB !== "0"; // جدولُ بدائل الخطوط (مقيسٌ من Word)
+// جدولُ البدائل: عائلةٌ مفقودة → مقاييسُ الخطّ الذي رسم به Word فعلًا
+const fontSubs = (() => {
+  try { return JSON.parse(readFileSync("tools/word-oracle/render/font-substitutions.json", "utf-8")); }
+  catch { return {}; }
+})();
 // ── تعدّد الخطوط (generic): ذاكرةُ خطوطٍ لكلّ عائلة، مع احتياطيٍّ لخطّ المتن ──
 const fontCache = new Map();
 function getFont(family) {
@@ -265,19 +270,14 @@ function getFont(family) {
   const meta = metrics[key];
   const file = (meta && meta.file) || MAIN_FILE;
   // خطٌّ غيرُ متوفّر: Word **يستبدله** ويأخذ مقاييسَ البديل، لا مقاييسَ خطّ المتن —
-  // وهذا **جذرُ فجوة masjid** الرأسيّة. لكنّ مقياسَ البديل **يختلف باختلاف الخطّ
-  // المفقود**، فليست قاعدةً واحدة: قِيس من Word أنّ «(AH) Manal Bold» في masjid
-  // يعطي ١٫١٤٧٥ (= Arial ١٫١٤٩٩)، بينما «mohammad bold art 1» في tadris يعطي
-  // ≈١٫٢٩٥ ولا يطابق أيَّ خطٍّ ضمّنه Word في XPS. لذلك FONTSUB **مطفأ**: تفعيلُه
-  // يصلح masjid (خطوة ٠٪⟶٥٠٪، صفحات ١٤١⟶١٢١ مقابل ١٢٧) ويكسر tadris
-  // (‏٣٢⟶٤٦ صفحة). الحلُّ الصحيح جدولُ بدائلَ مقيسٌ لكلّ خطّ، لا احتياطيٌّ واحد.
-  // قياسٌ على masjid: صفوفُ فهرسه بخطّ «(AH) Manal Bold» (لا مقاييسَ له عندنا ولا
-  // في خطوط XPS المضمّنة، أي أنّ Word استبدله هو أيضًا). خطوةُ Word ٤٨٧٫٢tw عند
-  // em=٣٢٠ وفجوةِ ١٢٠ ⟵ النسبةُ ١٫١٤٧٥، وهي **مقاييسُ Arial/Times بالضبط**
-  // (‏١٫١٤٩٩ ⟵ خطوة ٤٨٨٫٠، فرق ٠٫٨tw). أمّا مقاييسُ خطّ المتن (‏adwa-assalaf
-  // ١٫٨٩١٦) فتعطي ٧٢٥ — وهو ما كنّا نُخرجه.
-  const substMet = metrics["Arial"] ?? metrics["Times New Roman"] ?? metrics[MAIN_FAMILY];
-  const fallbackMet = (FONTSUB && !meta) ? substMet : (meta || metrics[MAIN_FAMILY]);
+  // وهذا جذرُ فجوة masjid الرأسيّة (حصاد ٢٨). والبديلُ **يختلف باختلاف الخطّ**،
+  // فلا يصلح احتياطيٌّ واحد: جدول font-substitutions.json **مقيسٌ من Word نفسِه**
+  // (‏build_font_substitutions.py يصل مقاطعَ النموذج بمقاطع الحقيقة بنصّها فيعرف
+  // أيَّ ملفِّ خطٍّ رسم Word به كلَّ عائلةٍ مفقودة). القياس:
+  //   «(AH) Manal Bold» ⟵ ١٫١٤٩٩   |   «Khalid Art bold» ⟵ ١٫٨٩١٦ (خطُّ المتن!)
+  // ولهذا كسر الاحتياطيُّ الواحدُ tadris: فرضَ Arial على خطٍّ بديلُه خطُّ المتن.
+  const subMet = FONTSUB ? fontSubs[key] : null;
+  const fallbackMet = subMet ?? meta ?? metrics[MAIN_FAMILY];
   let obj;
   try {
     const face = new Face(new Blob(readFileSync(file)), 0);
@@ -526,11 +526,16 @@ for (let pi = 0; pi < paras.length; pi++) {
         minH: tc.rowHeightRule === "exact" ? null : (tc.rowHeight || null),
         exactH: tc.rowHeightRule === "exact" ? (tc.rowHeight || null) : null,
         marBottom: tc.marBottom || 0,
-        maxBottom: baseline, rowTop: null, cells: [], lines: [], startPage: cur,
+        maxBottom: baseline, rowTop: null, cells: [], lines: [], startPage: cur, startCol: curCol,
         cantSplit: !!tc.cantSplit, botBorder: borderH(tc, "bottom") }; // rowTop من أعلى أوّل سطر
       pendingGap = 0;
     } else if (tc.firstInCell) {
+      // خلايا الصفّ الواحد تبدأ من **نفس الأساس ونفس الصفحة**. كان الأساسُ وحدَه
+      // يُستعاد دون الصفحة، فإن فاضت خليّةٌ إلى صفحةٍ تالية بدأت التي بعدها من
+      // تلك الصفحة لا من صفحة الصفّ — فتتوالى الخلايا صفحةً صفحةً (تتالٍ).
+      // ظهر حين قصُرت مقاييسُ خطٍّ في tadris فطفح صفٌّ: ٣٢ ⟶ ٤٦ صفحة.
       baseline = curTable.startBaseline; prevDesc = curTable.startPd; pendingGap = 0;
+      cur = curTable.startPage; curCol = curTable.startCol ?? curCol;
     }
     // مستطيلُ الخليّة (تظليلٌ + حدود من نمط الجدول) — يُختَم ارتفاعُه عند نهاية الصفّ
     // ‏vMerge=continue: الخليّةُ امتدادُ ما فوقها — لا تُسهم بارتفاعٍ ولا يُكرَّر نصُّها

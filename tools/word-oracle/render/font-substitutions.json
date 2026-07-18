@@ -1,0 +1,82 @@
+{
+  "GE SS Two Light": {
+    "upem": 2048,
+    "a": 0.883789,
+    "d": 0.512695,
+    "g": 0.0,
+    "wd": 0.512695,
+    "wa": 0.883789,
+    "_source": "sample-masjid:6C1D3858",
+    "_confidence": 1.0
+  },
+  "Barada Reqa": {
+    "upem": 2048,
+    "a": 0.905273,
+    "d": 0.211914,
+    "g": 0.032715,
+    "wd": 0.211914,
+    "wa": 0.905273,
+    "_source": "sample-masjid:7D516012",
+    "_confidence": 1.0
+  },
+  "(AH) Manal Bold": {
+    "upem": 2048,
+    "a": 0.905273,
+    "d": 0.211914,
+    "g": 0.032715,
+    "wd": 0.211914,
+    "wa": 0.905273,
+    "_source": "sample-masjid:7D516012",
+    "_confidence": 0.784
+  },
+  "Hacen Tunisia": {
+    "upem": 2048,
+    "a": 0.905273,
+    "d": 0.211914,
+    "g": 0.032715,
+    "wd": 0.211914,
+    "wa": 0.905273,
+    "_source": "sample-masjid:7D516012",
+    "_confidence": 1.0
+  },
+  "Alawi Shafa": {
+    "upem": 2048,
+    "a": 0.905273,
+    "d": 0.211914,
+    "g": 0.032715,
+    "wd": 0.211914,
+    "wa": 0.905273,
+    "_source": "sample-masjid:7D516012",
+    "_confidence": 1.0
+  },
+  "Khalid Art bold": {
+    "upem": 2048,
+    "a": 1.106934,
+    "d": 0.775879,
+    "g": 0.008789,
+    "wd": 0.775879,
+    "wa": 1.106934,
+    "_source": "sample-masjid:59045A05",
+    "_confidence": 0.663
+  },
+  "mohammad bold art 1": {
+    "upem": 2048,
+    "a": 0.905273,
+    "d": 0.211914,
+    "g": 0.032715,
+    "wd": 0.211914,
+    "wa": 0.905273,
+    "_source": "sample-tadris:5E4275F0",
+    "_confidence": 0.893
+  },
+  "KFGQPC Uthmanic Script HAFS": {
+    "upem": 2048,
+    "a": 0.905273,
+    "d": 0.211914,
+    "g": 0.032715,
+    "wd": 0.211914,
+    "wa": 0.905273,
+    "_source": "sample-tadris:07BF5DA6",
+    "_confidence": 0.7
+  }
+}
