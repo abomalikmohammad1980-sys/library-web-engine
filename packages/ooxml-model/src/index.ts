@@ -85,6 +85,8 @@ export interface BodyParagraph {
   /** ضبط الأرملة/اليتيم (w:widowControl) — افتراضيّ Word مُفعَّل (true)؛ val=0 يعطّله.
    *  مُفعَّلًا: لا يُترَك سطرٌ وحيدٌ للفقرة أعلى صفحةٍ أو أسفلها عند الكسر. */
   widowControl: boolean;
+  /** ‏w:snapToGrid=0 — هذه الفقرةُ لا تتبع شبكةَ المستند */
+  snapToGrid?: boolean;
   /** ‏w:br type="column" في الفقرة — تبدأ التاليةُ عمودًا جديدًا */
   columnBreak?: boolean;
   /** ‏w:pBdr — حدودُ الفقرة (تزيد ارتفاعها بسُمكها + w:space) */
@@ -219,6 +221,10 @@ export interface SectionGeometry {
   pgNumStart: number | null;
   /** ‏w:type — كيف يبدأ المقطع: nextPage (افتراضيّ) / continuous / evenPage / oddPage */
   sectStart: string;
+  /** ‏w:docGrid — شبكةُ المستند: linePitch أرضيّةٌ لارتفاع السطر (كلُّ كتبنا ٣٦٠tw)،
+   *  وtype (‏none/lines/linesAndChars/snapToChars) يحدّد هل تُطبَّق. */
+  docGridLinePitch: number | null;
+  docGridType: string | null;
 }
 export interface DocumentModelV0 {
   /** ‏w:defaultTabStop — فاصل التوقفات التلقائية بالـ twips (افتراضي 720) */
@@ -761,6 +767,7 @@ export function parseDocument(
     marTopTwips: 1440, marBottomTwips: 1440, columnTwips: 9026,
     colCount: 1, colSpaceTwips: 708, colWidthTwips: 9026,
     pgNumFmt: null, pgNumStart: null, sectStart: "nextPage",
+    docGridLinePitch: null, docGridType: null,
   };
   function geomFrom(sectPr: XNode[] | null): SectionGeometry {
     if (!sectPr) return DEFAULT_GEO;
@@ -797,6 +804,9 @@ export function parseDocument(
       pgNumStart: findAttr(sectPr, "w:pgNumType")?.["@w:start"] != null
         ? Number(findAttr(sectPr, "w:pgNumType")!["@w:start"]) : null,
       sectStart: findAttr(sectPr, "w:type")?.["@w:val"] ?? "nextPage",
+      docGridLinePitch: findAttr(sectPr, "w:docGrid")?.["@w:linePitch"] != null
+        ? Number(findAttr(sectPr, "w:docGrid")!["@w:linePitch"]) : null,
+      docGridType: findAttr(sectPr, "w:docGrid")?.["@w:type"] ?? null,
       headerDistTwips: Number(pgMar?.["@w:header"] ?? 720),
       footerDistTwips: Number(pgMar?.["@w:footer"] ?? 720),
       titlePg: first(sectPr, "w:titlePg") !== null };
@@ -1197,6 +1207,8 @@ export function parseDocument(
       indLeft, indRight, indFirstLine, excluded, sectionIndex: -1, numbered, anchors,
       spacing, markEmTwips, markAsciiFamily, pageBreakBefore, widowControl, tabStops, toc, inlineImageHTwips, tableCell,
       tabAt: tabTextPositions, ptabAt: ptabPositions, columnBreak, pBdr,
+      snapToGrid: pPr && first(pPr, "w:snapToGrid") !== null
+        ? !["0", "false", "off"].includes(findAttr(pPr, "w:snapToGrid")?.["@w:val"] ?? "") : true,
     });
     // ‏sectPr داخل pPr يختم مقطعًا: هندسته تسري على هذه الفقرة وما سبقها
     const pSect = pPr ? first(pPr, "w:sectPr") : null;

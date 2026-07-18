@@ -327,6 +327,7 @@ let curTable = null; // {id,row,startBaseline,maxBottom} — التخطيط ال
 // آليّة B (max عبر المقاطع): صندوق السطر — صعودٌ وهبوطٌ يأخذان أقصى مقطعٍ فيه
 // (بولد أطول). الخطوة = هبوط السابق + صعود الحاليّ (BOX=0 للعودة للـpitch الثابت).
 const BOX = process.env.BOX !== "0";
+const DOCGRID = process.env.DOCGRID !== "0";  // شبكةُ المستند (قِيست: محايدةٌ إلى نافعة)
 const lineBoxAscDesc = (met, boldMet, em, hasBold, sizeEm) => {
   // max عبر المقاطع: عاديّ@em، بولد@em، عاديّ@sizeEm، بولد@sizeEm (أيّها موجود)
   let asc = met.a * em, dg = (met.d + met.g) * em;
@@ -488,6 +489,7 @@ for (let pi = 0; pi < paras.length; pi++) {
     baseline = curTable.maxBottom + (curTable.botBorder || 0);   // الحدُّ السفليّ عند الخروج
     curTable = null; prevDesc = 0;
   }
+  const gsec = model.sections[p.sectionIndex] ?? sec;
   const boldMet = metrics[`${p.runs[0]?.family || MAIN_FAMILY}|bold`];
   // مقاييسُ كلّ كلمة من **مقاطع النموذج نفسها** (مصدرٌ واحدٌ للحقيقة): نصُّها يطابق p.text
   // تمامًا (بما فيه أرقامُ الحواشي المحقونة)، وعائلتُها محلولةٌ عبر سلسلة الأنماط.
@@ -650,6 +652,14 @@ for (let pi = 0; pi < paras.length; pi++) {
     // آليّة B (max عبر خطوط السطر الفعليّة): صعود/هبوط = أقصى مقطعٍ فيه بخطّه الحقيقيّ
     // (عائلة/بولد/حجم لكلّ كلمة). خطُّ العنوان الأصغر يخفض، البولد يرفع — كلاهما generic.
     let box = { asc: MET.a * em, desc: (MET.d + MET.g) * em, extraWd: 0 };
+    // شبكةُ المستند (w:docGrid@linePitch): أرضيّةٌ لارتفاع السطر — إن كان صندوقُ
+    // السطر أقصرَ من خطوة الشبكة رُفِع إليها. تُعطَّل بـw:snapToGrid=0 على الفقرة
+    // وبـdocGrid type=none. (كلُّ كتبنا linePitch=٣٦٠.) DOCGRID=0 للتعطيل.
+    if (DOCGRID && p.snapToGrid !== false && gsec.docGridLinePitch
+        && gsec.docGridType !== "none") {
+      const need = gsec.docGridLinePitch - (box.asc + box.desc);
+      if (need > 0) box.desc += need;
+    }
     // صورةٌ سطريّة على السطر الأوّل: ترفع صعوده لارتفاع الصورة (تحجز مساحتها). generic.
     if (li === 0 && p.inlineImageHTwips > 0) box.asc = Math.max(box.asc, p.inlineImageHTwips);
     // علامةٌ مرفوعة: صعودُها = الرفع + صعودُ حجمها المصغَّر (قد يتجاوز صعود السطر)
@@ -755,9 +765,9 @@ for (let pi = 0; pi < paras.length; pi++) {
   const pageBottom = pageH - marB;
   const WIDOW = process.env.WIDOW !== "0" && widowCtl(p);
   const curInit = cur, pageAnchorInit = pageAnchor;
-  const gsec = model.sections[p.sectionIndex] ?? sec;
-  const NCOL = Math.max(1, gsec.colCount || 1);
-  const COLSTEP = (gsec.colWidthTwips ?? sec.columnTwips) + (gsec.colSpaceTwips ?? 0);
+  const gsec2 = model.sections[p.sectionIndex] ?? sec;
+  const NCOL = Math.max(1, gsec2.colCount || 1);
+  const COLSTEP = (gsec2.colWidthTwips ?? sec.columnTwips) + (gsec2.colSpaceTwips ?? 0);
   const yArr = new Array(n), pgArr = new Array(n), colArr = new Array(n);
   let b = baseline, pd = prevDesc, pg = pendingGap;
   let slot = cur * NCOL + curCol;
