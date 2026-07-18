@@ -28,6 +28,30 @@ export interface EffectiveRun {
   emTwips: number | null;
   /** ‏w:vanish — نص مخفي لا يعرضه Word (تستخدمه علامات {{PG:N}} في خط التحضير) */
   hidden: boolean;
+  /** لونُ النصّ RRGGBB (‏w:color أو themeColor محلولًا) — null يعني «يقرّره Word» */
+  color?: string | null;
+  /** ‏w:highlight — اسمُ لونِ التظليل (yellow/cyan…) كما يسمّيه OOXML */
+  highlight?: string | null;
+  /** ‏w:u@val — نوعُ التسطير (single/double/…)، وnone/غياب = بلا تسطير */
+  underline?: string | null;
+  /** لونُ التسطير إن خالف لونَ النصّ */
+  underlineColor?: string | null;
+  /** ‏w:strike / w:dstrike — شطبٌ مفردٌ أو مزدوج */
+  strike?: boolean;
+  doubleStrike?: boolean;
+  /** ‏w:caps / w:smallCaps — تكبيرُ الحروف (لا أثرَ في العربيّة، وله في اللاتينيّة) */
+  caps?: boolean;
+  smallCaps?: boolean;
+  /** ‏w:i / w:iCs — مائل */
+  italic?: boolean;
+  /** ‏w:vertAlign=subscript */
+  subscript?: boolean;
+  /** ‏w:spacing@val — تباعدُ المحارف بالـtwips (موجبٌ يوسّع، سالبٌ يضيّق) */
+  charSpacing?: number;
+  /** ‏w:position@val — رفعُ/خفضُ خطّ الأساس (أنصافُ نقاط ⟵ twips ×١٠) */
+  position?: number;
+  /** ‏w:kern@val — أدنى حجمٍ يُفعَّل عنده التقنين (أنصافُ نقاط) */
+  kern?: number;
 }
 export interface BodyParagraph {
   index: number;
@@ -258,6 +282,8 @@ export function openDocx(bytes: Uint8Array): {
   headerFooterParts: Map<string, string>;
   /** علاقاتُ المستند: rId → هدفُه (لحلّ headerReference/footerReference) */
   documentRels: Map<string, string>;
+  /** ‏word/theme/theme1.xml — لحلّ w:themeColor */
+  themeXml: string | null;
 } {
   const files = unzipSync(bytes);
   const dec = new TextDecoder("utf-8");
@@ -282,6 +308,7 @@ export function openDocx(bytes: Uint8Array): {
     documentXml: dec.decode(doc),
     stylesXml: get("word/styles.xml"),
     settingsXml: get("word/settings.xml"),
+    themeXml: get("word/theme/theme1.xml"),
     numberingXml: get("word/numbering.xml"),
     footnotesXml: get("word/footnotes.xml"),
     endnotesXml: get("word/endnotes.xml"),
@@ -378,6 +405,8 @@ interface StyleProps {
    *  وسطرها مسوَّغ ممتلئ لأن نمطها يحمل التسويغ) */
   jc: string | null;
   spacing: SpacingProps;
+  /** مظهرُ النصّ من rPr النمط — يُدمَج على السلسلة (الأساسُ أوّلًا فيدوسه الفرع) */
+  look: RunLook;
 }
 export interface StyleTable {
   defaults: { sz: number | null; family: string | null; spacing: SpacingProps };
@@ -458,6 +487,107 @@ function spacingProps(pPr: XNode[] | null): SpacingProps {
   };
 }
 
+/** جدولُ ألوان السمة من word/theme/theme1.xml: اسمُ اللون ← RRGGBB.
+ *  ‏w:themeColor يشير إلى هذه الأسماء؛ وWord يسمّي dk1/lt1 في المستند
+ *  ‏text1/background1 (وdk2/lt2 ⟵ text2/background2) فنُسجّل الاسمَين. */
+export function parseTheme(themeXml: string | null): Map<string, string> {
+  const out = new Map<string, string>();
+  if (!themeXml) return out;
+  const scheme = themeXml.match(/<a:clrScheme[\s\S]*?<\/a:clrScheme>/);
+  if (!scheme) return out;
+  const ALIAS: Record<string, string> = { dk1: "text1", lt1: "background1",
+    dk2: "text2", lt2: "background2" };
+  for (const m of scheme[0].matchAll(/<a:(\w+)>([\s\S]*?)<\/a:>/g)) {
+    const name = m[1]!;
+    const srgb = m[2]!.match(/<a:srgbClr val="([0-9A-Fa-f]{6})"/);
+    const sys = m[2]!.match(/<a:sysClr[^>]*lastClr="([0-9A-Fa-f]{6})"/);
+    const hex = (srgb?.[1] ?? sys?.[1] ?? "").toUpperCase();
+    if (!hex) continue;
+    out.set(name, hex);
+    if (ALIAS[name]) out.set(ALIAS[name]!, hex);
+  }
+  return out;
+}
+
+/** يطبّق tint/shade على لونٍ ست عشريّ (ECMA-376: القيمة جزءٌ من ٢٥٥ ست عشريّ).
+ *  ‏tint يُفتِح نحو الأبيض، وshade يُعتِم نحو الأسود. */
+function applyTintShade(hex: string, tint?: string, shade?: string): string {
+  const f = (v: string | undefined) => (v ? parseInt(v, 16) / 255 : null);
+  const t = f(tint), sh = f(shade);
+  if (t == null && sh == null) return hex;
+  const ch = (i: number) => parseInt(hex.slice(i * 2, i * 2 + 2), 16);
+  const conv = (c: number) => {
+    if (t != null) return Math.round(c * t + 255 * (1 - t));
+    return Math.round(c * (sh as number));
+  };
+  return [0, 1, 2].map((i) => conv(ch(i)).toString(16).padStart(2, "0").toUpperCase()).join("");
+}
+
+/** لونُ عنصرٍ من rPr/tcPr: ‏w:color@val المباشر، أو themeColor محلولًا بالسمة.
+ *  «auto» تعني «يقرّره Word» ⟵ نُعيد null فيرثه الراسمُ (أسود عادةً). */
+function resolveColor(
+  attrs: Record<string, string> | null | undefined, theme: Map<string, string>,
+): string | null {
+  if (!attrs) return null;
+  const tc = attrs["@w:themeColor"];
+  if (tc) {
+    const base = theme.get(tc);
+    if (base) return applyTintShade(base, attrs["@w:themeTint"], attrs["@w:themeShade"]);
+  }
+  const v = attrs["@w:val"];
+  if (v && v !== "auto" && /^[0-9A-Fa-f]{6}$/.test(v)) return v.toUpperCase();
+  return null;
+}
+
+/** خصائصُ مظهر رنٍّ من rPr — تُدمَج على سلسلة (مباشر ← pPr/rPr ← النمط). */
+export interface RunLook {
+  color?: string | null; highlight?: string | null;
+  underline?: string | null; underlineColor?: string | null;
+  strike?: boolean; doubleStrike?: boolean;
+  caps?: boolean; smallCaps?: boolean; italic?: boolean;
+  charSpacing?: number; position?: number; kern?: number;
+}
+/** «مُفعَّل» في OOXML: وجودُ الوسم بلا val، أو val ليست 0/false/off. */
+function onFlag(rpr: XNode[], nm: string): boolean | undefined {
+  if (first(rpr, nm) === null) return undefined;
+  const v = findAttr(rpr, nm)?.["@w:val"];
+  return !["0", "false", "off"].includes(v ?? "");
+}
+export function rPrLook(rpr: XNode[] | null, theme: Map<string, string>): RunLook {
+  if (!rpr) return {};
+  const out: RunLook = {};
+  const colAttrs = findAttr(rpr, "w:color");
+  const col = resolveColor(colAttrs, theme);
+  if (col) out.color = col;
+  const hl = findAttr(rpr, "w:highlight")?.["@w:val"];
+  if (hl && hl !== "none") out.highlight = hl;
+  const uAttrs = findAttr(rpr, "w:u");
+  if (uAttrs) {
+    const uv = uAttrs["@w:val"] ?? "single";
+    if (uv !== "none") {
+      out.underline = uv;
+      const uc = resolveColor(uAttrs, theme);
+      if (uc) out.underlineColor = uc;
+    }
+  }
+  const st = onFlag(rpr, "w:strike"); if (st !== undefined) out.strike = st;
+  const ds = onFlag(rpr, "w:dstrike"); if (ds !== undefined) out.doubleStrike = ds;
+  const cp = onFlag(rpr, "w:caps"); if (cp !== undefined) out.caps = cp;
+  const sc = onFlag(rpr, "w:smallCaps"); if (sc !== undefined) out.smallCaps = sc;
+  const it = onFlag(rpr, "w:i") ?? onFlag(rpr, "w:iCs"); if (it !== undefined) out.italic = it;
+  // ‏w:spacing داخل rPr تباعدُ محارفَ بالـtwips (غيرُ w:spacing في pPr وهو رأسيّ)
+  for (const n of rpr) {
+    if (!("w:spacing" in n)) continue;
+    const v = (n[":@"] as Record<string, string> | undefined)?.["@w:val"];
+    if (v != null && v !== "") out.charSpacing = Number(v);
+  }
+  const pos = findAttr(rpr, "w:position")?.["@w:val"];
+  if (pos != null && pos !== "") out.position = Number(pos) * 10;   // أنصافُ نقاط ⟵ twips
+  const kn = findAttr(rpr, "w:kern")?.["@w:val"];
+  if (kn != null && kn !== "") out.kern = Number(kn);
+  return out;
+}
+
 function rPrProps(rpr: XNode[] | null): { sz: number | null; family: string | null } {
   if (!rpr) return { sz: null, family: null };
   let sz: number | null = null;
@@ -474,7 +604,9 @@ function rPrProps(rpr: XNode[] | null): { sz: number | null; family: string | nu
 
 const NO_SPACING: SpacingProps = { present: false, line: null, lineRule: null, before: null, after: null };
 
-export function parseStyles(stylesXml: string | null): StyleTable {
+export function parseStyles(
+  stylesXml: string | null, theme: Map<string, string> = new Map(),
+): StyleTable {
   const table: StyleTable = {
     defaults: { sz: null, family: null, spacing: NO_SPACING },
     defaultParagraphStyleId: null, byId: new Map(),
@@ -508,6 +640,7 @@ export function parseStyles(stylesXml: string | null): StyleTable {
     const jc = stylePPr ? (findAttr(stylePPr, "w:jc")?.["@w:val"] ?? null) : null;
     table.byId.set(id, {
       ...p, ...ind, jc, spacing: spacingProps(stylePPr),
+      look: rPrLook(rpr, theme),
       basedOn: basedOnAttrs?.["@w:val"] ?? null,
     });
   }
@@ -516,6 +649,7 @@ export function parseStyles(stylesXml: string | null): StyleTable {
 
 function resolveViaStyle(table: StyleTable, styleId: string | null) {
   let sz: number | null = null, family: string | null = null, jc: string | null = null;
+  const look: RunLook = {};
   let indLeft: number | null = null, indRight: number | null = null, indFirstLine: number | null = null;
   // وراثة w:spacing سمّية عبر السلسلة (درسا masjid/muqtarah الرأسيان:
   // ‏after المباشر يتعايش مع line من النمط/docDefaults؛ وطبقة النمط
@@ -526,6 +660,8 @@ function resolveViaStyle(table: StyleTable, styleId: string | null) {
     const s = table.byId.get(id);
     if (!s) break;
     sz ??= s.sz; family ??= s.family; jc ??= s.jc;
+    for (const k of Object.keys(s.look) as (keyof RunLook)[])
+      if (look[k] === undefined) (look as Record<string, unknown>)[k] = s.look[k];
     indLeft ??= s.indLeft; indRight ??= s.indRight; indFirstLine ??= s.indFirstLine;
     if (s.spacing.present) {
       sp.present = true;
@@ -547,7 +683,7 @@ function resolveViaStyle(table: StyleTable, styleId: string | null) {
   return {
     sz: sz ?? table.defaults.sz, family: family ?? table.defaults.family, jc,
     indLeft: indLeft ?? 0, indRight: indRight ?? 0, indFirstLine: indFirstLine ?? 0,
-    spacing: sp,
+    spacing: sp, look,
   };
 }
 
@@ -557,6 +693,7 @@ function resolveViaStyle(table: StyleTable, styleId: string | null) {
  *  كلُّ قواعد الفقرة (الأنماط، الحقول، الترقيم) بلا ازدواجِ منطق. */
 function parseTextBox(
   shape: XNode[], styles: StyleTable, numbering: NumberingTable,
+  theme: Map<string, string> = new Map(),
 ): BodyParagraph[] | undefined {
   const box = collectDeep(shape, "w:txbxContent")[0]?.node;
   if (!box || !box.length) return undefined;
@@ -564,7 +701,7 @@ function parseTextBox(
     const inner = builder.build(box) as string;
     const xml = `<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">`
       + `<w:body>${inner}</w:body></w:document>`;
-    const paras = parseDocument(xml, styles, numbering).paragraphs;
+    const paras = parseDocument(xml, styles, numbering, theme).paragraphs;
     return paras.length ? paras : undefined;
   } catch {
     return undefined; // مربّعٌ لا يُعاد تسلسلُه: نتجاهله ولا نُسقِط بقيّة الصفحة
@@ -574,6 +711,7 @@ function parseTextBox(
 export function parseDocument(
   documentXml: string, styles: StyleTable,
   numbering: NumberingTable = new Map(),
+  theme: Map<string, string> = new Map(),
 ): DocumentModelV0 {
   const root = parser.parse(documentXml) as XNode[];
   const doc = first(root, "w:document");
@@ -702,7 +840,8 @@ export function parseDocument(
     const indLeft = own.indLeft ?? numProps?.indLeft ?? styleProps.indLeft;
     const indRight = own.indRight ?? numProps?.indRight ?? styleProps.indRight;
     const indFirstLine = own.indFirstLine ?? numProps?.indFirstLine ?? styleProps.indFirstLine;
-    const pPrRPr = pPr ? rPrProps(first(pPr, "w:rPr")) : { sz: null, family: null };
+    const pPrRPrNode = pPr ? first(pPr, "w:rPr") : null;
+    const pPrRPr = rPrProps(pPrRPrNode);
     // خط علامة الترقيم بشريحة ASCII (أرقام «1.» لاتينية الشريحة!) — من
     // ‏rFonts ascii في rPr علامة الفقرة (حل لغز 586: ‏asc(Simplified)=1.18em)
     const markAsciiFamily = pPr
@@ -820,7 +959,7 @@ export function parseDocument(
               rId: collectDeep(anc, "a:blip")[0]?.attrs?.["@r:embed"]
                 ?? collectDeep(anc, "a:blip")[0]?.attrs?.["@r:link"] ?? null,
               ...(() => {
-                const tb = parseTextBox(anc, styles, numbering);
+                const tb = parseTextBox(anc, styles, numbering, theme);
                 if (!tb) return {};
                 // ‏bodyPr: الرسوّ العموديّ والحشوات. الافتراضيّات في ECMA-376:
                 // ‏lIns/rIns=91440EMU=144tw، tIns/bIns=45720EMU=72tw، anchor=t.
@@ -861,8 +1000,11 @@ export function parseDocument(
         const v = findAttr(rpr, nm)?.["@w:val"];
         return !["0", "false", "off"].includes(v ?? "");
       };
+      // المظهر: المباشرُ يتقدّم، ثمّ rPr الفقرة، ثمّ سلسلةُ النمط
+      const look: RunLook = { ...styleProps.look, ...rPrLook(pPrRPrNode, theme), ...rPrLook(rpr, theme) };
       runs.push({
         text,
+        ...look,
         fieldResult: fldInResult && fldKind ? fldKind : null,
         noteRef,
         superscript: vAlign === "superscript",
@@ -972,6 +1114,7 @@ export function parseDocument(
 export function parseNotes(
   notesXml: string | null, documentXml: string, styles: StyleTable,
   numbering: NumberingTable = new Map(), tag = "w:footnote",
+  theme: Map<string, string> = new Map(),
 ): Map<string, BodyParagraph[]> {
   const out = new Map<string, BodyParagraph[]>();
   if (!notesXml) return out;
@@ -1000,7 +1143,7 @@ export function parseNotes(
     if (!id) continue;
     try {
       const wrapped = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document${ns}><w:body>${inner}</w:body></w:document>`;
-      out.set(id, parseDocument(wrapped, styles, numbering).paragraphs);
+      out.set(id, parseDocument(wrapped, styles, numbering, theme).paragraphs);
     } catch { /* حاشيةٌ لا تُحلَّل: تُتجاهَل بدل إسقاط المستند */ }
   }
   return out;
@@ -1010,6 +1153,7 @@ export function parseNotes(
  *  parseDocument كاملًا (لفُّ محتواه في body مؤقّت). حصاد «الشاملة الذهبية». */
 export function parseHeaderFooterPart(
   partXml: string, documentXml: string, styles: StyleTable, numbering: NumberingTable = new Map(),
+  theme: Map<string, string> = new Map(),
 ): BodyParagraph[] {
   const nsMatch = documentXml.match(/<w:document([^>]*)>/);
   const ns = nsMatch ? nsMatch[1] : ' xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"';
@@ -1021,25 +1165,26 @@ export function parseHeaderFooterPart(
   const inner = partXml.slice(gt + 1, closeAt);
   try {
     const wrapped = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document${ns}><w:body>${inner}</w:body></w:document>`;
-    return parseDocument(wrapped, styles, numbering).paragraphs;
+    return parseDocument(wrapped, styles, numbering, theme).paragraphs;
   } catch { return []; }
 }
 
 export function extractFromDocx(bytes: Uint8Array): DocumentModelV0 {
   const { documentXml, stylesXml, settingsXml, numberingXml, footnotesXml, endnotesXml,
-    headerFooterParts, documentRels } = openDocx(bytes);
-  const styles = parseStyles(stylesXml);
+    headerFooterParts, documentRels, themeXml } = openDocx(bytes);
+  const theme = parseTheme(themeXml);
+  const styles = parseStyles(stylesXml, theme);
   const numbering = parseNumbering(numberingXml);
-  const model = parseDocument(documentXml, styles, numbering);
+  const model = parseDocument(documentXml, styles, numbering, theme);
   model.compatibilityMode = compatibilityMode(settingsXml);
   model.defaultTabStop = defaultTabStop(settingsXml);
   // نصوصُ الحواشي/التعليقات — تُرصَّف أسفل الصفحة التي فيها مرجعُها
-  model.footnotes = parseNotes(footnotesXml, documentXml, styles, numbering, "w:footnote");
-  model.endnotes = parseNotes(endnotesXml, documentXml, styles, numbering, "w:endnote");
+  model.footnotes = parseNotes(footnotesXml, documentXml, styles, numbering, "w:footnote", theme);
+  model.endnotes = parseNotes(endnotesXml, documentXml, styles, numbering, "w:endnote", theme);
   // الترويسات/التذييلات: كلُّ جزءٍ يُحلَّل فقراتٍ، وrId يُربَط باسم جزئه
   model.relTargets = documentRels;
   model.evenAndOddHeaders = (settingsXml ?? "").includes("<w:evenAndOddHeaders");
   for (const [name, xml] of headerFooterParts)
-    model.headerFooters.set(name, parseHeaderFooterPart(xml, documentXml, styles, numbering));
+    model.headerFooters.set(name, parseHeaderFooterPart(xml, documentXml, styles, numbering, theme));
   return model;
 }

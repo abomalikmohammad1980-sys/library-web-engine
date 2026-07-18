@@ -158,17 +158,30 @@ function loadRuns(docxPath) {
 }
 /** مقاييس كلّ كلمة (بولد/حجم) بالمشي عبر مقاطع الفقرة — يوازي words الناتجة من
  *  p.text.split(/\s+/). الكلمة الممتدّة عبر مقاطع تأخذ أطولها (أقصى pitch). */
+/** عائلةُ خطّ كلمةٍ بفهرسها (للمقاييس عند رسم الزخارف). */
+function wMetaFam(wMeta, gi, p) {
+  return (wMeta && wMeta[gi] && wMeta[gi].fam) || p.runs[0]?.family || MAIN_FAMILY;
+}
 function paraWordMeta(paraRuns) {
   const meta = []; let cur = null;
   const push = () => { if (cur) { meta.push(cur); cur = null; } };
   for (const r of paraRuns) {
     for (const ch of r.text) {
       if (/\s/.test(ch)) { push(); continue; }
-      if (!cur) cur = { bold: false, sz: null, fam: null, sup: false, sub: false };
+      if (!cur) cur = { bold: false, sz: null, fam: null, sup: false, sub: false,
+        color: null, highlight: null, underline: null, ucolor: null,
+        strike: false, dstrike: false, italic: false, pos: 0 };
       cur.bold = cur.bold || r.bold;
       cur.sup = cur.sup || !!r.sup; cur.sub = cur.sub || !!r.sub;
       if (r.sz && (!cur.sz || r.sz > cur.sz)) cur.sz = r.sz;
       if (r.fam && !cur.fam) cur.fam = r.fam;
+      // المظهر: أوّلُ مقطعٍ في الكلمة يحسم (الكلمةُ وحدةُ رسمٍ عندنا)
+      if (r.color && !cur.color) cur.color = r.color;
+      if (r.highlight && !cur.highlight) cur.highlight = r.highlight;
+      if (r.underline && !cur.underline) { cur.underline = r.underline; cur.ucolor = r.ucolor ?? null; }
+      cur.strike = cur.strike || !!r.strike; cur.dstrike = cur.dstrike || !!r.dstrike;
+      cur.italic = cur.italic || !!r.italic;
+      if (r.pos && !cur.pos) cur.pos = r.pos;
     }
   }
   push();
@@ -453,7 +466,10 @@ for (let pi = 0; pi < paras.length; pi++) {
   // مقاييسُ كلّ كلمة من **مقاطع النموذج نفسها** (مصدرٌ واحدٌ للحقيقة): نصُّها يطابق p.text
   // تمامًا (بما فيه أرقامُ الحواشي المحقونة)، وعائلتُها محلولةٌ عبر سلسلة الأنماط.
   const mRuns = p.runs.filter((r) => !r.hidden).map((r) => ({
-    text: r.text, bold: !!r.bold, sz: r.emTwips, fam: r.family, sup: !!r.superscript, sub: false }));
+    text: r.text, bold: !!r.bold, sz: r.emTwips, fam: r.family, sup: !!r.superscript,
+    sub: !!r.subscript, color: r.color ?? null, highlight: r.highlight ?? null,
+    underline: r.underline ?? null, ucolor: r.underlineColor ?? null,
+    strike: !!r.strike, dstrike: !!r.doubleStrike, italic: !!r.italic, pos: r.position ?? 0 }));
   const wMeta = mRuns.length ? paraWordMeta(mRuns) : null;
   const cw = process.env.CTXW === "0" ? null : contextualWidths(words, em, fo);
   const PUNCT = "،؛:.!؟»)";
@@ -568,8 +584,13 @@ for (let pi = 0; pi < paras.length; pi++) {
       const isSup = !!(wm && (wm.sup || wm.sub));
       const wem = isSup ? em * SUP_SCALE : em;
       const sh = shapeWord(w, wem, fo);
+      // ‏w:position يرفع/يخفض الأساس بمقداره (twips، موجبٌ يرفع)
+      const dyBase = wm?.sup ? -(em * SUP_RISE) : wm?.sub ? (em * SUP_RISE * 0.5) : 0;
       return { glyphs: sh.glyphs, width: sh.width, em: wem,
-        dy: wm?.sup ? -(em * SUP_RISE) : wm?.sub ? (em * SUP_RISE * 0.5) : 0 };
+        dy: dyBase - (wm?.pos || 0),
+        color: wm?.color ?? null, highlight: wm?.highlight ?? null,
+        underline: wm?.underline ?? null, ucolor: wm?.ucolor ?? null,
+        strike: !!wm?.strike, dstrike: !!wm?.dstrike };
     });
     const wordsW = shaped.reduce((a, s) => a + s.width, 0);
     const nSpaces = lineWords.length - 1;
@@ -612,7 +633,7 @@ for (let pi = 0; pi < paras.length; pi++) {
       }
     }
     // وضعٌ RTL: أوّل كلمةٍ (منطقيًّا) أقصى اليمين؛ المحارف داخل الكلمة يسار→يمين
-    const glyphs = [];
+    const glyphs = []; const decos = [];
     // العلامة تتدلّى يمين حافّة النصّ (في الهامش) — لا تُزيح النصّ نفسه
     if (li === 0 && marker) {
       let gx = rightEdge;
@@ -627,7 +648,17 @@ for (let pi = 0; pi < paras.length; pi++) {
         const go = { gid: g.gid, x: Math.round(gx * 100) / 100 };
         if (s.em !== em) go.em = s.em;      // حجمٌ خاصّ (رفع/خفض)
         if (s.dy) go.dy = Math.round(s.dy * 100) / 100;
+        if (s.color) go.fill = s.color;     // لونُ النصّ (w:color/themeColor)
         glyphs.push(go); gx += g.adv;
+      }
+      // زخارفُ الكلمة: تظليلٌ خلفها، وتسطيرٌ/شطبٌ خطوطًا — بإحداثيّات السطر
+      if (s.highlight || s.underline || s.strike || s.dstrike) {
+        const met = (metrics[wMetaFam(wMeta, ln.start + k, p)] || MET);
+        decos.push({ x: left, w: s.width, dy: s.dy || 0, em: s.em,
+          highlight: s.highlight || null, underline: s.underline || null,
+          ucolor: s.ucolor || s.color || null, color: s.color || null,
+          strike: !!s.strike, dstrike: !!s.dstrike,
+          asc: met.a * s.em, desc: (met.d + met.g) * s.em });
       }
       const gi2 = ln.start + k + 1;
       const nxt = tabGap[gi2];
@@ -648,7 +679,7 @@ for (let pi = 0; pi < paras.length; pi++) {
         }
       }
     }
-    descs.push({ glyphs, asc: box.asc, desc: box.desc, extraWd: box.extraWd, mlt: lineMultiplier(p.spacing), text: lineWords.join(" ") });
+    descs.push({ glyphs, decos, asc: box.asc, desc: box.desc, extraWd: box.extraWd, mlt: lineMultiplier(p.spacing), text: lineWords.join(" ") });
   }
 
   // صفّ فهرس (TOC، حصاد «الشاملة الذهبية»): سطرٌ واحد — المدخل يمينًا، رقمُ الصفحة عند
@@ -727,6 +758,9 @@ for (let pi = 0; pi < paras.length; pi++) {
     const dx = colArr[i] ? -colArr[i] * COLSTEP : 0;
     const gl = dx ? descs[i].glyphs.map((g) => ({ ...g, x: Math.round((g.x + dx) * 100) / 100 })) : descs[i].glyphs;
     const lineObj = { y: Math.round(yOut * 100) / 100, em, font: fo.file, glyphs: gl, text: descs[i].text };
+    if (descs[i].decos?.length) lineObj.decos = dx
+      ? descs[i].decos.map((d) => ({ ...d, x: Math.round((d.x + dx) * 100) / 100 }))
+      : descs[i].decos;
     pages[pgArr[i]].push(lineObj);
     if (curTable && p.tableCell) curTable.lines.push({ pg: pgArr[i], o: lineObj }); // لنقل الصفّ إن لزم
   }
