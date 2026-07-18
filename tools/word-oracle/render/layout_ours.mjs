@@ -184,6 +184,7 @@ const numbering = loadNumbering(`corpus/books/${BOOK}.docx`);
 const contextual = loadContextual(`corpus/books/${BOOK}.docx`);
 const tableBorders = loadTableBorders(`corpus/books/${BOOK}.docx`);
 const tableCells = []; // مستطيلات خلايا الجداول {page,x,y,w,h,fill,bw,bc}
+const notesByPage = new Map(); // صفحة → مراجعُ الحواشي الواقعة فيها
 const hasContextual = (p) => contextual.byText.has(contextual.norm(p.text)) || contextual.styleSet.has(p.styleId);
 // ضبط الأرملة/اليتيم مُفعَّلٌ ما لم يُعطَّل صراحةً (widowControl=false في النموذج)
 const widowCtl = (p) => p.widowControl !== false;
@@ -581,6 +582,12 @@ for (let pi = 0; pi < paras.length; pi++) {
     if (curTable && p.tableCell) curTable.lines.push({ pg: pgArr[i], o: lineObj }); // لنقل الصفّ إن لزم
   }
   // حالة ما بعد الفقرة (للفقرة التالية)
+  // حواشي هذه الفقرة تنتمي إلى الصفحة التي وقع فيها سطرُها الأوّل
+  if (n > 0) for (const r of p.runs) if (r.noteRef && r.noteRef.kind === "footnote") {
+    const pg = pgArr[0];
+    if (!notesByPage.has(pg)) notesByPage.set(pg, []);
+    notesByPage.get(pg).push(r.noteRef);
+  }
   baseline = b; prevDesc = pd; pendingGap = 0; cur = pgArr[n - 1];
   if (curTable && p.tableCell) {
     curTable.maxBottom = Math.max(curTable.maxBottom, baseline + (prevDesc || 0));
@@ -592,6 +599,48 @@ for (let pi = 0; pi < paras.length; pi++) {
 }
 
 finishRow(curTable); // اختم آخر صفٍّ في المستند
+
+// ── ترصيفُ الحواشي أسفلَ صفحاتها (حصاد «الشاملة الذهبية»؛ مقيسٌ على Word) ──
+// Word يضع نصوصَ الحواشي في أسفل منطقة النصّ بترتيب مراجعها، كلٌّ مسبوقةٌ برقمها.
+// نرصّفها من الأسفل: نحسب ارتفاعها الكلّيّ ثمّ نبدأ من (أسفل المنطقة − الارتفاع).
+for (const [pgIdx, refs] of notesByPage) {
+  if (!pages[pgIdx]) continue;
+  const built = [];
+  for (const ref of refs) {
+    const paras = model.footnotes.get(String(ref.id)) || [];
+    for (const fp of paras) {
+      const fem = fp.runs[0]?.emTwips || 200; // حجمُ الحاشية الافتراضيّ
+      const ffo = getFont(fp.runs[0]?.family || MAIN_FAMILY);
+      const fmet = ffo.met;
+      const fwords = (String(ref.num) + " " + fp.text).trim().split(/\s+/).filter(Boolean);
+      if (!fwords.length) continue;
+      const fsp = shapeWord(" ", fem, ffo).width;
+      const fitems = fwords.map((w, i) => ({ width: shapeWord(w, fem, ffo).width,
+        spaceBefore: i ? fsp : 0, blankBefore: i > 0, trailingOverhang: 0 }));
+      const flines = breakLines(fitems, { columnTwips: sec.columnTwips, firstLineIndentTwips: 0,
+        justified: false, compatibilityMode: model.compatibilityMode });
+      const fmlt = lineMultiplier(fp.spacing);
+      flines.forEach((fl, k) => built.push({ words: fwords.slice(fl.start, fl.end), fem, ffo, fmet, fsp,
+        mlt: fmlt, after: k === flines.length - 1 ? (fp.spacing?.after || 0) : 0 }));
+    }
+  }
+  if (!built.length) continue;
+  const lineH = (b) => (b.fmet.a + b.fmet.d + b.fmet.g) * b.fem * (b.mlt || 1) + (b.after || 0);
+  const total = built.reduce((a, b) => a + lineH(b), 0);
+  let fy = (pageH - marB) - total + built[0].fmet.a * built[0].fem; // أوّل أساسٍ للحواشي
+  for (const b of built) {
+    const shaped = b.words.map((w) => shapeWord(w, b.fem, b.ffo));
+    const glyphs = []; let penX = pageW - marR;
+    for (const sh of shaped) {
+      const left = penX - sh.width; let gx = left;
+      for (const g of sh.glyphs) { glyphs.push({ gid: g.gid, x: Math.round(gx * 100) / 100 }); gx += g.adv; }
+      penX = left - b.fsp;
+    }
+    pages[pgIdx].push({ y: Math.round(fy * 100) / 100, em: b.fem, font: b.ffo.file, glyphs,
+      text: b.words.join(" "), footnote: true });
+    fy += lineH(b);
+  }
+}
 const out = { source: "our-engine", unit: "twip", mainFont: MAIN_FILE,
   pageW, pageH, docx: `corpus/books/${BOOK}.docx`,
   pages: pages.map((lines, pi) => ({ w: pageW, h: pageH, lines,
