@@ -284,8 +284,28 @@ const lineBoxAscDesc = (met, boldMet, em, hasBold, sizeEm) => {
 // أسفل أطول خليّة (baseline + descent). هوامش الخليّة الرأسيّة صفرٌ في Word (لا حشوَ مصطنعًا).
 function finishRow(t) {
   if (!t) return;
-  const top = t.rowTop != null ? t.rowTop : t.startBaseline;
-  const bottom = Math.max(t.maxBottom, top + 1);
+  let top = t.rowTop != null ? t.rowTop : t.startBaseline;
+  let bottom = Math.max(t.maxBottom, top + 1);
+  // كسرُ الصفحة على مستوى الصفّ (سلوك Word): صفٌّ لا يسعه ما بقي من الصفحة يُنقَل
+  // **كاملًا** للصفحة التالية (لا يُشقّ)، بشرط أن يسعه ارتفاعُ صفحةٍ كاملة وأن يكون
+  // فوقه محتوًى على صفحته (وإلّا فهو أطول من صفحةٍ فلا ينفع نقلُه). ROWBREAK=0 للتعطيل.
+  const pageBottom = pageH - marB, pageTop = marT;
+  const rowH = bottom - top;
+  if (t.cantSplit && process.env.ROWBREAK !== "0" && bottom > pageBottom && rowH <= (pageBottom - pageTop)
+      && top > pageTop + 1 && t.lines.length > 0) { // بدأ الصفّ وسطَ الصفحة (فوقه محتوًى)
+    const shift = pageTop - top;              // ننقل أعلى الصفّ إلى أعلى الصفحة الجديدة
+    pages.push([]); const np = pages.length - 1;
+    for (const ref of t.lines) {              // انزع السطر من صفحته وضعه في الجديدة
+      const arr = pages[ref.pg]; const i = arr.indexOf(ref.o);
+      if (i >= 0) arr.splice(i, 1);
+      ref.o.y = Math.round((ref.o.y + shift) * 100) / 100;
+      pages[np].push(ref.o);
+    }
+    for (const c of t.cells) c.page = np;
+    top += shift; bottom += shift;
+    cur = np; baseline = bottom; prevDesc = null; // نتابع بعد الصفّ في الصفحة الجديدة
+    t.maxBottom = bottom;
+  }
   for (const c of t.cells) { c.y = top; c.h = bottom - top; }
 }
 for (let pi = 0; pi < paras.length; pi++) {
@@ -353,7 +373,7 @@ for (let pi = 0; pi < paras.length; pi++) {
     if (!curTable || curTable.id !== tc.tableId || curTable.row !== tc.row) {
       if (curTable) { finishRow(curTable); baseline = curTable.maxBottom; }
       curTable = { id: tc.tableId, row: tc.row, startBaseline: baseline, maxBottom: baseline,
-        rowTop: null, cells: [] }; // rowTop يُحسَب من أعلى أوّل سطرٍ فعليّ لكلّ خليّة
+        rowTop: null, cells: [], lines: [], startPage: cur, cantSplit: !!tc.cantSplit }; // rowTop من أعلى أوّل سطر
       prevDesc = null; pendingGap = 0;
     } else if (tc.firstInCell) { baseline = curTable.startBaseline; prevDesc = null; pendingGap = 0; }
     // مستطيلُ الخليّة (تظليلٌ + حدود من نمط الجدول) — يُختَم ارتفاعُه عند نهاية الصفّ
@@ -532,7 +552,9 @@ for (let pi = 0; pi < paras.length; pi++) {
     const anchor = pgArr[i] === curInit ? pageAnchorInit : pageStartB;
     const yOut = process.env.DOTSNAP !== "1" ? yArr[i]
       : anchor + Math.round((yArr[i] - anchor) / 2.4) * 2.4;
-    pages[pgArr[i]].push({ y: Math.round(yOut * 100) / 100, em, font: fo.file, glyphs: descs[i].glyphs, text: descs[i].text });
+    const lineObj = { y: Math.round(yOut * 100) / 100, em, font: fo.file, glyphs: descs[i].glyphs, text: descs[i].text };
+    pages[pgArr[i]].push(lineObj);
+    if (curTable && p.tableCell) curTable.lines.push({ pg: pgArr[i], o: lineObj }); // لنقل الصفّ إن لزم
   }
   // حالة ما بعد الفقرة (للفقرة التالية)
   baseline = b; prevDesc = pd; pendingGap = 0; cur = pgArr[n - 1];

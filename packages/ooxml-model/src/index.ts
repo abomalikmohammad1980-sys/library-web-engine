@@ -86,6 +86,9 @@ export interface TableCellCtx {
   /** عرض الجدول w:tblW: القيمة والنوع (pct مقياسه 5000=100٪، أو dxa، أو auto) */
   tblWVal: number;
   tblWType: string;
+  /** ‏w:cantSplit على الصفّ: يمنع انشقاقه عبر الصفحات. **الافتراضيّ في OOXML/Word أنّ
+   *  الصفوف تنشقّ**، فلا يُنقَل الصفّ إلّا إن كان هذا العلَم مضبوطًا. */
+  cantSplit: boolean;
 }
 
 /** توقّف جدولةٍ مخصّص (§17.3.1.37) */
@@ -526,6 +529,10 @@ export function parseDocument(
         let row = 0;
         for (const tr of tbl) {
           if (!("w:tr" in tr)) continue;
+          const trPr = first(tr["w:tr"] as XNode[], "w:trPr");
+          const csVal = trPr ? findAttr(trPr, "w:cantSplit")?.["@w:val"] : undefined;
+          const cantSplit = trPr ? (first(trPr, "w:cantSplit") !== null
+            && !["0", "false", "off"].includes(csVal ?? "")) : false;
           const cells = (tr["w:tr"] as XNode[]).filter((c) => "w:tc" in c);
           let col = 0;
           cells.forEach((cell, ci) => {
@@ -537,7 +544,7 @@ export function parseDocument(
             const shdFill = rawFill && !["auto", "FFFFFF", "ffffff"].includes(rawFill) ? rawFill : null;
             const cc: TableCellCtx = { tableId, row, col, colXTwips: colX[col] ?? 0, colWTwips,
               firstInCell: false, firstInRow: ci === 0, lastInRow: ci === cells.length - 1,
-              shdFill, tblStyleId, totalGridTwips: acc, tblWVal, tblWType };
+              shdFill, tblStyleId, totalGridTwips: acc, tblWVal, tblWType, cantSplit };
             const cellParas = flattenBlocks(tc, cc);
             if (cellParas[0]?.cell) cellParas[0].cell = { ...cellParas[0].cell, firstInCell: true };
             out.push(...cellParas);
