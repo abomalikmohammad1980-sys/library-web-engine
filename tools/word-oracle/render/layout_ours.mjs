@@ -175,6 +175,26 @@ function loadRuns(docxPath) {
 function wMetaFam(wMeta, gi, p) {
   return (wMeta && wMeta[gi] && wMeta[gi].fam) || p.runs[0]?.family || MAIN_FAMILY;
 }
+/** المحاذاةُ الفعّالة (‏PPr.dart:282-344): Word يقيس left/right على **ترتيب
+ *  القراءة**، فتُعكسان في RTL. والغيابُ في RTL يعني «يمين» (بداية السطر).
+ *  ويُرجِع "both" للتسويغ (ومنه أنماطُ الكشيدة الثلاثة). */
+function effectiveJc(p) {
+  // المُركِّبُ يبني السطرَ من الحافّة اليمنى دائمًا (مدوّنةٌ عربيّة)، فاتّجاهُ
+  // المرجع هنا RTL. و`p.bidi` لا تصلح دليلًا: غيابُ `w:bidi` يعطيها false،
+  // وأكثرُ فقرات كتبنا بلا الوسم أصلًا — الاتّكاءُ عليها قلَب المحاذاةَ وأضرّ
+  // (‏tadris ٧٦٪ ⟵ ٣٦٪ بقياس بداية السطر).
+  const rtl = true;
+  let jc = p.jc || null;
+  if (!jc) return rtl ? "right" : "left";
+  if (jc === "start") jc = rtl ? "right" : "left";
+  else if (jc === "end") jc = rtl ? "left" : "right";
+  // ‏lowKashida/mediumKashida/highKashida تسويغٌ في RTL (‏PPr.dart:287-289)
+  else if (/Kashida$/.test(jc)) jc = rtl ? "both" : "left";
+  else if (jc === "distribute" || jc === "thaiDistribute") jc = "both";
+  else if (jc === "left") jc = rtl ? "right" : "left";
+  else if (jc === "right") jc = rtl ? "left" : "right";
+  return jc;
+}
 function paraWordMeta(paraRuns) {
   const meta = []; let cur = null;
   const push = () => { if (cur) { meta.push(cur); cur = null; } };
@@ -692,18 +712,19 @@ for (let pi = 0; pi < paras.length; pi++) {
   const segCounts = p.text.trim().split("\n")
     .map((sg) => sg.trim().split(/\s+/).filter(Boolean).length).filter((n) => n > 0);
   let lines;
+  const jcEff = process.env.NOJC === "1" ? "both" : effectiveJc(p);
   if (segCounts.length > 1) {
     lines = []; let off = 0;
     for (const n of segCounts) {
       const sub = breakLines(items.slice(off, off + n).map((it, k) => (k ? it : { ...it, spaceBefore: 0, blankBefore: false })),
         { columnTwips: colBase, firstLineIndentTwips: off === 0 ? (p.indFirstLine || 0) : 0,
-          justified: true, compatibilityMode: model.compatibilityMode });
+          justified: jcEff === "both", compatibilityMode: model.compatibilityMode });
       for (const l of sub) lines.push({ ...l, start: l.start + off, end: l.end + off });
       off += n;
     }
   } else {
     lines = breakLines(items, { columnTwips: colBase, firstLineIndentTwips: p.indFirstLine || 0,
-      justified: true, compatibilityMode: model.compatibilityMode });
+      justified: jcEff === "both", compatibilityMode: model.compatibilityMode });
   }
 
   // حدّ الفقرة (generic، قاعدة OOXML): السطر الأخير للسابقة أضاف pitch سلفًا؛
@@ -760,8 +781,16 @@ for (let pi = 0; pi < paras.length; pi++) {
     const W = colBase - (li === 0 ? Math.max(0, p.indFirstLine || 0) : 0);
     let hasTab = false;
     for (let gi = ln.start; gi < ln.end; gi++) if (tabGap[gi] != null) { hasTab = true; break; }
-    const extra = (!isLast && !ln.forced && nSpaces > 0 && !hasTab) ? (W - natural) / nSpaces : 0;
+    const extra = (jcEff === "both" && !isLast && !ln.forced && nSpaces > 0 && !hasTab)
+      ? (W - natural) / nSpaces : 0;
     const gap = spaceW + extra;
+    // غيرُ المسوَّغ: السطرُ يُزاح كتلةً واحدة. في RTL نبني من الحافّة اليمنى،
+    // فـ"right" هي الأصل (إزاحةٌ صفر)، و"center" نصفُ الفائض، و"left" كلُّه.
+    const slack = Math.max(0, W - natural);
+    const jcShift = hasTab ? 0
+      : jcEff === "center" ? -slack / 2
+      : jcEff === "left" ? -slack
+      : 0;
 
     // آليّة B (max عبر خطوط السطر الفعليّة): صعود/هبوط = أقصى مقطعٍ فيه بخطّه الحقيقيّ
     // (عائلة/بولد/حجم لكلّ كلمة). خطُّ العنوان الأصغر يخفض، البولد يرفع — كلاهما generic.
@@ -808,10 +837,13 @@ for (let pi = 0; pi < paras.length; pi++) {
       let gx = rightEdge;
       for (const g of marker.glyphs) { glyphs.push({ gid: g.gid, x: Math.round(gx * 100) / 100 }); gx += g.adv; }
     }
-    let penX = rightEdge;
+    let penX = rightEdge + jcShift;
+    let inkMin = Infinity, inkMax = -Infinity;   // حدّا حبر السطر (للمقياس الأفقيّ)
     for (let k = 0; k < shaped.length; k++) {
       const s = shaped[k];
       const left = penX - s.width;
+      if (left < inkMin) inkMin = left;
+      if (penX > inkMax) inkMax = penX;
       let gx = left;
       for (const g of s.glyphs) {
         const go = { gid: g.gid, x: Math.round(gx * 100) / 100 };
@@ -848,7 +880,9 @@ for (let pi = 0; pi < paras.length; pi++) {
         }
       }
     }
-    descs.push({ glyphs, decos, asc: box.asc, desc: box.desc, extraWd: box.extraWd, mlt: lineMultiplier(p.spacing), text: lineWords.join(" ") });
+    descs.push({ glyphs, decos, asc: box.asc, desc: box.desc, extraWd: box.extraWd,
+      xMin: inkMin === Infinity ? null : inkMin, xMax: inkMax === -Infinity ? null : inkMax,
+      mlt: lineMultiplier(p.spacing), text: lineWords.join(" ") });
   }
 
   // صفّ فهرس (TOC، حصاد «الشاملة الذهبية»): سطرٌ واحد — المدخل يمينًا، رقمُ الصفحة عند
@@ -931,6 +965,10 @@ for (let pi = 0; pi < paras.length; pi++) {
     if (p.shd) {
       lineObj.shd = p.shd; lineObj.shdX = rightEdge - colBase + dx;
       lineObj.shdW = colBase; lineObj.shdAsc = descs[i].asc; lineObj.shdDesc = descs[i].desc;
+    }
+    if (descs[i].xMin != null) {
+      lineObj.xMin = Math.round((descs[i].xMin + dx) * 100) / 100;
+      lineObj.xMax = Math.round((descs[i].xMax + dx) * 100) / 100;
     }
     if (descs[i].decos?.length) lineObj.decos = dx
       ? descs[i].decos.map((d) => ({ ...d, x: Math.round((d.x + dx) * 100) / 100 }))

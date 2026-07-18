@@ -1019,7 +1019,11 @@ export function parseDocument(
 
     const pPr = first(p, "w:pPr");
     const styleId = pPr ? (findAttr(pPr, "w:pStyle")?.["@w:val"] ?? null) : null;
-    const bidi = pPr ? findAttr(pPr, "w:bidi") != null : false;
+    // ‏w:bidi: الحضورُ بلا val ⟵ صحيح، و val في {0,false,off} ⟵ **صريحُ LTR**.
+    // (كان الفحصُ حضورًا محضًا فيُقرَأ `<w:bidi w:val="0"/>` RTL — مقلوبًا.)
+    const bidi = pPr && first(pPr, "w:bidi") !== null
+      ? !["0", "false", "off"].includes(findAttr(pPr, "w:bidi")?.["@w:val"] ?? "")
+      : false;
     // فقرة بلا pStyle ترث نمط الفقرة الافتراضي (Normal) قبل docDefaults
     const styleProps = resolveViaStyle(styles, styleId ?? styles.defaultParagraphStyleId);
     // ‏w:jc: المباشر يتقدم وإلا فمن سلسلة النمط (درس tadris para87)
