@@ -1,0 +1,29 @@
+{
+ "Calibri": {
+  "file": "corpus/ground-truth/fonts/sample-jalsa27/087F78FE-5684-338E-1251-CE7C3346E937.ttf",
+  "upem": 2048,
+  "a": 0.75,
+  "d": 0.25,
+  "g": 0.220703,
+  "wd": 0.268555,
+  "wa": 0.952148
+ },
+ "Times New Roman": {
+  "file": "corpus/ground-truth/fonts/sample-jalsa27/0B101E09-3234-4CD4-C27C-BD1DEB57AF03.ttf",
+  "upem": 2048,
+  "a": 0.891113,
+  "d": 0.216309,
+  "g": 0.04248,
+  "wd": 0.216309,
+  "wa": 0.891113
+ },
+ "Traditional Arabic": {
+  "file": "corpus/ground-truth/fonts/sample-jalsa27/3D5B1C68-1B9A-764B-E21B-4F08DF70561D.ttf",
+  "upem": 2048,
+  "a": 1.022949,
+  "d": 0.509766,
+  "g": 0.0,
+  "wd": 0.509766,
+  "wa": 1.022949
+ }
+}

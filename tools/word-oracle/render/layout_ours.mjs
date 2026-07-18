@@ -79,8 +79,9 @@ function loadRuns(docxPath) {
       const bold = (/<w:b(\s|\/|>)/.test(rPr) && !/<w:b[^>]*w:val="(0|false)"/.test(rPr))
         || (/<w:bCs(\s|\/|>)/.test(rPr) && !/<w:bCs[^>]*w:val="(0|false)"/.test(rPr));
       const szCs = (rPr.match(/<w:szCs[^>]*w:val="(\d+)"/) || rPr.match(/<w:sz[^>]*w:val="(\d+)"/) || [])[1];
+      const fam = (rPr.match(/<w:rFonts[^>]*w:cs="([^"]*)"/) || rPr.match(/<w:rFonts[^>]*w:ascii="([^"]*)"/) || [])[1] || null;
       const txt = [...r[1].matchAll(/<w:t[^>]*>([\s\S]*?)<\/w:t>/g)].map((m) => m[1]).join("");
-      if (txt) runs.push({ text: txt, bold, sz: szCs ? +szCs * 10 : null });
+      if (txt) runs.push({ text: txt, bold, sz: szCs ? +szCs * 10 : null, fam });
     }
     const key = normKey(runs.map((r) => r.text).join(""));
     if (key && runs.length) byPara.set(key, runs);
@@ -95,9 +96,10 @@ function paraWordMeta(paraRuns) {
   for (const r of paraRuns) {
     for (const ch of r.text) {
       if (/\s/.test(ch)) { push(); continue; }
-      if (!cur) cur = { bold: false, sz: null };
+      if (!cur) cur = { bold: false, sz: null, fam: null };
       cur.bold = cur.bold || r.bold;
       if (r.sz && (!cur.sz || r.sz > cur.sz)) cur.sz = r.sz;
+      if (r.fam && !cur.fam) cur.fam = r.fam;
     }
   }
   push();
@@ -118,6 +120,10 @@ const BOOK = process.env.BOOK || "sample-muqtarah";
 const OUT = process.argv[2] || "ours.json";
 const bookMap = JSON.parse(readFileSync("tools/word-oracle/book-fonts-map.json", "utf-8"));
 const metrics = JSON.parse(readFileSync("tools/word-oracle/render/font-metrics.json", "utf-8"));
+// دمج مقاييس الـsubset المُضمَّن لهذا الكتاب (الخطّ الذي استعمله Word فعلًا) — generic:
+// أيّ عائلةٍ (حتى النادرة) تُحلّ بمقاييسها الصحيحة. لا يدوس البولد العالميّ (family|bold).
+try { const sm = JSON.parse(readFileSync(`tools/word-oracle/render/subset-metrics-${BOOK}.json`, "utf-8"));
+  for (const [k, v] of Object.entries(sm)) if (!metrics[k]) metrics[k] = v; } catch { /**/ } // إضافةٌ فقط (لا دوس)
 const cfg = bookMap[BOOK];
 const MAIN_FAMILY = cfg.family;
 const MAIN_FILE = cfg.horizFont;
@@ -266,16 +272,19 @@ for (let pi = 0; pi < paras.length; pi++) {
     const extra = (!isLast && !ln.forced && nSpaces > 0) ? (W - natural) / nSpaces : 0;
     const gap = spaceW + extra;
 
-    // آليّة B: هل السطر يحوي كلمةً بولد؟ (يرفع صعوده/هبوطه)
-    // آليّة B (max عبر مقاطع السطر الفعليّة): بولد/حجمٌ أكبر يرفع السطر
-    let hasBold = false, lineMaxSz = 0;
+    // آليّة B (max عبر خطوط السطر الفعليّة): صعود/هبوط = أقصى مقطعٍ فيه بخطّه الحقيقيّ
+    // (عائلة/بولد/حجم لكلّ كلمة). خطُّ العنوان الأصغر يخفض، البولد يرفع — كلاهما generic.
+    let box = { asc: MET.a * em, desc: (MET.d + MET.g) * em };
     if (wMeta && process.env.BOLDBOX !== "0") {
       for (let gi = ln.start; gi < ln.end; gi++) {
-        if (wMeta[gi]?.bold) hasBold = true;
-        if (wMeta[gi]?.sz && wMeta[gi].sz > lineMaxSz) lineMaxSz = wMeta[gi].sz;
+        const wm = wMeta[gi]; if (!wm) continue;
+        const fam = wm.fam || p.runs[0].family;
+        const wsz = (wm.sz && wm.sz > 0) ? wm.sz : em;
+        const wmet = (wm.bold && metrics[`${fam}|bold`]) || metrics[fam] || MET;
+        box.asc = Math.max(box.asc, wmet.a * wsz);
+        box.desc = Math.max(box.desc, (wmet.d + wmet.g) * wsz);
       }
     }
-    const box = lineBoxAscDesc(MET, boldMet, em, hasBold, lineMaxSz);
     // الخطوة (نموذج الصندوق): هبوط السابق + صعود الحاليّ + فراغ الحدّ المعلَّق
     if (BOX && prevDesc !== null) baseline += prevDesc + box.asc + pendingGap;
     else if (!BOX) baseline += pendingGap;

@@ -1,0 +1,137 @@
+{
+ "Symbol": {
+  "file": "corpus/ground-truth/fonts/sample-masjid/38760631-21DE-59EC-2036-DE30447D2462.ttf",
+  "upem": 2048,
+  "a": 1.005371,
+  "d": 0.219727,
+  "g": 0.0,
+  "wd": 0.219727,
+  "wa": 1.005371
+ },
+ "Times New Roman": {
+  "file": "corpus/ground-truth/fonts/sample-masjid/54FA157C-4BA1-4338-0519-5834E054B501.ttf",
+  "upem": 2048,
+  "a": 0.891113,
+  "d": 0.216309,
+  "g": 0.04248,
+  "wd": 0.216309,
+  "wa": 0.891113
+ },
+ "DecoType Naskh Variants": {
+  "file": "corpus/ground-truth/fonts/sample-masjid/35A15E1D-688E-6445-D930-675490348E3F.ttf",
+  "upem": 2048,
+  "a": 1.294922,
+  "d": 0.758789,
+  "g": 0.0,
+  "wd": 0.758789,
+  "wa": 1.294922
+ },
+ "Sakkal Majalla": {
+  "file": "corpus/ground-truth/fonts/sample-masjid/6C1D3858-7411-3957-533D-6734BF0AEC46.ttf",
+  "upem": 2048,
+  "a": 0.883789,
+  "d": 0.512695,
+  "g": 0.0,
+  "wd": 0.512695,
+  "wa": 0.883789
+ },
+ "Aref Ruqaa": {
+  "file": "corpus/ground-truth/fonts/sample-masjid/52953EF6-6037-6AC4-EE49-6924BD0F6275.ttf",
+  "upem": 2048,
+  "a": 1.220703,
+  "d": 0.244141,
+  "g": 0.097656,
+  "wd": 0.439453,
+  "wa": 1.220703
+ },
+ "Farsi Simple Bold": {
+  "file": "corpus/ground-truth/fonts/sample-masjid/282145C4-4031-4D79-692C-B1253E385303.ttf",
+  "upem": 2048,
+  "a": 1.336914,
+  "d": 0.891113,
+  "g": 0.0,
+  "wd": 0.891113,
+  "wa": 1.336914
+ },
+ "Arial": {
+  "file": "corpus/ground-truth/fonts/sample-masjid/7D516012-02D5-3373-4513-373FDA377A7C.ttf",
+  "upem": 2048,
+  "a": 0.905273,
+  "d": 0.211914,
+  "g": 0.032715,
+  "wd": 0.211914,
+  "wa": 0.905273
+ },
+ "Cambria": {
+  "file": "corpus/ground-truth/fonts/sample-masjid/70A67734-3D1D-0C47-4B24-27228B136208.ttf",
+  "upem": 2048,
+  "a": 0.950195,
+  "d": 0.222168,
+  "g": 0.0,
+  "wd": 0.222168,
+  "wa": 0.950195
+ },
+ "Traditional Arabic": {
+  "file": "corpus/ground-truth/fonts/sample-masjid/3B177105-04A6-559B-032B-611E3244EE02.ttf",
+  "upem": 2048,
+  "a": 1.022949,
+  "d": 0.509766,
+  "g": 0.0,
+  "wd": 0.509766,
+  "wa": 1.022949
+ },
+ "PT Bold Heading": {
+  "file": "corpus/ground-truth/fonts/sample-masjid/386769A4-2426-49C4-8D0B-B826530A187C.ttf",
+  "upem": 2048,
+  "a": 1.302246,
+  "d": 0.473633,
+  "g": 0.0,
+  "wd": 0.473633,
+  "wa": 1.302246
+ },
+ "Tahoma": {
+  "file": "corpus/ground-truth/fonts/sample-masjid/31F75D39-390C-0ACB-C73B-9A64806B9D74.ttf",
+  "upem": 2048,
+  "a": 1.000488,
+  "d": 0.206543,
+  "g": 0.0,
+  "wd": 0.206543,
+  "wa": 1.000488
+ },
+ "adwa-assalaf": {
+  "file": "corpus/ground-truth/fonts/sample-masjid/59045A05-7A12-79B7-875B-4E380A6E9130.ttf",
+  "upem": 2048,
+  "a": 1.106934,
+  "d": 0.775879,
+  "g": 0.008789,
+  "wd": 0.775879,
+  "wa": 1.106934
+ },
+ "AGA Arabesque": {
+  "file": "corpus/ground-truth/fonts/sample-masjid/07643B9F-4F65-4A61-A121-B63FAD441378.ttf",
+  "upem": 2048,
+  "a": 0.898926,
+  "d": 0.210938,
+  "g": 0.0,
+  "wd": 0.203125,
+  "wa": 0.898926
+ },
+ "Simplified Arabic": {
+  "file": "corpus/ground-truth/fonts/sample-masjid/2DC150B7-23E3-0CAD-EF57-B86F5C5C6558.ttf",
+  "upem": 2048,
+  "a": 1.179688,
+  "d": 0.478027,
+  "g": 0.0,
+  "wd": 0.478027,
+  "wa": 1.179688
+ },
+ "KFGQPC HAFS Uthmanic Script": {
+  "file": "corpus/ground-truth/fonts/sample-masjid/076B1136-4DED-4FF8-5316-40362F342F3D.ttf",
+  "upem": 2048,
+  "a": 1.171875,
+  "d": 0.585938,
+  "g": 0.0,
+  "wd": 0.585938,
+  "wa": 1.171875
+ }
+}

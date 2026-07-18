@@ -1,0 +1,47 @@
+{
+ "Traditional Arabic": {
+  "file": "corpus/ground-truth/fonts/sample-dawra/405574EC-6AED-461F-475F-8420DE4F0A5D.ttf",
+  "upem": 2048,
+  "a": 1.022949,
+  "d": 0.509766,
+  "g": 0.0,
+  "wd": 0.509766,
+  "wa": 1.022949
+ },
+ "Arial": {
+  "file": "corpus/ground-truth/fonts/sample-dawra/6DA3561F-1554-40FA-884D-4B52F079A701.ttf",
+  "upem": 2048,
+  "a": 0.905273,
+  "d": 0.211914,
+  "g": 0.032715,
+  "wd": 0.211914,
+  "wa": 0.905273
+ },
+ "Times New Roman": {
+  "file": "corpus/ground-truth/fonts/sample-dawra/66444D3C-7C04-5BA7-C94F-3219BB6E462F.ttf",
+  "upem": 2048,
+  "a": 0.891113,
+  "d": 0.216309,
+  "g": 0.04248,
+  "wd": 0.216309,
+  "wa": 0.891113
+ },
+ "AGA Arabesque": {
+  "file": "corpus/ground-truth/fonts/sample-dawra/5E5966DE-3F52-1F9F-BC28-4934296E6077.ttf",
+  "upem": 2048,
+  "a": 0.898926,
+  "d": 0.210938,
+  "g": 0.0,
+  "wd": 0.203125,
+  "wa": 0.898926
+ },
+ "Symbol": {
+  "file": "corpus/ground-truth/fonts/sample-dawra/4FC011E7-1E1A-4ACD-212F-CC6D092E087B.ttf",
+  "upem": 2048,
+  "a": 1.005371,
+  "d": 0.219727,
+  "g": 0.0,
+  "wd": 0.219727,
+  "wa": 1.005371
+ }
+}
