@@ -345,7 +345,11 @@ const lineBoxAscDesc = (met, boldMet, em, hasBold, sizeEm) => {
 function finishRow(t) {
   if (!t) return;
   let top = t.rowTop != null ? t.rowTop : t.startBaseline;
-  let bottom = Math.max(t.maxBottom, top + 1);
+  let bottom = Math.max(t.maxBottom, top + 1) + (t.marBottom || 0);
+  // ‏w:trHeight: atLeast يوسّع الصفّ إلى الحدّ الأدنى، وexact يفرضه فرضًا
+  if (t.exactH) bottom = top + t.exactH;
+  else if (t.minH && bottom - top < t.minH) bottom = top + t.minH;
+  t.maxBottom = Math.max(t.maxBottom, bottom);
   // كسرُ الصفحة على مستوى الصفّ (سلوك Word): صفٌّ لا يسعه ما بقي من الصفحة يُنقَل
   // **كاملًا** للصفحة التالية (لا يُشقّ)، بشرط أن يسعه ارتفاعُ صفحةٍ كاملة وأن يكون
   // فوقه محتوًى على صفحته (وإلّا فهو أطول من صفحةٍ فلا ينفع نقلُه). ROWBREAK=0 للتعطيل.
@@ -377,7 +381,9 @@ for (let pi = 0; pi < paras.length; pi++) {
   let colBase = sec.columnTwips - p.indLeft - p.indRight;
   let rightEdge = pageW - marR;
   // هامشُ الخليّة الأفقيّ الافتراضيّ في Word: start/end = 108tw (الرأسيّ صفر)
-  const CELL_MAR = Number(process.env.CELLMAR ?? "108");
+  // هوامشُ الخليّة من w:tcMar/w:tblCellMar (وافتراضيُّ Word ١٠٨ يمينًا ويسارًا)
+  const CM_R = p.tableCell?.marRight ?? Number(process.env.CELLMAR ?? "108");
+  const CM_L = p.tableCell?.marLeft ?? Number(process.env.CELLMAR ?? "108");
   let cellOuterRight = 0, cellW = 0;
   if (p.tableCell) {
     const tc = p.tableCell;
@@ -393,8 +399,8 @@ for (let pi = 0; pi < paras.length; pi++) {
     const sf = tc.totalGridTwips > 0 ? finalW / tc.totalGridTwips : 1;
     cellW = tc.colWTwips * sf;
     cellOuterRight = (pageW - marR) - tc.colXTwips * sf; // حافّة الخليّة (للمستطيل)
-    rightEdge = cellOuterRight - CELL_MAR;               // بداية النصّ بعد الهامش
-    colBase = Math.max(200, cellW - 2 * CELL_MAR - p.indLeft - p.indRight);
+    rightEdge = cellOuterRight - CM_R;                   // بداية النصّ بعد الهامش
+    colBase = Math.max(200, cellW - CM_L - CM_R - p.indLeft - p.indRight);
   }
   const spaceW = wordWidth(" ", em) || wordWidth(" ", em);
   const words = p.text.trim().split(/\s+/).filter(Boolean);
@@ -415,7 +421,9 @@ for (let pi = 0; pi < paras.length; pi++) {
     const marginArea = pageH - marT - marB;
     if (a.posVRel === "margin" && a.wrap !== "None" && a.extentH > marginArea && a.extentH <= pageH && ay < 0)
       ay = (pageH - a.extentH) / 2;
-    if (a.rId) imgAnchors.push({ page: cur, x: ax, y: ay, w: a.extentW, h: a.extentH, rId: a.rId });
+    if (a.rId) imgAnchors.push({ page: cur, x: ax, y: ay, w: a.extentW, h: a.extentH, rId: a.rId,
+      ...(a.srcRect ? { srcRect: a.srcRect } : {}), ...(a.rotDeg ? { rot: a.rotDeg } : {}),
+      ...(a.flipH ? { flipH: true } : {}), ...(a.flipV ? { flipV: true } : {}) });
     // مربّعُ نصٍّ في المتن (لوحاتُ الغلاف والترويسات): نصُّه كان يضيع كلّيًّا لأنّ فقرته
     // تُقصى «drawing» والمرساةُ بلا rId. حصاد «الشاملة الذهبية»: tadris ٥ مربّعات،
     // muqtarah ٢ (٢٨٥ محرفًا).
@@ -442,7 +450,11 @@ for (let pi = 0; pi < paras.length; pi++) {
       // صفٌّ جديد: نحفظ أساسَه **وهبوطَ ما قبله** معًا. كان prevDesc يُصفَّر إلى null
       // فيصير nb = b بلا صعود، فتقع أوّلُ أسطر الصفّ **على** أساس ما قبله ولا ينزل
       // الجدولُ أصلًا (قِيس على gap-vmerge: صفوفُنا ١٧١٨٫٤ و١٨٥٨٫٥ مقابل ٢١٥٨ و٢٥٩٤٫٨).
+      baseline += tc.marTop || 0;                 // هامشُ الخليّة العلويّ
       curTable = { id: tc.tableId, row: tc.row, startBaseline: baseline, startPd: prevDesc ?? 0,
+        minH: tc.rowHeightRule === "exact" ? null : (tc.rowHeight || null),
+        exactH: tc.rowHeightRule === "exact" ? (tc.rowHeight || null) : null,
+        marBottom: tc.marBottom || 0,
         maxBottom: baseline, rowTop: null, cells: [], lines: [], startPage: cur,
         cantSplit: !!tc.cantSplit, botBorder: borderH(tc, "bottom") }; // rowTop من أعلى أوّل سطر
       pendingGap = 0;
@@ -450,6 +462,8 @@ for (let pi = 0; pi < paras.length; pi++) {
       baseline = curTable.startBaseline; prevDesc = curTable.startPd; pendingGap = 0;
     }
     // مستطيلُ الخليّة (تظليلٌ + حدود من نمط الجدول) — يُختَم ارتفاعُه عند نهاية الصفّ
+    // ‏vMerge=continue: الخليّةُ امتدادُ ما فوقها — لا تُسهم بارتفاعٍ ولا يُكرَّر نصُّها
+    if (tc.vMerge === "continue") continue;
     if (tc.firstInCell) {
       const bs = tableBorders[tc.tblStyleId] || null;
       const bside = bs && (bs.insideH || bs.top || bs.left);

@@ -42,7 +42,31 @@ for a in pg.get("anchors", []):
     href = _img.get(a.get("rId"))
     if not href:
         continue
-    imgs.append(f'<image x="{a["x"]:.1f}" y="{a["y"]:.1f}" width="{a["w"]:.1f}" height="{a["h"]:.1f}" href="{href}" preserveAspectRatio="none"/>')
+    x, y, w, h = a["x"], a["y"], a["w"], a["h"]
+    el = f'<image x="{x:.1f}" y="{y:.1f}" width="{w:.1f}" height="{h:.1f}" href="{href}" preserveAspectRatio="none"/>'
+    # القصُّ (a:srcRect): الجزءُ الباقي من الصورة يُمَدَّد ليملأ الامتداد. نرسم الصورةَ
+    # كاملةً مكبَّرةً ونقصّها بـclipPath على المستطيل المطلوب — يكافئ ما يفعله Word.
+    sr = a.get("srcRect")
+    if sr:
+        keep_w = max(1e-6, 1.0 - sr["l"] - sr["r"])
+        keep_h = max(1e-6, 1.0 - sr["t"] - sr["b"])
+        fw, fh = w / keep_w, h / keep_h            # مقاسُ الصورة كاملةً
+        fx, fy = x - fw * sr["l"], y - fh * sr["t"]
+        cid = f"clip{len(imgs)}"
+        el = (f'<clipPath id="{cid}"><rect x="{x:.1f}" y="{y:.1f}" width="{w:.1f}" height="{h:.1f}"/></clipPath>'
+              f'<image x="{fx:.1f}" y="{fy:.1f}" width="{fw:.1f}" height="{fh:.1f}" href="{href}" '
+              f'preserveAspectRatio="none" clip-path="url(#{cid})"/>')
+    # الدورانُ والانعكاس حول مركز الصورة (a:xfrm@rot/@flipH/@flipV)
+    tf = []
+    if a.get("rot"):
+        tf.append(f'rotate({a["rot"]:.3f} {x + w / 2:.1f} {y + h / 2:.1f})')
+    if a.get("flipH") or a.get("flipV"):
+        sx, sy = (-1 if a.get("flipH") else 1), (-1 if a.get("flipV") else 1)
+        cx, cy = x + w / 2, y + h / 2
+        tf.append(f'translate({cx:.1f} {cy:.1f}) scale({sx} {sy}) translate({-cx:.1f} {-cy:.1f})')
+    if tf:
+        el = f'<g transform="{" ".join(tf)}">{el}</g>'
+    imgs.append(el)
 
 _cache = {}
 def load(path):

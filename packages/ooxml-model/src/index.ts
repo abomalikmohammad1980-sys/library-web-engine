@@ -85,6 +85,11 @@ export interface BodyParagraph {
   /** ضبط الأرملة/اليتيم (w:widowControl) — افتراضيّ Word مُفعَّل (true)؛ val=0 يعطّله.
    *  مُفعَّلًا: لا يُترَك سطرٌ وحيدٌ للفقرة أعلى صفحةٍ أو أسفلها عند الكسر. */
   widowControl: boolean;
+  /** ‏w:br type="column" في الفقرة — تبدأ التاليةُ عمودًا جديدًا */
+  columnBreak?: boolean;
+  /** ‏w:pBdr — حدودُ الفقرة (تزيد ارتفاعها بسُمكها + w:space) */
+  pBdr?: { top: BorderSide | null; bottom: BorderSide | null;
+    left: BorderSide | null; right: BorderSide | null } | null;
   /** توقّفات الجدولة المخصّصة (w:pPr/w:tabs/w:tab) — بالـtwips. */
   tabStops: TabStop[];
   /** مواضعُ w:tab داخل نصّ الفقرة (فهارس محارف) — للقفز إلى التوقّف التالي. */
@@ -123,7 +128,23 @@ export interface TableCellCtx {
   /** ‏w:cantSplit على الصفّ: يمنع انشقاقه عبر الصفحات. **الافتراضيّ في OOXML/Word أنّ
    *  الصفوف تنشقّ**، فلا يُنقَل الصفّ إلّا إن كان هذا العلَم مضبوطًا. */
   cantSplit: boolean;
+  /** ‏w:vMerge — "restart" تبدأ دمجًا عموديًّا، و"continue" استمرارُه (لا تُرسَم حدودُه
+   *  الداخليّة ولا يُكرَّر نصُّه)، وnull لا دمج. */
+  vMerge: "restart" | "continue" | null;
+  /** ‏w:vAlign — محاذاةُ محتوى الخليّة رأسيًّا: top (افتراضيّ) / center / bottom */
+  vAlign: string | null;
+  /** هوامشُ الخليّة بالـtwips (‏w:tcMar، وإلّا هوامشُ الجدول w:tblCellMar، وإلّا
+   *  افتراضيُّ Word: يمين/يسار ١٠٨ وأعلى/أسفل ٠). */
+  marTop: number; marBottom: number; marLeft: number; marRight: number;
+  /** ‏w:trHeight — ارتفاعُ الصفّ وقاعدتُه (atLeast/exact) بالـtwips */
+  rowHeight: number | null;
+  rowHeightRule: string | null;
+  /** ‏w:textDirection — اتّجاهُ نصّ الخليّة (‏tbRl/btLr للأعمدة الرأسيّة) */
+  textDirection: string | null;
 }
+
+/** حدٌّ واحد: سُمكُه بالـtwips (‏w:sz أثمانُ نقطة) وفراغُه ولونُه */
+export interface BorderSide { wTwips: number; spaceTwips: number; color: string | null; val: string }
 
 /** توقّف جدولةٍ مخصّص (§17.3.1.37) */
 export interface TabStop {
@@ -153,6 +174,14 @@ export interface FloatAnchor {
   rId: string | null;
   /** محتوى مربّع نصٍّ (wps:txbx/v:textbox ← w:txbxContent) — فقراتٌ تُرصَف داخل الصندوق */
   textBox?: BodyParagraph[];
+  /** ‏a:srcRect — قصُّ الصورة من أطرافها، كسورًا من ١ (‏OOXML يخزّنها بأجزاء
+   *  المئة الألفيّة: ٢١٥٩٦ = ٢١٫٥٩٦٪). الرسمُ يعرض الجزءَ الباقي مُمَدَّدًا. */
+  srcRect?: { l: number; t: number; r: number; b: number };
+  /** ‏a:xfrm@rot — دورانٌ بالدرجات (‏OOXML يخزّنه بأجزاء الستّين ألفًا من الدرجة) */
+  rotDeg?: number;
+  /** ‏a:xfrm@flipH/@flipV — انعكاسٌ أفقيّ/رأسيّ */
+  flipH?: boolean;
+  flipV?: boolean;
   /** ‏wps:bodyPr@anchor — رسوُّ النصّ في الصندوق عموديًّا: t (أعلى) / ctr (وسط) / b (أسفل) */
   boxAnchor?: string;
   /** حشواتُ الصندوق بالـtwips (‏tIns/bIns/lIns/rIns؛ الافتراضيّ ٧٢ و١٤٤) */
@@ -181,6 +210,12 @@ export interface SectionGeometry {
   colCount: number;
   colSpaceTwips: number;
   colWidthTwips: number;
+  /** ‏w:pgNumType — تنسيقُ رقم الصفحة (decimal/arabicAbjad/…) وبدايةُ الترقيم.
+   *  ‏start موجودةٌ ⟵ الترقيمُ يُستأنَف من هذا الرقم في أوّل صفحةٍ من المقطع. */
+  pgNumFmt: string | null;
+  pgNumStart: number | null;
+  /** ‏w:type — كيف يبدأ المقطع: nextPage (افتراضيّ) / continuous / evenPage / oddPage */
+  sectStart: string;
 }
 export interface DocumentModelV0 {
   /** ‏w:defaultTabStop — فاصل التوقفات التلقائية بالـ twips (افتراضي 720) */
@@ -722,6 +757,7 @@ export function parseDocument(
     pageWTwips: 11906, pageHTwips: 16838, marLeftTwips: 1440, marRightTwips: 1440,
     marTopTwips: 1440, marBottomTwips: 1440, columnTwips: 9026,
     colCount: 1, colSpaceTwips: 708, colWidthTwips: 9026,
+    pgNumFmt: null, pgNumStart: null, sectStart: "nextPage",
   };
   function geomFrom(sectPr: XNode[] | null): SectionGeometry {
     if (!sectPr) return DEFAULT_GEO;
@@ -754,6 +790,10 @@ export function parseDocument(
       marTopTwips: t, marBottomTwips: b, columnTwips: colWidthTwips,
       colCount, colSpaceTwips, colWidthTwips,
       headerRefs, footerRefs,
+      pgNumFmt: findAttr(sectPr, "w:pgNumType")?.["@w:fmt"] ?? null,
+      pgNumStart: findAttr(sectPr, "w:pgNumType")?.["@w:start"] != null
+        ? Number(findAttr(sectPr, "w:pgNumType")!["@w:start"]) : null,
+      sectStart: findAttr(sectPr, "w:type")?.["@w:val"] ?? "nextPage",
       headerDistTwips: Number(pgMar?.["@w:header"] ?? 720),
       footerDistTwips: Number(pgMar?.["@w:footer"] ?? 720),
       titlePg: first(sectPr, "w:titlePg") !== null };
@@ -783,6 +823,8 @@ export function parseDocument(
         const tblWAttr = tblPr ? findAttr(tblPr, "w:tblW") : null;
         const tblWVal = Number(tblWAttr?.["@w:w"] ?? 0);
         const tblWType = tblWAttr?.["@w:type"] ?? "auto";
+        const tblPrNode = first(tbl, "w:tblPr");
+        const tblCellMar = tblPrNode ? first(tblPrNode, "w:tblCellMar") : null;
         const grid = collectDeep(tbl, "w:gridCol").map((g) => Number(g.attrs["@w:w"] ?? 0));
         const colX: number[] = []; let acc = 0;
         for (const w of grid) { colX.push(acc); acc += w; }
@@ -794,6 +836,10 @@ export function parseDocument(
           const csVal = trPr ? findAttr(trPr, "w:cantSplit")?.["@w:val"] : undefined;
           const cantSplit = trPr ? (first(trPr, "w:cantSplit") !== null
             && !["0", "false", "off"].includes(csVal ?? "")) : false;
+          // ‏w:trHeight: ارتفاعٌ مفروضٌ للصفّ (atLeast يوسّع، exact يقصّ)
+          const trH = trPr ? findAttr(trPr, "w:trHeight") : null;
+          const rowHeight = trH?.["@w:val"] != null ? Number(trH["@w:val"]) : null;
+          const rowHeightRule = trH?.["@w:hRule"] ?? (rowHeight != null ? "atLeast" : null);
           const cells = (tr["w:tr"] as XNode[]).filter((c) => "w:tc" in c);
           let col = 0;
           cells.forEach((cell, ci) => {
@@ -803,9 +849,28 @@ export function parseDocument(
             const tcPr = first(tc, "w:tcPr");
             const rawFill = tcPr ? (findAttr(tcPr, "w:shd")?.["@w:fill"] ?? null) : null;
             const shdFill = rawFill && !["auto", "FFFFFF", "ffffff"].includes(rawFill) ? rawFill : null;
+            // الدمجُ العموديّ: وجودُ w:vMerge بلا val يعني «استمرار» (ECMA-376)
+            let vMerge: "restart" | "continue" | null = null;
+            if (tcPr && first(tcPr, "w:vMerge") !== null) {
+              const mv = findAttr(tcPr, "w:vMerge")?.["@w:val"];
+              vMerge = mv === "restart" ? "restart" : "continue";
+            }
+            const vAlign = tcPr ? (findAttr(tcPr, "w:vAlign")?.["@w:val"] ?? null) : null;
+            const textDirection = tcPr ? (findAttr(tcPr, "w:textDirection")?.["@w:val"] ?? null) : null;
+            // الهوامش: هوامشُ الخليّة تتقدّم على هوامش الجدول ثمّ على افتراضيّ Word
+            const cellMar = (side: string, dflt: number) => {
+              const own = tcPr ? first(tcPr, "w:tcMar") : null;
+              const fromOwn = own ? findAttr(own, `w:${side}`)?.["@w:w"] : undefined;
+              if (fromOwn != null) return Number(fromOwn);
+              const fromTbl = tblCellMar ? findAttr(tblCellMar, `w:${side}`)?.["@w:w"] : undefined;
+              return fromTbl != null ? Number(fromTbl) : dflt;
+            };
             const cc: TableCellCtx = { tableId, row, col, colXTwips: colX[col] ?? 0, colWTwips,
               firstInCell: false, firstInRow: ci === 0, lastInRow: ci === cells.length - 1,
-              shdFill, tblStyleId, totalGridTwips: acc, tblWVal, tblWType, cantSplit };
+              shdFill, tblStyleId, totalGridTwips: acc, tblWVal, tblWType, cantSplit,
+              vMerge, vAlign, textDirection, rowHeight, rowHeightRule,
+              marTop: cellMar("top", 0), marBottom: cellMar("bottom", 0),
+              marLeft: cellMar("left", 108), marRight: cellMar("right", 108) };
             const cellParas = flattenBlocks(tc, cc);
             if (cellParas[0]?.cell) cellParas[0].cell = { ...cellParas[0].cell, firstInCell: true };
             out.push(...cellParas);
@@ -858,6 +923,7 @@ export function parseDocument(
     // كسرُ الصفحة الصريح (w:br type=page): قبل نصّ الفقرة = هي على صفحةٍ جديدة؛
     // بعد نصّها (أو فقرة فارغة) = التالية على صفحةٍ جديدة. sawText يفرّق الحالتين.
     let sawText = false, leadingPageBreak = false, trailingPageBreak = false, anyPageBreak = false;
+    let columnBreak = false;
     const tabTextPositions: number[] = []; // مواضع w:tab في نصّ الفقرة (لتقسيم TOC)
     let paraTextLen = 0; // طول نصّ الفقرة المتراكم عبر الرنّات (لموضع w:tab الصحيح)
     let inlineImageHTwips = 0; // أطول صورةٍ سطريّة (تحجز صندوق سطر)
@@ -894,11 +960,17 @@ export function parseDocument(
         if ("w:br" in t) {
           const brType = (t[":@"] as Record<string, string> | undefined)?.["@w:type"];
           if (brType === "page") { anyPageBreak = true; if (sawText) trailingPageBreak = true; else leadingPageBreak = true; }
+          else if (brType === "column") { columnBreak = true; text += "\n"; }
           else text += "\n";
         }
         // ‏w:sym: حرفٌ بخطٍّ رمزيّ (ﷺ/زخارف AGA) — يُحلّ لمحرفٍ فعليّ (إزاحة PUA)
         // ويُضاف للنصّ بخطّه الرمزيّ (لا يُقصى بعد اليوم؛ حصاد «الشاملة الذهبية»).
         // الخطّ الرمزيّ متوفّرٌ في subset-metrics فيُشكَّل بعرضه الصحيح.
+        // ‏w:noBreakHyphen: شرطةٌ لا يُكسَر عندها السطر ⟵ شرطةٌ غيرُ فاصلة (U+2011)
+        if ("w:noBreakHyphen" in t) { text += "\u2011"; sawText = true; }
+        // ‏w:softHyphen: شرطةٌ اختياريّةٌ لا تظهر إلّا عند الكسر — لا نكسر عندها بعد،
+        // فنُسقِطها من النصّ المرئيّ (إظهارُها بلا كسرٍ خطأٌ صريح).
+        if ("w:softHyphen" in t) { /* تُتجاهَل حتّى نكسر عندها */ }
         if ("w:sym" in t) {
           const a = (t[":@"] as Record<string, string> | undefined) ?? {};
           const ch = resolveSymChar(a["@w:font"], a["@w:char"]);
@@ -958,6 +1030,20 @@ export function parseDocument(
               wrap: wrap.replace("wp:wrap", ""),
               rId: collectDeep(anc, "a:blip")[0]?.attrs?.["@r:embed"]
                 ?? collectDeep(anc, "a:blip")[0]?.attrs?.["@r:link"] ?? null,
+              ...(() => {
+                // القصُّ والدوران: قيمُ OOXML بأجزاء المئة الألفيّة وأجزاء الستّين ألفًا
+                const sr = collectDeep(anc, "a:srcRect")[0]?.attrs;
+                const xf = collectDeep(anc, "a:xfrm")[0]?.attrs;
+                const o: Record<string, unknown> = {};
+                if (sr && (sr["@l"] || sr["@t"] || sr["@r"] || sr["@b"])) {
+                  o["srcRect"] = { l: Number(sr["@l"] ?? 0) / 100000, t: Number(sr["@t"] ?? 0) / 100000,
+                    r: Number(sr["@r"] ?? 0) / 100000, b: Number(sr["@b"] ?? 0) / 100000 };
+                }
+                if (xf?.["@rot"]) o["rotDeg"] = Number(xf["@rot"]) / 60000;
+                if (xf?.["@flipH"] === "1") o["flipH"] = true;
+                if (xf?.["@flipV"] === "1") o["flipV"] = true;
+                return o;
+              })(),
               ...(() => {
                 const tb = parseTextBox(anc, styles, numbering, theme);
                 if (!tb) return {};
@@ -1020,6 +1106,21 @@ export function parseDocument(
     if (!text.trim()) excluded = excluded || "empty";
     // صفّ TOC (حصاد «الشاملة الذهبية»): توقّفٌ يمينيٌّ ذو leader (أو نمط toc) مع w:tab
     // فعليّ في رنّ. التقسيم: **آخر** w:tab يفصل المدخل عن رقم الصفحة (الأسبق داخليّة).
+    // ‏w:pBdr — حدودُ الفقرة (سُمكٌ + فراغٌ يزيدان ارتفاعَها)
+    const pBdrNode = pPr ? first(pPr, "w:pBdr") : null;
+    const bdrSide = (nm: string): BorderSide | null => {
+      if (!pBdrNode) return null;
+      const a = findAttr(pBdrNode, `w:${nm}`);
+      if (!a) return null;
+      const val = a["@w:val"] ?? "single";
+      if (val === "none" || val === "nil") return null;
+      return { wTwips: Math.round((Number(a["@w:sz"] ?? 4) / 8) * 20),
+        spaceTwips: Number(a["@w:space"] ?? 0) * 20, // w:space بالنقاط
+        color: (a["@w:color"] && a["@w:color"] !== "auto") ? a["@w:color"].toUpperCase() : null,
+        val };
+    };
+    const pBdr = pBdrNode ? { top: bdrSide("top"), bottom: bdrSide("bottom"),
+      left: bdrSide("left"), right: bdrSide("right") } : null;
     const tabStops = parseTabStops(pPr);
     const rightLeaderTab = tabStops.find(
       (t) => (t.val === "right" || t.val === "end") && t.leader && t.leader !== "none");
@@ -1082,7 +1183,7 @@ export function parseDocument(
       index: idx, runs, text, styleId, jc, bidi,
       indLeft, indRight, indFirstLine, excluded, sectionIndex: -1, numbered, anchors,
       spacing, markEmTwips, markAsciiFamily, pageBreakBefore, widowControl, tabStops, toc, inlineImageHTwips, tableCell,
-      tabAt: tabTextPositions,
+      tabAt: tabTextPositions, columnBreak, pBdr,
     });
     // ‏sectPr داخل pPr يختم مقطعًا: هندسته تسري على هذه الفقرة وما سبقها
     const pSect = pPr ? first(pPr, "w:sectPr") : null;
