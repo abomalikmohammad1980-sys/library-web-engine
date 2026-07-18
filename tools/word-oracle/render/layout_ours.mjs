@@ -197,6 +197,12 @@ const lineBoxAscDesc = (met, boldMet, em, hasBold, sizeEm) => {
   const consider = (m, e) => { asc = Math.max(asc, m.a * e); dg = Math.max(dg, (m.d + m.g) * e); };
   if (hasBold && boldMet) consider(boldMet, em);
   if (sizeEm && sizeEm > em) { consider(met, sizeEm); if (hasBold && boldMet) consider(boldMet, sizeEm); }
+  // QPITCH: تقريب ارتفاع السطر (asc+desc) لنقطة الجهاز 2.4tw (نمط Word المقيس 597.6=249
+  // نقطة، مقابل 597.85 الأملس)؛ يقسم التقريب على asc/desc نسبةً. QPITCH=1 للتفعيل.
+  if (process.env.QPITCH === "1") {
+    const h = asc + dg, hq = Math.round(h / 2.4) * 2.4, f = h ? hq / h : 1;
+    asc *= f; dg *= f;
+  }
   return { asc, desc: dg };
 };
 
