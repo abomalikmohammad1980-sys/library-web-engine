@@ -76,9 +76,9 @@ def main(books: list[str]) -> None:
     for p in [os.path.join(RENDER, "font-metrics.json")]:
         have.update(json.load(open(p, encoding="utf-8")))
 
+    # **لكلّ كتابٍ جدولُه**: نفسُ اسم العائلة قد يحمل مقاييسَ مختلفةً بين كتابَين
+    # (نسختان من الخطّ). جدولٌ واحدٌ عابرٌ للكتب يُفسِد بعضَها ببعض.
     table: dict[str, dict] = {}
-    if os.path.exists(OUT_PATH):
-        table = json.load(open(OUT_PATH, encoding="utf-8"))
 
     for book in books:
         truth_path = os.path.join(ROOT, "corpus", "ground-truth", book + ".truth.json")
@@ -101,8 +101,10 @@ def main(books: list[str]) -> None:
 
         fonts_dir = os.path.join(ROOT, "corpus", "ground-truth", "fonts", book)
         missing: dict[str, collections.Counter] = collections.defaultdict(collections.Counter)
+        # نمرّ على **كلّ** العائلات لا المفقودةَ وحدَها: قد نملك مقاييسَ اسمٍ
+        # ما بينما رسم Word بخطٍّ آخرَ مقاييسُه مختلفة (نسخةٌ أخرى من الخطّ).
         for text, family in model_runs(book):
-            if len(text) < 3 or family in known:
+            if len(text) < 3:
                 continue
             for f, n in by_text.get(text, {}).items():
                 missing[family][f] += n
@@ -119,15 +121,27 @@ def main(books: list[str]) -> None:
             total = sum(counter.values())
             met["_source"] = "%s:%s" % (book, stem[:8])
             met["_confidence"] = round(votes / total, 3)
-            prev = table.get(family)
-            if prev is None or met["_confidence"] > prev.get("_confidence", 0):
-                table[family] = met
-            print("  %-30s ⟵ %s  (a+d+g=%.4f، ثقة %.0f%%، %d شاهدًا)"
-                  % (family, stem[:8], met["a"] + met["d"] + met["g"],
-                     100 * met["_confidence"], total))
+            ours = known.get(family)
+            sum_word = met["a"] + met["d"] + met["g"]
+            sum_ours = (ours["a"] + ours["d"] + ours.get("g", 0)) if ours else None
+            # عائلةٌ نملك مقاييسَها ويوافقها Word: لا حاجة لتسجيلها
+            if sum_ours is not None and abs(sum_word - sum_ours) < 0.002:
+                continue
+            # ثقةٌ ضعيفةٌ أو شواهدُ قليلة: لا نبدّل مقاييسَ نملكها بناءً على ظنّ
+            if sum_ours is not None and (met["_confidence"] < 0.75 or total < 20):
+                continue
+            table.setdefault(book, {})[family] = met
+            tag = "مفقود" if ours is None else ("مختلف %.4f⟶%.4f" % (sum_ours, sum_word))
+            print("  %-30s ⟵ %s  (a+d+g=%.4f، ثقة %.0f%%، %d شاهدًا) [%s]"
+                  % (family, stem[:8], sum_word, 100 * met["_confidence"], total, tag))
 
-    json.dump(table, open(OUT_PATH, "w", encoding="utf-8"), ensure_ascii=False, indent=2)
-    print("كُتِب %s — %d خطًّا" % (OUT_PATH, len(table)))
+    merged: dict[str, dict] = {}
+    if os.path.exists(OUT_PATH):
+        merged = json.load(open(OUT_PATH, encoding="utf-8"))
+    merged.update(table)
+    json.dump(merged, open(OUT_PATH, "w", encoding="utf-8"), ensure_ascii=False, indent=2)
+    print("كُتِب %s — %d كتابًا، %d قيدًا"
+          % (OUT_PATH, len(merged), sum(len(v) for v in merged.values())))
 
 
 if __name__ == "__main__":

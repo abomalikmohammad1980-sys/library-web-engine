@@ -259,8 +259,12 @@ const counters = {};
 const FONTSUB = process.env.FONTSUB !== "0"; // جدولُ بدائل الخطوط (مقيسٌ من Word)
 // جدولُ البدائل: عائلةٌ مفقودة → مقاييسُ الخطّ الذي رسم به Word فعلًا
 const fontSubs = (() => {
-  try { return JSON.parse(readFileSync("tools/word-oracle/render/font-substitutions.json", "utf-8")); }
-  catch { return {}; }
+  // الجدولُ مفهرسٌ **بالكتاب** ثمّ بالعائلة: نفسُ الاسم قد يحمل مقاييسَ مختلفةً
+  // بين كتابَين (نسختان من الخطّ)، فلا يصلح جدولٌ واحدٌ عابرٌ للكتب.
+  try {
+    const all = JSON.parse(readFileSync("tools/word-oracle/render/font-substitutions.json", "utf-8"));
+    return all[BOOK] ?? {};
+  } catch { return {}; }
 })();
 // ── تعدّد الخطوط (generic): ذاكرةُ خطوطٍ لكلّ عائلة، مع احتياطيٍّ لخطّ المتن ──
 const fontCache = new Map();

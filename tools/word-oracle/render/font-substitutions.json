@@ -1,82 +1,184 @@
 {
-  "GE SS Two Light": {
-    "upem": 2048,
-    "a": 0.883789,
-    "d": 0.512695,
-    "g": 0.0,
-    "wd": 0.512695,
-    "wa": 0.883789,
-    "_source": "sample-masjid:6C1D3858",
-    "_confidence": 1.0
+  "sample-ahadith": {
+    "Al-Jazeera-Arabic-Regular": {
+      "upem": 1000,
+      "a": 1.054,
+      "d": 0.294,
+      "g": 0.034,
+      "wd": 0.294,
+      "wa": 1.054,
+      "_source": "sample-ahadith:27307E81",
+      "_confidence": 1.0
+    }
   },
-  "Barada Reqa": {
-    "upem": 2048,
-    "a": 0.905273,
-    "d": 0.211914,
-    "g": 0.032715,
-    "wd": 0.211914,
-    "wa": 0.905273,
-    "_source": "sample-masjid:7D516012",
-    "_confidence": 1.0
+  "sample-dawra": {
+    "Traditional Arabic": {
+      "upem": 2048,
+      "a": 0.994141,
+      "d": 0.500488,
+      "g": 0.0,
+      "wd": 0.500488,
+      "wa": 0.994141,
+      "_source": "sample-dawra:6EE6468C",
+      "_confidence": 0.791
+    }
   },
-  "(AH) Manal Bold": {
-    "upem": 2048,
-    "a": 0.905273,
-    "d": 0.211914,
-    "g": 0.032715,
-    "wd": 0.211914,
-    "wa": 0.905273,
-    "_source": "sample-masjid:7D516012",
-    "_confidence": 0.784
+  "sample-jalsa27": {
+    "Traditional Arabic": {
+      "upem": 2048,
+      "a": 0.994141,
+      "d": 0.500488,
+      "g": 0.0,
+      "wd": 0.500488,
+      "wa": 0.994141,
+      "_source": "sample-jalsa27:18AE4DF1",
+      "_confidence": 0.875
+    }
   },
-  "Hacen Tunisia": {
-    "upem": 2048,
-    "a": 0.905273,
-    "d": 0.211914,
-    "g": 0.032715,
-    "wd": 0.211914,
-    "wa": 0.905273,
-    "_source": "sample-masjid:7D516012",
-    "_confidence": 1.0
+  "sample-masjid": {
+    "GE SS Two Light": {
+      "upem": 2048,
+      "a": 0.883789,
+      "d": 0.512695,
+      "g": 0.0,
+      "wd": 0.512695,
+      "wa": 0.883789,
+      "_source": "sample-masjid:6C1D3858",
+      "_confidence": 1.0
+    },
+    "Aref Ruqaa": {
+      "upem": 2048,
+      "a": 1.106934,
+      "d": 0.775879,
+      "g": 0.008789,
+      "wd": 0.775879,
+      "wa": 1.106934,
+      "_source": "sample-masjid:59045A05",
+      "_confidence": 0.8
+    },
+    "Barada Reqa": {
+      "upem": 2048,
+      "a": 0.905273,
+      "d": 0.211914,
+      "g": 0.032715,
+      "wd": 0.211914,
+      "wa": 0.905273,
+      "_source": "sample-masjid:7D516012",
+      "_confidence": 1.0
+    },
+    "(AH) Manal Bold": {
+      "upem": 2048,
+      "a": 0.905273,
+      "d": 0.211914,
+      "g": 0.032715,
+      "wd": 0.211914,
+      "wa": 0.905273,
+      "_source": "sample-masjid:7D516012",
+      "_confidence": 0.784
+    },
+    "Hacen Tunisia": {
+      "upem": 2048,
+      "a": 0.905273,
+      "d": 0.211914,
+      "g": 0.032715,
+      "wd": 0.211914,
+      "wa": 0.905273,
+      "_source": "sample-masjid:7D516012",
+      "_confidence": 1.0
+    },
+    "Alawi Shafa": {
+      "upem": 2048,
+      "a": 0.905273,
+      "d": 0.211914,
+      "g": 0.032715,
+      "wd": 0.211914,
+      "wa": 0.905273,
+      "_source": "sample-masjid:7D516012",
+      "_confidence": 1.0
+    },
+    "PT Bold Heading": {
+      "upem": 2048,
+      "a": 1.106934,
+      "d": 0.775879,
+      "g": 0.008789,
+      "wd": 0.775879,
+      "wa": 1.106934,
+      "_source": "sample-masjid:59045A05",
+      "_confidence": 0.769
+    },
+    "Khalid Art bold": {
+      "upem": 2048,
+      "a": 1.106934,
+      "d": 0.775879,
+      "g": 0.008789,
+      "wd": 0.775879,
+      "wa": 1.106934,
+      "_source": "sample-masjid:59045A05",
+      "_confidence": 0.663
+    }
   },
-  "Alawi Shafa": {
-    "upem": 2048,
-    "a": 0.905273,
-    "d": 0.211914,
-    "g": 0.032715,
-    "wd": 0.211914,
-    "wa": 0.905273,
-    "_source": "sample-masjid:7D516012",
-    "_confidence": 1.0
+  "sample-muqtarah": {
+    "Al-Jazeera-Arabic-Bold": {
+      "upem": 1000,
+      "a": 1.054,
+      "d": 0.294,
+      "g": 0.034,
+      "wd": 0.294,
+      "wa": 1.054,
+      "_source": "sample-muqtarah:63DA0C2F",
+      "_confidence": 1.0
+    },
+    "AL-Bsher": {
+      "upem": 2048,
+      "a": 0.905273,
+      "d": 0.211914,
+      "g": 0.032715,
+      "wd": 0.211914,
+      "wa": 0.905273,
+      "_source": "sample-muqtarah:639D5FF9",
+      "_confidence": 1.0
+    },
+    "(AH) Manal Bold": {
+      "upem": 2048,
+      "a": 0.905273,
+      "d": 0.211914,
+      "g": 0.032715,
+      "wd": 0.211914,
+      "wa": 0.905273,
+      "_source": "sample-muqtarah:639D5FF9",
+      "_confidence": 1.0
+    },
+    "Sukar": {
+      "upem": 2048,
+      "a": 0.952148,
+      "d": 0.268555,
+      "g": 0.220703,
+      "wd": 0.268555,
+      "wa": 0.952148,
+      "_source": "sample-muqtarah:52B6795A",
+      "_confidence": 1.0
+    }
   },
-  "Khalid Art bold": {
-    "upem": 2048,
-    "a": 1.106934,
-    "d": 0.775879,
-    "g": 0.008789,
-    "wd": 0.775879,
-    "wa": 1.106934,
-    "_source": "sample-masjid:59045A05",
-    "_confidence": 0.663
-  },
-  "mohammad bold art 1": {
-    "upem": 2048,
-    "a": 0.905273,
-    "d": 0.211914,
-    "g": 0.032715,
-    "wd": 0.211914,
-    "wa": 0.905273,
-    "_source": "sample-tadris:5E4275F0",
-    "_confidence": 0.893
-  },
-  "KFGQPC Uthmanic Script HAFS": {
-    "upem": 2048,
-    "a": 0.905273,
-    "d": 0.211914,
-    "g": 0.032715,
-    "wd": 0.211914,
-    "wa": 0.905273,
-    "_source": "sample-tadris:07BF5DA6",
-    "_confidence": 0.7
+  "sample-tadris": {
+    "mohammad bold art 1": {
+      "upem": 2048,
+      "a": 0.905273,
+      "d": 0.211914,
+      "g": 0.032715,
+      "wd": 0.211914,
+      "wa": 0.905273,
+      "_source": "sample-tadris:5E4275F0",
+      "_confidence": 0.893
+    },
+    "KFGQPC Uthmanic Script HAFS": {
+      "upem": 2048,
+      "a": 0.905273,
+      "d": 0.211914,
+      "g": 0.032715,
+      "wd": 0.211914,
+      "wa": 0.905273,
+      "_source": "sample-tadris:07BF5DA6",
+      "_confidence": 0.7
+    }
   }
 }
