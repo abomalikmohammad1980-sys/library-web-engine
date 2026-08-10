@@ -1,0 +1,29 @@
+name = "library-source-sync"
+main = "dist/worker.js"
+compatibility_date = "2026-08-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "library-source-sync"
+database_id = "REPLACE_AFTER_PROVISIONING"
+migrations_dir = "migrations"
+
+[[r2_buckets]]
+binding = "SOURCE_OBJECTS"
+bucket_name = "library-source-objects"
+
+# Configure SOURCE_UPLOAD_SIGNING_KEY as an encrypted Worker secret.
+# Configure BUILD_SERVICE_TOKEN_CURRENT as a distinct encrypted Worker secret;
+# BUILD_SERVICE_TOKEN_PREVIOUS is optional and exists only during bounded rotation.
+# Configure SOURCE_SYNC_PUBLIC_BASE_URL explicitly to the deployed HTTPS origin.
+# Configure OIDC_ISSUER, OIDC_AUDIENCE, OIDC_JWKS_URL, and
+# OIDC_ALLOWED_ALGORITHMS (for example RS256,ES256) explicitly per environment.
+# Also configure all quota bindings explicitly: SYNC_MAX_SOURCE_BYTES,
+# SYNC_MAX_BOOK_REVISIONS, SYNC_MAX_ACCOUNT_STORAGE_BYTES,
+# SYNC_MAX_REQUESTS_PER_WINDOW, and SYNC_RATE_WINDOW_SECONDS.
+# Scheduled maintenance also requires explicit SYNC_MAINTENANCE_BATCH_SIZE and
+# SYNC_STAGING_GRACE_SECONDS bindings plus a cron trigger configured at deployment.
+# DOCX intake policy is explicit: DOCX_MAX_BYTES, DOCX_MAX_ENTRIES,
+# DOCX_MAX_UNCOMPRESSED_BYTES, DOCX_MAX_COMPRESSION_RATIO, and boolean
+# DOCX_ALLOW_EMBEDDINGS / DOCX_ALLOW_EXTERNAL_RELATIONSHIPS / DOCX_ALLOW_SIGNATURES.
+# This example intentionally contains no token, policy, URL, or quota defaults.

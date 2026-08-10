@@ -1,0 +1,944 @@
+{
+  "schemaVersion": 2,
+  "datasetId": "surahpedia-tasrif-word-v1",
+  "dataVersion": "2026-08-10T13:03:43.474Z",
+  "resource": {
+    "id": "37",
+    "kind": "tasrif",
+    "slug": "surahpedia-tasrif-word",
+    "title": "تصريف كلمات القرآن",
+    "author": "الفريق العلمي بمركز تفسير للدراسات القرآنية"
+  },
+  "coverage": "complete",
+  "counts": {
+    "surahs": 114,
+    "ayahs": 6236,
+    "words": 77432
+  },
+  "mapping": {
+    "pageIndex": "GET /api/suras -> suras[].ayas[page]=ayah",
+    "content": "validated JSON html word anchors and following text",
+    "rangeMode": "exact-single-ayah-word"
+  },
+  "provenance": {
+    "provider": "موسوعة سورة — مركز تفسير للدراسات القرآنية",
+    "sourceTemplate": "https://surahpedia.com/ar/projects/37/{page}",
+    "retrievedAt": "2026-08-10T13:03:43.477Z",
+    "permissionBasis": "USER-ATTESTED-WAQF-REUSE (2026-08-10)",
+    "indexChecksumSha256": "ae3047141159b0e651daefdaed0f7d19aacbfba37b900bfdc6a24d43ea497768"
+  },
+  "files": [
+    {
+      "surah": 1,
+      "file": "1.json",
+      "ayahs": 7,
+      "words": 29,
+      "byteSize": 21964,
+      "checksumSha256": "2629c6f581e9b76fcca87abe4bb1fddadc56f7fb11e3d8bcc967a6ab96a811ec"
+    },
+    {
+      "surah": 2,
+      "file": "2.json",
+      "ayahs": 286,
+      "words": 6117,
+      "byteSize": 4007279,
+      "checksumSha256": "f16e165603c859d930c11c1423d43514c77d06435ad944fd5992eec245587844"
+    },
+    {
+      "surah": 3,
+      "file": "3.json",
+      "ayahs": 200,
+      "words": 3481,
+      "byteSize": 2332691,
+      "checksumSha256": "2259c7acdbd682c1107e2dcd1b0656daba81e4dd47c85a100929cf14714fc46d"
+    },
+    {
+      "surah": 4,
+      "file": "4.json",
+      "ayahs": 176,
+      "words": 3747,
+      "byteSize": 2529938,
+      "checksumSha256": "b47e3806213585f9c4285ce04816f85cdd31c39376e7e9c898e8930d1a86aeec"
+    },
+    {
+      "surah": 5,
+      "file": "5.json",
+      "ayahs": 120,
+      "words": 2804,
+      "byteSize": 1860312,
+      "checksumSha256": "ee61b678db5ef60d550e36553b226854ea93ed0b84300b94d8349fcc1b8bd792"
+    },
+    {
+      "surah": 6,
+      "file": "6.json",
+      "ayahs": 165,
+      "words": 3050,
+      "byteSize": 2021698,
+      "checksumSha256": "dbd8649e83cc2ae3e193dee23458df18f26ffc2ddd30b4636947e3860ca61906"
+    },
+    {
+      "surah": 7,
+      "file": "7.json",
+      "ayahs": 206,
+      "words": 3320,
+      "byteSize": 2262630,
+      "checksumSha256": "910ae60d82558007eb3c0cef74d0e57746db53324ca590c71e89ab57dd8c2c9a"
+    },
+    {
+      "surah": 8,
+      "file": "8.json",
+      "ayahs": 75,
+      "words": 1234,
+      "byteSize": 819797,
+      "checksumSha256": "e388e4a2d2f556de1936afab4914866201dfa4af5b62238a28413a44de238037"
+    },
+    {
+      "surah": 9,
+      "file": "9.json",
+      "ayahs": 129,
+      "words": 2498,
+      "byteSize": 1696366,
+      "checksumSha256": "313f843993eebb97fa0cf335e7859bd78c962a3eaa615762fa8c8942bedfcd02"
+    },
+    {
+      "surah": 10,
+      "file": "10.json",
+      "ayahs": 109,
+      "words": 1833,
+      "byteSize": 1193730,
+      "checksumSha256": "a306fb03613a89230a90448bec91cc1da94310555a0230867fa478d97193d21e"
+    },
+    {
+      "surah": 11,
+      "file": "11.json",
+      "ayahs": 123,
+      "words": 1917,
+      "byteSize": 1246944,
+      "checksumSha256": "4cfacf8021d2a76e98009439189ddc95e63354aec46c8a3b3a6f6720a3c43190"
+    },
+    {
+      "surah": 12,
+      "file": "12.json",
+      "ayahs": 111,
+      "words": 1777,
+      "byteSize": 1171281,
+      "checksumSha256": "4661f730eed542bdc271c7a7ccfb44bd192a800a7b5dbd721a51d40b70c6bf59"
+    },
+    {
+      "surah": 13,
+      "file": "13.json",
+      "ayahs": 43,
+      "words": 854,
+      "byteSize": 560730,
+      "checksumSha256": "af4f258e1f291fc79177124cc4b145efc1198089515dd5486c93c3696191c263"
+    },
+    {
+      "surah": 14,
+      "file": "14.json",
+      "ayahs": 52,
+      "words": 830,
+      "byteSize": 553519,
+      "checksumSha256": "1b67d44a78b7de0f8cc0b90b7a9af60fe2718c765b99feed6abb5eaeaf8033ae"
+    },
+    {
+      "surah": 15,
+      "file": "15.json",
+      "ayahs": 99,
+      "words": 654,
+      "byteSize": 446869,
+      "checksumSha256": "074d9c501914774f4d245f4b06224039a90d0e3342633eb975fe9004032a1fe7"
+    },
+    {
+      "surah": 16,
+      "file": "16.json",
+      "ayahs": 128,
+      "words": 1844,
+      "byteSize": 1180264,
+      "checksumSha256": "d71c01438c9feecc4130e9aa763895201fa918f860943de32bbf52665fcf8994"
+    },
+    {
+      "surah": 17,
+      "file": "17.json",
+      "ayahs": 111,
+      "words": 1556,
+      "byteSize": 1097934,
+      "checksumSha256": "d1b8aab169d8914b4907a391f8d095bea059b9d90584396d15799b3a1e26b669"
+    },
+    {
+      "surah": 18,
+      "file": "18.json",
+      "ayahs": 110,
+      "words": 1579,
+      "byteSize": 1078646,
+      "checksumSha256": "2aed0b4da3b37c31e53c05921079f2ebd7092be5d0e0b1511ead0b24c15636f4"
+    },
+    {
+      "surah": 19,
+      "file": "19.json",
+      "ayahs": 98,
+      "words": 961,
+      "byteSize": 700660,
+      "checksumSha256": "c66f4630e27c47a3ccec34673b541f1336196bfaffd1891c5fe089af32a2a1ee"
+    },
+    {
+      "surah": 20,
+      "file": "20.json",
+      "ayahs": 135,
+      "words": 1335,
+      "byteSize": 898832,
+      "checksumSha256": "94e9d80a162843e84ddb82610180b54e0326c7ad13159b4811a7c48c7cfcc0ee"
+    },
+    {
+      "surah": 21,
+      "file": "21.json",
+      "ayahs": 112,
+      "words": 1169,
+      "byteSize": 777271,
+      "checksumSha256": "adcefd9fe9ff7462bf4118b901c6b3263d5b2a0ff09a35b9cde589e9eeaec193"
+    },
+    {
+      "surah": 22,
+      "file": "22.json",
+      "ayahs": 78,
+      "words": 1274,
+      "byteSize": 833765,
+      "checksumSha256": "3b78cc076fa5227279c18a892e520d8102305d47d6f8c1b6fbd7d4420c21a949"
+    },
+    {
+      "surah": 23,
+      "file": "23.json",
+      "ayahs": 118,
+      "words": 1050,
+      "byteSize": 677870,
+      "checksumSha256": "83d16dccdd4b502387212281bd61a6b2edcdc7e87e16dd04f77e5ddf76c06210"
+    },
+    {
+      "surah": 24,
+      "file": "24.json",
+      "ayahs": 64,
+      "words": 1316,
+      "byteSize": 858628,
+      "checksumSha256": "697ac36804b01d8f669e1995410b8bec08e442f21d357ed5fa28b56b1f4cddc6"
+    },
+    {
+      "surah": 25,
+      "file": "25.json",
+      "ayahs": 77,
+      "words": 893,
+      "byteSize": 645676,
+      "checksumSha256": "c74d307ac769062de402849cbc95daadde65d93ea589adeecd4e61d3623edb9b"
+    },
+    {
+      "surah": 26,
+      "file": "26.json",
+      "ayahs": 227,
+      "words": 1318,
+      "byteSize": 921380,
+      "checksumSha256": "0a9e1f6d55f531bf210918445029b25823d24a6c9c83f49a92efa44488905a0c"
+    },
+    {
+      "surah": 27,
+      "file": "27.json",
+      "ayahs": 93,
+      "words": 1151,
+      "byteSize": 779084,
+      "checksumSha256": "4ac14619622028229068583669185df1ad6d3dbdea0833521c191d5b5b3e9dda"
+    },
+    {
+      "surah": 28,
+      "file": "28.json",
+      "ayahs": 88,
+      "words": 1430,
+      "byteSize": 969495,
+      "checksumSha256": "ee34659db7d6e11027052ccd874b7fb5d81aa1312fedbe94261ba174cda93a2c"
+    },
+    {
+      "surah": 29,
+      "file": "29.json",
+      "ayahs": 69,
+      "words": 976,
+      "byteSize": 645488,
+      "checksumSha256": "774feadffd21c162f5667a4a5f3e7f1396234d3408f66383d1dc161819787e13"
+    },
+    {
+      "surah": 30,
+      "file": "30.json",
+      "ayahs": 60,
+      "words": 817,
+      "byteSize": 559383,
+      "checksumSha256": "c5376d0b16c26475bf79f99504b7deea4d220573e9a85c853aa298c519adb5cf"
+    },
+    {
+      "surah": 31,
+      "file": "31.json",
+      "ayahs": 34,
+      "words": 546,
+      "byteSize": 351115,
+      "checksumSha256": "7414992b3106590851c3b1afcbb0f8fd00e3dfa3de917519d5eb6a8585dc51e3"
+    },
+    {
+      "surah": 32,
+      "file": "32.json",
+      "ayahs": 30,
+      "words": 372,
+      "byteSize": 251901,
+      "checksumSha256": "9d94012eef90539120602b441ae751caf823be0aefda243accf5ac2a8ed46e7a"
+    },
+    {
+      "surah": 33,
+      "file": "33.json",
+      "ayahs": 73,
+      "words": 1287,
+      "byteSize": 912706,
+      "checksumSha256": "f26aea411c9075174d7063ff25ddfd2c3802b9ec83dbddfffa409446015140ca"
+    },
+    {
+      "surah": 34,
+      "file": "34.json",
+      "ayahs": 54,
+      "words": 883,
+      "byteSize": 575741,
+      "checksumSha256": "4f2501243cf8ce426da288bd0ec50fb2c61cf0de5e711385816cbab2af480748"
+    },
+    {
+      "surah": 35,
+      "file": "35.json",
+      "ayahs": 45,
+      "words": 775,
+      "byteSize": 510003,
+      "checksumSha256": "69f6a2d4bea79448ab65735581c588b4bd2322e291201beb412fee2df37ebd3a"
+    },
+    {
+      "surah": 36,
+      "file": "36.json",
+      "ayahs": 83,
+      "words": 725,
+      "byteSize": 477545,
+      "checksumSha256": "1d1db94b63d4067f3c20372509d10b0a0db2f17ed5e981a80f780ec8acc04cb0"
+    },
+    {
+      "surah": 37,
+      "file": "37.json",
+      "ayahs": 182,
+      "words": 861,
+      "byteSize": 597696,
+      "checksumSha256": "66d6e9e2bf72c95cfe562d829664a4e9cd6370c9cf54234da1bfbe069e9c9d3c"
+    },
+    {
+      "surah": 38,
+      "file": "38.json",
+      "ayahs": 88,
+      "words": 733,
+      "byteSize": 480557,
+      "checksumSha256": "d08aa29252a891d246711e1d967d6dd093993c13dbefa7eea52f2bc18245c2aa"
+    },
+    {
+      "surah": 39,
+      "file": "39.json",
+      "ayahs": 75,
+      "words": 1172,
+      "byteSize": 773877,
+      "checksumSha256": "a1f29abbf45ffea1f94795056995fe9f891f5da4da6273b4d039818155fe3ab1"
+    },
+    {
+      "surah": 40,
+      "file": "40.json",
+      "ayahs": 85,
+      "words": 1219,
+      "byteSize": 804559,
+      "checksumSha256": "8020fe461bb0f46c676d5feded60fcfc3d3d27248c34f3a392664ffbff8c95d5"
+    },
+    {
+      "surah": 41,
+      "file": "41.json",
+      "ayahs": 54,
+      "words": 794,
+      "byteSize": 533989,
+      "checksumSha256": "6ac97640a61ed09b888abe9af131712025be15502a6c17bfef49c36bdbc2ee8b"
+    },
+    {
+      "surah": 42,
+      "file": "42.json",
+      "ayahs": 53,
+      "words": 860,
+      "byteSize": 551345,
+      "checksumSha256": "3ea0bc6c47f6c7a5532254b98894958f0c53dbad0841f14af5b099d457d3c0e7"
+    },
+    {
+      "surah": 43,
+      "file": "43.json",
+      "ayahs": 89,
+      "words": 830,
+      "byteSize": 541348,
+      "checksumSha256": "88dee9945cf23115a8f4a2b0fa6f0145baeaeaa551f8e20a056773f840f97325"
+    },
+    {
+      "surah": 44,
+      "file": "44.json",
+      "ayahs": 59,
+      "words": 346,
+      "byteSize": 238019,
+      "checksumSha256": "03d39c973aee19853084f31e02041394cabe75c59ac9cc0615775f31ec807300"
+    },
+    {
+      "surah": 45,
+      "file": "45.json",
+      "ayahs": 37,
+      "words": 488,
+      "byteSize": 338567,
+      "checksumSha256": "2ac2d5df36df9876bc53c38e3bf62336e8c69c40c6dc09623d5ecff6cb9ef962"
+    },
+    {
+      "surah": 46,
+      "file": "46.json",
+      "ayahs": 35,
+      "words": 643,
+      "byteSize": 419812,
+      "checksumSha256": "7cb5e7998c4f1fa96441d4f11bc6a337442edb00138d03fae87ce7cf8646a81b"
+    },
+    {
+      "surah": 47,
+      "file": "47.json",
+      "ayahs": 38,
+      "words": 539,
+      "byteSize": 358781,
+      "checksumSha256": "db4ca0c7de1388bb07336ff5afccd4aa09174d996b27df7709a657efcf767e05"
+    },
+    {
+      "surah": 48,
+      "file": "48.json",
+      "ayahs": 29,
+      "words": 560,
+      "byteSize": 403321,
+      "checksumSha256": "1bdb2313474f5acd1d17cb4cd4ed5901fc40b8810ee51730ca155d91638ec12c"
+    },
+    {
+      "surah": 49,
+      "file": "49.json",
+      "ayahs": 18,
+      "words": 347,
+      "byteSize": 230186,
+      "checksumSha256": "ab0d1d9cdc2265f2c1b5a7925bde929c95bd70b81ba04819a0812487cd1f5dd6"
+    },
+    {
+      "surah": 50,
+      "file": "50.json",
+      "ayahs": 45,
+      "words": 373,
+      "byteSize": 250527,
+      "checksumSha256": "03ae1a716238f46c4d1187adde0f54098f98bb490799adcbd3738fd538f8d289"
+    },
+    {
+      "surah": 51,
+      "file": "51.json",
+      "ayahs": 60,
+      "words": 360,
+      "byteSize": 248113,
+      "checksumSha256": "741545a1929d8205022971c7a1477e66dc6a85585e6653956a95309bf6e6ccb0"
+    },
+    {
+      "surah": 52,
+      "file": "52.json",
+      "ayahs": 49,
+      "words": 312,
+      "byteSize": 207136,
+      "checksumSha256": "88ad2c2ed17d778c3a44fc8cb0f262d019d0f0a3e6a52eff7e69220539a14584"
+    },
+    {
+      "surah": 53,
+      "file": "53.json",
+      "ayahs": 62,
+      "words": 360,
+      "byteSize": 246231,
+      "checksumSha256": "129f8b1935598be585237639ea05e6d8960d15d9e3d7df1c86675cd33173d790"
+    },
+    {
+      "surah": 54,
+      "file": "54.json",
+      "ayahs": 55,
+      "words": 342,
+      "byteSize": 253494,
+      "checksumSha256": "577f84cf9dc30a95fbf52b788cb088a9e74b015a06c6f5b7b57ed4c5c8724883"
+    },
+    {
+      "surah": 55,
+      "file": "55.json",
+      "ayahs": 78,
+      "words": 351,
+      "byteSize": 292133,
+      "checksumSha256": "6460a136ffef6d33fb66f94384376b86937ccfca3ae658fdb8cae2775f1ec531"
+    },
+    {
+      "surah": 56,
+      "file": "56.json",
+      "ayahs": 96,
+      "words": 379,
+      "byteSize": 271327,
+      "checksumSha256": "baa93a724dd8d5651ad0fedb5a490a251bfed79d022fa43c1c89b353714990aa"
+    },
+    {
+      "surah": 57,
+      "file": "57.json",
+      "ayahs": 29,
+      "words": 574,
+      "byteSize": 383863,
+      "checksumSha256": "2e2b4e375602a90cd320b54e357ed458660afce6a34446266977a0e169ec5cab"
+    },
+    {
+      "surah": 58,
+      "file": "58.json",
+      "ayahs": 22,
+      "words": 472,
+      "byteSize": 298984,
+      "checksumSha256": "b5e6ff52a5102735d2fd54f8d9f1562c22b776d4c2f773e6f37d32bc67bcad89"
+    },
+    {
+      "surah": 59,
+      "file": "59.json",
+      "ayahs": 24,
+      "words": 445,
+      "byteSize": 282456,
+      "checksumSha256": "0bb718aa8a4baa2adebf1085b1467a381f5176910ab7a2c51bb86a8faab2ce32"
+    },
+    {
+      "surah": 60,
+      "file": "60.json",
+      "ayahs": 13,
+      "words": 348,
+      "byteSize": 228014,
+      "checksumSha256": "322c2ea3bd1f7f85032f2369cf983f6220662aa2b1c5a2cac9e8881b1b8c8fb7"
+    },
+    {
+      "surah": 61,
+      "file": "61.json",
+      "ayahs": 14,
+      "words": 221,
+      "byteSize": 150187,
+      "checksumSha256": "a94b40544c3ae9e084e2ef32f5284eeb37fb64244679f0895a680b1734db9fe8"
+    },
+    {
+      "surah": 62,
+      "file": "62.json",
+      "ayahs": 11,
+      "words": 175,
+      "byteSize": 118220,
+      "checksumSha256": "287764f373e29f5970d4ab56587e07e66da88a8a2e74c6fbec8625dbdfb6f7b4"
+    },
+    {
+      "surah": 63,
+      "file": "63.json",
+      "ayahs": 11,
+      "words": 180,
+      "byteSize": 118266,
+      "checksumSha256": "ee2dd0b206a16e4fa4c64907efaf12e6e477a9bb8d4c32ec413aca1c1f8e5a8a"
+    },
+    {
+      "surah": 64,
+      "file": "64.json",
+      "ayahs": 18,
+      "words": 241,
+      "byteSize": 162691,
+      "checksumSha256": "0c12c37cd0f76d97389bdd6ebc737f5c96977836ade5aaec91da769c35fdaefa"
+    },
+    {
+      "surah": 65,
+      "file": "65.json",
+      "ayahs": 12,
+      "words": 287,
+      "byteSize": 187824,
+      "checksumSha256": "6297f7b272bb5e634a2f7d01d8f65a4396a1a669b29e926afc3ad458632dbb5f"
+    },
+    {
+      "surah": 66,
+      "file": "66.json",
+      "ayahs": 12,
+      "words": 249,
+      "byteSize": 175562,
+      "checksumSha256": "f78b184a9f1e00ebd943736c4bb23f272209653246e5ea66d5651d8f95da6309"
+    },
+    {
+      "surah": 67,
+      "file": "67.json",
+      "ayahs": 30,
+      "words": 333,
+      "byteSize": 222067,
+      "checksumSha256": "25772d69e28c8a5fe340bd097cbb339390748d5dc6396ed70b7a3da8f844c298"
+    },
+    {
+      "surah": 68,
+      "file": "68.json",
+      "ayahs": 52,
+      "words": 300,
+      "byteSize": 216017,
+      "checksumSha256": "e691f463d4f225b6b00b3955f5033a96765f923ded679400d38eca5adf1fb94c"
+    },
+    {
+      "surah": 69,
+      "file": "69.json",
+      "ayahs": 52,
+      "words": 258,
+      "byteSize": 180576,
+      "checksumSha256": "41d5654e75e5fdabf73c65a1919aa49c9573a130d38802601c60f3dd7727df27"
+    },
+    {
+      "surah": 70,
+      "file": "70.json",
+      "ayahs": 44,
+      "words": 217,
+      "byteSize": 151408,
+      "checksumSha256": "2c368448bf1f93de94897f0d4f3680a065ecaa6c22495a2d4f501bccc9ea3589"
+    },
+    {
+      "surah": 71,
+      "file": "71.json",
+      "ayahs": 28,
+      "words": 226,
+      "byteSize": 156655,
+      "checksumSha256": "28956668308a46835fabb5e5ab5d9799b2369ecf52886549b51c1b54713d4064"
+    },
+    {
+      "surah": 72,
+      "file": "72.json",
+      "ayahs": 28,
+      "words": 285,
+      "byteSize": 179752,
+      "checksumSha256": "be26b76dee86fa663fed76164bd1e3f2b287fa45d628a1b214dc823e8296f5a4"
+    },
+    {
+      "surah": 73,
+      "file": "73.json",
+      "ayahs": 20,
+      "words": 199,
+      "byteSize": 137394,
+      "checksumSha256": "8d40291fed0fea10c22115ce41a1479fec9d769d45f69b6bfffec7362cbd81e5"
+    },
+    {
+      "surah": 74,
+      "file": "74.json",
+      "ayahs": 56,
+      "words": 255,
+      "byteSize": 177463,
+      "checksumSha256": "27afe50b7b1e44c85704cc66222e26de6b2443097c7e17554f323c2eef118ca9"
+    },
+    {
+      "surah": 75,
+      "file": "75.json",
+      "ayahs": 40,
+      "words": 164,
+      "byteSize": 117473,
+      "checksumSha256": "da5864da766fc0764bfb6f03d5dee402c7ccf0292fc11614633a988537fb0091"
+    },
+    {
+      "surah": 76,
+      "file": "76.json",
+      "ayahs": 31,
+      "words": 243,
+      "byteSize": 182937,
+      "checksumSha256": "c0abb7d6b65c24288feec9e7db7e196a4a4d006e6cbc1bf316297e1944cc2240"
+    },
+    {
+      "surah": 77,
+      "file": "77.json",
+      "ayahs": 50,
+      "words": 181,
+      "byteSize": 136449,
+      "checksumSha256": "39159ffc1f5bd5648552b5c3f5b1efc92f9704f9cbc4987057bf212b89ba59a4"
+    },
+    {
+      "surah": 78,
+      "file": "78.json",
+      "ayahs": 40,
+      "words": 173,
+      "byteSize": 134425,
+      "checksumSha256": "9ba3f828b1c073069a5478d680a98fe5d85ce4575a76fbca01e84ce324c6c2da"
+    },
+    {
+      "surah": 79,
+      "file": "79.json",
+      "ayahs": 46,
+      "words": 179,
+      "byteSize": 138823,
+      "checksumSha256": "cbf967a06ae9df4a1c67effc2b58bd95ae3bb7a037cd2e3d67e16642c784790c"
+    },
+    {
+      "surah": 80,
+      "file": "80.json",
+      "ayahs": 42,
+      "words": 133,
+      "byteSize": 96925,
+      "checksumSha256": "c0045143011420279e624141e8321ce610e4efd38fa820f57d3149730139a1bd"
+    },
+    {
+      "surah": 81,
+      "file": "81.json",
+      "ayahs": 29,
+      "words": 104,
+      "byteSize": 72365,
+      "checksumSha256": "4fe958edec3386a5a8a80891af7f7eaebed2750e7fe87f15346b601c34503ff6"
+    },
+    {
+      "surah": 82,
+      "file": "82.json",
+      "ayahs": 19,
+      "words": 80,
+      "byteSize": 50729,
+      "checksumSha256": "ce3f144d7cb46500a82c80722d8a72e4a7c1c3fa151220e79f126b89cfe8d25b"
+    },
+    {
+      "surah": 83,
+      "file": "83.json",
+      "ayahs": 36,
+      "words": 169,
+      "byteSize": 118839,
+      "checksumSha256": "85761d71063439e9eee7a43490259fd6633eccde34309b1ffcd15f26741ddd04"
+    },
+    {
+      "surah": 84,
+      "file": "84.json",
+      "ayahs": 25,
+      "words": 107,
+      "byteSize": 73367,
+      "checksumSha256": "0f29ec73c4ef4407659312d10d7f51f9c58cee11490fc1315fa77ad7b8543e1b"
+    },
+    {
+      "surah": 85,
+      "file": "85.json",
+      "ayahs": 22,
+      "words": 109,
+      "byteSize": 71656,
+      "checksumSha256": "8152ffcbb0bfff7f8c9d1c20ef05ef24d52516190f28e2300172023c7c331e97"
+    },
+    {
+      "surah": 86,
+      "file": "86.json",
+      "ayahs": 17,
+      "words": 61,
+      "byteSize": 41175,
+      "checksumSha256": "9976fdd1f45c9b10805d76a527983d47ec305b1532cdd68ce726fab7bdab7cb6"
+    },
+    {
+      "surah": 87,
+      "file": "87.json",
+      "ayahs": 19,
+      "words": 72,
+      "byteSize": 59111,
+      "checksumSha256": "faec0875d18b9f46ba5a22b2ae198e961e68f718dfdd7db4e42bc91d3594546b"
+    },
+    {
+      "surah": 88,
+      "file": "88.json",
+      "ayahs": 26,
+      "words": 92,
+      "byteSize": 64099,
+      "checksumSha256": "58355ff6a10ff64432059f3cb0890afc8e1b62a745810382737945fa057f8728"
+    },
+    {
+      "surah": 89,
+      "file": "89.json",
+      "ayahs": 30,
+      "words": 137,
+      "byteSize": 96216,
+      "checksumSha256": "0db2fe1a514ec3b5ecac421f98846a27236f2a5df2df9d3e8ba1e77e300e5dc8"
+    },
+    {
+      "surah": 90,
+      "file": "90.json",
+      "ayahs": 20,
+      "words": 82,
+      "byteSize": 53535,
+      "checksumSha256": "b036a539d87178165b7bbb3cf1a77a0c7ffa17bee844e9c772723db5b164e69f"
+    },
+    {
+      "surah": 91,
+      "file": "91.json",
+      "ayahs": 15,
+      "words": 54,
+      "byteSize": 40635,
+      "checksumSha256": "5c952a4f58dd02fd007240d46bbeec84015debfa7e8a82bb585115c94398cc9e"
+    },
+    {
+      "surah": 92,
+      "file": "92.json",
+      "ayahs": 21,
+      "words": 71,
+      "byteSize": 58293,
+      "checksumSha256": "ff9c4e52d752340fdcce5f7dd74123ff8e8163b01e81f9b0a112f819ce956586"
+    },
+    {
+      "surah": 93,
+      "file": "93.json",
+      "ayahs": 11,
+      "words": 40,
+      "byteSize": 31791,
+      "checksumSha256": "fefd92d0c97eb66581c09e1794fd990fd2a3441d74055e6406d28991d488a3c7"
+    },
+    {
+      "surah": 94,
+      "file": "94.json",
+      "ayahs": 8,
+      "words": 27,
+      "byteSize": 15190,
+      "checksumSha256": "be81e9dada37753486918b07ab51c53c5f6d9744cdf712f3fda8c1cc779f3da5"
+    },
+    {
+      "surah": 95,
+      "file": "95.json",
+      "ayahs": 8,
+      "words": 34,
+      "byteSize": 22662,
+      "checksumSha256": "7b4c0aea1f1cf63e3b4c4923061ea419d47077a72a21290664c1e2adbe6d7652"
+    },
+    {
+      "surah": 96,
+      "file": "96.json",
+      "ayahs": 19,
+      "words": 72,
+      "byteSize": 51707,
+      "checksumSha256": "4066f8443cfc990ec4c1091ae814032c943dbb63925dd9b1e20500ce8fdf0cf1"
+    },
+    {
+      "surah": 97,
+      "file": "97.json",
+      "ayahs": 5,
+      "words": 30,
+      "byteSize": 18781,
+      "checksumSha256": "923c7792ea01b874da26ef87890a0de1ffc9f9a126e01a2aa1401d662ee16728"
+    },
+    {
+      "surah": 98,
+      "file": "98.json",
+      "ayahs": 8,
+      "words": 94,
+      "byteSize": 65725,
+      "checksumSha256": "8b56d013fead1a6f10ff96549e38f17a1d3cba05007b1312cc18fea907d67980"
+    },
+    {
+      "surah": 99,
+      "file": "99.json",
+      "ayahs": 8,
+      "words": 36,
+      "byteSize": 28466,
+      "checksumSha256": "750e2d5417a72864635e11447693cff835c924e9676cfe383f361272190788a9"
+    },
+    {
+      "surah": 100,
+      "file": "100.json",
+      "ayahs": 11,
+      "words": 40,
+      "byteSize": 26682,
+      "checksumSha256": "f2b2f79401f1ba1c67d7c487c3caad79ecb3c2f3d2a7d5e579214e7e494c3ce3"
+    },
+    {
+      "surah": 101,
+      "file": "101.json",
+      "ayahs": 11,
+      "words": 36,
+      "byteSize": 27422,
+      "checksumSha256": "1285f11421af782ba7f768b4d0b7865bb523a32b803dda63c9ab03cc18a756f1"
+    },
+    {
+      "surah": 102,
+      "file": "102.json",
+      "ayahs": 8,
+      "words": 28,
+      "byteSize": 19255,
+      "checksumSha256": "cf00d4b193a495021cf1b9afb0dfb79e5de7697f1eabf2de55e7cf7169e9a661"
+    },
+    {
+      "surah": 103,
+      "file": "103.json",
+      "ayahs": 3,
+      "words": 14,
+      "byteSize": 10152,
+      "checksumSha256": "c580606cd17ec9b4aca978d7e6bdc4512ffcfaae85699a23a9ee9707e9e0b702"
+    },
+    {
+      "surah": 104,
+      "file": "104.json",
+      "ayahs": 9,
+      "words": 33,
+      "byteSize": 23476,
+      "checksumSha256": "db50a8e5a314ee4259eae889921d5cd5a3a74a121a8927fcb1b0b8569a6a3347"
+    },
+    {
+      "surah": 105,
+      "file": "105.json",
+      "ayahs": 5,
+      "words": 23,
+      "byteSize": 15904,
+      "checksumSha256": "1c5e93544537f789cdb95ab46ff11d1d5a621c039018f8e5ca19cb583b3a95fa"
+    },
+    {
+      "surah": 106,
+      "file": "106.json",
+      "ayahs": 4,
+      "words": 17,
+      "byteSize": 12941,
+      "checksumSha256": "3bc2952b53f3d419186c151b08d000f2bf6b17e007c0779448b183a32be0511f"
+    },
+    {
+      "surah": 107,
+      "file": "107.json",
+      "ayahs": 7,
+      "words": 25,
+      "byteSize": 17856,
+      "checksumSha256": "b8b955b01b8bd29ed2cae0e5952f4c655902e485e6b743e7b9bedca897157a2c"
+    },
+    {
+      "surah": 108,
+      "file": "108.json",
+      "ayahs": 3,
+      "words": 10,
+      "byteSize": 8160,
+      "checksumSha256": "b8747b421cf53cd9113093255ab64ec387e8ff0d52efeb7e81834e235f3423a7"
+    },
+    {
+      "surah": 109,
+      "file": "109.json",
+      "ayahs": 6,
+      "words": 26,
+      "byteSize": 14155,
+      "checksumSha256": "fc015600fc2af5dca49cab9b1a6f45d3ebd03ad689dbcbcc3d08a200dd3fe318"
+    },
+    {
+      "surah": 110,
+      "file": "110.json",
+      "ayahs": 3,
+      "words": 19,
+      "byteSize": 14926,
+      "checksumSha256": "0dcfe500d8523f454eb70b31f5fb924a12b84bcd1292194c9bf381043436c5ef"
+    },
+    {
+      "surah": 111,
+      "file": "111.json",
+      "ayahs": 5,
+      "words": 23,
+      "byteSize": 15590,
+      "checksumSha256": "bad793b63a8d5896c76982ca12c87b6525f694347c8c4e6b8910920e870404c0"
+    },
+    {
+      "surah": 112,
+      "file": "112.json",
+      "ayahs": 4,
+      "words": 15,
+      "byteSize": 8711,
+      "checksumSha256": "7626afe9c74c599871dcc10195a19251ae2b865c45de781ed34adce59dafcfb7"
+    },
+    {
+      "surah": 113,
+      "file": "113.json",
+      "ayahs": 5,
+      "words": 23,
+      "byteSize": 14870,
+      "checksumSha256": "9bb17e1ad4fd182de942bd7b111463f12da9825efc8926195b3d4ae1976869eb"
+    },
+    {
+      "surah": 114,
+      "file": "114.json",
+      "ayahs": 6,
+      "words": 20,
+      "byteSize": 16151,
+      "checksumSha256": "611bd97c71ff37d58385abb5dc78782461e7e825e8b602b330cdc5d0816bdf4e"
+    }
+  ]
+}

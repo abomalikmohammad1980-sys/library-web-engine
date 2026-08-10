@@ -1,0 +1,7095 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-08-09T15:29:28.462Z",
+  "messageCount": 1380,
+  "messages": {
+    "،": {
+      "files": [
+        "book_import.ts",
+        "screens/library.ts",
+        "screens/reader.ts",
+        "taxonomy_links.ts"
+      ]
+    },
+    "،,:؛.!؟/_-]+/g,": {
+      "files": [
+        "edition_groups.ts"
+      ]
+    },
+    ": 'الوفاة غير مدونة'}": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "· اكتملت القراءة": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "· صفحة ١٤٧": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "«طلب العلم فريضة على كل مسلم»": {
+      "files": [
+        "screens/home.ts"
+      ]
+    },
+    ") || /^(?:محمد|أحمد|محمود|إبراهيم|إسماعيل|يوسف|علي|حسن|حسين|خالد|عبدالله|عبدالرحمن|مصطفى|عمر|عثمان|سليمان|صالح|سعيد)$/u.test(words[0] ??": {
+      "files": [
+        "library_metadata.ts"
+      ]
+    },
+    "))) return author return undefined } /** يفصل اسم ملف من قالب «العنوان ـ المؤلف» دون تفكيك العناوين ذات الشرطات العامة. */ export function parseBookFileName(fileName: string): ProposedBookMetadata { const base = fileNameTitle(fileName).replace(/\\s+/gu,": {
+      "files": [
+        "library_metadata.ts"
+      ]
+    },
+    "﴿ وَقُل رَّبِّ زِدْنِي عِلْمًا ﴾": {
+      "files": [
+        "screens/home.ts"
+      ]
+    },
+    "٠": {
+      "files": [
+        "search_presentation.ts"
+      ]
+    },
+    "۰": {
+      "files": [
+        "search_presentation.ts"
+      ]
+    },
+    "٠١٢٣٤٥٦٧٨٩": {
+      "files": [
+        "reader_toc.ts",
+        "shamela_catalog.ts",
+        "ui.ts"
+      ]
+    },
+    "۰۱۲۳۴۵۶۷۸۹": {
+      "files": [
+        "reader_toc.ts"
+      ]
+    },
+    "١": {
+      "files": [
+        "search_presentation.ts"
+      ]
+    },
+    "۱": {
+      "files": [
+        "search_presentation.ts"
+      ]
+    },
+    "٢": {
+      "files": [
+        "search_presentation.ts"
+      ]
+    },
+    "۲": {
+      "files": [
+        "search_presentation.ts"
+      ]
+    },
+    "٣": {
+      "files": [
+        "search_presentation.ts"
+      ]
+    },
+    "۳": {
+      "files": [
+        "search_presentation.ts"
+      ]
+    },
+    "٤": {
+      "files": [
+        "search_presentation.ts"
+      ]
+    },
+    "۴": {
+      "files": [
+        "search_presentation.ts"
+      ]
+    },
+    "٥": {
+      "files": [
+        "search_presentation.ts"
+      ]
+    },
+    "۵": {
+      "files": [
+        "search_presentation.ts"
+      ]
+    },
+    "٦": {
+      "files": [
+        "search_presentation.ts"
+      ]
+    },
+    "۶": {
+      "files": [
+        "search_presentation.ts"
+      ]
+    },
+    "٧": {
+      "files": [
+        "search_presentation.ts"
+      ]
+    },
+    "۷": {
+      "files": [
+        "search_presentation.ts"
+      ]
+    },
+    "٨": {
+      "files": [
+        "search_presentation.ts"
+      ]
+    },
+    "۸": {
+      "files": [
+        "search_presentation.ts"
+      ]
+    },
+    "٩": {
+      "files": [
+        "search_presentation.ts"
+      ]
+    },
+    "۹": {
+      "files": [
+        "search_presentation.ts"
+      ]
+    },
+    "ا": {
+      "files": [
+        "author_filter.ts",
+        "author_relation_graph.ts",
+        "book_tags.ts",
+        "quran_search_contract.ts",
+        "reader_toc.ts",
+        "screens/shelves.ts",
+        "search_presentation.ts"
+      ]
+    },
+    "آخر أربعة أسابيع على هذا الجهاز": {
+      "files": [
+        "screens/me.ts"
+      ]
+    },
+    "ابحث": {
+      "files": [
+        "screens/search.ts"
+      ]
+    },
+    "ابحث باسم القارئ أو الرواية…": {
+      "files": [
+        "screens/quran.ts"
+      ]
+    },
+    "ابحث بالعنوان أو المؤلف…": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "ابحث داخل": {
+      "files": [
+        "screens/search.ts"
+      ]
+    },
+    "ابحث عن مؤلف…": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "ابحث في القرآن الكريم…": {
+      "files": [
+        "screens/quran.ts"
+      ]
+    },
+    "ابحث في الملاحظات والنصوص والكتب…": {
+      "files": [
+        "screens/notes.ts"
+      ]
+    },
+    "ابحث في جميع صفحات الكتاب…": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "ابحث في شاشة اكتشف": {
+      "files": [
+        "screens/browse.ts"
+      ]
+    },
+    "ابحث في عناوين الفهرس…": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "ابحث في كتب مكتبتك وأضف ما تريد مباشرة.": {
+      "files": [
+        "screens/shelves.ts"
+      ]
+    },
+    "ابحث في كل كتبك أو داخل كتاب واحد، وانتقل إلى المطابقة دون أن تفقد موضع القراءة.": {
+      "files": [
+        "screens/welcome.ts"
+      ]
+    },
+    "ابحث في كل كتبك…": {
+      "files": [
+        "shell.ts"
+      ]
+    },
+    "ابحث في محتوى كتبك، أو تصفح رفوفًا تُبنى من مكتبتك الفعلية.": {
+      "files": [
+        "screens/browse.ts"
+      ]
+    },
+    "ابدأ الخطة": {
+      "files": [
+        "screens/book.ts"
+      ]
+    },
+    "ابدأ القراءة": {
+      "files": [
+        "screens/book.ts",
+        "screens/home.ts",
+        "screens/me.ts"
+      ]
+    },
+    "ابدأ رفّك الأول": {
+      "files": [
+        "screens/home.ts"
+      ]
+    },
+    "ابدأ مراجعة فوائدك": {
+      "files": [
+        "screens/home.ts"
+      ]
+    },
+    "ابدأ هذا الكتاب بخطة": {
+      "files": [
+        "screens/book.ts"
+      ]
+    },
+    "أبيض": {
+      "files": [
+        "shell.ts"
+      ]
+    },
+    "ات": {
+      "files": [
+        "search_presentation.ts"
+      ]
+    },
+    "اتبع خطوات المشاركة": {
+      "files": [
+        "screens/me.ts"
+      ]
+    },
+    "اترك النطاق على «الكل» للبحث في الخزانة كاملة.": {
+      "files": [
+        "screens/search.ts"
+      ]
+    },
+    "اترك هذا الخيار مغلقًا ليحوّل الموقع Word عبر Microsoft Word. عند تفعيله يُحفظ PDF الذي اخترته ويربط بالنص؛ افصل بدايات الأجزاء بفواصل.": {
+      "files": [
+        "book_import.ts"
+      ]
+    },
+    "اتركه فارغًا لعدم تغيير المؤلف": {
+      "files": [
+        "book_import.ts",
+        "screens/library.ts"
+      ]
+    },
+    "اتركها فارغة": {
+      "files": [
+        "book_import.ts"
+      ]
+    },
+    "اتصل الحساب، لكن هذا الجهاز غير مسجل للرفع.": {
+      "files": [
+        "source_sync_ui.ts"
+      ]
+    },
+    "أتممت الكتاب بحمد الله": {
+      "files": [
+        "screens/book.ts",
+        "screens/reading_plans.ts"
+      ]
+    },
+    "أتممت خطة هذا الكتاب بحمد الله": {
+      "files": [
+        "screens/home.ts"
+      ]
+    },
+    "أتممت قراءته": {
+      "files": [
+        "shelf_store.ts"
+      ]
+    },
+    "أتممت ورد هذا الكتاب بحمد الله": {
+      "files": [
+        "screens/home.ts"
+      ]
+    },
+    "إجراء الرف الجماعي": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "أجزاء الكتاب ومعاينته": {
+      "files": [
+        "screens/book.ts"
+      ]
+    },
+    "اجعل الخِزانة كما ترتاح لها": {
+      "files": [
+        "screens/settings.ts"
+      ]
+    },
+    "اجمع الفوائد في ملفات موضوعية": {
+      "files": [
+        "screens/me.ts"
+      ]
+    },
+    "اجمع فوائدك الموثقة من الكتب في ملفات موضوعية محفوظة على جهازك.": {
+      "files": [
+        "screens/research_projects.ts"
+      ]
+    },
+    "إحصاءات رف المؤلف": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "احفظ العلامات والتظليلات والملاحظات، ونظّم الكتب في رفوف شخصية تعمل دون اتصال.": {
+      "files": [
+        "screens/welcome.ts"
+      ]
+    },
+    "اختر استبدال الغلاف أو إزالته، لا الخيارين معًا": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "اختر التصنيف…": {
+      "files": [
+        "book_import.ts",
+        "screens/library.ts"
+      ]
+    },
+    "اختر التفسير": {
+      "files": [
+        "screens/quran.ts"
+      ]
+    },
+    "اختر القارئ والرواية": {
+      "files": [
+        "screens/quran.ts"
+      ]
+    },
+    "اختر الكتب وأزلها من كل رف هنا مباشرة؛ ويمكن للكتاب أن يظهر في أكثر من رف.": {
+      "files": [
+        "screens/shelves.ts"
+      ]
+    },
+    "اختر اللغة ثم اضغط «ترجم».": {
+      "files": [
+        "translation.ts"
+      ]
+    },
+    "اختر تفسيرًا لعرضه هنا داخل الخزانة.": {
+      "files": [
+        "screens/quran.ts"
+      ]
+    },
+    "اختر رفًا آخر أو أضف كتبًا جديدة إلى مكتبتك.": {
+      "files": [
+        "screens/browse.ts"
+      ]
+    },
+    "اختر رفًا…": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "اختر سجلين مختلفين": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "اختر كتابًا": {
+      "files": [
+        "screens/reading_plans.ts"
+      ]
+    },
+    "اختر كتابًا من مكتبتك": {
+      "files": [
+        "screens/me.ts"
+      ]
+    },
+    "اختر لغة واجهة الخِزانة. تبقى نصوص الكتب بلغتها الأصلية حتى تطلب ترجمتها.": {
+      "files": [
+        "translation.ts"
+      ]
+    },
+    "اختر لون التظليل": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "اختر مقدارًا ثابتًا تقرؤه كل يوم ونتابع تقدمك": {
+      "files": [
+        "screens/home.ts"
+      ]
+    },
+    "اختر ملف EPUB صحيحًا": {
+      "files": [
+        "epub_import.ts"
+      ]
+    },
+    "اختر ملف PDF الجاهز": {
+      "files": [
+        "book_import.ts"
+      ]
+    },
+    "اختر ملف PDF صحيحًا": {
+      "files": [
+        "pdf_import.ts"
+      ]
+    },
+    "اختر ملف Word صالحًا: DOCX أو DOC أو RTF": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "اختيار ألوان الخِزانة": {
+      "files": [
+        "shell.ts"
+      ]
+    },
+    "اختيار رسم نص المصحف": {
+      "files": [
+        "screens/quran.ts"
+      ]
+    },
+    "اختيار لغة الموقع": {
+      "files": [
+        "translation.ts"
+      ]
+    },
+    "اختيار مجلد كامل": {
+      "files": [
+        "book_import.ts"
+      ]
+    },
+    "اختياري — افصل الوسوم بفاصلة": {
+      "files": [
+        "book_import.ts"
+      ]
+    },
+    "اختياري — يحتفظ باسم الكتاب وبياناته": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "إدارة الرفوف": {
+      "files": [
+        "screens/book.ts"
+      ]
+    },
+    "إدارة الكتب المحفوظة": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "إدارة مركزية": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "إدارة وتوثيق": {
+      "files": [
+        "screens/data_quality.ts"
+      ]
+    },
+    "أدخل اسم الكتاب الجامع للأجزاء": {
+      "files": [
+        "book_import.ts"
+      ]
+    },
+    "أدخل السنة الهجرية لعرض الميلادي التقريبي": {
+      "files": [
+        "book_import.ts"
+      ]
+    },
+    "أدخل بيانات واحدة على الأقل لتطبيقها": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "أدخل مؤلفًا أو وفاة/معاصرًا أو تصنيفًا لتطبيقه": {
+      "files": [
+        "book_import.ts"
+      ]
+    },
+    "أدخل وقتًا يوميًا صالحًا": {
+      "files": [
+        "reading_plan.ts"
+      ]
+    },
+    "أدوات": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "أدوات النص القرآني المحدد": {
+      "files": [
+        "screens/quran.ts"
+      ]
+    },
+    "أدوات النص المحدد": {
+      "files": [
+        "screens/quran.ts",
+        "screens/reader.ts"
+      ]
+    },
+    "اردو": {
+      "files": [
+        "translation.ts"
+      ]
+    },
+    "أرشيف الخِزانة المفتوح manifest.json يصف الكتب، ومجلد books يحوي ملفات Word الأصلية/المهيأة وPDF المتاحة. لا يحتوي الأرشيف كلمات مرور أو بيانات سحابية.": {
+      "files": [
+        "library_archive.ts"
+      ]
+    },
+    "ارفع كتاب Word وسيظهر هنا لتعود إليه مباشرة.": {
+      "files": [
+        "screens/home.ts"
+      ]
+    },
+    "أريد قراءته": {
+      "files": [
+        "shelf_store.ts"
+      ]
+    },
+    "إزالة": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "إزالة الصورة الحالية": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "إزالة الغلاف الحالي واستخدام الغلاف المولّد": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "إزالة من الرف": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "أُزيلت خطة القراءة": {
+      "files": [
+        "screens/book.ts"
+      ]
+    },
+    "استئناف الخطة": {
+      "files": [
+        "screens/book.ts"
+      ]
+    },
+    "استؤنفت الخطة": {
+      "files": [
+        "screens/book.ts"
+      ]
+    },
+    "استبدال الغلاف": {
+      "files": [
+        "book_import.ts",
+        "screens/library.ts"
+      ]
+    },
+    "استبدال الغلاف (اختياري)": {
+      "files": [
+        "book_import.ts"
+      ]
+    },
+    "استبدال الكتاب ذي المعرف نفسه": {
+      "files": [
+        "screens/settings.ts"
+      ]
+    },
+    "استبدال ملف Word": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "استخدم هذه الأداة فقط عندما تريد توحيد مؤلف أو تصنيف لعدة كتب؛ ولا يتغير أي حقل تتركه فارغًا.": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "استُخدمت معاينة محدودة الدقة من الصفحة الأولى غلافًا؛ ملف PDF الأصلي لم يتغير.": {
+      "files": [
+        "book_import.ts"
+      ]
+    },
+    "استعادة أرشيف المكتبة": {
+      "files": [
+        "screens/settings.ts"
+      ]
+    },
+    "استعادة الإعدادات الأصلية": {
+      "files": [
+        "screens/settings.ts"
+      ]
+    },
+    "استعادة المقترحات المخفية": {
+      "files": [
+        "screens/home.ts"
+      ]
+    },
+    "استُعيدت الإعدادات الأصلية": {
+      "files": [
+        "screens/settings.ts"
+      ]
+    },
+    "أستغفر الله وأتوب إليه": {
+      "files": [
+        "shell.ts"
+      ]
+    },
+    "استماع القرآن الكريم": {
+      "files": [
+        "screens/quran.ts"
+      ]
+    },
+    "استُوردت بيانات القراءة ودمجت بنجاح": {
+      "files": [
+        "screens/settings.ts"
+      ]
+    },
+    "استيراد المتعارض كنسخة جديدة": {
+      "files": [
+        "screens/settings.ts"
+      ]
+    },
+    "استيراد تعديلات CSV": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "استيراد فهرس مؤلفين": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "استيراد منظم": {
+      "files": [
+        "book_import.ts"
+      ]
+    },
+    "استيراد نسخة محفوظة": {
+      "files": [
+        "screens/settings.ts"
+      ]
+    },
+    "اسم الرف الجديد": {
+      "files": [
+        "screens/book.ts"
+      ]
+    },
+    "اسم السلسلة العلمية": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "اسم السلسلة موجود بلا ترتيب": {
+      "files": [
+        "library_data_quality.ts"
+      ]
+    },
+    "اسم الكتاب الجامع": {
+      "files": [
+        "book_import.ts"
+      ]
+    },
+    "اسم الكتاب متعدد الأجزاء": {
+      "files": [
+        "book_import.ts"
+      ]
+    },
+    "اسم الكتاب…": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "اسم المؤلف": {
+      "files": [
+        "book_cover.ts"
+      ]
+    },
+    "اسم المؤلف *": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "اسم المؤلف المشارك": {
+      "files": [
+        "book_import.ts"
+      ]
+    },
+    "اسم أو كنية في كل سطر": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "اسم تلميذ في كل سطر": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "اسم رف جديد": {
+      "files": [
+        "screens/book.ts",
+        "screens/shelves.ts"
+      ]
+    },
+    "اسم شيخ في كل سطر": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "اسم كتاب أو مؤلف…": {
+      "files": [
+        "screens/home.ts"
+      ]
+    },
+    "اسم مؤلَّف في كل سطر": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "أسود": {
+      "files": [
+        "shell.ts"
+      ]
+    },
+    "أشهر مؤلفاته": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "إصدار أرشيف المكتبة غير مدعوم": {
+      "files": [
+        "library_archive_restore.ts"
+      ]
+    },
+    "إصدار نسخة البيانات غير مدعوم": {
+      "files": [
+        "reading_data.ts"
+      ]
+    },
+    "إصلاح في الإدارة": {
+      "files": [
+        "screens/data_quality.ts"
+      ]
+    },
+    "أصلي": {
+      "files": [
+        "shell.ts"
+      ]
+    },
+    "أصول الفقه": {
+      "files": [
+        "library_metadata.ts"
+      ]
+    },
+    "إضافة الكتاب": {
+      "files": [
+        "screens/shelves.ts"
+      ]
+    },
+    "إضافة الكتاب رغم عدم المطابقة قد تجعل الترقيم والتخطيط مختلفين عن Word. هذا استثناء صريح ولا يجعل الصفحات موثقة. هل تؤكد للمرة الثانية؟": {
+      "files": [
+        "word_import_authority.ts"
+      ]
+    },
+    "إضافة إلى الرف": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "إضافة رف": {
+      "files": [
+        "screens/shelves.ts"
+      ]
+    },
+    "إضافة كتاب": {
+      "files": [
+        "screens/browse.ts"
+      ]
+    },
+    "إضافة مؤلف": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "إضافة مؤلف إلى دليل الخزانة": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "إضافة مؤلف مشارك": {
+      "files": [
+        "book_import.ts"
+      ]
+    },
+    "إضافة مجلد": {
+      "files": [
+        "book_import.ts"
+      ]
+    },
+    "إضافة مجلد كامل": {
+      "files": [
+        "book_import.ts"
+      ]
+    },
+    "إضافة ملفات": {
+      "files": [
+        "book_import.ts"
+      ]
+    },
+    "أضف أحد كتبه إلى خزانتك ليظهر هنا.": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "أضف اسم السلسلة وترتيب الكتاب من محرر المكتبة، وستظهر هنا.": {
+      "files": [
+        "screens/series.ts"
+      ]
+    },
+    "أضف اقتباسًا": {
+      "files": [
+        "screens/home.ts"
+      ]
+    },
+    "أضف كتاب Word أولًا لتظهر أدوات الإدارة.": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "أضف كتاب Word لتبدأ.": {
+      "files": [
+        "screens/home.ts"
+      ]
+    },
+    "أضف كتاب Word من المكتبة ليظهر هنا.": {
+      "files": [
+        "screens/browse.ts"
+      ]
+    },
+    "أضف كتابًا إلى مكتبتك أولًا": {
+      "files": [
+        "screens/home.ts"
+      ]
+    },
+    "أضف كتابًا مصنفًا لتظهر العناصر هنا.": {
+      "files": [
+        "screens/home.ts"
+      ]
+    },
+    "أضف كتبًا إلى الخِزانة": {
+      "files": [
+        "book_import.ts"
+      ]
+    },
+    "أضف ملف Word لتبدأ بناء خزانتك.": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "أضواء البيان": {
+      "files": [
+        "screens/quran.ts"
+      ]
+    },
+    "أُضيف المؤلف إلى دليل الخزانة": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "أضيف يدويًا": {
+      "files": [
+        "screens/book.ts"
+      ]
+    },
+    "أعاد Microsoft Word أثرًا ناقصًا؛ أُلغي الاستيراد ولم تُحفظ نسخة تقديرية": {
+      "files": [
+        "book_import.ts"
+      ]
+    },
+    "إعادة المحاولة": {
+      "files": [
+        "router.ts",
+        "screens/browse.ts",
+        "screens/data_quality.ts",
+        "screens/editions.ts",
+        "screens/home.ts",
+        "screens/library.ts",
+        "screens/me.ts",
+        "screens/notes.ts",
+        "screens/quran.ts",
+        "screens/reader.ts",
+        "screens/reading_plans.ts",
+        "screens/search.ts",
+        "screens/series.ts",
+        "screens/shelves.ts"
+      ]
+    },
+    "إعادة المعالجة تحتاج تشغيل الخِزانة المحلي وخدمة Word.": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "إعادة المعالجة عبر Word المحلي": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "إعادة محاولة PDF": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "إعادة معالجة الأصل": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "إعادة معالجة Word متاحة لملفات Word فقط.": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "اعتماد الصفحة الأولى غلافًا": {
+      "files": [
+        "book_import.ts"
+      ]
+    },
+    "اعتماد الصفحة الأولى غلافًا — أزل العلامة لاستخدام الغلاف المولّد": {
+      "files": [
+        "book_import.ts"
+      ]
+    },
+    "أعد المحاولة دون فقد بياناتك.": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "أعد المحاولة دون فقد كتبك.": {
+      "files": [
+        "screens/home.ts"
+      ]
+    },
+    "أعد فتح الصفحة أو ارجع إلى دليل المؤلفين.": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "إعدادات القراءة والوصول": {
+      "files": [
+        "screens/me.ts"
+      ]
+    },
+    "إغلاق": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "إغلاق الترجمة": {
+      "files": [
+        "translation.ts"
+      ]
+    },
+    "إغلاق المعاينة": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "إغلاق بطاقة الكتاب": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "إغلاق قائمة اللغات": {
+      "files": [
+        "translation.ts"
+      ]
+    },
+    "افتح بابًا جديدًا للمعرفة": {
+      "files": [
+        "screens/browse.ts"
+      ]
+    },
+    "افتح بعض الكتب أو أضف كتبًا أخرى؛ المقترحات محلية ولا ترسل سجل قراءتك.": {
+      "files": [
+        "screens/home.ts"
+      ]
+    },
+    "افتح صفحة كتاب وحدد الوقت المتاح يوميًا لتبدأ رحلة واضحة.": {
+      "files": [
+        "screens/reading_plans.ts"
+      ]
+    },
+    "افتح كتابًا أو أضف اقتباسك، وسيظهر اقتباس من خزانتك هنا.": {
+      "files": [
+        "screens/home.ts"
+      ]
+    },
+    "افتح ورد اليوم": {
+      "files": [
+        "screens/home.ts"
+      ]
+    },
+    "افتحه الآن": {
+      "files": [
+        "screens/home.ts"
+      ]
+    },
+    "اقتباس اليوم": {
+      "files": [
+        "screens/home.ts"
+      ]
+    },
+    "اقتراح جذري تجريبي؛ سيستبدل بمحلل عربي موثق": {
+      "files": [
+        "screens/search.ts"
+      ]
+    },
+    "اقرأ": {
+      "files": [
+        "shell.ts"
+      ]
+    },
+    "اقرأ الآن": {
+      "files": [
+        "screens/reading_plans.ts"
+      ]
+    },
+    "اقرأ الأصل، نزّل Word أو PDF، ورتّب رفوفك بسهولة.": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "اقرأ ورد اليوم": {
+      "files": [
+        "screens/book.ts"
+      ]
+    },
+    "اقرأ، وابحث، وانتقل بين السور والآيات؛ وانقر أي آية لعرض تفسيرها وتلاوتها وخيارات نسخها.": {
+      "files": [
+        "screens/quran.ts"
+      ]
+    },
+    "أقرأه الآن": {
+      "files": [
+        "shelf_store.ts"
+      ]
+    },
+    "اكتب اسم الرف": {
+      "files": [
+        "shelf_store.ts"
+      ]
+    },
+    "اكتب اسم المؤلف": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "اكتب اقتباسًا صالحًا": {
+      "files": [
+        "screens/home.ts"
+      ]
+    },
+    "اكتب الاقتباس كما هو في الكتاب…": {
+      "files": [
+        "screens/home.ts"
+      ]
+    },
+    "اكتب المؤلف أو اختر التصنيف الذي تريد تغييره فقط.": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "اكتب الملاحظة أولًا": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "اكتب ثم اضغط Enter للبحث الشامل…": {
+      "files": [
+        "live_search.ts"
+      ]
+    },
+    "اكتب جزءًا من اسم الكتاب واختره من القائمة": {
+      "files": [
+        "screens/shelves.ts"
+      ]
+    },
+    "اكتب جزءًا من اسم الكتاب…": {
+      "files": [
+        "screens/shelves.ts"
+      ]
+    },
+    "اكتب حرفين على الأقل": {
+      "files": [
+        "live_search.ts",
+        "screens/search.ts"
+      ]
+    },
+    "اكتب عبارتك وحدد النطاق والحقول. تظهر النتائج متتابعة مع المؤلف والتصنيف والصفحة، وتفتح كل مطابقة في موضعها.": {
+      "files": [
+        "screens/search.ts"
+      ]
+    },
+    "اكتب عنوان المشروع": {
+      "files": [
+        "research_project.ts"
+      ]
+    },
+    "اكتب كلمة أو عبارة للبحث": {
+      "files": [
+        "live_search.ts"
+      ]
+    },
+    "اكتب كلمة أو عبارة…": {
+      "files": [
+        "screens/search.ts"
+      ]
+    },
+    "اكتب نصًا أو حدّد نصًا من الكتاب أولًا.": {
+      "files": [
+        "translation.ts"
+      ]
+    },
+    "اكتشف": {
+      "files": [
+        "navigation_accessibility.ts",
+        "screens/browse.ts",
+        "shell.ts"
+      ]
+    },
+    "أكثر ثلاثة رفوف تستعملها؛ افتح أي رف أو انتقل لإدارة جميع الرفوف.": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "اكشف النواقص والتعارضات وأصلحها": {
+      "files": [
+        "screens/me.ts"
+      ]
+    },
+    "أكمل العنوان والمؤلف والوفاة أو «معاصر» والتصنيف لكل كتاب": {
+      "files": [
+        "book_import.ts"
+      ]
+    },
+    "ال": {
+      "files": [
+        "search_presentation.ts"
+      ]
+    },
+    "الآية": {
+      "files": [
+        "screens/quran.ts"
+      ]
+    },
+    "الآية المختارة": {
+      "files": [
+        "screens/quran.ts"
+      ]
+    },
+    "الأجزاء": {
+      "files": [
+        "screens/book.ts",
+        "screens/reader.ts"
+      ]
+    },
+    "الأحدث إضافة": {
+      "files": [
+        "screens/search.ts"
+      ]
+    },
+    "الأدب": {
+      "files": [
+        "library_metadata.ts"
+      ]
+    },
+    "الأذربيجانية": {
+      "files": [
+        "translation.ts"
+      ]
+    },
+    "الارتباط": {
+      "files": [
+        "screens/quran.ts"
+      ]
+    },
+    "الإسبانية": {
+      "files": [
+        "translation.ts"
+      ]
+    },
+    "الاسم الكامل أو الأشهر": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "الاسم المعياري": {
+      "files": [
+        "author_catalog_csv.ts"
+      ]
+    },
+    "الاسم مطلوب، وما عداه قابل للإكمال أو التعديل لاحقًا.": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "الأسماء البديلة": {
+      "files": [
+        "author_catalog_csv.ts"
+      ]
+    },
+    "الأسماء والكنى الأخرى": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "الأصلية": {
+      "files": [
+        "screens/settings.ts"
+      ]
+    },
+    "الإعدادات": {
+      "files": [
+        "navigation_accessibility.ts",
+        "screens/settings.ts",
+        "shell.ts"
+      ]
+    },
+    "الإعراب": {
+      "files": [
+        "screens/quran.ts"
+      ]
+    },
+    "الأقرب صلة": {
+      "files": [
+        "screens/search.ts"
+      ]
+    },
+    "الألبانية": {
+      "files": [
+        "translation.ts"
+      ]
+    },
+    "الألمانية": {
+      "files": [
+        "translation.ts"
+      ]
+    },
+    "الانتقال إلى آية": {
+      "files": [
+        "screens/quran.ts"
+      ]
+    },
+    "الانتقال إلى سورة": {
+      "files": [
+        "screens/quran.ts"
+      ]
+    },
+    "الإنجليزية": {
+      "files": [
+        "translation.ts"
+      ]
+    },
+    "الإندونيسية": {
+      "files": [
+        "translation.ts"
+      ]
+    },
+    "الأنساب": {
+      "files": [
+        "library_metadata.ts"
+      ]
+    },
+    "الأوردية": {
+      "files": [
+        "translation.ts"
+      ]
+    },
+    "الأوزبكية": {
+      "files": [
+        "translation.ts"
+      ]
+    },
+    "الأوكرانية": {
+      "files": [
+        "translation.ts"
+      ]
+    },
+    "الإيطالية": {
+      "files": [
+        "translation.ts"
+      ]
+    },
+    "الإيغورية": {
+      "files": [
+        "translation.ts"
+      ]
+    },
+    "الباحث الشامل في المكتبة": {
+      "files": [
+        "screens/search.ts"
+      ]
+    },
+    "البحث": {
+      "files": [
+        "shell.ts"
+      ]
+    },
+    "البحث الموسع": {
+      "files": [
+        "navigation_accessibility.ts"
+      ]
+    },
+    "البحث النصي": {
+      "files": [
+        "screens/book.ts"
+      ]
+    },
+    "البحث في الكتب المفهرسة": {
+      "files": [
+        "offline_policy.ts"
+      ]
+    },
+    "البحث في ذاكرة القراءة": {
+      "files": [
+        "screens/notes.ts"
+      ]
+    },
+    "البحث في عناوين الفهرس": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "البحث في نص القرآن": {
+      "files": [
+        "screens/quran.ts"
+      ]
+    },
+    "البحر المحيط": {
+      "files": [
+        "screens/quran.ts"
+      ]
+    },
+    "البرتغالية": {
+      "files": [
+        "translation.ts"
+      ]
+    },
+    "البشتوية": {
+      "files": [
+        "translation.ts"
+      ]
+    },
+    "البلاغة": {
+      "files": [
+        "library_metadata.ts"
+      ]
+    },
+    "البلد": {
+      "files": [
+        "author_catalog_csv.ts",
+        "screens/library.ts"
+      ]
+    },
+    "البلدان والرحلات": {
+      "files": [
+        "library_metadata.ts"
+      ]
+    },
+    "البنغالية": {
+      "files": [
+        "translation.ts"
+      ]
+    },
+    "البنية الدافئة": {
+      "files": [
+        "screens/settings.ts"
+      ]
+    },
+    "البوسنية": {
+      "files": [
+        "translation.ts"
+      ]
+    },
+    "البولندية": {
+      "files": [
+        "translation.ts"
+      ]
+    },
+    "البيضاء": {
+      "files": [
+        "screens/settings.ts"
+      ]
+    },
+    "التاريخ": {
+      "files": [
+        "library_metadata.ts"
+      ]
+    },
+    "التالي": {
+      "files": [
+        "screens/quran.ts"
+      ]
+    },
+    "التثبيت متاح من المتصفح": {
+      "files": [
+        "install.ts"
+      ]
+    },
+    "التجويد والقراءات": {
+      "files": [
+        "library_metadata.ts"
+      ]
+    },
+    "التحرير والتنوير": {
+      "files": [
+        "screens/quran.ts"
+      ]
+    },
+    "التحقيق": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "التخريج والأطراف": {
+      "files": [
+        "library_metadata.ts"
+      ]
+    },
+    "التراجم والطبقات": {
+      "files": [
+        "library_metadata.ts"
+      ]
+    },
+    "الترتيب": {
+      "files": [
+        "screens/search.ts"
+      ]
+    },
+    "الترجمة": {
+      "files": [
+        "author_catalog_csv.ts",
+        "screens/library.ts"
+      ]
+    },
+    "الترقيم العام للنتيجة": {
+      "files": [
+        "screens/search.ts"
+      ]
+    },
+    "التركية": {
+      "files": [
+        "translation.ts"
+      ]
+    },
+    "التسهيل لعلوم التنزيل لابن جزي": {
+      "files": [
+        "screens/quran.ts"
+      ]
+    },
+    "التصنيف": {
+      "files": [
+        "book_import.ts",
+        "screens/book.ts",
+        "screens/data_quality.ts",
+        "screens/library.ts",
+        "screens/reader.ts"
+      ]
+    },
+    "التصنيف *": {
+      "files": [
+        "book_import.ts"
+      ]
+    },
+    "التصنيف الجماعي": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "التصنيفات": {
+      "files": [
+        "screens/search.ts"
+      ]
+    },
+    "التصنيفات الموضوعية": {
+      "files": [
+        "screens/home.ts"
+      ]
+    },
+    "التصنيفات والمؤلفون محفوظون؛ أعد المحاولة.": {
+      "files": [
+        "screens/home.ts"
+      ]
+    },
+    "التطبيق مثبت": {
+      "files": [
+        "screens/me.ts"
+      ]
+    },
+    "التطبيق مثبت على هذا الجهاز": {
+      "files": [
+        "install.ts"
+      ]
+    },
+    "التفسير": {
+      "files": [
+        "library_metadata.ts",
+        "screens/quran.ts"
+      ]
+    },
+    "التفسير القرآني للقرآن": {
+      "files": [
+        "screens/quran.ts"
+      ]
+    },
+    "التفسير الوسيط للطنطاوي": {
+      "files": [
+        "screens/quran.ts"
+      ]
+    },
+    "التقدم عشر ثوان": {
+      "files": [
+        "screens/quran.ts"
+      ]
+    },
+    "التلاميذ": {
+      "files": [
+        "author_catalog_csv.ts"
+      ]
+    },
+    "التنقل الرئيسي": {
+      "files": [
+        "shell.ts"
+      ]
+    },
+    "التنقل السفلي": {
+      "files": [
+        "shell.ts"
+      ]
+    },
+    "التنقل المتزامن في PDF": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "التنقل بين صفحات المصحف": {
+      "files": [
+        "screens/quran.ts"
+      ]
+    },
+    "التواصل": {
+      "files": [
+        "shell.ts"
+      ]
+    },
+    "الجوامع": {
+      "files": [
+        "library_metadata.ts"
+      ]
+    },
+    "الحالة": {
+      "files": [
+        "author_catalog_csv.ts"
+      ]
+    },
+    "الحجم والتباين والحركة وتصدير البيانات": {
+      "files": [
+        "screens/me.ts"
+      ]
+    },
+    "الحد الأقصى للترجمة الواحدة 6000 محرف؛ حدّد مقطعًا أقصر.": {
+      "files": [
+        "translation.ts"
+      ]
+    },
+    "الحساب ومزامنة المصادر": {
+      "files": [
+        "screens/settings.ts"
+      ]
+    },
+    "الحسين بن مسعود البغوي": {
+      "files": [
+        "screens/library.ts",
+        "screens/quran.ts"
+      ]
+    },
+    "الحقول المعلّمة مطلوبة قبل حفظ أي كتاب.": {
+      "files": [
+        "book_import.ts"
+      ]
+    },
+    "الحمد لله رب العالمين": {
+      "files": [
+        "shell.ts"
+      ]
+    },
+    "الخِزانة": {
+      "files": [
+        "reader_identity.ts",
+        "screens/home.ts",
+        "screens/reader.ts",
+        "screens/settings.ts",
+        "screens/welcome.ts",
+        "shell.ts"
+      ]
+    },
+    "الخِزانة — الصفحة التعريفية": {
+      "files": [
+        "screens/welcome.ts"
+      ]
+    },
+    "الخِزانة — الصفحة الرئيسية": {
+      "files": [
+        "shell.ts"
+      ]
+    },
+    "الخِزانة تحفظ ملف Word الأصلي، وتعرض صفحاته بأمانة، وتجمع البحث والفهرسة والملاحظات والـPDF في تجربة قراءة عربية هادئة.": {
+      "files": [
+        "screens/welcome.ts"
+      ]
+    },
+    "الخِزانة تعمل كتطبيق مستقل": {
+      "files": [
+        "screens/me.ts"
+      ]
+    },
+    "الخطة متوقفة مؤقتًا ولا يتراكم الورد": {
+      "files": [
+        "screens/reading_plans.ts"
+      ]
+    },
+    "الخطة مكتملة": {
+      "files": [
+        "screens/reading_plans.ts"
+      ]
+    },
+    "الخطط محفوظة على جهازك؛ أعد المحاولة.": {
+      "files": [
+        "screens/reading_plans.ts"
+      ]
+    },
+    "الدخول بحساب": {
+      "files": [
+        "screens/welcome.ts"
+      ]
+    },
+    "الدخول بحساب — يتاح قريبًا": {
+      "files": [
+        "screens/welcome.ts"
+      ]
+    },
+    "الدخول كضيف": {
+      "files": [
+        "screens/welcome.ts"
+      ]
+    },
+    "الدقائق المتاحة للقراءة يوميًا": {
+      "files": [
+        "screens/book.ts"
+      ]
+    },
+    "الرئيسية": {
+      "files": [
+        "navigation_accessibility.ts",
+        "shell.ts"
+      ]
+    },
+    "الرجوع عشر ثوان": {
+      "files": [
+        "screens/quran.ts"
+      ]
+    },
+    "الرسم الإملائي": {
+      "files": [
+        "screens/quran.ts"
+      ]
+    },
+    "الرسم العثماني": {
+      "files": [
+        "screens/quran.ts"
+      ]
+    },
+    "الرف": {
+      "files": [
+        "book_import.ts"
+      ]
+    },
+    "الرف الجماعي": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "الرفع ممنوع في وضع الضيف؛ يمكنك متابعة العمل محليًا بأمان.": {
+      "files": [
+        "source_sync_ui.ts"
+      ]
+    },
+    "الرفوف الشخصية": {
+      "files": [
+        "navigation_accessibility.ts",
+        "screens/shelves.ts"
+      ]
+    },
+    "الرفوف والعلامات والملاحظات": {
+      "files": [
+        "offline_policy.ts"
+      ]
+    },
+    "الرقائق والآداب والأذكار": {
+      "files": [
+        "library_metadata.ts"
+      ]
+    },
+    "الروسية": {
+      "files": [
+        "translation.ts"
+      ]
+    },
+    "الرومانية": {
+      "files": [
+        "translation.ts"
+      ]
+    },
+    "الزمن": {
+      "files": [
+        "screens/book.ts"
+      ]
+    },
+    "السابق": {
+      "files": [
+        "screens/quran.ts"
+      ]
+    },
+    "السجل الأساس (يبقى)": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "السجل الأساس الذي سيبقى": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "السجل المكرر (يُحذف)": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "السجل المكرر الذي سيُدمج": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "السلاسل": {
+      "files": [
+        "screens/data_quality.ts"
+      ]
+    },
+    "السلاسل العلمية": {
+      "files": [
+        "navigation_accessibility.ts",
+        "screens/me.ts",
+        "screens/series.ts"
+      ]
+    },
+    "السلسلة العلمية": {
+      "files": [
+        "screens/book.ts"
+      ]
+    },
+    "السلسلة غير موجودة في الخزانة": {
+      "files": [
+        "screens/series.ts"
+      ]
+    },
+    "السنة": {
+      "files": [
+        "screens/editions.ts"
+      ]
+    },
+    "السواحلية": {
+      "files": [
+        "translation.ts"
+      ]
+    },
+    "السوداء": {
+      "files": [
+        "screens/settings.ts"
+      ]
+    },
+    "السورة": {
+      "files": [
+        "screens/quran.ts"
+      ]
+    },
+    "السويدية": {
+      "files": [
+        "translation.ts"
+      ]
+    },
+    "السياسة الشرعية والقضاء": {
+      "files": [
+        "library_metadata.ts"
+      ]
+    },
+    "السيرة النبوية": {
+      "files": [
+        "library_metadata.ts"
+      ]
+    },
+    "الشاملة BOK": {
+      "files": [
+        "book_format.ts"
+      ]
+    },
+    "الشعر ودواوينه": {
+      "files": [
+        "library_metadata.ts"
+      ]
+    },
+    "الشيوخ": {
+      "files": [
+        "author_catalog_csv.ts"
+      ]
+    },
+    "الشيوخ والتلاميذ المثبتون في سجل المؤلف.": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "الصفحات": {
+      "files": [
+        "screens/book.ts"
+      ]
+    },
+    "الصفحة": {
+      "files": [
+        "screens/quran.ts"
+      ]
+    },
+    "الصفحة التالية": {
+      "files": [
+        "screens/quran.ts",
+        "screens/reader.ts"
+      ]
+    },
+    "الصفحة السابقة": {
+      "files": [
+        "screens/quran.ts",
+        "screens/reader.ts"
+      ]
+    },
+    "الصق نصًا عربيًا أو حدّد نصًا داخل الكتاب…": {
+      "files": [
+        "translation.ts"
+      ]
+    },
+    "الصومالية": {
+      "files": [
+        "translation.ts"
+      ]
+    },
+    "الصيغة": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "الصينية": {
+      "files": [
+        "translation.ts"
+      ]
+    },
+    "الطب": {
+      "files": [
+        "library_metadata.ts"
+      ]
+    },
+    "الطبعات": {
+      "files": [
+        "screens/data_quality.ts"
+      ]
+    },
+    "الطبعة": {
+      "files": [
+        "book_import.ts",
+        "screens/book.ts",
+        "screens/editions.ts",
+        "screens/library.ts",
+        "screens/reader.ts"
+      ]
+    },
+    "العربية": {
+      "files": [
+        "translation.ts"
+      ]
+    },
+    "العربية — اللغة الأصلية": {
+      "files": [
+        "translation.ts"
+      ]
+    },
+    "العرض الأصلي المتوافق": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "العروض والقوافي": {
+      "files": [
+        "library_metadata.ts"
+      ]
+    },
+    "العقيدة": {
+      "files": [
+        "library_metadata.ts"
+      ]
+    },
+    "العلاقات العلمية": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "العلامات والملاحظات": {
+      "files": [
+        "navigation_accessibility.ts",
+        "screens/reader.ts"
+      ]
+    },
+    "العلل والسؤلات الحديثية": {
+      "files": [
+        "library_metadata.ts"
+      ]
+    },
+    "العمل دون اتصال": {
+      "files": [
+        "screens/settings.ts"
+      ]
+    },
+    "العنوان أو المؤلف مفقود": {
+      "files": [
+        "library_data_quality.ts"
+      ]
+    },
+    "العنوان والمؤلف والوفاة أو «معاصر» مطلوبة": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "العودة إلى المصحف": {
+      "files": [
+        "screens/quran.ts"
+      ]
+    },
+    "العودة إلى المكتبة": {
+      "files": [
+        "screens/book.ts",
+        "screens/reader.ts"
+      ]
+    },
+    "العودة إلى موضعك": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "ألغِ «عرض أصحاب الكتب فقط» لإظهار جميع سجلات المؤلفين.": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "إلغاء": {
+      "files": [
+        "book_import.ts",
+        "screens/home.ts",
+        "screens/library.ts"
+      ]
+    },
+    "الغريب": {
+      "files": [
+        "screens/quran.ts"
+      ]
+    },
+    "الغريب والمعاجم": {
+      "files": [
+        "library_metadata.ts"
+      ]
+    },
+    "الغلاف يجب أن يكون PNG أو JPEG أو WebP وألا يتجاوز 5MB": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "أُلغي الاستيراد ولم تتغير البيانات.": {
+      "files": [
+        "screens/settings.ts"
+      ]
+    },
+    "أُلغيت الاستعادة بلا تغيير": {
+      "files": [
+        "screens/settings.ts"
+      ]
+    },
+    "الفاتحة": {
+      "files": [
+        "quran_local_pack.ts"
+      ]
+    },
+    "الفارسية": {
+      "files": [
+        "translation.ts"
+      ]
+    },
+    "الفتاوى": {
+      "files": [
+        "library_metadata.ts"
+      ]
+    },
+    "الفرائض والوصايا": {
+      "files": [
+        "library_metadata.ts"
+      ]
+    },
+    "الفرق والردود": {
+      "files": [
+        "library_metadata.ts"
+      ]
+    },
+    "الفرنسية": {
+      "files": [
+        "translation.ts"
+      ]
+    },
+    "الفقه الحنبلي": {
+      "files": [
+        "library_metadata.ts"
+      ]
+    },
+    "الفقه الحنفي": {
+      "files": [
+        "library_metadata.ts"
+      ]
+    },
+    "الفقه الشافعي": {
+      "files": [
+        "library_metadata.ts"
+      ]
+    },
+    "الفقه العام": {
+      "files": [
+        "library_metadata.ts"
+      ]
+    },
+    "الفقه المالكي": {
+      "files": [
+        "library_metadata.ts"
+      ]
+    },
+    "الفهرس": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "القراءات": {
+      "files": [
+        "screens/quran.ts"
+      ]
+    },
+    "القراءة والاستيراد متاحان؛ التحويل المطابق يحتاج خدمة Word المحلية.": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "القراءة والوصول": {
+      "files": [
+        "screens/settings.ts"
+      ]
+    },
+    "القرآن": {
+      "files": [
+        "navigation_accessibility.ts",
+        "shell.ts"
+      ]
+    },
+    "القرآن الكريم": {
+      "files": [
+        "screens/quran.ts"
+      ]
+    },
+    "القرن الهجري": {
+      "files": [
+        "screens/search.ts"
+      ]
+    },
+    "القيم المحددة مطابقة للقيم الموجودة؛ لم يتغير كتاب.": {
+      "files": [
+        "book_import.ts"
+      ]
+    },
+    "الكازاخية": {
+      "files": [
+        "translation.ts"
+      ]
+    },
+    "الكتاب": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "الكتاب غير مصنف": {
+      "files": [
+        "library_data_quality.ts"
+      ]
+    },
+    "الكتاب غير موجود": {
+      "files": [
+        "screens/book.ts"
+      ]
+    },
+    "الكتاب لم يتغير. تحقق من الاتصال ثم أعد المحاولة.": {
+      "files": [
+        "router.ts"
+      ]
+    },
+    "الكتب": {
+      "files": [
+        "screens/search.ts"
+      ]
+    },
+    "الكتب الأكثر استعمالًا": {
+      "files": [
+        "screens/home.ts"
+      ]
+    },
+    "الكتب والمؤلفون والتصنيفات": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "الكشاف للزمخشري": {
+      "files": [
+        "screens/quran.ts"
+      ]
+    },
+    "الكل": {
+      "files": [
+        "screens/notes.ts"
+      ]
+    },
+    "الكلمة المختارة": {
+      "files": [
+        "screens/quran.ts"
+      ]
+    },
+    "الكورية": {
+      "files": [
+        "translation.ts"
+      ]
+    },
+    "اللهم احفظ المسلمين والمجاهدين في سبيل الحق في كل مكان": {
+      "files": [
+        "shell.ts"
+      ]
+    },
+    "اللهم انصر المستضعفين من المسلمين، وارحم موتاهم واشف جرحاهم": {
+      "files": [
+        "shell.ts"
+      ]
+    },
+    "اللهم صل وسلم على نبينا محمد ﷺ": {
+      "files": [
+        "shell.ts"
+      ]
+    },
+    "المؤلف": {
+      "files": [
+        "book_import.ts",
+        "screens/book.ts",
+        "screens/library.ts",
+        "screens/reader.ts"
+      ]
+    },
+    "المؤلف *": {
+      "files": [
+        "book_import.ts"
+      ]
+    },
+    "المؤلف الجديد للكتب المحددة": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "المؤلف الجماعي": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "المؤلفون": {
+      "files": [
+        "navigation_accessibility.ts",
+        "screens/book.ts",
+        "screens/home.ts",
+        "screens/library.ts",
+        "screens/me.ts",
+        "screens/search.ts",
+        "shell.ts"
+      ]
+    },
+    "المؤلفون ←": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "المتن": {
+      "files": [
+        "screens/search.ts"
+      ]
+    },
+    "المتن يشمل العناوين؛ اختيار «شجرة العناوين» وحدها يقصر البحث عليها.": {
+      "files": [
+        "screens/search.ts"
+      ]
+    },
+    "المتوفون": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "المحرر الوجيز لابن عطية": {
+      "files": [
+        "screens/quran.ts"
+      ]
+    },
+    "المحقق": {
+      "files": [
+        "book_import.ts",
+        "screens/editions.ts"
+      ]
+    },
+    "المحقق أو المراجع": {
+      "files": [
+        "screens/book.ts",
+        "screens/library.ts"
+      ]
+    },
+    "المختصر في التفسير": {
+      "files": [
+        "screens/quran.ts"
+      ]
+    },
+    "المذهب": {
+      "files": [
+        "author_catalog_csv.ts",
+        "screens/library.ts"
+      ]
+    },
+    "المذهب أو المدرسة": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "المذهب أو المدرسة العلمية": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "المراجعة مستحقة الآن": {
+      "files": [
+        "screens/notes.ts"
+      ]
+    },
+    "المزامنة محدثة": {
+      "files": [
+        "source_sync_ui.ts"
+      ]
+    },
+    "المشاريع البحثية": {
+      "files": [
+        "navigation_accessibility.ts",
+        "screens/research_projects.ts"
+      ]
+    },
+    "المشروع غير موجود": {
+      "files": [
+        "research_project.ts"
+      ]
+    },
+    "المصحف": {
+      "files": [
+        "screens/quran.ts"
+      ]
+    },
+    "المصحف والرواية": {
+      "files": [
+        "screens/quran.ts"
+      ]
+    },
+    "المصدر": {
+      "files": [
+        "author_catalog_csv.ts",
+        "screens/quran.ts"
+      ]
+    },
+    "المضافة حديثًا": {
+      "files": [
+        "screens/browse.ts"
+      ]
+    },
+    "المعاصرون": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "المعرف": {
+      "files": [
+        "author_catalog_csv.ts"
+      ]
+    },
+    "المعرفة أقرب، والكتاب أوفى.": {
+      "files": [
+        "screens/welcome.ts"
+      ]
+    },
+    "المكتبة ←": {
+      "files": [
+        "screens/book.ts"
+      ]
+    },
+    "الملايوية": {
+      "files": [
+        "translation.ts"
+      ]
+    },
+    "الملف المختار ليس DOCX أو DOC أو RTF": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "الملف المختار ليس PDF صالحًا": {
+      "files": [
+        "book_import.ts"
+      ]
+    },
+    "الملف النصي فارغ": {
+      "files": [
+        "text_import.ts"
+      ]
+    },
+    "الملف النصي لا يحتوي محتوى مقروءًا": {
+      "files": [
+        "text_import.ts"
+      ]
+    },
+    "الملف ليس قاعدة BOK من Microsoft Jet": {
+      "files": [
+        "bok_import.ts"
+      ]
+    },
+    "الملف ليس نص UTF-8 صالحًا": {
+      "files": [
+        "text_import.ts"
+      ]
+    },
+    "المنصات المدعومة": {
+      "files": [
+        "screens/welcome.ts"
+      ]
+    },
+    "المنطق": {
+      "files": [
+        "library_metadata.ts"
+      ]
+    },
+    "الموسوعة القرآنية Quranpedia": {
+      "files": [
+        "quran_local_pack.ts"
+      ]
+    },
+    "الميزات": {
+      "files": [
+        "screens/welcome.ts"
+      ]
+    },
+    "الناشر": {
+      "files": [
+        "book_import.ts",
+        "screens/book.ts",
+        "screens/editions.ts",
+        "screens/library.ts",
+        "screens/reader.ts"
+      ]
+    },
+    "النتيجة التالية": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "النتيجة السابقة": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "النحو والصرف": {
+      "files": [
+        "library_metadata.ts"
+      ]
+    },
+    "النرويجية": {
+      "files": [
+        "translation.ts"
+      ]
+    },
+    "النص الأصلي": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "النص العربي المراد ترجمته": {
+      "files": [
+        "translation.ts"
+      ]
+    },
+    "النص متاح للقراءة، لكن أرقام الصفحات وتخطيطها لم تُوثق بعد من Word؛ لا تعتمدها كنسخة مطبوعة مطابقة.": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "الهندية": {
+      "files": [
+        "translation.ts"
+      ]
+    },
+    "الهنغارية": {
+      "files": [
+        "translation.ts"
+      ]
+    },
+    "الهوسا": {
+      "files": [
+        "translation.ts"
+      ]
+    },
+    "الهولندية": {
+      "files": [
+        "translation.ts"
+      ]
+    },
+    "ألوان الخِزانة": {
+      "files": [
+        "screens/settings.ts",
+        "shell.ts"
+      ]
+    },
+    "الوسم النشط:": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "الوسوم": {
+      "files": [
+        "book_import.ts",
+        "screens/book.ts",
+        "screens/search.ts"
+      ]
+    },
+    "الوسوم المقترحة من الفهرس (اختيارية)": {
+      "files": [
+        "book_import.ts"
+      ]
+    },
+    "الوصف": {
+      "files": [
+        "book_import.ts"
+      ]
+    },
+    "الوصول إلى النص، لا مجرد اسم الكتاب": {
+      "files": [
+        "screens/search.ts"
+      ]
+    },
+    "الوفاة غير موثقة": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "الوفاة هـ": {
+      "files": [
+        "author_catalog_csv.ts",
+        "screens/library.ts"
+      ]
+    },
+    "إلى سنة هـ": {
+      "files": [
+        "screens/library.ts",
+        "screens/search.ts"
+      ]
+    },
+    "اليابانية": {
+      "files": [
+        "translation.ts"
+      ]
+    },
+    "أمانة النص وقوة البحث في مكان واحد": {
+      "files": [
+        "screens/welcome.ts"
+      ]
+    },
+    "امتداد ملف الشاملة يجب أن يكون BOK": {
+      "files": [
+        "bok_import.ts"
+      ]
+    },
+    "إملائي": {
+      "files": [
+        "screens/quran.ts"
+      ]
+    },
+    "ان": {
+      "files": [
+        "search_presentation.ts"
+      ]
+    },
+    "أنا": {
+      "files": [
+        "screens/me.ts",
+        "shell.ts"
+      ]
+    },
+    "أنت تستخدم الخِزانة الآن كتطبيق مستقل.": {
+      "files": [
+        "screens/welcome.ts"
+      ]
+    },
+    "أنت دون اتصال؛ كتبك وبياناتك المحلية متاحة، وستنتظر العمليات الشبكية عودة الاتصال.": {
+      "files": [
+        "connectivity.ts"
+      ]
+    },
+    "أنت على هدف اليوم أو أمامه": {
+      "files": [
+        "screens/reading_plans.ts"
+      ]
+    },
+    "انتقل": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "انتقل إلى الفن الذي تريد القراءة فيه": {
+      "files": [
+        "screens/home.ts"
+      ]
+    },
+    "انتقل مباشرة إلى صفحة أو جزء دون فتح الكتاب من بدايته.": {
+      "files": [
+        "screens/book.ts"
+      ]
+    },
+    "انتهى الحد المجاني للترجمة اليوم. الترجمات المحفوظة تبقى متاحة، ويعود الحد غدًا.": {
+      "files": [
+        "translation.ts"
+      ]
+    },
+    "أنجزت مراجعة اليوم": {
+      "files": [
+        "screens/me.ts"
+      ]
+    },
+    "أُنشئ الرف وأضيف إليه الكتاب": {
+      "files": [
+        "screens/book.ts"
+      ]
+    },
+    "أُنشئ المشروع البحثي": {
+      "files": [
+        "screens/research_projects.ts"
+      ]
+    },
+    "أنشئ رفًا جديدًا…": {
+      "files": [
+        "screens/shelves.ts"
+      ]
+    },
+    "أنشئ رفك الأول": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "أنشئ مشروعًا ثم اختر له ملاحظاتك وتظليلاتك.": {
+      "files": [
+        "screens/research_projects.ts"
+      ]
+    },
+    "إنشاء رف": {
+      "files": [
+        "screens/book.ts"
+      ]
+    },
+    "إنشاء مشروع": {
+      "files": [
+        "screens/research_projects.ts"
+      ]
+    },
+    "إنشاء PDF": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "إنشاء PDF — يتطلب التطبيق المحلي": {
+      "files": [
+        "screens/library.ts",
+        "screens/reader.ts"
+      ]
+    },
+    "إنشاء PDF مطابق": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "إنشاء PDF يتطلب تشغيل الخِزانة المحلي؛ القراءة والاستيراد يعملان في نسخة الويب.": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "إنشاء PDF يتطلب تشغيل الخِزانة المحلي؛ يمكنك متابعة قراءة Word في نسخة الويب.": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "أُنشئت خطة القراءة": {
+      "files": [
+        "screens/book.ts"
+      ]
+    },
+    "إنهاء الخطة": {
+      "files": [
+        "screens/book.ts"
+      ]
+    },
+    "إنهاء السكينة": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "أوقفت الخطة مؤقتًا": {
+      "files": [
+        "screens/book.ts"
+      ]
+    },
+    "ئۇيغۇرچە": {
+      "files": [
+        "translation.ts"
+      ]
+    },
+    "إِيَّاكَ نَعۡبُدُ وَإِيَّاكَ نَسۡتَعِينُ": {
+      "files": [
+        "quran_local_pack.ts"
+      ]
+    },
+    "أيام مراجعة متتالية": {
+      "files": [
+        "screens/me.ts"
+      ]
+    },
+    "إيقاع قراءتك": {
+      "files": [
+        "screens/me.ts"
+      ]
+    },
+    "إيقاف التلاوة مؤقتًا": {
+      "files": [
+        "screens/quran.ts"
+      ]
+    },
+    "إيقاف مؤقت": {
+      "files": [
+        "screens/book.ts"
+      ]
+    },
+    "أين تريد أن تبحث؟": {
+      "files": [
+        "screens/search.ts"
+      ]
+    },
+    "ٱلۡحَمۡدُ لِلَّهِ رَبِّ ٱلۡعَٰلَمِينَ": {
+      "files": [
+        "quran_local_pack.ts"
+      ]
+    },
+    "ٱلرَّحۡمَٰنِ ٱلرَّحِيمِ": {
+      "files": [
+        "quran_local_pack.ts"
+      ]
+    },
+    "ٱهۡدِنَا ٱلصِّرَٰطَ ٱلۡمُسۡتَقِيمَ": {
+      "files": [
+        "quran_local_pack.ts"
+      ]
+    },
+    "ب": {
+      "files": [
+        "search_presentation.ts"
+      ]
+    },
+    "بال": {
+      "files": [
+        "search_presentation.ts"
+      ]
+    },
+    "بحث": {
+      "files": [
+        "shell.ts"
+      ]
+    },
+    "بحث عربي عميق": {
+      "files": [
+        "screens/welcome.ts"
+      ]
+    },
+    "بحث في الخزانة": {
+      "files": [
+        "screens/quran.ts"
+      ]
+    },
+    "بحث في الكتاب": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "بحث في المكتبة": {
+      "files": [
+        "shell.ts"
+      ]
+    },
+    "بحثك": {
+      "files": [
+        "screens/research_projects.ts"
+      ]
+    },
+    "بدايات أجزاء PDF يجب أن تكون متزايدة وضمن عدد صفحاته": {
+      "files": [
+        "book_import.ts"
+      ]
+    },
+    "بدايات الأجزاء داخل PDF": {
+      "files": [
+        "book_import.ts"
+      ]
+    },
+    "بداية الصفحة/الأجزاء في PDF": {
+      "files": [
+        "book_import.ts"
+      ]
+    },
+    "بِسۡمِ ٱللَّهِ ٱلرَّحۡمَٰنِ ٱلرَّحِيمِ": {
+      "files": [
+        "quran_local_pack.ts"
+      ]
+    },
+    "بطاقات الكتب": {
+      "files": [
+        "screens/search.ts"
+      ]
+    },
+    "بطاقة اقتباس": {
+      "files": [
+        "screens/notes.ts"
+      ]
+    },
+    "بطاقة الكتاب": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "بطاقة كتاب التفسير": {
+      "files": [
+        "screens/quran.ts"
+      ]
+    },
+    "بقي ملف Word محفوظًا، ويمكن إعادة بناء مشتقات القراءة من الأصل.": {
+      "files": [
+        "reader_failure.ts"
+      ]
+    },
+    "بقي ملف Word محفوظًا. أعد المحاولة أو نزّل الأصل وافتحه في Word.": {
+      "files": [
+        "reader_failure.ts"
+      ]
+    },
+    "بقيت عبارتك كما هي؛ أعد المحاولة.": {
+      "files": [
+        "screens/search.ts"
+      ]
+    },
+    "بلا تصنيف": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "بني": {
+      "files": [
+        "shell.ts"
+      ]
+    },
+    "بوابة اختيارية؛ لا تسجيل دخول وهميًا ولا رفع دون حساب ومزود مفعّلين.": {
+      "files": [
+        "screens/settings.ts"
+      ]
+    },
+    "بيانات القراءة محفوظة؛ أعد المحاولة.": {
+      "files": [
+        "screens/me.ts"
+      ]
+    },
+    "بيانات الكتاب": {
+      "files": [
+        "screens/book.ts",
+        "screens/search.ts"
+      ]
+    },
+    "بيانات الكتاب فارغة": {
+      "files": [
+        "bok_import.ts"
+      ]
+    },
+    "بيانات الكتب لم تتغير.": {
+      "files": [
+        "screens/editions.ts",
+        "screens/series.ts"
+      ]
+    },
+    "بيانات المؤلف": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "بيانات المؤلف قابلة للاستكمال": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "بيانات المكتبة تجتاز التدقيق الحالي": {
+      "files": [
+        "screens/data_quality.ts"
+      ]
+    },
+    "بيانات مشتركة للدفعة": {
+      "files": [
+        "book_import.ts"
+      ]
+    },
+    "بياناتك لك": {
+      "files": [
+        "screens/settings.ts"
+      ]
+    },
+    "پښتو": {
+      "files": [
+        "translation.ts"
+      ]
+    },
+    "ة": {
+      "files": [
+        "search_presentation.ts"
+      ]
+    },
+    "تابع آخر قراءة": {
+      "files": [
+        "screens/me.ts"
+      ]
+    },
+    "تابع الكتابة أو اختر كتابًا واحدًا من القائمة": {
+      "files": [
+        "screens/shelves.ts"
+      ]
+    },
+    "تابع قراءتك، راجع محفوظاتك، أنجز بحوثك، وعش وقتك مع خير جليس، وإن علمت فاعمل وانطلق داعيةً مجاهدًا تنشر الهدى في كل مكان.": {
+      "files": [
+        "screens/home.ts"
+      ]
+    },
+    "تابع ورد اليوم، واعرف ما أنجزت وما بقي من كل كتاب.": {
+      "files": [
+        "screens/reading_plans.ts"
+      ]
+    },
+    "تباين مرتفع": {
+      "files": [
+        "screens/settings.ts"
+      ]
+    },
+    "تثبيت التطبيق": {
+      "files": [
+        "screens/me.ts"
+      ]
+    },
+    "تثبيت الخِزانة الآن": {
+      "files": [
+        "install.ts"
+      ]
+    },
+    "تجاوز الكتب الموجودة": {
+      "files": [
+        "screens/settings.ts"
+      ]
+    },
+    "تجاوز إلى المحتوى": {
+      "files": [
+        "shell.ts"
+      ]
+    },
+    "تجربة المحرك": {
+      "files": [
+        "data.ts"
+      ]
+    },
+    "تجربة واحدة": {
+      "files": [
+        "screens/welcome.ts"
+      ]
+    },
+    "تحتاج توثيق الجهة الأخرى": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "تحتاج حسابًا ومزود مزامنة عند تفعيله.": {
+      "files": [
+        "offline_policy.ts"
+      ]
+    },
+    "تحدث ورد القراءة دون تصفير تقدمك": {
+      "files": [
+        "screens/book.ts"
+      ]
+    },
+    "تحديث الحالة": {
+      "files": [
+        "screens/settings.ts"
+      ]
+    },
+    "تحديث الوقت": {
+      "files": [
+        "screens/book.ts"
+      ]
+    },
+    "تحديد كل نتائج التصفية": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "تحديد نطاق البحث": {
+      "files": [
+        "screens/search.ts"
+      ]
+    },
+    "تحرير بيانات المؤلف": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "تُحسب عند فتح الكتاب": {
+      "files": [
+        "screens/book.ts"
+      ]
+    },
+    "تُحفظ وتُعدّل على هذا الجهاز.": {
+      "files": [
+        "offline_policy.ts"
+      ]
+    },
+    "تحقق من ترتيب كلمات الاسم أو جرّب كنية مسجلة أخرى.": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "تحقيق": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "تحقيق وطبعات": {
+      "files": [
+        "screens/editions.ts"
+      ]
+    },
+    "تحميل المزيد من المؤلفين": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "تحميل النص الأصلي": {
+      "files": [
+        "screens/book.ts",
+        "screens/library.ts"
+      ]
+    },
+    "تحميل BOK الأصلي": {
+      "files": [
+        "screens/book.ts",
+        "screens/library.ts"
+      ]
+    },
+    "تحميل EPUB الأصلي": {
+      "files": [
+        "screens/book.ts",
+        "screens/library.ts"
+      ]
+    },
+    "تحميل PDF": {
+      "files": [
+        "screens/book.ts",
+        "screens/library.ts",
+        "screens/reader.ts"
+      ]
+    },
+    "تحميل PDF الأصلي": {
+      "files": [
+        "screens/book.ts",
+        "screens/library.ts",
+        "screens/reader.ts"
+      ]
+    },
+    "تحميل Word": {
+      "files": [
+        "screens/book.ts",
+        "screens/library.ts"
+      ]
+    },
+    "تحويل Word إلى PDF": {
+      "files": [
+        "offline_policy.ts"
+      ]
+    },
+    "تدقيق محلي صريح للنواقص والتعارضات التي تؤثر في البحث والطبعات والسلاسل.": {
+      "files": [
+        "screens/data_quality.ts"
+      ]
+    },
+    "تذكرت": {
+      "files": [
+        "annotation_accessibility.ts",
+        "screens/notes.ts"
+      ]
+    },
+    "تذكير بالذكر": {
+      "files": [
+        "shell.ts"
+      ]
+    },
+    "تذييل موقع الخِزانة": {
+      "files": [
+        "shell.ts"
+      ]
+    },
+    "تراجع عن آخر تطبيق": {
+      "files": [
+        "book_import.ts",
+        "screens/library.ts"
+      ]
+    },
+    "ترتب الأجزاء طبيعيًا بحسب اسم الملف، وتظهر في المكتبة بطاقة واحدة وقارئ واحد متسلسل.": {
+      "files": [
+        "book_import.ts"
+      ]
+    },
+    "ترتيب الكتاب في السلسلة": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "ترتيب النتائج": {
+      "files": [
+        "screens/search.ts"
+      ]
+    },
+    "ترجم": {
+      "files": [
+        "translation.ts"
+      ]
+    },
+    "ترجمة": {
+      "files": [
+        "screens/quran.ts",
+        "screens/reader.ts",
+        "translation.ts"
+      ]
+    },
+    "ترجمة آلية للمراجعة؛ راجع أسماء الأعلام والنصوص الشرعية قبل الاعتماد أو النشر.": {
+      "files": [
+        "translation.ts"
+      ]
+    },
+    "ترجمة الصفحة": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "ترجمة المؤلف": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "ترجمة الموقع": {
+      "files": [
+        "translation.ts"
+      ]
+    },
+    "ترجمة النص": {
+      "files": [
+        "translation.ts"
+      ]
+    },
+    "ترجمة موجزة موثقة": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "ترجمة موجزة موثقة للمؤلف": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "ترسيم الصفحات…": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "تسجيل الدخول عبر المزود": {
+      "files": [
+        "screens/settings.ts"
+      ]
+    },
+    "تشغيل التلاوة": {
+      "files": [
+        "screens/quran.ts"
+      ]
+    },
+    "تصحيح": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "تصدير أرشيف المكتبة الكامل": {
+      "files": [
+        "screens/settings.ts"
+      ]
+    },
+    "تصدير الفهرس CSV": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "تصدير المؤلفين CSV": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "تصدير بيانات القراءة": {
+      "files": [
+        "screens/settings.ts"
+      ]
+    },
+    "تصدير Markdown": {
+      "files": [
+        "screens/notes.ts"
+      ]
+    },
+    "تصدير Word": {
+      "files": [
+        "screens/research_projects.ts"
+      ]
+    },
+    "تصغير صفحة المصحف": {
+      "files": [
+        "screens/quran.ts"
+      ]
+    },
+    "تصغير نص التفسير": {
+      "files": [
+        "screens/quran.ts"
+      ]
+    },
+    "تصفح الكتالوج الأصلي، وابحث في التراجم، ثم افتح ما أضفته من كتب كل مؤلف.": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "تصفح الكتب بحسب المؤلف": {
+      "files": [
+        "screens/me.ts"
+      ]
+    },
+    "تصفح المكتبة بحسب الموضوع أو المؤلف": {
+      "files": [
+        "screens/home.ts"
+      ]
+    },
+    "تصفح دليل المؤلفين الأصلي، ثم افتح ما أضفته من كتبهم": {
+      "files": [
+        "screens/home.ts"
+      ]
+    },
+    "تصفح فوائدك المحفوظة": {
+      "files": [
+        "screens/home.ts"
+      ]
+    },
+    "تصفية القراء والروايات": {
+      "files": [
+        "screens/quran.ts"
+      ]
+    },
+    "تصفية الكتب": {
+      "files": [
+        "screens/browse.ts"
+      ]
+    },
+    "تصفية الكتب الفورية": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "تصفية اللغات": {
+      "files": [
+        "translation.ts"
+      ]
+    },
+    "تصفية المؤلفين": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "تصفية باسم الكتاب": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "تصفية جميع الكتب بالعنوان أو المؤلف": {
+      "files": [
+        "screens/home.ts"
+      ]
+    },
+    "تصفية حسب التصنيف": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "تصفية حسب حالة المؤلف": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "تصفية كتب المكتبة": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "تصفية نوع مشكلة البيانات": {
+      "files": [
+        "screens/data_quality.ts"
+      ]
+    },
+    "تصنيف الدفعة": {
+      "files": [
+        "book_import.ts"
+      ]
+    },
+    "تُطبق التغييرات فورًا، وتبقى محفوظة على هذا الجهاز.": {
+      "files": [
+        "screens/settings.ts"
+      ]
+    },
+    "تُطبّق فقط الحقول التي تحددها؛ عناوين الكتب لا تتغير.": {
+      "files": [
+        "book_import.ts"
+      ]
+    },
+    "تطبيق التغييرات": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "تطبيق على المحدد": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "تطبيق واحد لكل أجهزتك": {
+      "files": [
+        "screens/me.ts"
+      ]
+    },
+    "تظل النسخة المحلية متاحة أثناء الاتصال.": {
+      "files": [
+        "source_sync_ui.ts"
+      ]
+    },
+    "تظليل": {
+      "files": [
+        "screens/notes.ts",
+        "screens/quran.ts",
+        "screens/reader.ts",
+        "screens/research_projects.ts"
+      ]
+    },
+    "تظليلات": {
+      "files": [
+        "screens/notes.ts"
+      ]
+    },
+    "تظهر بيانات الكتاب هنا بعد تحميله.": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "تظهر واجهة القراءة أولًا ثم تُحمّل أدوات الصيغة المطلوبة.": {
+      "files": [
+        "router.ts"
+      ]
+    },
+    "تعارض يحتاج مراجعة": {
+      "files": [
+        "source_sync_ui.ts"
+      ]
+    },
+    "تعديل": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "تعديل الدقائق اليومية": {
+      "files": [
+        "screens/book.ts"
+      ]
+    },
+    "تعديل الكتاب": {
+      "files": [
+        "screens/library.ts",
+        "screens/reader.ts"
+      ]
+    },
+    "تعديل جماعي اختياري": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "تعذّر إحضار آخر قراءة": {
+      "files": [
+        "screens/home.ts"
+      ]
+    },
+    "تعذّر إحضار الجديد الآن": {
+      "files": [
+        "screens/home.ts"
+      ]
+    },
+    "تعذّر استعادة الأرشيف": {
+      "files": [
+        "screens/settings.ts"
+      ]
+    },
+    "تعذّر استعادة الكتاب بعد المعالجة.": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "تعذّر استعادة الكتاب بعد معالجة Word": {
+      "files": [
+        "book_import.ts"
+      ]
+    },
+    "تعذّر استيراد CSV": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "تعذّر إعداد أبواب المكتبة": {
+      "files": [
+        "screens/home.ts"
+      ]
+    },
+    "تعذّر إعداد المقترحات": {
+      "files": [
+        "screens/home.ts"
+      ]
+    },
+    "تعذّر إعداد الملخص الآن": {
+      "files": [
+        "screens/me.ts"
+      ]
+    },
+    "تعذّر إعداد دليل المؤلفين": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "تعذّر البحث الآن": {
+      "files": [
+        "screens/search.ts"
+      ]
+    },
+    "تعذّر التراجع؛ بقي السجل متاحًا لإعادة المحاولة": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "تعذّر التطبيق وأعيدت البيانات السابقة": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "تعذر النسخ": {
+      "files": [
+        "screens/quran.ts"
+      ]
+    },
+    "تعذّر النسخ": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "تعذّر النسخ إلى الحافظة": {
+      "files": [
+        "screens/notes.ts"
+      ]
+    },
+    "تعذّر إنشاء الخطة": {
+      "files": [
+        "screens/book.ts"
+      ]
+    },
+    "تعذّر إنشاء الرف": {
+      "files": [
+        "screens/book.ts",
+        "screens/shelves.ts"
+      ]
+    },
+    "تعذّر إنشاء المشروع": {
+      "files": [
+        "screens/research_projects.ts"
+      ]
+    },
+    "تعذّر بناء نموذج الكتاب": {
+      "files": [
+        "reader_failure.ts"
+      ]
+    },
+    "تعذّر تجهيز أرشيف المكتبة": {
+      "files": [
+        "screens/settings.ts"
+      ]
+    },
+    "تعذّر تجهيز خط داخل الكتاب": {
+      "files": [
+        "reader_failure.ts"
+      ]
+    },
+    "تعذّر تحديث الوقت": {
+      "files": [
+        "screens/book.ts"
+      ]
+    },
+    "تعذر تحديد كتاب التفسير.": {
+      "files": [
+        "screens/quran.ts"
+      ]
+    },
+    "تعذّر تحميل أدوات القارئ": {
+      "files": [
+        "router.ts"
+      ]
+    },
+    "تعذّر تحميل كتالوج مؤلفي الشاملة": {
+      "files": [
+        "shamela_catalog.ts"
+      ]
+    },
+    "تعذّر تحميل ملحق المؤلفين الموثق": {
+      "files": [
+        "shamela_catalog.ts"
+      ]
+    },
+    "تعذر تحميل نص هذا التفسير الآن.": {
+      "files": [
+        "screens/quran.ts"
+      ]
+    },
+    "تعذّر تخطيط صفحات الكتاب": {
+      "files": [
+        "reader_failure.ts"
+      ]
+    },
+    "تعذّر تدقيق بيانات المكتبة": {
+      "files": [
+        "screens/data_quality.ts"
+      ]
+    },
+    "تعذّر ترتيب الرفوف الآن": {
+      "files": [
+        "screens/browse.ts"
+      ]
+    },
+    "تعذّر ترتيب الكتب الأكثر استعمالًا": {
+      "files": [
+        "screens/home.ts"
+      ]
+    },
+    "تعذّر تركيب صفحات الكتاب": {
+      "files": [
+        "reader_failure.ts"
+      ]
+    },
+    "تعذر تشغيل التلاوة الآن": {
+      "files": [
+        "screens/quran.ts"
+      ]
+    },
+    "تعذّر جلب حالة المزامنة": {
+      "files": [
+        "source_sync_ui.ts"
+      ]
+    },
+    "تعذّر جلب ملف Word الأصلي": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "تعذّر جلب نسخة الكتاب": {
+      "files": [
+        "reader_failure.ts"
+      ]
+    },
+    "تعذّر جمع السلاسل": {
+      "files": [
+        "screens/series.ts"
+      ]
+    },
+    "تعذّر جمع الطبعات": {
+      "files": [
+        "screens/editions.ts"
+      ]
+    },
+    "تعذّر جمع ذاكرة القراءة": {
+      "files": [
+        "screens/notes.ts"
+      ]
+    },
+    "تعذّر حفظ المؤلف": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "تعذّر دمج السجلين": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "تعذّر رسم صفحة PDF": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "تعذّر عرض الرفوف الآن": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "تعذّر عرض الكتاب": {
+      "files": [
+        "reader_failure.ts"
+      ]
+    },
+    "تعذّر فتح الرفوف": {
+      "files": [
+        "screens/shelves.ts"
+      ]
+    },
+    "تعذّر فتح المجلد؛ استخدم اختيار المجلد البديل": {
+      "files": [
+        "book_import.ts"
+      ]
+    },
+    "تعذر فتح المصحف المحلي.": {
+      "files": [
+        "screens/quran.ts"
+      ]
+    },
+    "تعذّر فتح المكتبة الآن": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "تعذّر فتح خطط القراءة": {
+      "files": [
+        "screens/reading_plans.ts"
+      ]
+    },
+    "تعذّر فتح رف المؤلف": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "تعذّر فتح صفحة الكتاب": {
+      "files": [
+        "screens/book.ts"
+      ]
+    },
+    "تعذر فتح فهرس آيات التفسير الآن.": {
+      "files": [
+        "screens/quran.ts"
+      ]
+    },
+    "تعذّر فتح مركز الإدارة": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "تعذّر فتح معاينة PDF": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "تعذر فك محتوى هذه الصفحة محليًا؛ ملف PDF الأصلي لم يتغير.": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "تعذّر قراءة نسخة البيانات": {
+      "files": [
+        "screens/settings.ts"
+      ]
+    },
+    "تعذّرت إعادة المعالجة؛ بقيت نسخة القراءة الحالية متاحة.": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "تعذرت الترجمة الآن؛ حاول مرة أخرى.": {
+      "files": [
+        "translation.ts"
+      ]
+    },
+    "تعذرت الترجمة.": {
+      "files": [
+        "translation.ts"
+      ]
+    },
+    "تعذرت ترجمة الواجهة.": {
+      "files": [
+        "translation.ts"
+      ]
+    },
+    "تعذّرت قراءة بنية Word": {
+      "files": [
+        "reader_failure.ts"
+      ]
+    },
+    "تعذرت مطابقة صفحات الملف مع Word مطابقة موثقة. الأصل عدم إضافة الكتاب حتى تُعاد معالجته.": {
+      "files": [
+        "word_import_authority.ts"
+      ]
+    },
+    "تعذّرت مطابقة صفحات Word": {
+      "files": [
+        "reader_failure.ts"
+      ]
+    },
+    "تعذّرت معاينة الصفحة الأولى": {
+      "files": [
+        "reader_failure.ts"
+      ]
+    },
+    "تُعرض الصفحات من ملف PDF نفسه. البحث النصي لا يتاح إلا إذا احتوى الملف طبقة نصية.": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "تعمل دون اتصال": {
+      "files": [
+        "source_sync_ui.ts"
+      ]
+    },
+    "تعمل من تخزين هذا الجهاز.": {
+      "files": [
+        "offline_policy.ts"
+      ]
+    },
+    "تغيّر واجهة التطبيق والقارئ، ولا تقلب صور PDF أو صفحات Word الأصلية.": {
+      "files": [
+        "screens/settings.ts"
+      ]
+    },
+    "تغيير التصنيف إلى": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "تغيير المؤلف إلى": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "تغييرات بانتظار الإكمال": {
+      "files": [
+        "source_sync_ui.ts"
+      ]
+    },
+    "تفتح الآن في نافذة تطبيق، وتبقى مكتبتك المحلية متاحة على هذا الجهاز.": {
+      "files": [
+        "screens/me.ts"
+      ]
+    },
+    "تُفتح داخل الخزانة ككتب مستقلة، وترتبط بكل آية في المصحف.": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "تفسير": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "تفسير ابن عثيمين": {
+      "files": [
+        "screens/quran.ts"
+      ]
+    },
+    "تفسير ابن كثير": {
+      "files": [
+        "screens/quran.ts"
+      ]
+    },
+    "تفسير الآية": {
+      "files": [
+        "navigation_accessibility.ts"
+      ]
+    },
+    "تفسير الآية المختارة": {
+      "files": [
+        "screens/quran.ts"
+      ]
+    },
+    "تفسير البغوي": {
+      "files": [
+        "screens/quran.ts"
+      ]
+    },
+    "تفسير الجلالين": {
+      "files": [
+        "screens/quran.ts"
+      ]
+    },
+    "تفسير السعدي": {
+      "files": [
+        "screens/library.ts",
+        "screens/quran.ts"
+      ]
+    },
+    "تفسير الطبري": {
+      "files": [
+        "screens/quran.ts"
+      ]
+    },
+    "تفسير القرطبي": {
+      "files": [
+        "screens/quran.ts"
+      ]
+    },
+    "تفسير المنار": {
+      "files": [
+        "screens/quran.ts"
+      ]
+    },
+    "تقارب إملائي": {
+      "files": [
+        "quran_search_contract.ts"
+      ]
+    },
+    "تقارب ترتيب الحروف": {
+      "files": [
+        "quran_search_contract.ts"
+      ]
+    },
+    "تقديم مراجعة اليوم": {
+      "files": [
+        "annotation_accessibility.ts"
+      ]
+    },
+    "تقليل الحركة": {
+      "files": [
+        "screens/settings.ts"
+      ]
+    },
+    "تكبير صفحة المصحف": {
+      "files": [
+        "screens/quran.ts"
+      ]
+    },
+    "تكبير نص التفسير": {
+      "files": [
+        "screens/quran.ts"
+      ]
+    },
+    "تلاميذ المؤلف": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "تلاميذه": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "تلاميذه (اسم في كل سطر)": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "تم التثبيت": {
+      "files": [
+        "screens/me.ts"
+      ]
+    },
+    "تم إنشاء نسخة PDF من ملف Word الأصلي": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "تم تثبيت الخِزانة": {
+      "files": [
+        "screens/welcome.ts"
+      ]
+    },
+    "تم تجهيز نسخة بيانات القراءة": {
+      "files": [
+        "screens/settings.ts"
+      ]
+    },
+    "تم نسخ التحديد": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "تنزيل النص الأصلي": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "تنزيل بطاقة": {
+      "files": [
+        "annotation_accessibility.ts"
+      ]
+    },
+    "تنزيل BOK الأصلي": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "تنزيل EPUB الأصلي": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "تنزيل Word الأصلي": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "تنسيق معقد أوقف التخطيط؛ بقي Word محفوظًا ويمكن عرض النص احتياطيًا.": {
+      "files": [
+        "reader_failure.ts"
+      ]
+    },
+    "تنظيمك الشخصي": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "توسيع صرفي تجريبي": {
+      "files": [
+        "screens/search.ts"
+      ]
+    },
+    "توسيع محلي تقريبي إلى أن يكتمل المحلل العربي الموثق": {
+      "files": [
+        "screens/search.ts"
+      ]
+    },
+    "توقيع ملف PDF غير صحيح": {
+      "files": [
+        "pdf_import.ts"
+      ]
+    },
+    "ثبّت الخِزانة على هذا الجهاز": {
+      "files": [
+        "screens/me.ts"
+      ]
+    },
+    "ثبّت الخِزانة من شريط العنوان لتفتح كتطبيق على جهازك.": {
+      "files": [
+        "install.ts"
+      ]
+    },
+    "ثبّت الخِزانة من قائمة المتصفح لتعمل كتطبيق مستقل.": {
+      "files": [
+        "install.ts"
+      ]
+    },
+    "جارٍ إحضار آخر قراءة": {
+      "files": [
+        "screens/home.ts"
+      ]
+    },
+    "جارٍ إحضار الجديد": {
+      "files": [
+        "screens/home.ts"
+      ]
+    },
+    "جارٍ إحضار المؤلف…": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "جارٍ إحضار بيانات الكتاب…": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "جارٍ اختيار اقتباس من كتبك": {
+      "files": [
+        "screens/home.ts"
+      ]
+    },
+    "جارٍ إعادة المعالجة…": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "جارٍ إعداد أبواب المكتبة": {
+      "files": [
+        "screens/home.ts"
+      ]
+    },
+    "جارٍ إعداد خطط القراءة": {
+      "files": [
+        "screens/reading_plans.ts"
+      ]
+    },
+    "جارٍ إعداد مركز الإدارة": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "جارٍ إعداد مقترحات محلية": {
+      "files": [
+        "screens/home.ts"
+      ]
+    },
+    "جارٍ إعداد ملخصك": {
+      "files": [
+        "screens/me.ts"
+      ]
+    },
+    "جارٍ البحث في خزانتك": {
+      "files": [
+        "screens/search.ts"
+      ]
+    },
+    "جارٍ التحقق من PDF…": {
+      "files": [
+        "screens/library.ts",
+        "screens/reader.ts"
+      ]
+    },
+    "جارٍ التحميل": {
+      "files": [
+        "ui.ts"
+      ]
+    },
+    "جارٍ تجهيز معاينة PDF": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "جارٍ تجهيز PDF": {
+      "files": [
+        "screens/browse.ts"
+      ]
+    },
+    "جارٍ تحديث حالة المزامنة": {
+      "files": [
+        "source_sync_ui.ts"
+      ]
+    },
+    "جارٍ تحويل أجزاء Word ودمجها في PDF واحد…": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "جارٍ تحويل ملف Word الأصلي إلى PDF عبر Microsoft Word…": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "جارٍ تدقيق بيانات الكتب": {
+      "files": [
+        "screens/data_quality.ts"
+      ]
+    },
+    "جارٍ ترتيب أكثر الكتب استعمالًا": {
+      "files": [
+        "screens/home.ts"
+      ]
+    },
+    "جارٍ ترتيب دليل المؤلفين": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "جارٍ ترتيب رفوف مكتبتك": {
+      "files": [
+        "screens/browse.ts"
+      ]
+    },
+    "جارٍ ترتيب رفوفك": {
+      "files": [
+        "screens/library.ts",
+        "screens/shelves.ts"
+      ]
+    },
+    "جارٍ جمع السلاسل العلمية": {
+      "files": [
+        "screens/series.ts"
+      ]
+    },
+    "جارٍ جمع ذاكرة القراءة": {
+      "files": [
+        "screens/notes.ts"
+      ]
+    },
+    "جارٍ جمع طبعات الكتب": {
+      "files": [
+        "screens/editions.ts"
+      ]
+    },
+    "جارٍ حفظ الكتب…": {
+      "files": [
+        "book_import.ts"
+      ]
+    },
+    "جارٍ فتح التفسير…": {
+      "files": [
+        "screens/quran.ts"
+      ]
+    },
+    "جارٍ فتح القارئ": {
+      "files": [
+        "router.ts"
+      ]
+    },
+    "جارٍ فتح الكتاب…": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "جارٍ فتح المصحف…": {
+      "files": [
+        "screens/quran.ts"
+      ]
+    },
+    "جارٍ فتح بطاقة الكتاب": {
+      "files": [
+        "screens/book.ts"
+      ]
+    },
+    "جارٍ فتح رف المؤلف": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "جارٍ فتح كتاب PDF": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "جارٍ فتح مكتبتك": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "جارٍ فحص النسخة البديلة…": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "جارٍ قراءة بيانات الكتب": {
+      "files": [
+        "book_import.ts"
+      ]
+    },
+    "جارٍ نقل الكتب ودمج البيانات…": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "جامع البيان": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "جاهزة للتنزيل PDF": {
+      "files": [
+        "screens/browse.ts"
+      ]
+    },
+    "جدول بيانات الكتاب Main مفقود": {
+      "files": [
+        "bok_import.ts"
+      ]
+    },
+    "جدول صفحات الكتاب مفقود": {
+      "files": [
+        "bok_import.ts"
+      ]
+    },
+    "جديد يهمك": {
+      "files": [
+        "screens/home.ts"
+      ]
+    },
+    "جذر تقريبي": {
+      "files": [
+        "screens/search.ts"
+      ]
+    },
+    "جرّب الاشتقاق الصرفي أو عبارة أقصر.": {
+      "files": [
+        "screens/search.ts"
+      ]
+    },
+    "جرّب عبارة أقصر أو غيّر نوع المحفوظات.": {
+      "files": [
+        "screens/notes.ts"
+      ]
+    },
+    "جرّب كلمة أقصر أو امسح حقل البحث.": {
+      "files": [
+        "screens/home.ts"
+      ]
+    },
+    "جلب البيانات…": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "جُهز ملف ذاكرة القراءة": {
+      "files": [
+        "screens/notes.ts"
+      ]
+    },
+    "جُهز ملف Word العلمي": {
+      "files": [
+        "screens/research_projects.ts"
+      ]
+    },
+    "جودة بيانات المكتبة": {
+      "files": [
+        "navigation_accessibility.ts",
+        "screens/data_quality.ts",
+        "screens/me.ts"
+      ]
+    },
+    "حالة المؤلف أو سنة الوفاة غير موثقة": {
+      "files": [
+        "library_data_quality.ts"
+      ]
+    },
+    "حجم الرف": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "حجم الصورة أكبر من 5 MB.": {
+      "files": [
+        "author_portrait_update.ts"
+      ]
+    },
+    "حجم الغلاف يجب ألا يتجاوز 5 ميجابايت": {
+      "files": [
+        "book_import.ts"
+      ]
+    },
+    "حجم المصحف": {
+      "files": [
+        "screens/quran.ts"
+      ]
+    },
+    "حجم الملف النصي يتجاوز 20 ميجابايت": {
+      "files": [
+        "text_import.ts"
+      ]
+    },
+    "حجم صفحة القراءة": {
+      "files": [
+        "screens/settings.ts"
+      ]
+    },
+    "حجم صفحة المصحف": {
+      "files": [
+        "screens/quran.ts"
+      ]
+    },
+    "حجم واجهة الموقع": {
+      "files": [
+        "screens/settings.ts"
+      ]
+    },
+    "حجم BOK غير صالح أو يتجاوز 200 ميغابايت": {
+      "files": [
+        "bok_import.ts"
+      ]
+    },
+    "حجم EPUB يتجاوز 50 ميجابايت": {
+      "files": [
+        "epub_import.ts"
+      ]
+    },
+    "حجم PDF يتجاوز 200 ميجابايت": {
+      "files": [
+        "pdf_import.ts"
+      ]
+    },
+    "حجم ZIP يتجاوز الحد الآمن": {
+      "files": [
+        "library_archive_restore.ts"
+      ]
+    },
+    "حدّث الترجمة، ويمكن إرفاق صورة للمؤلف المعاصر.": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "حدث خلل غير متوقع، لكن ملف Word والبيانات الإدارية بقيا محفوظين.": {
+      "files": [
+        "reader_failure.ts"
+      ]
+    },
+    "حدّد كتابًا أو عدة كتب، ثم طبّق البيانات المشتركة دفعة واحدة أو عدّل كل سجل منفردًا.": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "حدد كتبًا وأدخل بيانات واحدة على الأقل": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "حدّد نصًا أولًا": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "حدّد نصًا في القارئ أو أضف علامة، وسيظهر هنا.": {
+      "files": [
+        "screens/notes.ts"
+      ]
+    },
+    "حدّد نصًا من الكتاب أولًا": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "حدّد وردك اليومي": {
+      "files": [
+        "screens/home.ts"
+      ]
+    },
+    "حدد وقتك اليومي، وسنحوّله إلى ورد صفحات واضح.": {
+      "files": [
+        "screens/book.ts"
+      ]
+    },
+    "حُددت المراجعة التالية": {
+      "files": [
+        "screens/notes.ts"
+      ]
+    },
+    "حدود أوضح وألوان أقوى لضعف البصر.": {
+      "files": [
+        "screens/settings.ts"
+      ]
+    },
+    "حذف": {
+      "files": [
+        "annotation_accessibility.ts"
+      ]
+    },
+    "حُذف ✓": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "حذف التظليل": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "حُذف العنصر": {
+      "files": [
+        "screens/notes.ts"
+      ]
+    },
+    "حذف المؤلف المشارك": {
+      "files": [
+        "book_import.ts"
+      ]
+    },
+    "حذف المحدد": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "حذف المشروع": {
+      "files": [
+        "screens/research_projects.ts"
+      ]
+    },
+    "حذف الملاحظة": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "حزمة EPUB تالفة أو غير صالحة": {
+      "files": [
+        "epub_import.ts"
+      ]
+    },
+    "حسابي": {
+      "files": [
+        "session_identity.ts"
+      ]
+    },
+    "حفص": {
+      "files": [
+        "quran_local_pack.ts"
+      ]
+    },
+    "حفظ": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "حفظ الاختيارات": {
+      "files": [
+        "screens/research_projects.ts"
+      ]
+    },
+    "حفظ الاقتباس": {
+      "files": [
+        "screens/home.ts"
+      ]
+    },
+    "حُفظ الاقتباس": {
+      "files": [
+        "screens/home.ts"
+      ]
+    },
+    "حُفظ التظليل": {
+      "files": [
+        "screens/quran.ts"
+      ]
+    },
+    "حفظ المؤلف": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "حُفظ المشروع البحثي": {
+      "files": [
+        "screens/research_projects.ts"
+      ]
+    },
+    "حُفظ المقتطف في ملاحظات الكتاب": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "حفظ الملاحظة": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "حفظ بيانات المؤلف": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "حفظ PDF منسق": {
+      "files": [
+        "screens/book.ts",
+        "screens/library.ts"
+      ]
+    },
+    "حُفظت الملاحظة": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "حُفظت بيانات الكتاب": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "حُفظت بيانات المؤلف": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "حقوق النشر محفوظة لكل مسلم، وكل خدماتنا مجانية في سبيل الله: طلب العلم فريضة، فانشر تُؤجر": {
+      "files": [
+        "shell.ts"
+      ]
+    },
+    "حواشي الصفحة": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "خدمات الآية المختارة": {
+      "files": [
+        "screens/quran.ts"
+      ]
+    },
+    "خدمات الخِزانة": {
+      "files": [
+        "shell.ts"
+      ]
+    },
+    "خطتك لهذا الكتاب": {
+      "files": [
+        "screens/book.ts"
+      ]
+    },
+    "خطط القراءة": {
+      "files": [
+        "navigation_accessibility.ts",
+        "screens/me.ts"
+      ]
+    },
+    "خططك في مشهد واحد": {
+      "files": [
+        "screens/reading_plans.ts"
+      ]
+    },
+    "خيارات عملية لا تغيّر أمانة النص الأصلي.": {
+      "files": [
+        "screens/settings.ts"
+      ]
+    },
+    "دقيقة": {
+      "files": [
+        "screens/book.ts"
+      ]
+    },
+    "دليل": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "دليل المؤلفين": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "دليل مؤلفي الخزانة": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "دُمج سجلا المؤلف ونُقلت الكتب بنجاح": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "دمج سجلين": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "دمج مؤلفين متكررين": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "دون رف": {
+      "files": [
+        "book_import.ts"
+      ]
+    },
+    "ذاكرة القراءة": {
+      "files": [
+        "screens/notes.ts"
+      ]
+    },
+    "راجع اليوم": {
+      "files": [
+        "screens/notes.ts"
+      ]
+    },
+    "راجع عدد الكتب ثم اضغط «تطبيق التغييرات».": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "راجع قريبًا": {
+      "files": [
+        "screens/notes.ts"
+      ]
+    },
+    "راجع محفوظاتك، وستظهر المواعيد هنا بعد جدولة أول مراجعة.": {
+      "files": [
+        "screens/notes.ts"
+      ]
+    },
+    "رأس صفحة الخزانة": {
+      "files": [
+        "screens/welcome.ts"
+      ]
+    },
+    "رتّب الكتب المرتبطة في مسارات موثقة": {
+      "files": [
+        "screens/me.ts"
+      ]
+    },
+    "رجوع": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "رحلات القراءة": {
+      "files": [
+        "screens/reading_plans.ts"
+      ]
+    },
+    "رف المؤلف": {
+      "files": [
+        "navigation_accessibility.ts"
+      ]
+    },
+    "رف المؤلف في مكتبتك المحلية": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "رفوفك": {
+      "files": [
+        "screens/browse.ts"
+      ]
+    },
+    "رفوفك الشخصية": {
+      "files": [
+        "screens/book.ts"
+      ]
+    },
+    "رفوفي": {
+      "files": [
+        "screens/library.ts",
+        "shell.ts"
+      ]
+    },
+    "رفوفي الشخصية": {
+      "files": [
+        "screens/me.ts"
+      ]
+    },
+    "رقم الآية خارج النطاق": {
+      "files": [
+        "quran_domain.ts"
+      ]
+    },
+    "رقم الجزء": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "رقم الجزء للانتقال": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "رقم السورة خارج النطاق": {
+      "files": [
+        "quran_domain.ts"
+      ]
+    },
+    "رقم الصفحة للانتقال المباشر": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "رقم صفحة PDF للانتقال": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "روح المعاني": {
+      "files": [
+        "screens/quran.ts"
+      ]
+    },
+    "سبحان الله وبحمده، سبحان الله العظيم": {
+      "files": [
+        "shell.ts"
+      ]
+    },
+    "ستتاح الخطة بعد حساب صفحات الكتاب عند فتحه أول مرة.": {
+      "files": [
+        "screens/book.ts"
+      ]
+    },
+    "ستُدمج الرفوف والعلامات والملاحظات والنشاط مع بيانات هذا الجهاز. هل تريد المتابعة؟": {
+      "files": [
+        "screens/settings.ts"
+      ]
+    },
+    "ستُستبدل الكتب المتعارضة بمعاملة مستقلة لكل كتاب.": {
+      "files": [
+        "screens/settings.ts"
+      ]
+    },
+    "ستظهر السجلات عند إضافة الكتب أو استيراد الفهرس.": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "ستعود الفائدة غدًا": {
+      "files": [
+        "screens/notes.ts"
+      ]
+    },
+    "ستُنقل الكتب والأسماء البديلة والبيانات إلى السجل الأساس.": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "سُجل إنجازك على هذا الجهاز.": {
+      "files": [
+        "screens/me.ts"
+      ]
+    },
+    "سجل جديد": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "سجل غير مرتبط": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "سجل قراءتك محلي ولم يتغير.": {
+      "files": [
+        "screens/home.ts"
+      ]
+    },
+    "سرعة التلاوة": {
+      "files": [
+        "screens/quran.ts"
+      ]
+    },
+    "سكينة": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "سمة ألوان الخِزانة": {
+      "files": [
+        "screens/settings.ts"
+      ]
+    },
+    "سنة الميلاد (هـ)": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "سنة الميلاد هـ": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "سنة النشر": {
+      "files": [
+        "screens/book.ts",
+        "screens/reader.ts"
+      ]
+    },
+    "سنة النشر (هـ)": {
+      "files": [
+        "book_import.ts"
+      ]
+    },
+    "سنة النشر الهجرية": {
+      "files": [
+        "book_import.ts",
+        "screens/library.ts"
+      ]
+    },
+    "سنة النشر هـ": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "سنة الوفاة (هـ)": {
+      "files": [
+        "book_import.ts",
+        "screens/library.ts"
+      ]
+    },
+    "سنة الوفاة (هـ) *": {
+      "files": [
+        "book_import.ts"
+      ]
+    },
+    "سنة الوفاة الجماعية": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "سنة الوفاة الهجرية": {
+      "files": [
+        "book_import.ts",
+        "screens/library.ts"
+      ]
+    },
+    "سنة الوفاة إلى": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "سنة الوفاة غير مدونة": {
+      "files": [
+        "screens/search.ts"
+      ]
+    },
+    "سنة الوفاة من": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "سنة الوفاة هـ": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "سنة وفاة المؤلف إلى": {
+      "files": [
+        "screens/search.ts"
+      ]
+    },
+    "سنة وفاة المؤلف من": {
+      "files": [
+        "screens/search.ts"
+      ]
+    },
+    "سياسة تعارض معرفات أرشيف المكتبة": {
+      "files": [
+        "screens/settings.ts"
+      ]
+    },
+    "سيُطبّق: مؤلف معاصر": {
+      "files": [
+        "book_import.ts"
+      ]
+    },
+    "سيظهر هنا أحدث ما تضيفه إلى مكتبتك.": {
+      "files": [
+        "screens/home.ts"
+      ]
+    },
+    "شجرة العناوين": {
+      "files": [
+        "screens/search.ts"
+      ]
+    },
+    "شجري: المؤلف ثم الكتاب": {
+      "files": [
+        "screens/search.ts"
+      ]
+    },
+    "شروح الحديث": {
+      "files": [
+        "library_metadata.ts"
+      ]
+    },
+    "شيوخ المؤلف": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "شيوخه": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "شيوخه (اسم في كل سطر)": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "صدّر نسخة احتياطية": {
+      "files": [
+        "shell.ts"
+      ]
+    },
+    "صِرَٰطَ ٱلَّذِينَ أَنۡعَمۡتَ عَلَيۡهِمۡ غَيۡرِ ٱلۡمَغۡضُوبِ عَلَيۡهِمۡ وَلَا ٱلضَّآلِّينَ": {
+      "files": [
+        "quran_local_pack.ts"
+      ]
+    },
+    "صفِّ التصنيفات…": {
+      "files": [
+        "screens/search.ts"
+      ]
+    },
+    "صفِّ الكتب…": {
+      "files": [
+        "screens/search.ts"
+      ]
+    },
+    "صفِّ اللغات…": {
+      "files": [
+        "translation.ts"
+      ]
+    },
+    "صفِّ المؤلفين…": {
+      "files": [
+        "screens/search.ts"
+      ]
+    },
+    "صفحة": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "صفحة الكتاب": {
+      "files": [
+        "navigation_accessibility.ts"
+      ]
+    },
+    "صفحة من الكتاب": {
+      "files": [
+        "screens/book.ts"
+      ]
+    },
+    "صفحة PDF التالية": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "صفحة PDF السابقة": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "صفحة PDF المقابلة لصفحة Word 1": {
+      "files": [
+        "book_import.ts"
+      ]
+    },
+    "صلة متبادلة": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "صورة المؤلف المعاصر": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "صورة محلية غير مرفقة": {
+      "files": [
+        "markdown_render.ts"
+      ]
+    },
+    "صيغة الصورة غير مدعومة؛ استخدم PNG أو JPEG أو WebP.": {
+      "files": [
+        "author_portrait_update.ts"
+      ]
+    },
+    "صيغة الغلاف يجب أن تكون PNG أو JPEG أو WebP": {
+      "files": [
+        "book_import.ts"
+      ]
+    },
+    "صيغة المصدر": {
+      "files": [
+        "screens/book.ts"
+      ]
+    },
+    "صيغة كتاب غير مدعومة": {
+      "files": [
+        "book_import.ts"
+      ]
+    },
+    "صيغة كتالوج المؤلفين غير مدعومة": {
+      "files": [
+        "shamela_catalog.ts"
+      ]
+    },
+    "صيغة ملحق المؤلفين غير مدعومة": {
+      "files": [
+        "shamela_catalog.ts"
+      ]
+    },
+    "ضع الكتاب في رف أو أكثر لتعود إليه سريعًا.": {
+      "files": [
+        "screens/book.ts"
+      ]
+    },
+    "ضع علامة على الكتب المطلوبة من بطاقاتها أدناه.": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "ضيف": {
+      "files": [
+        "session_identity.ts"
+      ]
+    },
+    "طبقة تحديد ونسخ نص الصفحة العثماني": {
+      "files": [
+        "screens/quran.ts"
+      ]
+    },
+    "طريقة التعديل الجماعي": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "عاد الاتصال بالإنترنت.": {
+      "files": [
+        "connectivity.ts"
+      ]
+    },
+    "عادت أدوات القارئ": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "عبارة البحث الموسع": {
+      "files": [
+        "screens/search.ts"
+      ]
+    },
+    "عبارة البحث في الكتاب": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "عبد الرحمن بن ناصر السعدي": {
+      "files": [
+        "screens/library.ts",
+        "screens/quran.ts"
+      ]
+    },
+    "عبر هذا الجهاز": {
+      "files": [
+        "screens/settings.ts"
+      ]
+    },
+    "عثماني": {
+      "files": [
+        "screens/quran.ts"
+      ]
+    },
+    "عد إلى لوحة اليوم وسجّل إنجازك عندما تنتهي.": {
+      "files": [
+        "screens/me.ts"
+      ]
+    },
+    "عدد الكتب": {
+      "files": [
+        "author_catalog_csv.ts"
+      ]
+    },
+    "عدد الكتب في الأرشيف يتجاوز الحد الآمن": {
+      "files": [
+        "library_archive_restore.ts"
+      ]
+    },
+    "عدد الكتب في manifest لا يطابق محتواه": {
+      "files": [
+        "library_archive_restore.ts"
+      ]
+    },
+    "عدد صفحات الكتاب غير متاح": {
+      "files": [
+        "reading_plan.ts"
+      ]
+    },
+    "عرض أصحاب الكتب فقط": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "عرض الصفحات…": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "عرض الكل": {
+      "files": [
+        "screens/home.ts"
+      ]
+    },
+    "عرض المصحف بالرسم الإملائي": {
+      "files": [
+        "screens/quran.ts"
+      ]
+    },
+    "عرض المصحف بالرسم العثماني": {
+      "files": [
+        "screens/quran.ts"
+      ]
+    },
+    "عرض صفحات Word": {
+      "files": [
+        "reading_mode.ts"
+      ]
+    },
+    "عرض كل الرفوف": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "عرض نصي احتياطي": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "عرض نصي احتياطي: يحفظ القراءة والتنقل، لكنه لا يدّعي مطابقة صفحات Word أو تنسيقها الطباعي.": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "علامات": {
+      "files": [
+        "screens/notes.ts"
+      ]
+    },
+    "علاماتك وملاحظاتك": {
+      "files": [
+        "screens/notes.ts"
+      ]
+    },
+    "علاماتي وملاحظاتي": {
+      "files": [
+        "screens/me.ts"
+      ]
+    },
+    "علامة": {
+      "files": [
+        "screens/notes.ts",
+        "screens/reader.ts"
+      ]
+    },
+    "علوم أخرى": {
+      "files": [
+        "library_metadata.ts"
+      ]
+    },
+    "علوم الحديث": {
+      "files": [
+        "library_metadata.ts"
+      ]
+    },
+    "علوم الفقه والقواعد الفقهية": {
+      "files": [
+        "library_metadata.ts"
+      ]
+    },
+    "علوم القرآن وأصول التفسير": {
+      "files": [
+        "library_metadata.ts"
+      ]
+    },
+    "عن الكتاب": {
+      "files": [
+        "screens/book.ts",
+        "screens/reader.ts"
+      ]
+    },
+    "عن المشروع": {
+      "files": [
+        "screens/settings.ts"
+      ]
+    },
+    "عند إضافة نسختين بالعنوان نفسه ستظهر المقارنة هنا، دون افتراض بيانات ناقصة.": {
+      "files": [
+        "screens/editions.ts"
+      ]
+    },
+    "عنوان": {
+      "files": [
+        "markdown_render.ts"
+      ]
+    },
+    "عنوان الكتاب": {
+      "files": [
+        "book_cover.ts",
+        "book_import.ts",
+        "screens/library.ts"
+      ]
+    },
+    "عنوان الكتاب *": {
+      "files": [
+        "book_import.ts"
+      ]
+    },
+    "عنوان المشروع": {
+      "files": [
+        "screens/research_projects.ts"
+      ]
+    },
+    "عنوان المشروع البحثي": {
+      "files": [
+        "screens/research_projects.ts"
+      ]
+    },
+    "عودة إلى موضعك —": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "عينية المعارف (تجربة المحرك)": {
+      "files": [
+        "data.ts"
+      ]
+    },
+    "غيّر الاسم أو التصنيف.": {
+      "files": [
+        "screens/home.ts"
+      ]
+    },
+    "غيّر بيانات عدة كتب دفعة واحدة": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "غيّر عبارة البحث أو المرشحات.": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "غير متاحة دون اتصال، وميزة الحساب لم تُفعّل بعد.": {
+      "files": [
+        "offline_policy.ts"
+      ]
+    },
+    "غير محدد": {
+      "files": [
+        "reading_recommendations.ts"
+      ]
+    },
+    "غير مسجّل الدخول": {
+      "files": [
+        "source_sync_ui.ts"
+      ]
+    },
+    "غير مصنف": {
+      "files": [
+        "screens/home.ts"
+      ]
+    },
+    "غير مصنّف": {
+      "files": [
+        "screens/book.ts"
+      ]
+    },
+    "غير معروف": {
+      "files": [
+        "bok_import.ts",
+        "book_import.ts",
+        "epub_import.ts",
+        "reading_recommendations.ts",
+        "screens/home.ts",
+        "screens/library.ts",
+        "taxonomy_links.ts"
+      ]
+    },
+    "غير موثق": {
+      "files": [
+        "screens/book.ts"
+      ]
+    },
+    "ف": {
+      "files": [
+        "search_presentation.ts"
+      ]
+    },
+    "فارسی": {
+      "files": [
+        "translation.ts"
+      ]
+    },
+    "فال": {
+      "files": [
+        "search_presentation.ts"
+      ]
+    },
+    "فتح الإعدادات": {
+      "files": [
+        "shell.ts"
+      ]
+    },
+    "فتح الرفوف": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "فتح القدير": {
+      "files": [
+        "screens/quran.ts"
+      ]
+    },
+    "فتح الكتاب": {
+      "files": [
+        "screens/library.ts",
+        "screens/series.ts"
+      ]
+    },
+    "فتح المصحف": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "فتح المكتبة": {
+      "files": [
+        "screens/browse.ts",
+        "screens/home.ts",
+        "screens/library.ts",
+        "screens/reader.ts"
+      ]
+    },
+    "فُتح تفسير الآية في اللوحة المقابلة.": {
+      "files": [
+        "screens/quran.ts"
+      ]
+    },
+    "فتح ككتاب": {
+      "files": [
+        "screens/quran.ts"
+      ]
+    },
+    "فتح موضع المطابقة في تبويب مستقل": {
+      "files": [
+        "screens/search.ts"
+      ]
+    },
+    "فتحنا ملف PDF نفسه بعارض الجهاز لأن المفكك الداخلي لم يقبل بنية هذا الإصدار القديم.": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "فشل غير معروف": {
+      "files": [
+        "library_archive_restore.ts"
+      ]
+    },
+    "فُعّل وضع السكينة": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "فهارس الكتب والأدلة": {
+      "files": [
+        "library_metadata.ts"
+      ]
+    },
+    "فهرس الكتاب": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "في الخزانة": {
+      "files": [
+        "screens/quran.ts"
+      ]
+    },
+    "في الخِزانة": {
+      "files": [
+        "screens/quran.ts",
+        "screens/reader.ts"
+      ]
+    },
+    "في ظلال القرآن": {
+      "files": [
+        "screens/quran.ts"
+      ]
+    },
+    "في نسخة الويب العامة لا يتوفر تحويل Word إلى PDF؛ يمكنك الاستمرار في حفظ وقراءة Word، أو إرفاق PDF جاهز من هذا الخيار.": {
+      "files": [
+        "book_import.ts"
+      ]
+    },
+    "في Google": {
+      "files": [
+        "screens/quran.ts",
+        "screens/reader.ts"
+      ]
+    },
+    "قارن النسخ المتعددة الموجودة فعلًا في خزانتك بحسب الناشر والطبعة والمحقق والسنة.": {
+      "files": [
+        "screens/editions.ts"
+      ]
+    },
+    "قارن النسخ والتحقيقات الموجودة": {
+      "files": [
+        "screens/me.ts"
+      ]
+    },
+    "قالون عن نافع — قيد الإضافة": {
+      "files": [
+        "screens/quran.ts"
+      ]
+    },
+    "قبل الهجرة": {
+      "files": [
+        "screens/search.ts"
+      ]
+    },
+    "قد لا يدعم هذا المتصفح الخط المضمّن؛ جرّب مجددًا أو استخدم العرض النصي.": {
+      "files": [
+        "reader_failure.ts"
+      ]
+    },
+    "قد يكون اسم السلسلة تغير في بيانات الكتاب.": {
+      "files": [
+        "screens/series.ts"
+      ]
+    },
+    "قد يكون الكتاب محذوفًا أو تعذر الوصول إلى التخزين المحلي.": {
+      "files": [
+        "screens/book.ts"
+      ]
+    },
+    "قد يكون حُذف من هذا الجهاز؛ يمكنك إضافته من جديد.": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "قراءاتك وكتبك وإنجازك اليومي محفوظة على هذا الجهاز.": {
+      "files": [
+        "screens/me.ts"
+      ]
+    },
+    "قراءة الكتاب": {
+      "files": [
+        "navigation_accessibility.ts",
+        "reader_identity.ts",
+        "screens/data_quality.ts",
+        "screens/editions.ts"
+      ]
+    },
+    "قراءة الكتب المحفوظة": {
+      "files": [
+        "offline_policy.ts"
+      ]
+    },
+    "قراءتي": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "قريبًا": {
+      "files": [
+        "screens/welcome.ts"
+      ]
+    },
+    "قناة المتابعة": {
+      "files": [
+        "shell.ts"
+      ]
+    },
+    "ك": {
+      "files": [
+        "search_presentation.ts"
+      ]
+    },
+    "كال": {
+      "files": [
+        "search_presentation.ts"
+      ]
+    },
+    "كتاب": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "كتاب بدأت قراءته": {
+      "files": [
+        "screens/me.ts"
+      ]
+    },
+    "كتاب بدون عنوان": {
+      "files": [
+        "library_metadata.ts",
+        "reader_identity.ts",
+        "screens/reader.ts"
+      ]
+    },
+    "كتاب تجريبي — محرك ooxml-model": {
+      "files": [
+        "data.ts"
+      ]
+    },
+    "كتاب تفسير في مكتبتي": {
+      "files": [
+        "screens/quran.ts"
+      ]
+    },
+    "كتاب في الخزانة": {
+      "files": [
+        "screens/book.ts"
+      ]
+    },
+    "كتاب في مكتبتك": {
+      "files": [
+        "screens/me.ts"
+      ]
+    },
+    "كتاب محفوظ": {
+      "files": [
+        "annotations_markdown.ts",
+        "screens/notes.ts",
+        "screens/research_projects.ts"
+      ]
+    },
+    "كتاب نصي": {
+      "files": [
+        "text_import.ts"
+      ]
+    },
+    "كتاب PDF": {
+      "files": [
+        "pdf_import.ts"
+      ]
+    },
+    "كتابك كما طُبع، ومعرفتك أقرب إليك": {
+      "files": [
+        "screens/welcome.ts"
+      ]
+    },
+    "كتب التفسير المرتبطة": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "كتب السنة": {
+      "files": [
+        "library_metadata.ts"
+      ]
+    },
+    "كتب اللغة": {
+      "files": [
+        "library_metadata.ts"
+      ]
+    },
+    "كتب عامة": {
+      "files": [
+        "library_metadata.ts"
+      ]
+    },
+    "كتب مرتبطة بسلسلة موثقة يدويًا، مرتبة كما حددتها في بيانات الكتاب.": {
+      "files": [
+        "screens/series.ts"
+      ]
+    },
+    "كتبك في مكان واحد": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "كتبك لم تتغير. أعد المحاولة.": {
+      "files": [
+        "screens/shelves.ts"
+      ]
+    },
+    "كتبك محفوظة ولم تُحذف.": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "كتبك محفوظة؛ أعد المحاولة دون إعادة تحميل الصفحة.": {
+      "files": [
+        "screens/browse.ts"
+      ]
+    },
+    "كتبك محفوظة؛ أعد المحاولة.": {
+      "files": [
+        "screens/home.ts"
+      ]
+    },
+    "كتبك وبيانات قراءتك باقية على هذا الجهاز، ولا يُرفع أي ملف.": {
+      "files": [
+        "source_sync_ui.ts"
+      ]
+    },
+    "كل التصنيفات": {
+      "files": [
+        "screens/home.ts",
+        "screens/library.ts"
+      ]
+    },
+    "كل القرون والحالات": {
+      "files": [
+        "screens/search.ts"
+      ]
+    },
+    "كل المؤلفين": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "كل المشكلات": {
+      "files": [
+        "screens/data_quality.ts"
+      ]
+    },
+    "كل النتائج": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "كل ما حفظته أثناء القراءة، مرتب وقابل للبحث والعودة إلى موضعه.": {
+      "files": [
+        "screens/notes.ts"
+      ]
+    },
+    "كم": {
+      "files": [
+        "search_presentation.ts"
+      ]
+    },
+    "كما": {
+      "files": [
+        "search_presentation.ts"
+      ]
+    },
+    "كن": {
+      "files": [
+        "search_presentation.ts"
+      ]
+    },
+    "ل": {
+      "files": [
+        "search_presentation.ts"
+      ]
+    },
+    "لا إله إلا الله وحده لا شريك له": {
+      "files": [
+        "shell.ts"
+      ]
+    },
+    "لا تُرسل بيانات القراءة ضمن مزامنة مصادر الكتب.": {
+      "files": [
+        "screens/settings.ts"
+      ]
+    },
+    "لا تغيّر التصنيف": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "لا تقترح هذا": {
+      "files": [
+        "screens/home.ts"
+      ]
+    },
+    "لا توجد إضافات حديثة": {
+      "files": [
+        "screens/home.ts"
+      ]
+    },
+    "لا توجد اليوم ملاحظات أو تظليلات حان تذكّرها": {
+      "files": [
+        "screens/home.ts"
+      ]
+    },
+    "لا توجد بوابة مزامنة مفعلة. تظل جميع الملفات على هذا الجهاز.": {
+      "files": [
+        "source_sync_ui.ts"
+      ]
+    },
+    "لا توجد بيانات في هذا الباب بعد": {
+      "files": [
+        "screens/home.ts"
+      ]
+    },
+    "لا توجد بيانات مؤلفين بعد": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "لا توجد بيانات مطبّقة بعد.": {
+      "files": [
+        "book_import.ts"
+      ]
+    },
+    "لا توجد بيانات ناشر أو طبعة أو محقق أو سنة نشر": {
+      "files": [
+        "library_data_quality.ts"
+      ]
+    },
+    "لا توجد تظليلات بعد": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "لا توجد تلاوة متاحة لهذه السورة الآن.": {
+      "files": [
+        "screens/quran.ts"
+      ]
+    },
+    "لا توجد خطة قراءة فعالة": {
+      "files": [
+        "screens/reading_plans.ts"
+      ]
+    },
+    "لا توجد سلاسل موثقة بعد": {
+      "files": [
+        "screens/series.ts"
+      ]
+    },
+    "لا توجد طبعات متعددة بعد": {
+      "files": [
+        "screens/editions.ts"
+      ]
+    },
+    "لا توجد علامات بعد": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "لا توجد عناوين مطابقة في الفهرس": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "لا توجد فوائد لاختيارها": {
+      "files": [
+        "screens/research_projects.ts"
+      ]
+    },
+    "لا توجد كتب تطابق التصفية": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "لا توجد كتب في المكتبة بعد": {
+      "files": [
+        "screens/home.ts"
+      ]
+    },
+    "لا توجد كتب في هذا الرف بعد": {
+      "files": [
+        "screens/browse.ts"
+      ]
+    },
+    "لا توجد كتب لإدارتها": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "لا توجد كتب لأرشفتها": {
+      "files": [
+        "screens/settings.ts"
+      ]
+    },
+    "لا توجد كتب لهذا المؤلف في الخزانة": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "لا توجد محفوظات لتصديرها": {
+      "files": [
+        "screens/notes.ts"
+      ]
+    },
+    "لا توجد مراجعات قادمة مجدولة": {
+      "files": [
+        "screens/notes.ts"
+      ]
+    },
+    "لا توجد مراجعات مستحقة اليوم": {
+      "files": [
+        "screens/notes.ts"
+      ]
+    },
+    "لا توجد مشاريع بحثية بعد": {
+      "files": [
+        "screens/research_projects.ts"
+      ]
+    },
+    "لا توجد مشكلات من هذا النوع": {
+      "files": [
+        "screens/data_quality.ts"
+      ]
+    },
+    "لا توجد مطابقة": {
+      "files": [
+        "screens/search.ts"
+      ]
+    },
+    "لا توجد معرفات كتب مطابقة في الملف": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "لا توجد مقترحات جديدة الآن": {
+      "files": [
+        "screens/home.ts"
+      ]
+    },
+    "لا توجد ملاحظات بعد": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "لا توجد نسخة PDF جاهزة؛ إنشاؤها من Word يحتاج تشغيل الخِزانة المحلي.": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "لا توجد نسخة PDF لهذا الكتاب": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "لا نتائج": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "لا نتائج مطابقة": {
+      "files": [
+        "screens/notes.ts"
+      ]
+    },
+    "لا يحتوي BOK صفحات نصية قابلة للقراءة": {
+      "files": [
+        "bok_import.ts"
+      ]
+    },
+    "لا يحتوي EPUB فصولًا نصية قابلة للقراءة": {
+      "files": [
+        "epub_import.ts"
+      ]
+    },
+    "لا يوجد اسم مؤلف يطابق كل كلمات البحث": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "لا يوجد اسم يطابق هذه التصفية": {
+      "files": [
+        "screens/home.ts"
+      ]
+    },
+    "لا يوجد كتاب يطابق هذه التصفية": {
+      "files": [
+        "screens/home.ts"
+      ]
+    },
+    "لا يوجد مؤلف له كتب ضمن الفهرس الحالي": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "لا يوجد محتوى Markdown قابل للقراءة": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "لا يوجد نص قابل للعرض في هذه النسخة.": {
+      "files": [
+        "reader_failure.ts"
+      ]
+    },
+    "لا يوجد نص مستخرج قابل للقراءة": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "لدي PDF جاهز — لا تحوّل Word آليًا": {
+      "files": [
+        "book_import.ts"
+      ]
+    },
+    "لربط PDF يدويًا بعدة ملفات، اجمعها أولًا كأجزاء كتاب واحد أو أضف كل كتاب منفردًا": {
+      "files": [
+        "book_import.ts"
+      ]
+    },
+    "لغات الترجمة": {
+      "files": [
+        "translation.ts"
+      ]
+    },
+    "لغة الموقع": {
+      "files": [
+        "translation.ts"
+      ]
+    },
+    "لل": {
+      "files": [
+        "search_presentation.ts"
+      ]
+    },
+    "للويب وسطح المكتب والجوال": {
+      "files": [
+        "screens/welcome.ts"
+      ]
+    },
+    "لم تتأثر النسخة المحلية. يمكنك إعادة المحاولة لاحقًا.": {
+      "files": [
+        "source_sync_ui.ts"
+      ]
+    },
+    "لم تتغير أي بيانات.": {
+      "files": [
+        "screens/data_quality.ts"
+      ]
+    },
+    "لم تتغير بيانات الكتب. أعد المحاولة.": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "لم تتغير بياناتك الحالية": {
+      "files": [
+        "screens/settings.ts"
+      ]
+    },
+    "لم تتوفر نسخة PDF": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "لم تحدد كتبًا": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "لم تُحذف النسخة الأصلية. أعد معالجة الملف أو استخدم العرض النصي الاحتياطي.": {
+      "files": [
+        "reader_failure.ts"
+      ]
+    },
+    "لم تحفظ شيئًا من هذا النوع بعد": {
+      "files": [
+        "screens/notes.ts"
+      ]
+    },
+    "لم تُحفظ كتب": {
+      "files": [
+        "book_import.ts"
+      ]
+    },
+    "لم تختر أي كتاب بعد — استخدم مربعات التحديد في البطاقات أدناه": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "لم تُستبدل النسخة الحالية": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "لم تضف كتابًا بعد": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "لم تُفقد بيانات الكتاب. أعد المحاولة أو افتح العرض النصي الاحتياطي.": {
+      "files": [
+        "reader_failure.ts"
+      ]
+    },
+    "لم تُنشأ بعد": {
+      "files": [
+        "screens/book.ts"
+      ]
+    },
+    "لم يُحفظ الكتاب؛ أعد المعالجة للحصول على مطابقة Word موثقة": {
+      "files": [
+        "book_import.ts"
+      ]
+    },
+    "لم يُعثر على أصل الكتاب؛ نزّل Word وأضفه من جديد.": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "لم يُعثر على الكتاب في المكتبة": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "لم يُعثر على ملفات كتب بصيغة مدعومة": {
+      "files": [
+        "book_import.ts"
+      ]
+    },
+    "لماذا الخِزانة؟": {
+      "files": [
+        "screens/welcome.ts"
+      ]
+    },
+    "لن تُعرض أرقام بديلة بوصفها مطابقة؛ أعد معالجة الأصل أو استخدم عرضًا نصيًا معلّمًا بوضوح.": {
+      "files": [
+        "reader_failure.ts"
+      ]
+    },
+    "لن تُغيّر الوفاة ما لم تدخل سنة أو تحدد «معاصر»": {
+      "files": [
+        "book_import.ts"
+      ]
+    },
+    "لوحة اليوم": {
+      "files": [
+        "screens/home.ts"
+      ]
+    },
+    "لون التظليل": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "مؤجل حتى يتوفر محول مكتبي أو يعود الاتصال.": {
+      "files": [
+        "offline_policy.ts"
+      ]
+    },
+    "مؤلف الدفعة": {
+      "files": [
+        "book_import.ts"
+      ]
+    },
+    "مؤلف غير معروف": {
+      "files": [
+        "book_cover.ts",
+        "reader_identity.ts",
+        "reading_recommendations.ts",
+        "screens/editions.ts",
+        "screens/reading_plans.ts",
+        "screens/series.ts",
+        "taxonomy_links.ts"
+      ]
+    },
+    "مؤلف غير موثق": {
+      "files": [
+        "screens/quran.ts"
+      ]
+    },
+    "مؤلف مسجل": {
+      "files": [
+        "book_import.ts"
+      ]
+    },
+    "مؤلف معاصر": {
+      "files": [
+        "book_import.ts",
+        "screens/library.ts",
+        "screens/search.ts"
+      ]
+    },
+    "مؤلف موحد (اختياري)": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "مبدّل التخطيط": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "متابعة مشروع الخِزانة والتواصل": {
+      "files": [
+        "shell.ts"
+      ]
+    },
+    "متاح": {
+      "files": [
+        "screens/book.ts"
+      ]
+    },
+    "متاح إذا احتوى PDF طبقة نصية": {
+      "files": [
+        "screens/book.ts"
+      ]
+    },
+    "متاح دون اتصال": {
+      "files": [
+        "screens/settings.ts"
+      ]
+    },
+    "متاحة للعرض والتنزيل": {
+      "files": [
+        "screens/book.ts"
+      ]
+    },
+    "متن الكتاب": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "متوفى": {
+      "files": [
+        "author_catalog_csv.ts"
+      ]
+    },
+    "مثال: 1، 121، 244": {
+      "files": [
+        "book_import.ts"
+      ]
+    },
+    "مثبّت": {
+      "files": [
+        "screens/me.ts"
+      ]
+    },
+    "مجهول": {
+      "files": [
+        "reading_recommendations.ts"
+      ]
+    },
+    "محتوى EPUB المضغوط يتجاوز الحد الآمن": {
+      "files": [
+        "epub_import.ts"
+      ]
+    },
+    "محتوى ZIP يتجاوز الحدود الآمنة": {
+      "files": [
+        "library_archive_restore.ts"
+      ]
+    },
+    "محفوظاتك لم تتغير. أعد المحاولة.": {
+      "files": [
+        "screens/notes.ts"
+      ]
+    },
+    "محلي فقط": {
+      "files": [
+        "source_sync_ui.ts"
+      ]
+    },
+    "محمد بن جرير الطبري": {
+      "files": [
+        "screens/library.ts",
+        "screens/quran.ts"
+      ]
+    },
+    "مراجع القرآن": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "مراجعات قادمة": {
+      "files": [
+        "screens/notes.ts"
+      ]
+    },
+    "مراجعة": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "مراجعة اليوم": {
+      "files": [
+        "screens/notes.ts"
+      ]
+    },
+    "مراجعة اليوم لم تُنجز بعد": {
+      "files": [
+        "screens/me.ts"
+      ]
+    },
+    "مراجعة ثم دمج": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "مراجعة قريبة": {
+      "files": [
+        "annotation_accessibility.ts"
+      ]
+    },
+    "مراعاة التشكيل": {
+      "files": [
+        "screens/quran.ts"
+      ]
+    },
+    "مرتبط بالسور والآيات": {
+      "files": [
+        "screens/quran.ts"
+      ]
+    },
+    "مرحبًا بك": {
+      "files": [
+        "navigation_accessibility.ts"
+      ]
+    },
+    "مرحبًا بك في": {
+      "files": [
+        "screens/home.ts"
+      ]
+    },
+    "مرّر لعرض مزيد من النتائج": {
+      "files": [
+        "screens/search.ts"
+      ]
+    },
+    "مركز الطبعات": {
+      "files": [
+        "navigation_accessibility.ts",
+        "screens/editions.ts",
+        "screens/me.ts"
+      ]
+    },
+    "مزامنة الحساب بين الأجهزة": {
+      "files": [
+        "offline_policy.ts"
+      ]
+    },
+    "مسائل فقهية": {
+      "files": [
+        "library_metadata.ts"
+      ]
+    },
+    "مساحتك": {
+      "files": [
+        "navigation_accessibility.ts"
+      ]
+    },
+    "مساحتك في الخِزانة": {
+      "files": [
+        "screens/me.ts"
+      ]
+    },
+    "مسار OPF في EPUB غير صالح": {
+      "files": [
+        "epub_import.ts"
+      ]
+    },
+    "مسارات العلم": {
+      "files": [
+        "screens/series.ts"
+      ]
+    },
+    "مستخرج من فهرس الكتاب": {
+      "files": [
+        "screens/book.ts"
+      ]
+    },
+    "مسح": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "مسح البحث": {
+      "files": [
+        "screens/notes.ts",
+        "screens/search.ts"
+      ]
+    },
+    "مسح التحديد": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "مسح التصنيف": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "مسح المرشحات": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "مسح بحث الفهرس": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "مسح مرشحات الإدارة": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "مشاريعي البحثية": {
+      "files": [
+        "screens/me.ts"
+      ]
+    },
+    "مصحف المدينة — حفص عن عاصم": {
+      "files": [
+        "screens/quran.ts"
+      ]
+    },
+    "مصدر الاقتباس": {
+      "files": [
+        "screens/home.ts"
+      ]
+    },
+    "مصدر الترجمة": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "مطابقة العبارة": {
+      "files": [
+        "screens/search.ts"
+      ]
+    },
+    "مطابقة العبارة بعد توحيد الرسم العربي": {
+      "files": [
+        "screens/search.ts"
+      ]
+    },
+    "مطابقة صفحات Word": {
+      "files": [
+        "screens/welcome.ts"
+      ]
+    },
+    "معاصر": {
+      "files": [
+        "author_catalog_csv.ts",
+        "book_import.ts",
+        "screens/book.ts",
+        "screens/library.ts",
+        "screens/search.ts"
+      ]
+    },
+    "معالم التنزيل": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "معاينة الكتاب": {
+      "files": [
+        "screens/book.ts"
+      ]
+    },
+    "معرف الآية غير صالح": {
+      "files": [
+        "quran_domain.ts"
+      ]
+    },
+    "معرف الشاملة": {
+      "files": [
+        "author_catalog_csv.ts"
+      ]
+    },
+    "معرّف الكتاب مطلوب": {
+      "files": [
+        "reading_plan.ts"
+      ]
+    },
+    "معرف كتاب مفقود أو مكرر في الأرشيف": {
+      "files": [
+        "library_archive_restore.ts"
+      ]
+    },
+    "معرفة تبقى معك": {
+      "files": [
+        "screens/welcome.ts"
+      ]
+    },
+    "معلومات الكتاب": {
+      "files": [
+        "screens/quran.ts",
+        "screens/reader.ts"
+      ]
+    },
+    "معلومات الكتاب ومعاينة PDF": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "مقترح لك من خزانتك": {
+      "files": [
+        "screens/home.ts"
+      ]
+    },
+    "مكان واحد لملفات Word وPDF وEPUB وBOK والنصوص؛ يتعرف النظام إلى كل صيغة ويعالجها بمسارها الصحيح.": {
+      "files": [
+        "book_import.ts"
+      ]
+    },
+    "مكتبة عربية تجمع أمانة الملفات الأصلية والقراءة والبحث والتنظيم في تطبيق واحد.": {
+      "files": [
+        "screens/settings.ts"
+      ]
+    },
+    "مكتبة عربية للقراءة والبحث والتنظيم": {
+      "files": [
+        "shell.ts"
+      ]
+    },
+    "مكتبتك الإسلامية الذكية": {
+      "files": [
+        "screens/welcome.ts"
+      ]
+    },
+    "مكتبتك تنتظر أول كتاب": {
+      "files": [
+        "screens/browse.ts"
+      ]
+    },
+    "مكتبتي": {
+      "files": [
+        "navigation_accessibility.ts",
+        "screens/library.ts",
+        "screens/shelves.ts",
+        "shell.ts"
+      ]
+    },
+    "ملاحظات": {
+      "files": [
+        "screens/notes.ts"
+      ]
+    },
+    "ملاحظاتي": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "ملاحظة": {
+      "files": [
+        "screens/notes.ts",
+        "screens/reader.ts",
+        "screens/research_projects.ts"
+      ]
+    },
+    "ملخص نشاط القراءة": {
+      "files": [
+        "screens/me.ts"
+      ]
+    },
+    "ملف الصورة فارغ.": {
+      "files": [
+        "author_portrait_update.ts"
+      ]
+    },
+    "ملف الكتاب الأصلي غير موجود": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "ملف معزول للمراجعة": {
+      "files": [
+        "source_sync_ui.ts"
+      ]
+    },
+    "ملف EPUB فارغ": {
+      "files": [
+        "epub_import.ts"
+      ]
+    },
+    "ملف mimetype في EPUB غير صحيح": {
+      "files": [
+        "epub_import.ts"
+      ]
+    },
+    "ملف PDF الجاهز": {
+      "files": [
+        "book_import.ts"
+      ]
+    },
+    "ملف PDF فارغ": {
+      "files": [
+        "pdf_import.ts"
+      ]
+    },
+    "ملف ZIP غير صالح": {
+      "files": [
+        "library_archive_restore.ts"
+      ]
+    },
+    "ملفات PDF الجاهزة": {
+      "files": [
+        "screens/me.ts"
+      ]
+    },
+    "ملفات Word الأصلية لم تتغير:": {
+      "files": [
+        "book_import.ts"
+      ]
+    },
+    "مَٰلِكِ يَوۡمِ ٱلدِّينِ": {
+      "files": [
+        "quran_local_pack.ts"
+      ]
+    },
+    "من أحدث كتب خزانتك": {
+      "files": [
+        "reading_recommendations.ts"
+      ]
+    },
+    "من الوسوم": {
+      "files": [
+        "screens/search.ts"
+      ]
+    },
+    "من بطاقة الكتاب": {
+      "files": [
+        "screens/search.ts"
+      ]
+    },
+    "من زر المشاركة اختر «إضافة إلى الشاشة الرئيسية».": {
+      "files": [
+        "install.ts"
+      ]
+    },
+    "من سنة هـ": {
+      "files": [
+        "screens/library.ts",
+        "screens/search.ts"
+      ]
+    },
+    "من شجرة العناوين": {
+      "files": [
+        "screens/search.ts"
+      ]
+    },
+    "من متن الكتاب": {
+      "files": [
+        "screens/search.ts"
+      ]
+    },
+    "مهم": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "موضع التلاوة": {
+      "files": [
+        "screens/quran.ts"
+      ]
+    },
+    "موضوع، عبارة، كتاب أو مؤلف…": {
+      "files": [
+        "screens/browse.ts"
+      ]
+    },
+    "نا": {
+      "files": [
+        "search_presentation.ts"
+      ]
+    },
+    "نتائج البحث المتتابعة": {
+      "files": [
+        "screens/search.ts"
+      ]
+    },
+    "نحمّل الصفحات ونزامنها مع نص Word.": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "نحمّل الصفحة الحالية أولًا من ملف PDF الأصلي.": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "نزّل نسخة JSON مفتوحة من نشاط القراءة، أو أرشيف ZIP كاملًا يضم فهرس الكتب وملفات Word وPDF المتاحة.": {
+      "files": [
+        "screens/settings.ts"
+      ]
+    },
+    "نسخ": {
+      "files": [
+        "screens/quran.ts",
+        "screens/reader.ts"
+      ]
+    },
+    "نسخ النص": {
+      "files": [
+        "screens/quran.ts"
+      ]
+    },
+    "نُسخ النص": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "نُسخ النص المحدد": {
+      "files": [
+        "screens/quran.ts"
+      ]
+    },
+    "نُسخ النص بالرسم الإملائي": {
+      "files": [
+        "screens/quran.ts"
+      ]
+    },
+    "نُسخ النص بالرسم العثماني": {
+      "files": [
+        "screens/quran.ts"
+      ]
+    },
+    "نُسخ النص مع توثيقه": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "نُسخ النص منسقًا مع توثيقه": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "نسخ إملائي": {
+      "files": [
+        "screens/quran.ts"
+      ]
+    },
+    "نسخ عثماني": {
+      "files": [
+        "screens/quran.ts"
+      ]
+    },
+    "نسخ موثّق": {
+      "files": [
+        "annotation_accessibility.ts",
+        "screens/notes.ts",
+        "screens/reader.ts"
+      ]
+    },
+    "نُسخ نص التفسير": {
+      "files": [
+        "screens/quran.ts"
+      ]
+    },
+    "نُسخت الإحالة الموثقة": {
+      "files": [
+        "screens/notes.ts"
+      ]
+    },
+    "نسخة الويب تقرأ Word وتستورد الكتب، لكنها لا تشغّل Microsoft Word.": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "نسخة قراءة تقديرية": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "نسخة نصية من ملف BOK الأصلي": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "نسخة نصية من ملف EPUB الأصلي": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "نسخة ويب تجريبية: تُحفظ كتبك وملاحظاتك في هذا المتصفح على هذا الجهاز فقط، وقد تُفقد عند مسح بيانات المتصفح. القراءة والاستيراد يعملان هنا، أما إنشاء PDF من Word فيحتاج تشغيل الخِزانة المحلي.": {
+      "files": [
+        "runtime_capabilities.ts"
+      ]
+    },
+    "نسخة DOCX المحولة غير صالحة": {
+      "files": [
+        "book_import.ts"
+      ]
+    },
+    "نسخة PDF": {
+      "files": [
+        "screens/book.ts"
+      ]
+    },
+    "نسخة PDF أصلية": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "نسخة PDF متاحة للكتب المرفوعة بعد حفظها في المكتبة": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "نص": {
+      "files": [
+        "book_format.ts",
+        "screens/reader.ts"
+      ]
+    },
+    "نص الاقتباس": {
+      "files": [
+        "screens/home.ts"
+      ]
+    },
+    "نص الملاحظة": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "نص تفسير محلي داخل الخزانة": {
+      "files": [
+        "screens/quran.ts"
+      ]
+    },
+    "نصي UTF-8": {
+      "files": [
+        "book_format_validation.ts"
+      ]
+    },
+    "نظّم ما تقرأ وما أتممت": {
+      "files": [
+        "screens/me.ts"
+      ]
+    },
+    "نعرض آخر حالة مكتملة محفوظة، وستتحدث عند عودة الاتصال.": {
+      "files": [
+        "source_sync_ui.ts"
+      ]
+    },
+    "نفهرس صفحات الكتب ونرتب المطابقات الآن.": {
+      "files": [
+        "screens/search.ts"
+      ]
+    },
+    "نقل إلى الرف": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "نُقلت الفائدة إلى مراجعة اليوم": {
+      "files": [
+        "screens/notes.ts"
+      ]
+    },
+    "نمط المطابقة": {
+      "files": [
+        "screens/search.ts"
+      ]
+    },
+    "نمط انسيابي": {
+      "files": [
+        "reading_mode.ts"
+      ]
+    },
+    "نوع المحفوظات": {
+      "files": [
+        "screens/notes.ts"
+      ]
+    },
+    "ه": {
+      "files": [
+        "author_filter.ts",
+        "author_relation_graph.ts",
+        "book_tags.ts",
+        "screens/shelves.ts",
+        "search_presentation.ts"
+      ]
+    },
+    "ها": {
+      "files": [
+        "search_presentation.ts"
+      ]
+    },
+    "هذا الرف فارغ": {
+      "files": [
+        "screens/shelves.ts"
+      ]
+    },
+    "هذا المصحف قيد الإضافة؛ بقي مصحف حفص ظاهرًا": {
+      "files": [
+        "screens/quran.ts"
+      ]
+    },
+    "هذا الملف ليس نسخة بيانات من الخِزانة": {
+      "files": [
+        "reading_data.ts"
+      ]
+    },
+    "هذا PDF ممسوح ضوئيًا بلا طبقة نصية في الصفحة الأولى؛ يُعرض من الصور الأصلية ولا يتاح بحث نصي بلا OCR.": {
+      "files": [
+        "book_import.ts"
+      ]
+    },
+    "هذه الملفات أجزاء لكتاب واحد": {
+      "files": [
+        "book_import.ts"
+      ]
+    },
+    "هم": {
+      "files": [
+        "search_presentation.ts"
+      ]
+    },
+    "هما": {
+      "files": [
+        "search_presentation.ts"
+      ]
+    },
+    "هن": {
+      "files": [
+        "search_presentation.ts"
+      ]
+    },
+    "هوية المؤلف": {
+      "files": [
+        "screens/data_quality.ts"
+      ]
+    },
+    "و": {
+      "files": [
+        "author_filter.ts",
+        "quran_search_contract.ts",
+        "reader_toc.ts",
+        "search_presentation.ts"
+      ]
+    },
+    "واجمع فيه الكتب التي تريد العودة إليها": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "واجهة متجاوبة وأساس تطبيق تقدمي، صُمما منذ البداية لتنتقل مكتبتك لاحقًا بين Windows وAndroid وiPhone دون تغيير تجربة القراءة.": {
+      "files": [
+        "screens/welcome.ts"
+      ]
+    },
+    "وال": {
+      "files": [
+        "search_presentation.ts"
+      ]
+    },
+    "ورد القراءة اليومي": {
+      "files": [
+        "screens/home.ts"
+      ]
+    },
+    "ورد المراجعة": {
+      "files": [
+        "screens/home.ts"
+      ]
+    },
+    "ورش عن نافع — قيد الإضافة": {
+      "files": [
+        "screens/quran.ts"
+      ]
+    },
+    "وصف الكتاب": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "وصف المشروع البحثي": {
+      "files": [
+        "screens/research_projects.ts"
+      ]
+    },
+    "وصف مختصر أو سؤال البحث": {
+      "files": [
+        "screens/research_projects.ts"
+      ]
+    },
+    "وصف موجز للكتاب": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "وصول سريع": {
+      "files": [
+        "screens/me.ts"
+      ]
+    },
+    "وضع الضيف": {
+      "files": [
+        "source_sync_ui.ts"
+      ]
+    },
+    "وفاة الدفعة الهجرية": {
+      "files": [
+        "book_import.ts"
+      ]
+    },
+    "وفاة المؤلف بين": {
+      "files": [
+        "screens/search.ts"
+      ]
+    },
+    "وفيات المؤلفين: الأقدم أولًا": {
+      "files": [
+        "screens/search.ts"
+      ]
+    },
+    "وقتي اليومي": {
+      "files": [
+        "screens/book.ts"
+      ]
+    },
+    "وقل رب زدني علمًا. طلب العلم فريضة على كل مسلم": {
+      "files": [
+        "screens/home.ts"
+      ]
+    },
+    "ون": {
+      "files": [
+        "search_presentation.ts"
+      ]
+    },
+    "ي": {
+      "files": [
+        "author_filter.ts",
+        "author_relation_graph.ts",
+        "book_tags.ts",
+        "quran_search_contract.ts",
+        "reader_toc.ts",
+        "screens/shelves.ts",
+        "search_presentation.ts"
+      ]
+    },
+    "يبدأ تحميل الصوت عند الضغط على التشغيل فقط.": {
+      "files": [
+        "screens/quran.ts"
+      ]
+    },
+    "ية": {
+      "files": [
+        "search_presentation.ts"
+      ]
+    },
+    "يتطلب محولًا مكتبيًا أو خدمة تحويل متصلة.": {
+      "files": [
+        "offline_policy.ts"
+      ]
+    },
+    "يحافظ على ترتيب الصفحة وترقيمها وصورها وجداولها، مع بقاء الملف الأصلي متاحًا.": {
+      "files": [
+        "screens/welcome.ts"
+      ]
+    },
+    "يحتاج اتصالًا": {
+      "files": [
+        "screens/settings.ts"
+      ]
+    },
+    "يحتوي EPUB مسارًا خارج الحزمة": {
+      "files": [
+        "epub_import.ts"
+      ]
+    },
+    "يحتوي EPUB مسارًا خارجيًا أو غير آمن": {
+      "files": [
+        "epub_import.ts"
+      ]
+    },
+    "يحتوي EPUB مسارًا غير آمن": {
+      "files": [
+        "epub_import.ts"
+      ]
+    },
+    "يُدمج المستورد مع بيانات هذا الجهاز ولا يحذف المحفوظات الحالية.": {
+      "files": [
+        "screens/settings.ts"
+      ]
+    },
+    "يعمل عبر أداة Word المحلية على هذا الجهاز.": {
+      "files": [
+        "offline_policy.ts"
+      ]
+    },
+    "يعمل محليًا": {
+      "files": [
+        "screens/search.ts"
+      ]
+    },
+    "يعمل محليًا بعد فهرسة الكتاب.": {
+      "files": [
+        "offline_policy.ts"
+      ]
+    },
+    "يعمل وضع الضيف على جهازك، ولا يرسل كتبك إلى حساب خارجي.": {
+      "files": [
+        "screens/welcome.ts"
+      ]
+    },
+    "يفتقد EPUB فصلًا مذكورًا في spine": {
+      "files": [
+        "epub_import.ts"
+      ]
+    },
+    "يفتقد EPUB ملف container.xml": {
+      "files": [
+        "epub_import.ts"
+      ]
+    },
+    "يكبّر القوائم والأزرار والنصوص خارج صفحات Word.": {
+      "files": [
+        "screens/settings.ts"
+      ]
+    },
+    "يكبّر الورقة بصريًا من دون تغيير فواصل Word أو محتواها.": {
+      "files": [
+        "screens/settings.ts"
+      ]
+    },
+    "يلغي الانتقالات والحركة السلسة قدر الإمكان.": {
+      "files": [
+        "screens/settings.ts"
+      ]
+    },
+    "يمكن تثبيت الخِزانة من قائمة المتصفح على جهازك.": {
+      "files": [
+        "install.ts"
+      ]
+    },
+    "يمكنك إعادة المحاولة أو متابعة النص في عرض احتياطي بلا ادعاء مطابقة الصفحات.": {
+      "files": [
+        "reader_failure.ts"
+      ]
+    },
+    "يمكنك الاحتفاظ بالنسخة أو نقل ملفاتك دون اتصال أو خدمة سحابية.": {
+      "files": [
+        "screens/settings.ts"
+      ]
+    },
+    "يمكنك فتح صفحة الرفوف والمحاولة مجددًا.": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "يمكنك فتح كتاب من مكتبتك والمحاولة من جديد.": {
+      "files": [
+        "screens/home.ts"
+      ]
+    },
+    "ين": {
+      "files": [
+        "search_presentation.ts"
+      ]
+    },
+    "ينبغي أن يحتوي الملف على مصفوفة authors": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "BOK الأصلي": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "BOK الشاملة": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "Clipboard API غير متاحة": {
+      "files": [
+        "rich_clipboard.ts",
+        "screens/reader.ts"
+      ]
+    },
+    "docx · محرك المشهد": {
+      "files": [
+        "components.ts"
+      ]
+    },
+    "EPUB الأصلي": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "manifest.json غير صالح": {
+      "files": [
+        "library_archive_restore.ts"
+      ]
+    },
+    "manifest.json مفقود": {
+      "files": [
+        "library_archive_restore.ts"
+      ]
+    },
+    "Markdown الأصلي": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "PDF بجوار النص": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "PDF جاهز": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "PDF قيد الإنشاء…": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "PNG أو JPEG أو WebP حتى 5MB": {
+      "files": [
+        "screens/library.ts"
+      ]
+    },
+    "Word الأصلي": {
+      "files": [
+        "screens/reader.ts"
+      ]
+    },
+    "Word محفوظ": {
+      "files": [
+        "screens/browse.ts"
+      ]
+    },
+    "Word وPDF": {
+      "files": [
+        "screens/browse.ts"
+      ]
+    }
+  }
+}

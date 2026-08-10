@@ -1,0 +1,2 @@
+CREATE TABLE source_quarantines(id TEXT PRIMARY KEY,upload_id TEXT NOT NULL UNIQUE,owner_id TEXT NOT NULL,book_id TEXT NOT NULL,operation_id TEXT NOT NULL,device_id TEXT NOT NULL,reason_code TEXT NOT NULL,status TEXT NOT NULL CHECK(status IN('pending','allowed','rejected')),resolution_reason TEXT,resolved_by TEXT,resolved_at TEXT,record_version INTEGER NOT NULL DEFAULT 0,created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP);
+CREATE INDEX quarantines_owner_status ON source_quarantines(owner_id,status,created_at DESC);

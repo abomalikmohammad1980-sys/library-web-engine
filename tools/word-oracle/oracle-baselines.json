@@ -1,0 +1,8 @@
+{
+  "sample-masjid": { "horizontal": 86.5, "verticalInternal": 90.5, "paragraphBounds": 76.8, "fullPage": 57.0 },
+  "sample-ahadith": { "horizontal": 99.2, "verticalInternal": 98.0, "paragraphBounds": 88.8, "fullPage": 87.4 },
+  "sample-muqtarah": { "horizontal": 97.1, "verticalInternal": 97.9, "paragraphBounds": 93.7, "fullPage": 99.9 },
+  "sample-tadris": { "horizontal": 94.2, "verticalInternal": 98.5, "paragraphBounds": 99.9, "fullPage": 99.9 },
+  "sample-jalsa27": { "horizontal": 87.8, "verticalInternal": 99.9, "paragraphBounds": 98.5, "fullPage": 99.9 },
+  "sample-dawra": { "horizontal": 95.8, "verticalInternal": 96.0, "paragraphBounds": 99.9, "fullPage": 99.9 }
+}

@@ -1,0 +1,27 @@
+{
+  "datasetId": "quranpedia-hafs-uthmani-fatiha-demo",
+  "kind": "ayah-text",
+  "schemaVersion": 1,
+  "dataVersion": "0.1.0-demo",
+  "checksumSha256": "60840ea24fbd35eff147aed1ca29380de99c175b5bf8d1c9d582c36ed63a58b9",
+  "byteSize": 1668,
+  "locale": "ar",
+  "script": "uthmani",
+  "qiraa": "عاصم",
+  "riwaya": "حفص",
+  "mushafEdition": "المصحف الكريم برواية حفص عن عاصم بالخط العثماني من إصدار مجمع الملك فهد لطباعة المصحف الشريف، غير موافق للمطبوع",
+  "publicationStatus": "publishable-user-attested-waqf-reuse",
+  "provenance": {
+    "sourceName": "الموسوعة القرآنية Quranpedia",
+    "sourceUrl": "https://api.quranpedia.net/v1/mushafs/2/1",
+    "licenseId": "USER-ATTESTED-WAQF-REUSE",
+    "attribution": "الموسوعة القرآنية Quranpedia — API v1؛ عينة سورة الفاتحة من مصحف حفص النصي ذي الخط العثماني.",
+    "retrievedAt": "2026-08-09T02:19:56.788Z",
+    "permissionBasis": "إقرار صاحب مشروع الخزانة بتاريخ 2026-08-09 بأن المصدر وقفي مصرح بالانتفاع والنشر في الخزانة الوقفية؛ لا يمثل معرف SPDX أو نص ترخيص صادرًا من API.",
+    "etag": null,
+    "sourceChecksumSha256": "b79e60c69a283cf1a3e2d98337e36bb83534e779349e103ef269aefbf1bfeef0",
+    "metadataUrl": "https://api.quranpedia.net/v1/mushafs",
+    "metadataEtag": null,
+    "metadataChecksumSha256": "33fe5f5cfa13efeb054b939c5f48e6138582b0f325eb7a52e2ec4f819c2205d2"
+  }
+}

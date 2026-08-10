@@ -1,0 +1,41 @@
+{
+  "format": "alkhizana-reading-data",
+  "version": 2,
+  "exportedAt": "2026-08-08T12:00:00.000Z",
+  "activity": {
+    "lastBookId": "1786015181764-swvcwl",
+    "lastOpenedAt": 1,
+    "openedBookIds": ["1786015181764-swvcwl"],
+    "openCounts": { "1786015181764-swvcwl": 1 },
+    "reviewDays": ["2026-08-08"]
+  },
+  "annotations": {
+    "bookmarks": { "1786015181764-swvcwl": [5] },
+    "notes": [{
+      "id": "qa-note-20260808",
+      "bookId": "1786015181764-swvcwl",
+      "pageIndex": 5,
+      "text": "ملاحظة QA مؤقتة للتحقق من الدمج وبطاقة الاقتباس",
+      "createdAt": 1786190400000
+    }],
+    "highlights": []
+  },
+  "settings": {
+    "interfaceScale": 100,
+    "readerScale": 100,
+    "highContrast": false,
+    "reduceMotion": false
+  },
+  "shelves": [{
+    "id": "qa-shelf-20260808",
+    "name": "رف QA للاستيراد",
+    "bookIds": ["1786015181764-swvcwl"],
+    "createdAt": 1786190400000
+  }],
+  "quotes": [{
+    "id": "qa-quote-20260808",
+    "text": "اقتباس QA للتحقق من الدمج",
+    "bookId": "1786015181764-swvcwl",
+    "createdAt": 1786190400000
+  }]
+}

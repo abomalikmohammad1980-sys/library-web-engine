@@ -9,9 +9,10 @@
     "build": "pnpm -r build",
     "test": "vitest run",
     "typecheck": "tsc -b",
-    "oracle:check": "echo 'oracle: يُبنى في المرحلة 0 (tools/word-oracle + packages/oracle-client)' && exit 0"
+    "oracle:check": "pnpm --filter @engine/ooxml-model build && pnpm --filter @engine/layout build && node tools/word-oracle/run_all.mjs both --check"
   },
   "devDependencies": {
+    "@types/node": "^22.20.1",
     "harfbuzzjs": "^1.4.0",
     "typescript": "^5.6.0",
     "vitest": "^3.0.0"

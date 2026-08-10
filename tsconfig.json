@@ -2,6 +2,14 @@
   "files": [],
   "references": [
     { "path": "packages/layout" },
-    { "path": "packages/ooxml-model" }
+    { "path": "packages/ooxml-model" },
+    { "path": "packages/shaper" },
+    { "path": "packages/bidi" },
+    { "path": "packages/font-system" },
+    { "path": "packages/scene" },
+    { "path": "packages/paint" },
+    { "path": "packages/ooxml-dom" },
+    { "path": "packages/interact" }
+    ,{ "path": "packages/print-aligner" }
   ]
 }

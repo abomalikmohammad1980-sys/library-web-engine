@@ -1,0 +1,375 @@
+/*
+ * الخِزانة — Design Tokens
+ * المصدر الملزم: «التصميم المقترح/01-design-constitution.md»
+ * الأسماء القانونية للمتغيرات: تصدير الجلسة 1 «الخزانة - الهيكل العام (مستقل).html»
+ * أي لون/خط/ظل/زاوية جديدة تُضاف فقط بتعديل الدستور أولاً.
+ */
+@font-face {
+  font-family: 'Thmanyah Sans';
+  src: url('/fonts/thmanyah/thmanyahsans-Light.otf') format('opentype');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Khizana Quran';
+  src: url('/fonts/hafs-uthmani.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+[data-app-theme='light'] {
+  --paper-bg: #f7f8f7; --paper-surface: #fff; --paper-surface-alt: #f3f5f4; --paper-surface-sunken: #edf1ef;
+  --paper-chip: #e7ece9; --paper-segment: #dfe7e2; --paper-header-blur: rgba(255,255,255,.92);
+  --border-default: #d7ded9; --border-strong: #bbc8c0; --border-faint: #e7ebe8;
+  --ink-strong: #121713; --ink-default: #18201b; --ink-secondary: #2f3932; --ink-body-2: #4e5b52;
+  --ink-muted: #5f6c63; --ink-faint: #6d786f; --ink-hint: #737e76; --ink-placeholder: #7c867f;
+  --surface-page: var(--paper-bg); --surface-card: var(--paper-surface); --surface-card-alt: var(--paper-surface-alt);
+}
+
+[data-app-theme='dark'] {
+  --brand-primary: #78c39f; --brand-primary-dark: #a4dfc2; --brand-primary-soft: #203a2f; --brand-selection: #345d4b;
+  --paper-bg: #111310; --paper-surface: #1b1e1a; --paper-surface-alt: #222620; --paper-surface-sunken: #151814;
+  --paper-chip: #292e27; --paper-segment: #30362e; --paper-header-blur: rgba(20,23,19,.92);
+  --border-default: #3d443b; --border-strong: #566053; --border-faint: #30362e;
+  --ink-strong: #f2f1e9; --ink-default: #e7e7df; --ink-secondary: #d2d5cb; --ink-body-2: #bcc2b8;
+  --ink-muted: #aeb6aa; --ink-faint: #9ba497; --ink-hint: #929b8f; --ink-placeholder: #899287; --ink-disabled: #727a70;
+  --inverse-bg: #f0f2ec; --inverse-fg: #171a16; --overlay-backdrop: rgba(0,0,0,.68);
+  --surface-page: var(--paper-bg); --surface-card: var(--paper-surface); --surface-card-alt: var(--paper-surface-alt);
+  --text-body: var(--ink-default); --text-secondary: var(--ink-secondary); --text-muted: var(--ink-muted);
+  --accent: var(--brand-primary); --accent-soft: var(--brand-primary-soft);
+  --shadow-soft: 0 6px 20px rgba(0,0,0,.22); --shadow-card: 0 8px 22px rgba(0,0,0,.35); --shadow-float: 0 12px 36px rgba(0,0,0,.3);
+}
+
+[data-app-theme='sepia'] {
+  --brand-primary: #76552e; --brand-primary-dark: #563b20; --brand-primary-soft: #ead9bc; --brand-selection: #dec59c;
+  --paper-bg: #e7d7ba; --paper-surface: #f5ead5; --paper-surface-alt: #efe0c5; --paper-surface-sunken: #e3d0ad;
+  --paper-chip: #dfc9a3; --paper-segment: #d5bb90; --paper-header-blur: rgba(242,228,202,.92);
+  --border-default: #cfb68c; --border-strong: #b79866; --border-faint: #ddc9a6;
+  --ink-strong: #332719; --ink-default: #413221; --ink-secondary: #59452f; --ink-body-2: #6f583d;
+  --ink-muted: #776248; --ink-faint: #826d53; --ink-hint: #88745a; --ink-placeholder: #907b61;
+  --surface-page: var(--paper-bg); --surface-card: var(--paper-surface); --surface-card-alt: var(--paper-surface-alt);
+  --text-body: var(--ink-default); --text-secondary: var(--ink-secondary); --text-muted: var(--ink-muted);
+  --accent: var(--brand-primary); --accent-soft: var(--brand-primary-soft);
+}
+
+@font-face {
+  font-family: 'Thmanyah Sans';
+  src: url('/fonts/thmanyah/thmanyahsans-Regular.otf') format('opentype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Thmanyah Sans';
+  src: url('/fonts/thmanyah/thmanyahsans-Medium.otf') format('opentype');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Thmanyah Sans';
+  src: url('/fonts/thmanyah/thmanyahsans-Bold.otf') format('opentype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Thmanyah Sans';
+  src: url('/fonts/thmanyah/thmanyahsans-Black.otf') format('opentype');
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Thmanyah Serif Display';
+  src: url('/fonts/thmanyah/thmanyahserifdisplay-Light.otf') format('opentype');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Thmanyah Serif Display';
+  src: url('/fonts/thmanyah/thmanyahserifdisplay-Regular.otf') format('opentype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Thmanyah Serif Display';
+  src: url('/fonts/thmanyah/thmanyahserifdisplay-Medium.otf') format('opentype');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Thmanyah Serif Display';
+  src: url('/fonts/thmanyah/thmanyahserifdisplay-Bold.otf') format('opentype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Thmanyah Serif Display';
+  src: url('/fonts/thmanyah/thmanyahserifdisplay-Black.otf') format('opentype');
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Thmanyah Serif Text';
+  src: url('/fonts/thmanyah/thmanyahseriftext-Light.otf') format('opentype');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* متن الكتب النصية المستوردة (BOK/EPUB/TXT) فقط. */
+@font-face {
+  font-family: 'Adwa Assalaf';
+  src:
+    url('/khizana/fonts/adwa-assalaf.ttf') format('truetype'),
+    url('/fonts/adwa-assalaf.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Thmanyah Serif Text';
+  src: url('/fonts/thmanyah/thmanyahseriftext-Regular.otf') format('opentype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Thmanyah Serif Text';
+  src: url('/fonts/thmanyah/thmanyahseriftext-Medium.otf') format('opentype');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Thmanyah Serif Text';
+  src: url('/fonts/thmanyah/thmanyahseriftext-Bold.otf') format('opentype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Thmanyah Serif Text';
+  src: url('/fonts/thmanyah/thmanyahseriftext-Black.otf') format('opentype');
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  /* Brand */
+  --brand-primary: #2F6F54;
+  --brand-primary-dark: #234F3C;
+  --brand-primary-soft: #EAF1EC;
+  --brand-selection: #CFE3D6;
+
+  /* Paper surfaces (warm neutrals — pure white/black forbidden as page colors) */
+  --paper-bg: #EFECE5;
+  --paper-surface: #FFFFFF;
+  --paper-surface-alt: #FAF8F3;
+  --paper-surface-sunken: #F4EFE5;
+  --paper-chip: #ECE6DA;
+  --paper-segment: #E8E3D8;
+  --paper-header-blur: rgba(248, 246, 241, .86);
+
+  /* Borders */
+  --border-default: #E6E1D6;
+  --border-strong: #E0DACC;
+  --border-faint: #F0EBE0;
+
+  /* Ink */
+  --ink-strong: #23211C;
+  --ink-default: #26241F;
+  --ink-secondary: #3A372F;
+  --ink-body-2: #6B6557;
+  --ink-muted: #7D7868;
+  --ink-faint: #8A8475;
+  --ink-hint: #9A9485;
+  --ink-placeholder: #A39D8D;
+  --ink-disabled: #BDB7A6;
+
+  /* Inverse */
+  --inverse-bg: #26241F;
+  --inverse-fg: #FFFFFF;
+
+  /* Overlays */
+  --overlay-backdrop: rgba(20, 18, 12, .40);
+  --overlay-backdrop-soft: rgba(36, 32, 24, .32);
+
+  /* Semantic */
+  --semantic-success: #2F6F54;
+  --semantic-info: #4A6A8A;
+  --semantic-warning: #A06A3A;
+  --semantic-danger: #8A4A55;
+
+  /* Highlight colors (تظليل المتن) — dot full color + bg with its alpha */
+  --hl-important-dot: #D4A017;
+  --hl-important-bg: rgba(212, 160, 23, .32);
+  --hl-evidence-dot: #2F6F54;
+  --hl-evidence-bg: rgba(47, 111, 84, .22);
+  --hl-review-dot: #4A6A8A;
+  --hl-review-bg: rgba(74, 106, 138, .22);
+  --hl-correction-dot: #8A4A55;
+  --hl-correction-bg: rgba(138, 74, 85, .22);
+
+  /* Hadith grades — pill: soft bg + full-color text */
+  --grade-sahih: #2F6F54;
+  --grade-hasan: #4A7A8A;
+  --grade-daif: #A06A3A;
+  --grade-mawdu: #8A4A55;
+
+  /* Category accents — book covers & section identities, 150deg gradients */
+  --cat-hadith-1: #3A6B52;
+  --cat-hadith-2: #2A4F3C;
+  --cat-tafsir-1: #A06A3A;
+  --cat-tafsir-2: #73492A;
+  --cat-aqidah-1: #5A4A8A;
+  --cat-aqidah-2: #3C3163;
+  --cat-seerah-1: #4A7A8A;
+  --cat-seerah-2: #2F5663;
+  --cat-tarikh-1: #8A4A55;
+  --cat-tarikh-2: #632F3A;
+  --cat-fiqh-1: #4A6A8A;
+  --cat-fiqh-2: #2F4663;
+
+  /* Semantic aliases */
+  --text-body: var(--ink-default);
+  --text-secondary: var(--ink-secondary);
+  --text-muted: var(--ink-muted);
+  --surface-page: var(--paper-bg);
+  --surface-card: var(--paper-surface);
+  --surface-card-alt: var(--paper-surface-alt);
+  --accent: var(--brand-primary);
+  --accent-soft: var(--brand-primary-soft);
+
+  /* Reading themes (سمات القراءة) — separate layer from the app theme */
+  --read-bg: #F6F3EB;
+  --read-surface: #FFFFFF;
+  --read-ink: #26241F;
+  --read-muted: #8A8475;
+  --read-border: #E6E1D6;
+  --read-accent: #2F6F54;
+  --read-accent-soft: #EAF1EC;
+
+  /* Typography */
+  --font-serif-display: 'Thmanyah Serif Display', serif;
+  --font-ui: 'Thmanyah Sans', sans-serif;
+  --font-reading: 'Thmanyah Serif Text', serif;
+  --font-textual-book: 'Adwa Assalaf', serif;
+  --font-quran: 'Khizana Quran', 'Traditional Arabic', serif;
+  --step-display: clamp(34px, 6vw, 58px);
+  --step-h1: clamp(28px, 4.5vw, 42px);
+  --step-h2: clamp(22px, 2vw, 24px);
+  --step-h3: clamp(18px, 1.6vw, 21px);
+  --step-body-lg: clamp(16px, 1.2vw, 17px);
+  --step-body: 15px;
+  --step-caption: 13px;
+  --step-micro: 12px;
+
+  /* Spacing — 4px grid */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-14: 56px;
+  --space-16: 64px;
+
+  /* Radius */
+  --radius-sm: 9px;
+  --radius-md: 11px;
+  --radius-lg: 13px;
+  --radius-xl: 16px;
+  --radius-2xl: 20px;
+  --radius-pill: 999px;
+
+  /* Shadows — warm base rgba(60,54,38,…), never black (except overlay) */
+  --shadow-soft: 0 6px 20px rgba(60, 54, 38, .05);
+  --shadow-card: 0 8px 22px rgba(60, 54, 38, .13);
+  --shadow-float: 0 12px 36px rgba(60, 54, 38, .07);
+  --shadow-brand: 0 4px 14px rgba(47, 111, 84, .28);
+  --shadow-overlay: 0 24px 60px rgba(0, 0, 0, .30);
+
+  /* Motion — fade / up(16px) / pop(scale .98) / sheet; ease-out; no bounce */
+  --dur-fast: 150ms;
+  --dur-base: 200ms;
+  --dur-slow: 300ms;
+  --ease-out: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+
+  /* Layout */
+  --container-app: 1120px;
+  --container-reader: 1280px;
+  --reading-column: 680px;
+  --page-pad: clamp(16px, 4vw, 40px);
+}
+
+/* Reading theme — sepiya (معتمد — الجلسة 1) */
+[data-reading-theme='sepiya'] {
+  --read-bg: #F3E8D3;
+  --read-surface: #F9F0DE;
+  --read-ink: #4A3F2E;
+  --read-muted: #8A7A5F;
+  --read-border: #E2D5B8;
+  --read-accent: #7A5C2E;
+  --read-accent-soft: #EFE3C8;
+}
+
+/* Reading theme — night (معتمد — الجلسة 1) */
+[data-reading-theme='night'] {
+  --read-bg: #171512;
+  --read-surface: #211E1A;
+  --read-ink: #D8D2C4;
+  --read-muted: #8F887A;
+  --read-border: #35312A;
+  --read-accent: #6FAF8F;
+  --read-accent-soft: #243A30;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur-fast: 0ms;
+    --dur-base: 0ms;
+    --dur-slow: 0ms;
+  }
+}
+
+/* سمات التطبيق authoritative: يجب أن تأتي بعد :root كي لا تعيد القيم الأصلية
+ * الكتابة عليها. لا تشمل هذه القواعد ألوان صفحات Word/PDF نفسها. */
+[data-app-theme='light'] {
+  --paper-bg: #f7f8f7; --paper-surface: #fff; --paper-surface-alt: #f3f5f4; --paper-surface-sunken: #edf1ef; --paper-chip: #e7ece9; --paper-segment: #dfe7e2; --paper-header-blur: rgba(255,255,255,.94);
+  --border-default: #d7ded9; --border-strong: #aebcb3; --border-faint: #e7ebe8; --ink-strong: #111612; --ink-default: #18201b; --ink-secondary: #303a33; --ink-body-2: #4b584f; --ink-muted: #58665d; --ink-faint: #657169; --ink-hint: #6d7971; --ink-placeholder: #768179; --text-body: var(--ink-default); --text-secondary: var(--ink-secondary); --text-muted: var(--ink-muted); --surface-page: var(--paper-bg); --surface-card: var(--paper-surface); --surface-card-alt: var(--paper-surface-alt);
+}
+[data-app-theme='dark'] {
+  --brand-primary: #79cda5; --brand-primary-dark: #a9e6c8; --brand-primary-soft: #1d3a2d; --brand-selection: #315f4a;
+  --paper-bg: #0d0f0d; --paper-surface: #171a17; --paper-surface-alt: #202420; --paper-surface-sunken: #121512; --paper-chip: #282e28; --paper-segment: #303730; --paper-header-blur: rgba(15,18,15,.96);
+  --border-default: #3e473f; --border-strong: #667267; --border-faint: #2d332d; --ink-strong: #fafbf7; --ink-default: #edf0e9; --ink-secondary: #d8ded5; --ink-body-2: #c3cbc0; --ink-muted: #b2bcae; --ink-faint: #a5afa2; --ink-hint: #9da79a; --ink-placeholder: #929c90; --ink-disabled: #737d72;
+  --inverse-bg: #f1f4ee; --inverse-fg: #121512; --overlay-backdrop: rgba(0,0,0,.76); --text-body: var(--ink-default); --text-secondary: var(--ink-secondary); --text-muted: var(--ink-muted); --surface-page: var(--paper-bg); --surface-card: var(--paper-surface); --surface-card-alt: var(--paper-surface-alt); --accent: var(--brand-primary); --accent-soft: var(--brand-primary-soft); --shadow-soft: 0 6px 20px rgba(0,0,0,.28); --shadow-card: 0 8px 22px rgba(0,0,0,.42); --shadow-float: 0 12px 36px rgba(0,0,0,.38);
+}
+[data-app-theme='sepia'] {
+  --brand-primary: #76522c; --brand-primary-dark: #4f351d; --brand-primary-soft: #ead7b5; --brand-selection: #d9bd8c; --paper-bg: #e5d2b0; --paper-surface: #f5e7cf; --paper-surface-alt: #eeddbf; --paper-surface-sunken: #dfc7a0; --paper-chip: #d9bf93; --paper-segment: #ceb181; --paper-header-blur: rgba(241,224,193,.95); --border-default: #c8aa78; --border-strong: #a98450; --border-faint: #d9c099; --ink-strong: #2d2115; --ink-default: #3a2b1c; --ink-secondary: #503c28; --ink-body-2: #654d34; --ink-muted: #70583d; --ink-faint: #786149; --ink-hint: #7e674f; --ink-placeholder: #846e57; --text-body: var(--ink-default); --text-secondary: var(--ink-secondary); --text-muted: var(--ink-muted); --surface-page: var(--paper-bg); --surface-card: var(--paper-surface); --surface-card-alt: var(--paper-surface-alt); --accent: var(--brand-primary); --accent-soft: var(--brand-primary-soft);
+}

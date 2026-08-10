@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "id": "hadeethenc-ar",
+  "language": "ar",
+  "title": "موسوعة الأحاديث النبوية — العينة العربية الذهبية",
+  "publisher": "HadeethEnc.com",
+  "homepage": "https://hadeethenc.com/ar",
+  "downloadUrl": "https://hadeethenc.com/browse/download/ar",
+  "checkForUpdatesUrl": "https://hadeethenc.com/en/check/ar/v1.7.0",
+  "termsUrl": "https://hadeethenc.com/ar#terms",
+  "release": {
+    "version": "v1.7.0",
+    "sourceUpdatedAt": "2025-11-12T00:00:55Z",
+    "retrievedAt": "2026-08-10T09:55:00Z",
+    "sourceFile": "HadeethEnc_ar.xlsx",
+    "sourceFileSha256": "d5d397cb9fc8ddd54c4c6ee88357c2217721db0bd0759c6ec26d8b3fc36f1ec1"
+  },
+  "selection": {
+    "strategy": "first-workbook-records",
+    "worksheet": "Worksheet",
+    "firstRow": 3,
+    "lastRow": 32,
+    "recordCount": 30
+  },
+  "records": {
+    "path": "./records.golden.json",
+    "checksumSha256": "7fb2663a11674243754862196a2f6342b034bd43ebd0524fa9d859c150e25c0f",
+    "count": 30
+  },
+  "attribution": "النصوص والشروح والفوائد من موسوعة الأحاديث النبوية HadeethEnc.com، الإصدار العربي v1.7.0. لم تُعدّل محتويات السجلات."
+}

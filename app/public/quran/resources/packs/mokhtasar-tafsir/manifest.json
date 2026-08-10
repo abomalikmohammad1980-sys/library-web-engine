@@ -1,0 +1,1513 @@
+{
+  "schemaVersion": 1,
+  "datasetId": "quranpedia-exact-verse-resource-mokhtasar-tafsir",
+  "dataVersion": "2026-08-09T15:17:27.777Z",
+  "resource": {
+    "id": "2003",
+    "kind": "tafsir",
+    "slug": "mokhtasar-tafsir",
+    "title": "المختصر في تفسير القرآن الكريم",
+    "author": "مركز تفسير للدراسات القرآنية"
+  },
+  "counts": {
+    "surahs": 114,
+    "ayahs": 6236
+  },
+  "mapping": {
+    "content": "article.verse-block .tafsir-content .prose",
+    "ayah": "article a.ayah#verse-{ayah}",
+    "rangeMode": "exact-single-ayah"
+  },
+  "provenance": {
+    "provider": "Quranpedia",
+    "sourceTemplate": "https://quranpedia.net/surah/1/{surah}/book/2003",
+    "retrievedAt": "2026-08-09T15:17:27.783Z",
+    "permissionBasis": "USER-ATTESTED-WAQF-REUSE",
+    "sourcePages": [
+      {
+        "surah": 1,
+        "url": "https://quranpedia.net/surah/1/1/book/2003",
+        "byteSize": 563728,
+        "checksumSha256": "dae359cd13e9110f46bf59e86a6a4809a6bf5c2ab1bd3c1263f4ab8fda3b216c"
+      },
+      {
+        "surah": 2,
+        "url": "https://quranpedia.net/surah/1/2/book/2003",
+        "byteSize": 1853263,
+        "checksumSha256": "7bb82b97b2a152ac0b764df38ada57ac2e248625d85f30632eb4a60bf03ef749"
+      },
+      {
+        "surah": 3,
+        "url": "https://quranpedia.net/surah/1/3/book/2003",
+        "byteSize": 1427586,
+        "checksumSha256": "88e388f7e0234115fa5771d01901bd5a44b91e6cf27d745b67d2f38737f4a0ed"
+      },
+      {
+        "surah": 4,
+        "url": "https://quranpedia.net/surah/1/4/book/2003",
+        "byteSize": 1337038,
+        "checksumSha256": "d27be555fde9884f5c7cc107b590d1a404e342c15c208daebc8f85dc7530edf1"
+      },
+      {
+        "surah": 5,
+        "url": "https://quranpedia.net/surah/1/5/book/2003",
+        "byteSize": 1091192,
+        "checksumSha256": "3afe986e7b5d6a4859de6e36c7b8d6c5969a9629addc7d716da41070eff4f7de"
+      },
+      {
+        "surah": 6,
+        "url": "https://quranpedia.net/surah/1/6/book/2003",
+        "byteSize": 1271525,
+        "checksumSha256": "78b7e058bf5e8adca4959127cbb4894ad875cbe8a777a259fbef3afd7977f851"
+      },
+      {
+        "surah": 7,
+        "url": "https://quranpedia.net/surah/1/7/book/2003",
+        "byteSize": 1441788,
+        "checksumSha256": "9687e5779da6cff69c12fee9bd5d4175a024ada80e653c6098523ff2c0bbc7bd"
+      },
+      {
+        "surah": 8,
+        "url": "https://quranpedia.net/surah/1/8/book/2003",
+        "byteSize": 874243,
+        "checksumSha256": "a9d96874a7a8c23eccad57b0fff8992535ae1bc58c35ed73f609d160d924a433"
+      },
+      {
+        "surah": 9,
+        "url": "https://quranpedia.net/surah/1/9/book/2003",
+        "byteSize": 1121709,
+        "checksumSha256": "80b85329f643e199ee0141285bfa24aeb725028a87da96a119793f8968f62397"
+      },
+      {
+        "surah": 10,
+        "url": "https://quranpedia.net/surah/1/10/book/2003",
+        "byteSize": 1004335,
+        "checksumSha256": "033311f707ac79eaadc1b095cfcebe3309ece46c9fc582bd7b555fbacbe265a6"
+      },
+      {
+        "surah": 11,
+        "url": "https://quranpedia.net/surah/1/11/book/2003",
+        "byteSize": 1066808,
+        "checksumSha256": "9e57e7ee324356c1cb62d53401911894e110de5117ee1adae2ff5b236530cad6"
+      },
+      {
+        "surah": 12,
+        "url": "https://quranpedia.net/surah/1/12/book/2003",
+        "byteSize": 1011412,
+        "checksumSha256": "e1cf415a6c93a44da9262727b623188cbd6e3039aab825814f9b00850cf02f32"
+      },
+      {
+        "surah": 13,
+        "url": "https://quranpedia.net/surah/1/13/book/2003",
+        "byteSize": 725715,
+        "checksumSha256": "c1ed1ada122ba1ee9207e5cb14b5457279cca60934b2ee2f97477cf96b687985"
+      },
+      {
+        "surah": 14,
+        "url": "https://quranpedia.net/surah/1/14/book/2003",
+        "byteSize": 753558,
+        "checksumSha256": "debf1b63be83be2ec820193096104d68c6aa98b3220c76114db9805e6c90052b"
+      },
+      {
+        "surah": 15,
+        "url": "https://quranpedia.net/surah/1/15/book/2003",
+        "byteSize": 930574,
+        "checksumSha256": "1b47f023c055c439fbfb56bffdd41694353909d2d2e40d865ec6e02f0ba7f98c"
+      },
+      {
+        "surah": 16,
+        "url": "https://quranpedia.net/surah/1/16/book/2003",
+        "byteSize": 1095619,
+        "checksumSha256": "0552895a1af6fcc0632487f809d37420e3101659847b7cf9bbe6b8a491c1f071"
+      },
+      {
+        "surah": 17,
+        "url": "https://quranpedia.net/surah/1/17/book/2003",
+        "byteSize": 1017582,
+        "checksumSha256": "5199ba8cf61a774f246f682834e58470d7a85b17b41167b3ed742487559bce59"
+      },
+      {
+        "surah": 18,
+        "url": "https://quranpedia.net/surah/1/18/book/2003",
+        "byteSize": 1000996,
+        "checksumSha256": "d2c0a582f3acee8e71f234fdca62fd4bca40fcf169fcf0cfabf9112792ea5135"
+      },
+      {
+        "surah": 19,
+        "url": "https://quranpedia.net/surah/1/19/book/2003",
+        "byteSize": 936457,
+        "checksumSha256": "9f0cec278afd335d9a99490c4f6a0c84d4d7aa26e08d506362be9673820466a6"
+      },
+      {
+        "surah": 20,
+        "url": "https://quranpedia.net/surah/1/20/book/2003",
+        "byteSize": 1092974,
+        "checksumSha256": "f014d9988fc80c4d0c3132c2594211cf3d378489348d5b6f799874335edb4e65"
+      },
+      {
+        "surah": 21,
+        "url": "https://quranpedia.net/surah/1/21/book/2003",
+        "byteSize": 1002648,
+        "checksumSha256": "0500a98d34a1b6701ecb082f8a87fd905295dd2bebc0fb390645a5b5e127d6c2"
+      },
+      {
+        "surah": 22,
+        "url": "https://quranpedia.net/surah/1/22/book/2003",
+        "byteSize": 879628,
+        "checksumSha256": "c096732e603c1fda935e4291af3769d62ba9bbe9c1e73f777aa04c015c5bfd71"
+      },
+      {
+        "surah": 23,
+        "url": "https://quranpedia.net/surah/1/23/book/2003",
+        "byteSize": 1023318,
+        "checksumSha256": "8813e4f3b7ffd4d6713cf0c98c4e193dde0fe3fb071dc2f8b8e662fe40d1502c"
+      },
+      {
+        "surah": 24,
+        "url": "https://quranpedia.net/surah/1/24/book/2003",
+        "byteSize": 825787,
+        "checksumSha256": "e4a648342ea7ef340d93920422d94c1c71ce5eff5a127f834eb3df197d953003"
+      },
+      {
+        "surah": 25,
+        "url": "https://quranpedia.net/surah/1/25/book/2003",
+        "byteSize": 860641,
+        "checksumSha256": "06da7223605602595e0a43213ff4806d836356f0d9f88bbedcdee39acf405852"
+      },
+      {
+        "surah": 26,
+        "url": "https://quranpedia.net/surah/1/26/book/2003",
+        "byteSize": 1443464,
+        "checksumSha256": "85fdec8968bf0d29881c0551923d24ff54e2c36426f304d4a4fed4f05c536144"
+      },
+      {
+        "surah": 27,
+        "url": "https://quranpedia.net/surah/1/27/book/2003",
+        "byteSize": 910558,
+        "checksumSha256": "6116df711fc554787ac29e7451f4249119cd29d372e863896803f27d5ec835cd"
+      },
+      {
+        "surah": 28,
+        "url": "https://quranpedia.net/surah/1/28/book/2003",
+        "byteSize": 912501,
+        "checksumSha256": "f5342c19d176cd83cc8c954768a74806c8764354b1e6139ed3fb700de7cf15f3"
+      },
+      {
+        "surah": 29,
+        "url": "https://quranpedia.net/surah/1/29/book/2003",
+        "byteSize": 820432,
+        "checksumSha256": "9c9f9b2799ad082e171fb839bca30d12db3993c3f832792385ec8fa7ca1a822f"
+      },
+      {
+        "surah": 30,
+        "url": "https://quranpedia.net/surah/1/30/book/2003",
+        "byteSize": 782055,
+        "checksumSha256": "c441d4ad6bbc7315da3d5bb611cc9302cb9b08ebc4fce1d9a41481182f25a904"
+      },
+      {
+        "surah": 31,
+        "url": "https://quranpedia.net/surah/1/31/book/2003",
+        "byteSize": 673754,
+        "checksumSha256": "eb78c6d9ec44627f2d53668f58630cfda4309b7849f6982b0de9e6cd01085afa"
+      },
+      {
+        "surah": 32,
+        "url": "https://quranpedia.net/surah/1/32/book/2003",
+        "byteSize": 641737,
+        "checksumSha256": "7ecd6bfaf66378e2b645197bebe2e4d3eee7b601c84ab3f3034739dd24c234e5"
+      },
+      {
+        "surah": 33,
+        "url": "https://quranpedia.net/surah/1/33/book/2003",
+        "byteSize": 853401,
+        "checksumSha256": "7d0bcc90d8718613399d347c633d6a80ff020ea96b4491734b2a073cd756b84d"
+      },
+      {
+        "surah": 34,
+        "url": "https://quranpedia.net/surah/1/34/book/2003",
+        "byteSize": 756314,
+        "checksumSha256": "73709e4f35aeb335b34005244c86deb7d4aeb6e330555eb289c076a82298d136"
+      },
+      {
+        "surah": 35,
+        "url": "https://quranpedia.net/surah/1/35/book/2003",
+        "byteSize": 715779,
+        "checksumSha256": "6113d58abdec3bfb6f6418506f8c572668e79be155bba8d687962fc6e36d178e"
+      },
+      {
+        "surah": 36,
+        "url": "https://quranpedia.net/surah/1/36/book/2003",
+        "byteSize": 870776,
+        "checksumSha256": "f990a627adf51cace574b0d26f734fe9321edacb4e37d73ff2eae5bedf8f1ad5"
+      },
+      {
+        "surah": 37,
+        "url": "https://quranpedia.net/surah/1/37/book/2003",
+        "byteSize": 1260682,
+        "checksumSha256": "2b11702308fdd035452ec0909fb88dade0ee009985b5e0def52894278047feb1"
+      },
+      {
+        "surah": 38,
+        "url": "https://quranpedia.net/surah/1/38/book/2003",
+        "byteSize": 891842,
+        "checksumSha256": "3e1905c2cc97ff824c5c2dd2c27502c1a480713a8d19dbd16cce9da5a19bef49"
+      },
+      {
+        "surah": 39,
+        "url": "https://quranpedia.net/surah/1/39/book/2003",
+        "byteSize": 839920,
+        "checksumSha256": "0b59f01a9cdee34734f64c60a30fccb9f47edc98af99d560b523208ec4ff8bd4"
+      },
+      {
+        "surah": 40,
+        "url": "https://quranpedia.net/surah/1/40/book/2003",
+        "byteSize": 877883,
+        "checksumSha256": "ad01c63eb8cc52b5bbb5b300c0398d4d9601dab39875026e0fc1e514f88a97fa"
+      },
+      {
+        "surah": 41,
+        "url": "https://quranpedia.net/surah/1/41/book/2003",
+        "byteSize": 757851,
+        "checksumSha256": "e4bfa2516795dcf9887c964601638ea43b947f5d2f1c83fbf8b4e9ae300632f2"
+      },
+      {
+        "surah": 42,
+        "url": "https://quranpedia.net/surah/1/42/book/2003",
+        "byteSize": 752928,
+        "checksumSha256": "b97be4585a811095f9ef4f3ec69ba9958360a9b4077cdb55ec367e77bd3dc74a"
+      },
+      {
+        "surah": 43,
+        "url": "https://quranpedia.net/surah/1/43/book/2003",
+        "byteSize": 891015,
+        "checksumSha256": "a2fad38b8cdd32d6436a8b162d9fdb961ba9018dff04f402e997d7daec94c4e0"
+      },
+      {
+        "surah": 44,
+        "url": "https://quranpedia.net/surah/1/44/book/2003",
+        "byteSize": 750815,
+        "checksumSha256": "a514c1cf2cb550a65db5300ee9158b7e8cfe8376a5766552a679eed8f243a384"
+      },
+      {
+        "surah": 45,
+        "url": "https://quranpedia.net/surah/1/45/book/2003",
+        "byteSize": 676812,
+        "checksumSha256": "e83b57d8cdf820653476df5fd1a33416714f22fe87c1a5f9b377ef1efb9d6afd"
+      },
+      {
+        "surah": 46,
+        "url": "https://quranpedia.net/surah/1/46/book/2003",
+        "byteSize": 681129,
+        "checksumSha256": "eff167b6c20c93df3002dd26ae55ed79d27d0dbb7e5ff5b92f1d66818c6b6b4d"
+      },
+      {
+        "surah": 47,
+        "url": "https://quranpedia.net/surah/1/47/book/2003",
+        "byteSize": 687966,
+        "checksumSha256": "158756a80ac2a619c501bb3ffb670fa0357cd903df7d5900af964f37f46c618f"
+      },
+      {
+        "surah": 48,
+        "url": "https://quranpedia.net/surah/1/48/book/2003",
+        "byteSize": 648363,
+        "checksumSha256": "a7dadb587b0301054058635fc4b170a6775a5b36d271a6b7d6abb963bc21e3b2"
+      },
+      {
+        "surah": 49,
+        "url": "https://quranpedia.net/surah/1/49/book/2003",
+        "byteSize": 611642,
+        "checksumSha256": "20d0a8dbba266a1a86e1330a79c03a831ce1a49ee8a45f8f881abe557c235101"
+      },
+      {
+        "surah": 50,
+        "url": "https://quranpedia.net/surah/1/50/book/2003",
+        "byteSize": 705806,
+        "checksumSha256": "63df3508e7d0d51321350f47fc0e74d5520d3cce840ef32cdebcc9cb8a19d348"
+      },
+      {
+        "surah": 51,
+        "url": "https://quranpedia.net/surah/1/51/book/2003",
+        "byteSize": 763091,
+        "checksumSha256": "b7d512df09cd020d7f5baa577b9f8a7e4e585713ad9f48b8f85372d69ca15d98"
+      },
+      {
+        "surah": 52,
+        "url": "https://quranpedia.net/surah/1/52/book/2003",
+        "byteSize": 721235,
+        "checksumSha256": "85fcc2b256ea8eddda1ba3bf9242c87aea157b8cb55531e4acbfdeb54743080b"
+      },
+      {
+        "surah": 53,
+        "url": "https://quranpedia.net/surah/1/53/book/2003",
+        "byteSize": 777406,
+        "checksumSha256": "224a7802a927cd791fa6402b620a03a09d06f9bded6cef8f957b746ec50a5cd7"
+      },
+      {
+        "surah": 54,
+        "url": "https://quranpedia.net/surah/1/54/book/2003",
+        "byteSize": 742716,
+        "checksumSha256": "101d217905ecc31be569132b2e8fd1a02423f10b71f13a3abd680a8c0aa4508c"
+      },
+      {
+        "surah": 55,
+        "url": "https://quranpedia.net/surah/1/55/book/2003",
+        "byteSize": 831601,
+        "checksumSha256": "fb74d3e01161255fd291d37da633fc37454c17e6476e7361abdcbc483558941d"
+      },
+      {
+        "surah": 56,
+        "url": "https://quranpedia.net/surah/1/56/book/2003",
+        "byteSize": 908987,
+        "checksumSha256": "4ae5ae770f1049a8747464791ae7bd7c302048aefb2a61a32d65d3c237608508"
+      },
+      {
+        "surah": 57,
+        "url": "https://quranpedia.net/surah/1/57/book/2003",
+        "byteSize": 652757,
+        "checksumSha256": "65e2da3d5d212d1755ef07145f9606a1e4d6e06d9df42579a71c044f403e2fa0"
+      },
+      {
+        "surah": 58,
+        "url": "https://quranpedia.net/surah/1/58/book/2003",
+        "byteSize": 629500,
+        "checksumSha256": "412f4813e391c5a6d47ec7bdcf0fbbd7841418f6fb9bbf5ffdd23caa5bf143fb"
+      },
+      {
+        "surah": 59,
+        "url": "https://quranpedia.net/surah/1/59/book/2003",
+        "byteSize": 631550,
+        "checksumSha256": "c1535384eff55da6bc4cb6df6a6748934459b8a26237d9e86db06d9f1932dda3"
+      },
+      {
+        "surah": 60,
+        "url": "https://quranpedia.net/surah/1/60/book/2003",
+        "byteSize": 582020,
+        "checksumSha256": "1a94c5bc0e47172a6b165928108a0abf4046f8b9bc31680c580a356ec2b82823"
+      },
+      {
+        "surah": 61,
+        "url": "https://quranpedia.net/surah/1/61/book/2003",
+        "byteSize": 579124,
+        "checksumSha256": "be249222587b5dbc8c142be69ad877e87739f1b3875f5955a468e7982a209430"
+      },
+      {
+        "surah": 62,
+        "url": "https://quranpedia.net/surah/1/62/book/2003",
+        "byteSize": 574435,
+        "checksumSha256": "9d8d590bc6d649e9384959a7566de44e9d923eaabdc74ac9e76b961b6edd3c77"
+      },
+      {
+        "surah": 63,
+        "url": "https://quranpedia.net/surah/1/63/book/2003",
+        "byteSize": 570007,
+        "checksumSha256": "0818b9cb3d9fb385edae38a1fb0a25e35851a0687f9ba9105bcf5651f06f0137"
+      },
+      {
+        "surah": 64,
+        "url": "https://quranpedia.net/surah/1/64/book/2003",
+        "byteSize": 582635,
+        "checksumSha256": "cafa305d4a6babba7ab5f62bc57c912d91e0a3f70e46ccf0f673a7f57036a92b"
+      },
+      {
+        "surah": 65,
+        "url": "https://quranpedia.net/surah/1/65/book/2003",
+        "byteSize": 576986,
+        "checksumSha256": "15846558b5841ef53b3e62b008d8787e5a815573b0f814b401c52c492234b65f"
+      },
+      {
+        "surah": 66,
+        "url": "https://quranpedia.net/surah/1/66/book/2003",
+        "byteSize": 578006,
+        "checksumSha256": "e0606677047694cfeb19d2b431725b68c1bdc9ccf05dd2edbed1fea229710948"
+      },
+      {
+        "surah": 67,
+        "url": "https://quranpedia.net/surah/1/67/book/2003",
+        "byteSize": 629376,
+        "checksumSha256": "194f36ac00b2c0700de8cb5373760c20412ae43a1975120b5f794511c29fa0ff"
+      },
+      {
+        "surah": 68,
+        "url": "https://quranpedia.net/surah/1/68/book/2003",
+        "byteSize": 720674,
+        "checksumSha256": "524045959f81597cd3de81cb7981dfa1fd0326aa8c2de08f9b000575e305ec95"
+      },
+      {
+        "surah": 69,
+        "url": "https://quranpedia.net/surah/1/69/book/2003",
+        "byteSize": 709235,
+        "checksumSha256": "3d4fc65ddc7ea38f8649d787176182ea8df04ccb5b8c03fb7b717298be0b0bd8"
+      },
+      {
+        "surah": 70,
+        "url": "https://quranpedia.net/surah/1/70/book/2003",
+        "byteSize": 686525,
+        "checksumSha256": "c75113d24244f0449d6e30f3e2e8723cc39839ec5e740dbaada05a49e844ed82"
+      },
+      {
+        "surah": 71,
+        "url": "https://quranpedia.net/surah/1/71/book/2003",
+        "byteSize": 614888,
+        "checksumSha256": "2b5dab913595d038200d24372e2f046d30d86b9d242f97beb5862f59ae18192c"
+      },
+      {
+        "surah": 72,
+        "url": "https://quranpedia.net/surah/1/72/book/2003",
+        "byteSize": 621868,
+        "checksumSha256": "f1a304b4b3792d4945e54e3a0aa513859e87eb2525acf520f705f84ed8d27d47"
+      },
+      {
+        "surah": 73,
+        "url": "https://quranpedia.net/surah/1/73/book/2003",
+        "byteSize": 606206,
+        "checksumSha256": "6cf493d84b373e37f4f6d612b1a57384b938bc72d3ef2be287726af98d7f0ebc"
+      },
+      {
+        "surah": 74,
+        "url": "https://quranpedia.net/surah/1/74/book/2003",
+        "byteSize": 747863,
+        "checksumSha256": "989bc0bffd0816381b23c6d96f7b3b7ed3d7d059fb06f960f09d072cdedb044c"
+      },
+      {
+        "surah": 75,
+        "url": "https://quranpedia.net/surah/1/75/book/2003",
+        "byteSize": 676113,
+        "checksumSha256": "a73cee9acc6f77f55a3536ea73f14dbe408e8156a55dac0bcad4724a6ddc1b67"
+      },
+      {
+        "surah": 76,
+        "url": "https://quranpedia.net/surah/1/76/book/2003",
+        "byteSize": 638154,
+        "checksumSha256": "42000e47b3803570b12a80df0e921de294ce96d7029f7af3f0d9ee4af47c0248"
+      },
+      {
+        "surah": 77,
+        "url": "https://quranpedia.net/surah/1/77/book/2003",
+        "byteSize": 709205,
+        "checksumSha256": "a9001b511a0191670497bd31671e8b53f6f01ea8ea42b6d6acc77a07c0f46ffb"
+      },
+      {
+        "surah": 78,
+        "url": "https://quranpedia.net/surah/1/78/book/2003",
+        "byteSize": 664318,
+        "checksumSha256": "d57942428effd2593d924ac7d6f29fdd6cd57113fb964480e21d8d1084c477a8"
+      },
+      {
+        "surah": 79,
+        "url": "https://quranpedia.net/surah/1/79/book/2003",
+        "byteSize": 690332,
+        "checksumSha256": "06c6cc1c646265b7c038cc5351b625ce9430a3f4afa48d9176b70bdfc5d661ba"
+      },
+      {
+        "surah": 80,
+        "url": "https://quranpedia.net/surah/1/80/book/2003",
+        "byteSize": 675577,
+        "checksumSha256": "72b7b35d9dede7c9d250315e5774970da11225524b2c6d9de6c572c8108380ef"
+      },
+      {
+        "surah": 81,
+        "url": "https://quranpedia.net/surah/1/81/book/2003",
+        "byteSize": 617969,
+        "checksumSha256": "41387766b8ee9a6a77df8a1c9fa89457252e2b545e5a4cbfc6b34a00a20ed295"
+      },
+      {
+        "surah": 82,
+        "url": "https://quranpedia.net/surah/1/82/book/2003",
+        "byteSize": 572124,
+        "checksumSha256": "b35f875809f0f00140d2a80c6291a69ef5211c54e07d600fd050f9326075dbc1"
+      },
+      {
+        "surah": 83,
+        "url": "https://quranpedia.net/surah/1/83/book/2003",
+        "byteSize": 659968,
+        "checksumSha256": "e6ecca66c00cd5735449f2a4434209a6cda0b22e82d12e22bb9e4754566eb186"
+      },
+      {
+        "surah": 84,
+        "url": "https://quranpedia.net/surah/1/84/book/2003",
+        "byteSize": 612964,
+        "checksumSha256": "0be55b9481f066a22b4c6064e348b1535d79c0286d004c84500d7259bcd3a124"
+      },
+      {
+        "surah": 85,
+        "url": "https://quranpedia.net/surah/1/85/book/2003",
+        "byteSize": 591188,
+        "checksumSha256": "e85dd6bc404be70221a9cc2de228ff04900d75fd0c55dc0c7988454510a503b4"
+      },
+      {
+        "surah": 86,
+        "url": "https://quranpedia.net/surah/1/86/book/2003",
+        "byteSize": 574180,
+        "checksumSha256": "f48bad0cfeeea1eb75fed60f462290c2eb449d5578e1546a3cd95e860e719783"
+      },
+      {
+        "surah": 87,
+        "url": "https://quranpedia.net/surah/1/87/book/2003",
+        "byteSize": 589299,
+        "checksumSha256": "76895bed26830258dcd2a6d34c383b9fc94da0646e5f5d1531dbd19ba3815d13"
+      },
+      {
+        "surah": 88,
+        "url": "https://quranpedia.net/surah/1/88/book/2003",
+        "byteSize": 608674,
+        "checksumSha256": "64b1ebdd50457133e3033967f90e0b435fb13e0d808941eb8608aa5dc3a6e459"
+      },
+      {
+        "surah": 89,
+        "url": "https://quranpedia.net/surah/1/89/book/2003",
+        "byteSize": 624965,
+        "checksumSha256": "358ad3007094bc739b16425622687c352a930826d4c90b88cda4594e2b6edeff"
+      },
+      {
+        "surah": 90,
+        "url": "https://quranpedia.net/surah/1/90/book/2003",
+        "byteSize": 580874,
+        "checksumSha256": "60f2b9215bd06a639c523970faf3d2bf13faaaa665644fba3bfcad51d6ebf9b4"
+      },
+      {
+        "surah": 91,
+        "url": "https://quranpedia.net/surah/1/91/book/2003",
+        "byteSize": 565784,
+        "checksumSha256": "0a20302b3aa1ed44de946f6ce8113529fce2a8fd6419fee560c9d7a33445bbb7"
+      },
+      {
+        "surah": 92,
+        "url": "https://quranpedia.net/surah/1/92/book/2003",
+        "byteSize": 587918,
+        "checksumSha256": "5615b266b999fba22f0c0f0418c4b58570018be90fe8b793717f87d67aa79bf1"
+      },
+      {
+        "surah": 93,
+        "url": "https://quranpedia.net/surah/1/93/book/2003",
+        "byteSize": 556670,
+        "checksumSha256": "47bff1c42fab783da228779b909710eb223ebaf1a5e710f6609140af3a55590f"
+      },
+      {
+        "surah": 94,
+        "url": "https://quranpedia.net/surah/1/94/book/2003",
+        "byteSize": 533562,
+        "checksumSha256": "2dcd3425ec6468b164b532e86bafc455514c0737d932b1b26b422293c4af97f9"
+      },
+      {
+        "surah": 95,
+        "url": "https://quranpedia.net/surah/1/95/book/2003",
+        "byteSize": 533452,
+        "checksumSha256": "7cd912d2f833de571e74b309dc3327c3d8c6a8bf8c7c376bdc25a3ba17797f44"
+      },
+      {
+        "surah": 96,
+        "url": "https://quranpedia.net/surah/1/96/book/2003",
+        "byteSize": 585947,
+        "checksumSha256": "16165902380ff87dae701321a94a420fd5140a7a18536d9580a1dd9042a57081"
+      },
+      {
+        "surah": 97,
+        "url": "https://quranpedia.net/surah/1/97/book/2003",
+        "byteSize": 528098,
+        "checksumSha256": "0df7293718512a5f286ac13b2ee7e8b41f42fe6bde1cfdc364b97bcceac32f15"
+      },
+      {
+        "surah": 98,
+        "url": "https://quranpedia.net/surah/1/98/book/2003",
+        "byteSize": 540199,
+        "checksumSha256": "6530115cabce2d32523752affc6d9f102ef92e9cc92b0efe67fad8b0181abc3d"
+      },
+      {
+        "surah": 99,
+        "url": "https://quranpedia.net/surah/1/99/book/2003",
+        "byteSize": 536737,
+        "checksumSha256": "3671ea74abcae95777f45a37d5bd3cd17af6cfd86029278a1a697b1d36a73003"
+      },
+      {
+        "surah": 100,
+        "url": "https://quranpedia.net/surah/1/100/book/2003",
+        "byteSize": 542756,
+        "checksumSha256": "204ff35a5778bfe2e9c2bf178f668962205ca616f90639f9a37f0fc5668faf40"
+      },
+      {
+        "surah": 101,
+        "url": "https://quranpedia.net/surah/1/101/book/2003",
+        "byteSize": 537203,
+        "checksumSha256": "d51f0fb5ffd99905d5c9f4c6e5b9d373bfa66320ae02233333f419c647f4e2d7"
+      },
+      {
+        "surah": 102,
+        "url": "https://quranpedia.net/surah/1/102/book/2003",
+        "byteSize": 538840,
+        "checksumSha256": "9397ee38b245f90ddcc496804d0bdb67c71b4b21b12841243d521bd0f917dda4"
+      },
+      {
+        "surah": 103,
+        "url": "https://quranpedia.net/surah/1/103/book/2003",
+        "byteSize": 508712,
+        "checksumSha256": "42c6c35ccea4bb92ca7a3e53e7f9104ab3414cbbd014d261da2fcbba9ad17863"
+      },
+      {
+        "surah": 104,
+        "url": "https://quranpedia.net/surah/1/104/book/2003",
+        "byteSize": 534190,
+        "checksumSha256": "82350434139a2adbe25d1731c16fc144e76ddfe1bd19e5310e43cbdfc76d0e18"
+      },
+      {
+        "surah": 105,
+        "url": "https://quranpedia.net/surah/1/105/book/2003",
+        "byteSize": 514353,
+        "checksumSha256": "8486f39b79875785ca406e98fc7ff3304a5fa4e7f784ba2d79ddbfbd5a771b69"
+      },
+      {
+        "surah": 106,
+        "url": "https://quranpedia.net/surah/1/106/book/2003",
+        "byteSize": 513841,
+        "checksumSha256": "70ff66b458d2fbc56f1e15ff2f54e0c53c4020c1b85a9245f5f57bcfacf4a7b8"
+      },
+      {
+        "surah": 107,
+        "url": "https://quranpedia.net/surah/1/107/book/2003",
+        "byteSize": 537703,
+        "checksumSha256": "2955de9cb3b33e8c4f484453aec10f74585c2ba9f03628e6d7684f3d935cedd3"
+      },
+      {
+        "surah": 108,
+        "url": "https://quranpedia.net/surah/1/108/book/2003",
+        "byteSize": 525506,
+        "checksumSha256": "8a291e37f9198319fc85a6dd9bf4dc09360c507e3d4a22802a363e725e0d1e2d"
+      },
+      {
+        "surah": 109,
+        "url": "https://quranpedia.net/surah/1/109/book/2003",
+        "byteSize": 524228,
+        "checksumSha256": "1f032f91053d3503d0d11778fd50a9d6dde735366342b587b7d8f6261f28012f"
+      },
+      {
+        "surah": 110,
+        "url": "https://quranpedia.net/surah/1/110/book/2003",
+        "byteSize": 515147,
+        "checksumSha256": "8f333cfa62c87331534829e349b80eb7180754abec75c4296685f4640e392810"
+      },
+      {
+        "surah": 111,
+        "url": "https://quranpedia.net/surah/1/111/book/2003",
+        "byteSize": 525054,
+        "checksumSha256": "57dc086a00cd8f13dca703be8ec2f97a4345634ff85e1820146f998577a0900d"
+      },
+      {
+        "surah": 112,
+        "url": "https://quranpedia.net/surah/1/112/book/2003",
+        "byteSize": 524731,
+        "checksumSha256": "c150cebe3d1e0e45e603e7a973630f738e6bf77b46ae1f4e9a1b96a8858ee32d"
+      },
+      {
+        "surah": 113,
+        "url": "https://quranpedia.net/surah/1/113/book/2003",
+        "byteSize": 533079,
+        "checksumSha256": "d3357314428c4b910218752381a07061c6c82f14e8455a2e7f559a73dbb7e06d"
+      },
+      {
+        "surah": 114,
+        "url": "https://quranpedia.net/surah/1/114/book/2003",
+        "byteSize": 547160,
+        "checksumSha256": "3f6128de192f8c4280b04be0cf872eb584fef4819ef503d512ba3b7273c225d5"
+      }
+    ]
+  },
+  "files": [
+    {
+      "surah": 1,
+      "file": "1.json",
+      "ayahs": 7,
+      "byteSize": 2699,
+      "checksumSha256": "6c90b5c3bb5053f2b82098e3739d0b509887ef2b170578e0e0d820da9714d6ec"
+    },
+    {
+      "surah": 2,
+      "file": "2.json",
+      "ayahs": 286,
+      "byteSize": 168590,
+      "checksumSha256": "41ab78a63dbae053da4cfb34b27af53107efd356c6fa343373ca65fa950b9683"
+    },
+    {
+      "surah": 3,
+      "file": "3.json",
+      "ayahs": 200,
+      "byteSize": 95559,
+      "checksumSha256": "c287b900e402efb4a04a14ced84b564a14fb24d7ed5d6790cda2f03a4fb68f46"
+    },
+    {
+      "surah": 4,
+      "file": "4.json",
+      "ayahs": 176,
+      "byteSize": 95643,
+      "checksumSha256": "ef37031ee4ce77b37c04a03c3a4b2dc46aedbc4b6db8da76cbade49d48bab943"
+    },
+    {
+      "surah": 5,
+      "file": "5.json",
+      "ayahs": 120,
+      "byteSize": 70314,
+      "checksumSha256": "c3471628942b3be7f589d1a4a91a76758547bad4b5f692880bd7752430818f2e"
+    },
+    {
+      "surah": 6,
+      "file": "6.json",
+      "ayahs": 165,
+      "byteSize": 82458,
+      "checksumSha256": "ecb2d5c67aa51227790db1a07886facc67b3c803da2aef2b3a2a06ec2217d6ff"
+    },
+    {
+      "surah": 7,
+      "file": "7.json",
+      "ayahs": 206,
+      "byteSize": 96753,
+      "checksumSha256": "7b93557cd3c5f2fc78e8c498d1ed1c526fa8daf345928778ede0db1d9fbfd361"
+    },
+    {
+      "surah": 8,
+      "file": "8.json",
+      "ayahs": 75,
+      "byteSize": 38072,
+      "checksumSha256": "82c0194b36dfcfb669dd71b46af747108b274d211aa0cca00f0a2555fb204dca"
+    },
+    {
+      "surah": 9,
+      "file": "9.json",
+      "ayahs": 129,
+      "byteSize": 70130,
+      "checksumSha256": "bf5c633caae3911778b6cdee6b7e8a9b6afe1652bb735ff80ad4543ca31e4e9c"
+    },
+    {
+      "surah": 10,
+      "file": "10.json",
+      "ayahs": 109,
+      "byteSize": 47133,
+      "checksumSha256": "e44369d8ba3b39b570e8f905a9c34660df79b55460bd44e3e684ae51f4fb684d"
+    },
+    {
+      "surah": 11,
+      "file": "11.json",
+      "ayahs": 123,
+      "byteSize": 49161,
+      "checksumSha256": "fd67c35fd6002f20ae3c9062c457cd8ebe8301911f7e51aa024b9833dfc20a83"
+    },
+    {
+      "surah": 12,
+      "file": "12.json",
+      "ayahs": 111,
+      "byteSize": 43534,
+      "checksumSha256": "b50c31c122e23699a6e1d7160d098ab7bf1e2f5c9856cbd883f7dbb6c917913e"
+    },
+    {
+      "surah": 13,
+      "file": "13.json",
+      "ayahs": 43,
+      "byteSize": 23998,
+      "checksumSha256": "530beb2f29216f954a5be5d64722a797aec051fa6b01cc162926bc6c46464f2e"
+    },
+    {
+      "surah": 14,
+      "file": "14.json",
+      "ayahs": 52,
+      "byteSize": 23812,
+      "checksumSha256": "30f8996d2ba4667fd2e361aa78e8d87bef332c698e1d8a6502526352d6956fae"
+    },
+    {
+      "surah": 15,
+      "file": "15.json",
+      "ayahs": 99,
+      "byteSize": 19848,
+      "checksumSha256": "b4202b9d0829ee348a24b9f04796f3a68caf41785c83d3d1c09c41336448f975"
+    },
+    {
+      "surah": 16,
+      "file": "16.json",
+      "ayahs": 128,
+      "byteSize": 53411,
+      "checksumSha256": "5e51ef2bd5c0d9515b17ae8e7e1fb376554490fa2128c2659978528946f6c8c8"
+    },
+    {
+      "surah": 17,
+      "file": "17.json",
+      "ayahs": 111,
+      "byteSize": 42914,
+      "checksumSha256": "ed228c45ed8a08eb8057a0beda2333c369be294435e966d8ed42f6788efd26ac"
+    },
+    {
+      "surah": 18,
+      "file": "18.json",
+      "ayahs": 110,
+      "byteSize": 41151,
+      "checksumSha256": "fd2fb8bdb8f822947052e2fad0b4d427793ee877dc376a5ec972563f9b66d180"
+    },
+    {
+      "surah": 19,
+      "file": "19.json",
+      "ayahs": 98,
+      "byteSize": 26065,
+      "checksumSha256": "98bb64cc45c709206b1e2fce77e0edf92da43b41b7caed257fb2498bfe3d5af0"
+    },
+    {
+      "surah": 20,
+      "file": "20.json",
+      "ayahs": 135,
+      "byteSize": 35003,
+      "checksumSha256": "d3a7e98b517572eff135617b99c5774eb32ebd3afa33220e728d40685add3893"
+    },
+    {
+      "surah": 21,
+      "file": "21.json",
+      "ayahs": 112,
+      "byteSize": 33427,
+      "checksumSha256": "950b2e65b2e1f64dfe031717d6b51feec669ab8ddd956d46442a91f74a0c600b"
+    },
+    {
+      "surah": 22,
+      "file": "22.json",
+      "ayahs": 78,
+      "byteSize": 33537,
+      "checksumSha256": "46f785d818839925ac44b6205d1aa4bf1804aaf5e21d1d459b56f7d0ecca04b1"
+    },
+    {
+      "surah": 23,
+      "file": "23.json",
+      "ayahs": 118,
+      "byteSize": 30272,
+      "checksumSha256": "7708e912fa7e25f852549999cccdeecaa9bf55a08c95d41feae8d392eb94a06b"
+    },
+    {
+      "surah": 24,
+      "file": "24.json",
+      "ayahs": 64,
+      "byteSize": 31249,
+      "checksumSha256": "60017e0496a1aea31bdf081170efd0d3022c85c47ca483ce0fc77f8fc58e6df6"
+    },
+    {
+      "surah": 25,
+      "file": "25.json",
+      "ayahs": 77,
+      "byteSize": 24755,
+      "checksumSha256": "aa5e3bc616516c918bbe569f639b3fbdbe3fa302f11cc2db53a39e28f4d7bd8b"
+    },
+    {
+      "surah": 26,
+      "file": "26.json",
+      "ayahs": 227,
+      "byteSize": 42101,
+      "checksumSha256": "5601503f97777cd3385b7944f818c0711fe5d1d32fc10f754b73740cee2378fd"
+    },
+    {
+      "surah": 27,
+      "file": "27.json",
+      "ayahs": 93,
+      "byteSize": 29586,
+      "checksumSha256": "02e8ac356181c6d7d4e2c2e82b3c168b9c1d3d6e4fc2d862ac3162ebf6a828a3"
+    },
+    {
+      "surah": 28,
+      "file": "28.json",
+      "ayahs": 88,
+      "byteSize": 35192,
+      "checksumSha256": "04865e16e6e0f6184dd7f90f27685889bfb9e9eb7450a81c9c0355a516a0a86b"
+    },
+    {
+      "surah": 29,
+      "file": "29.json",
+      "ayahs": 69,
+      "byteSize": 27634,
+      "checksumSha256": "ed569345530dd487d8203d1952ee2dcfd38613b53c8afe497661d5253d3f80f3"
+    },
+    {
+      "surah": 30,
+      "file": "30.json",
+      "ayahs": 60,
+      "byteSize": 22339,
+      "checksumSha256": "c53400b9290cb19e344938d7ddd7f2eac715c3d0bdfdc9f9cca6af81642b2aa2"
+    },
+    {
+      "surah": 31,
+      "file": "31.json",
+      "ayahs": 34,
+      "byteSize": 13344,
+      "checksumSha256": "eec2a6ac5fff02e67ba97a5c7600b14b8cb7a8aac4e0006cdb4dd64af7b23024"
+    },
+    {
+      "surah": 32,
+      "file": "32.json",
+      "ayahs": 30,
+      "byteSize": 10850,
+      "checksumSha256": "d3e5742cd59864f6a8cd52a51f0b5c52cdc76e899b3553961109885ca151d419"
+    },
+    {
+      "surah": 33,
+      "file": "33.json",
+      "ayahs": 73,
+      "byteSize": 35922,
+      "checksumSha256": "22058c6587d5895f9e49c05f48a473915bd126aea6116f0d95a29f0cb2c7e211"
+    },
+    {
+      "surah": 34,
+      "file": "34.json",
+      "ayahs": 54,
+      "byteSize": 24146,
+      "checksumSha256": "b550c330132a367d5964a5575bcfcea8a749151f7022514713c74253809e2406"
+    },
+    {
+      "surah": 35,
+      "file": "35.json",
+      "ayahs": 45,
+      "byteSize": 19932,
+      "checksumSha256": "fe80813fae83cab7ee0a24e67fa3dc64740d18e03c58bb23c1e69dee00e5a9f0"
+    },
+    {
+      "surah": 36,
+      "file": "36.json",
+      "ayahs": 83,
+      "byteSize": 25896,
+      "checksumSha256": "b0f4e21f00bb7fb7d51b340a3a2265ace3af8729253240ef8e2843a11dd3d72c"
+    },
+    {
+      "surah": 37,
+      "file": "37.json",
+      "ayahs": 182,
+      "byteSize": 37820,
+      "checksumSha256": "f3a554702578d9e563010ee3614022992289a73fc2b337206ac3c1a7ac620fe6"
+    },
+    {
+      "surah": 38,
+      "file": "38.json",
+      "ayahs": 88,
+      "byteSize": 23176,
+      "checksumSha256": "9bd174a78ba3f7f7f0c22967140176c5b30849f2d73d51428dbf7069a0731b34"
+    },
+    {
+      "surah": 39,
+      "file": "39.json",
+      "ayahs": 75,
+      "byteSize": 30297,
+      "checksumSha256": "efe4cead37c98d79b83a9e6e5652c5eabbdf6a90413368ff77a47bd8ee3857d5"
+    },
+    {
+      "surah": 40,
+      "file": "40.json",
+      "ayahs": 85,
+      "byteSize": 31931,
+      "checksumSha256": "98dc6e40241bb2826f78564571218b9ebbc6a2ac099640f536cea4aaec55369f"
+    },
+    {
+      "surah": 41,
+      "file": "41.json",
+      "ayahs": 54,
+      "byteSize": 20795,
+      "checksumSha256": "af68363aaaa584a5bfa970313130ef5383410197768071cb5cc7269ce4557f2d"
+    },
+    {
+      "surah": 42,
+      "file": "42.json",
+      "ayahs": 53,
+      "byteSize": 22668,
+      "checksumSha256": "c8650a3ee94d4b4eb8ea1da8cb6edb24637fc36d70e735d9e0855200102a80cf"
+    },
+    {
+      "surah": 43,
+      "file": "43.json",
+      "ayahs": 89,
+      "byteSize": 23591,
+      "checksumSha256": "7a7304de559889a59a698756a0d62b790a8f9e3bc2ba4a46393d5b307ded35ba"
+    },
+    {
+      "surah": 44,
+      "file": "44.json",
+      "ayahs": 59,
+      "byteSize": 11068,
+      "checksumSha256": "d6e22e3d8f32338c47c294a8506dbd1ce2a79153e33ab3af3981e438014476a9"
+    },
+    {
+      "surah": 45,
+      "file": "45.json",
+      "ayahs": 37,
+      "byteSize": 13097,
+      "checksumSha256": "4e9d63b8e27ea5f6448cd0439fb538672cf2c6f5c7cbebbb71e9ee198f121d2b"
+    },
+    {
+      "surah": 46,
+      "file": "46.json",
+      "ayahs": 35,
+      "byteSize": 15955,
+      "checksumSha256": "2a3841fa1632b8267e2af7602772e82841874269ecb1d2f14fc9adac826de32d"
+    },
+    {
+      "surah": 47,
+      "file": "47.json",
+      "ayahs": 38,
+      "byteSize": 15687,
+      "checksumSha256": "8118185892c8beb2c5777bd2e4dade1430f23df0c20e5e5df0d634bc96ff608f"
+    },
+    {
+      "surah": 48,
+      "file": "48.json",
+      "ayahs": 29,
+      "byteSize": 15014,
+      "checksumSha256": "2cb6bcbc3d7f2797a47432c3e8940878478d64d9b099e0401edc6a5d0f044a3d"
+    },
+    {
+      "surah": 49,
+      "file": "49.json",
+      "ayahs": 18,
+      "byteSize": 9346,
+      "checksumSha256": "5a5c2a7390b8279eac868f8a957ce39f68736c61a2c29433ad359adfbfc8af40"
+    },
+    {
+      "surah": 50,
+      "file": "50.json",
+      "ayahs": 45,
+      "byteSize": 10460,
+      "checksumSha256": "6bfd84851e8070c1e04b573638b9b31cd490668340d69f633ad8ea3a80cb28c0"
+    },
+    {
+      "surah": 51,
+      "file": "51.json",
+      "ayahs": 60,
+      "byteSize": 11714,
+      "checksumSha256": "6e54aba529ead98633c7eb74566a15e1022c81c3825a9b625ae7a938cb96ad19"
+    },
+    {
+      "surah": 52,
+      "file": "52.json",
+      "ayahs": 49,
+      "byteSize": 10133,
+      "checksumSha256": "6e9a6afc6e0773fc65e121f8cef78dda9989cc53aea552975226aac76d52a324"
+    },
+    {
+      "surah": 53,
+      "file": "53.json",
+      "ayahs": 62,
+      "byteSize": 11417,
+      "checksumSha256": "17021cf33a655382b2533039f0047380dbd7a0b4131fed4759e60a2cb20a676b"
+    },
+    {
+      "surah": 54,
+      "file": "54.json",
+      "ayahs": 55,
+      "byteSize": 11463,
+      "checksumSha256": "f6a8d7d8fb9e0d57484b0efbfcbbfa1ef91e0d0e8449898d5d15a0e9ce60ba53"
+    },
+    {
+      "surah": 55,
+      "file": "55.json",
+      "ayahs": 78,
+      "byteSize": 12154,
+      "checksumSha256": "fa4c0411fb933bb8b642ed206198a4dc5ac064b205f5f82d7436e890943057a4"
+    },
+    {
+      "surah": 56,
+      "file": "56.json",
+      "ayahs": 96,
+      "byteSize": 13804,
+      "checksumSha256": "6f85dc6fef9d821854d0d1b7417b39656371d19c7b991f294c420330101c2027"
+    },
+    {
+      "surah": 57,
+      "file": "57.json",
+      "ayahs": 29,
+      "byteSize": 14395,
+      "checksumSha256": "9cb1d73d416b7f7b4171ded69e908efcbf978e9e3fa036ae86cefdd4b60f4646"
+    },
+    {
+      "surah": 58,
+      "file": "58.json",
+      "ayahs": 22,
+      "byteSize": 12455,
+      "checksumSha256": "482b79c5295793ada893e7118baf72c14658eac510e29ffe659b4b4bd6df45e8"
+    },
+    {
+      "surah": 59,
+      "file": "59.json",
+      "ayahs": 24,
+      "byteSize": 12952,
+      "checksumSha256": "fa155a3fa098a947f770c99a0c7e78462fd32286e634a398e46d88bddff9ce12"
+    },
+    {
+      "surah": 60,
+      "file": "60.json",
+      "ayahs": 13,
+      "byteSize": 8468,
+      "checksumSha256": "3134a843abd948ce828828020bc3fe68d9fb49836891690b376dd03bfee5d43a"
+    },
+    {
+      "surah": 61,
+      "file": "61.json",
+      "ayahs": 14,
+      "byteSize": 5504,
+      "checksumSha256": "75545c6891683bc1d94126c704cb0df1ec5369b1f1954428e9ad44e1bdd6b15a"
+    },
+    {
+      "surah": 62,
+      "file": "62.json",
+      "ayahs": 11,
+      "byteSize": 5088,
+      "checksumSha256": "312b2fce771928fd2bfe6572b48575ed7046a0f814751ca79e1377dd24bee0e9"
+    },
+    {
+      "surah": 63,
+      "file": "63.json",
+      "ayahs": 11,
+      "byteSize": 4982,
+      "checksumSha256": "cf9f9d37abb6b6dbe4bb8badd95e822f2e73a154ca7c0498af47107fb55b5c35"
+    },
+    {
+      "surah": 64,
+      "file": "64.json",
+      "ayahs": 18,
+      "byteSize": 7640,
+      "checksumSha256": "9d35eddff7ce0cbcc54f04085c8ea633c9564ad42e3c443ab7ff680dcc5b1fb2"
+    },
+    {
+      "surah": 65,
+      "file": "65.json",
+      "ayahs": 12,
+      "byteSize": 6960,
+      "checksumSha256": "a98c7ced40ac862cdc4690c33c3683cd90d8b1f48f8c37931d52cbec64d508da"
+    },
+    {
+      "surah": 66,
+      "file": "66.json",
+      "ayahs": 12,
+      "byteSize": 6173,
+      "checksumSha256": "d31dd89513fec1aaf23ac71cc91ff5c1d27cdc0828769f8bc2bab93fa4b19f1a"
+    },
+    {
+      "surah": 67,
+      "file": "67.json",
+      "ayahs": 30,
+      "byteSize": 8847,
+      "checksumSha256": "2d726f49c51bf89553c3e0923872b8aee56cf99577764b2087bf1d5ea960c488"
+    },
+    {
+      "surah": 68,
+      "file": "68.json",
+      "ayahs": 52,
+      "byteSize": 9627,
+      "checksumSha256": "2b6bdbe604f5e0dbe6b9c774225742d2022885eec7e369455ea9761e9d6de21a"
+    },
+    {
+      "surah": 69,
+      "file": "69.json",
+      "ayahs": 52,
+      "byteSize": 8046,
+      "checksumSha256": "eb2163e115611af16c2f8133a06923ddabbda1b6707f48428970bd386a7f84ea"
+    },
+    {
+      "surah": 70,
+      "file": "70.json",
+      "ayahs": 44,
+      "byteSize": 7410,
+      "checksumSha256": "4c567c81f4345ea0d0fdc14f1379ebdbfa74470c1cbdd8df1e699a528500920b"
+    },
+    {
+      "surah": 71,
+      "file": "71.json",
+      "ayahs": 28,
+      "byteSize": 6530,
+      "checksumSha256": "b7e0af6cbcb2efa261e54b70b5dd0d9987b37df1b2e11e92c801333572d1f0f0"
+    },
+    {
+      "surah": 72,
+      "file": "72.json",
+      "ayahs": 28,
+      "byteSize": 7754,
+      "checksumSha256": "674a99040661a3ce791ef779af3792137698fc8849cbc347a9260d19ed79c54a"
+    },
+    {
+      "surah": 73,
+      "file": "73.json",
+      "ayahs": 20,
+      "byteSize": 5190,
+      "checksumSha256": "08b71ade439d142334e3a1ae9d6a7c15f4bf6b46e4209da83b8c52c943684f3e"
+    },
+    {
+      "surah": 74,
+      "file": "74.json",
+      "ayahs": 56,
+      "byteSize": 9174,
+      "checksumSha256": "3eabdbfa6db2c5b2eefa98a11bf5a73ba91567fab690c5fd63ef14d79f5d2766"
+    },
+    {
+      "surah": 75,
+      "file": "75.json",
+      "ayahs": 40,
+      "byteSize": 6073,
+      "checksumSha256": "f8faf527f7919aaa2dc9719a81d7a930647785b9c5ce70981704f46de76ec36e"
+    },
+    {
+      "surah": 76,
+      "file": "76.json",
+      "ayahs": 31,
+      "byteSize": 7386,
+      "checksumSha256": "36e721d58ab62f08a78b34a7d2b95a6474e410ec6bb3609a11bdef8e7488e303"
+    },
+    {
+      "surah": 77,
+      "file": "77.json",
+      "ayahs": 50,
+      "byteSize": 7476,
+      "checksumSha256": "aee999b81d577d01253400b9df2f20cb6b46dae90ab593a950a8f8f5c43ef3c2"
+    },
+    {
+      "surah": 78,
+      "file": "78.json",
+      "ayahs": 40,
+      "byteSize": 6512,
+      "checksumSha256": "1e6a47cb306a3514ec036ba341525724c235868ce1eafbd4fdac0b3a230de0d9"
+    },
+    {
+      "surah": 79,
+      "file": "79.json",
+      "ayahs": 46,
+      "byteSize": 7013,
+      "checksumSha256": "ee8421dcf9f3f5967ab52bdd3f8c5b751faafaf022abe246b10193053d0538a9"
+    },
+    {
+      "surah": 80,
+      "file": "80.json",
+      "ayahs": 42,
+      "byteSize": 5318,
+      "checksumSha256": "33f3941523136d45915105544c73564a45df7c333a3ccb36658eb9575aa0447a"
+    },
+    {
+      "surah": 81,
+      "file": "81.json",
+      "ayahs": 29,
+      "byteSize": 4100,
+      "checksumSha256": "85755431c37e0641a4e92c6ebd4bcd8415eedea7bd9bfe8f249c8f84555492b5"
+    },
+    {
+      "surah": 82,
+      "file": "82.json",
+      "ayahs": 19,
+      "byteSize": 2733,
+      "checksumSha256": "f5a334a75a4b0a43bda87ff83f1e0ad13a5335e3c968f6e1b3f7860460fbeb3f"
+    },
+    {
+      "surah": 83,
+      "file": "83.json",
+      "ayahs": 36,
+      "byteSize": 5929,
+      "checksumSha256": "cb9c5a778933ba419ee7f2b1e58eeb80a13ec212dd789ce979279d59b554fe10"
+    },
+    {
+      "surah": 84,
+      "file": "84.json",
+      "ayahs": 25,
+      "byteSize": 3449,
+      "checksumSha256": "913a4513240687faa5130f63dcdd12eb4e93de0987ca7620f495073b67ec82ec"
+    },
+    {
+      "surah": 85,
+      "file": "85.json",
+      "ayahs": 22,
+      "byteSize": 4010,
+      "checksumSha256": "5b104499f89da0abf2f2bb6a15fc9338568788f23a04ec0facb35713b6faae75"
+    },
+    {
+      "surah": 86,
+      "file": "86.json",
+      "ayahs": 17,
+      "byteSize": 2851,
+      "checksumSha256": "ba5e1e0593e0ab7bee3c306301d1c3c8dd05723300270df6875751e291aaeece"
+    },
+    {
+      "surah": 87,
+      "file": "87.json",
+      "ayahs": 19,
+      "byteSize": 3332,
+      "checksumSha256": "94044b0ca4dffc2efcf5b93a1225667d007345732294b69009f20ab609aed6b0"
+    },
+    {
+      "surah": 88,
+      "file": "88.json",
+      "ayahs": 26,
+      "byteSize": 3856,
+      "checksumSha256": "afa48c3871c6398b15074c6a44d5db1f315c28aff074fd1bf40345e8101485e8"
+    },
+    {
+      "surah": 89,
+      "file": "89.json",
+      "ayahs": 30,
+      "byteSize": 5354,
+      "checksumSha256": "4ef6935f392e736b78334ff84b3f16585f486c9c2810285141ab171d26d45376"
+    },
+    {
+      "surah": 90,
+      "file": "90.json",
+      "ayahs": 20,
+      "byteSize": 3027,
+      "checksumSha256": "8f36ed1e94de26c7d0a499c837a7aa3da2b054fa45431610779c58dcc487e40c"
+    },
+    {
+      "surah": 91,
+      "file": "91.json",
+      "ayahs": 15,
+      "byteSize": 2496,
+      "checksumSha256": "626d9b3e6d055dd4da3302e78975e79be20bf00c145d8f5853067ba3047d426a"
+    },
+    {
+      "surah": 92,
+      "file": "92.json",
+      "ayahs": 21,
+      "byteSize": 3214,
+      "checksumSha256": "9c6c57555df3d7964041c4ac76a9b5ba4113fefec99c4466a97bc89e70d0009d"
+    },
+    {
+      "surah": 93,
+      "file": "93.json",
+      "ayahs": 11,
+      "byteSize": 1677,
+      "checksumSha256": "567a3e05234be24d8460d97927663b889db475d8492c36b0e31b1ebd31614645"
+    },
+    {
+      "surah": 94,
+      "file": "94.json",
+      "ayahs": 8,
+      "byteSize": 1221,
+      "checksumSha256": "1ff938d7a7f6b8e83a53fe3eafb72db4ace28aa27af52b260aaef0001831ba8d"
+    },
+    {
+      "surah": 95,
+      "file": "95.json",
+      "ayahs": 8,
+      "byteSize": 1875,
+      "checksumSha256": "ee24fb453c14016262feb75933212a200502afec38b58d7c2b0c04ed930a493d"
+    },
+    {
+      "surah": 96,
+      "file": "96.json",
+      "ayahs": 19,
+      "byteSize": 3364,
+      "checksumSha256": "60d127a5433398b4de3696d224bff1cffe2cefbf955c2623a106978ef63e5f41"
+    },
+    {
+      "surah": 97,
+      "file": "97.json",
+      "ayahs": 5,
+      "byteSize": 1258,
+      "checksumSha256": "e88c5b378963aa02db3989607174356d574c26066bb6167abd0be74e30e49b2c"
+    },
+    {
+      "surah": 98,
+      "file": "98.json",
+      "ayahs": 8,
+      "byteSize": 2511,
+      "checksumSha256": "5b9e5fa27e7e474a998dc67b1c2b1230ca28072ec70df1c05a445f5a589f1963"
+    },
+    {
+      "surah": 99,
+      "file": "99.json",
+      "ayahs": 8,
+      "byteSize": 1345,
+      "checksumSha256": "a97d4484b2d212c7e2f1ed3876bf59a5c53a2b3b916c055a0bfc3a782d70bafd"
+    },
+    {
+      "surah": 100,
+      "file": "100.json",
+      "ayahs": 11,
+      "byteSize": 1856,
+      "checksumSha256": "7edde97d9092b7ad64df46e1842be0b9a09947e6937c9c065cdcbc28b8d6fbba"
+    },
+    {
+      "surah": 101,
+      "file": "101.json",
+      "ayahs": 11,
+      "byteSize": 1579,
+      "checksumSha256": "e8a13a2aa8989a56a63f04febf4b12799d287b82b309f9c0a5c290169b9cb180"
+    },
+    {
+      "surah": 102,
+      "file": "102.json",
+      "ayahs": 8,
+      "byteSize": 1333,
+      "checksumSha256": "75ae3360ac5c71b37d616ee0070ab421d191f803b934b378ac4aed777338fdb7"
+    },
+    {
+      "surah": 103,
+      "file": "103.json",
+      "ayahs": 3,
+      "byteSize": 718,
+      "checksumSha256": "201153f1a3815cf2775df561c42901b7470e949977b6a8d9ee68aaab2f409a88"
+    },
+    {
+      "surah": 104,
+      "file": "104.json",
+      "ayahs": 9,
+      "byteSize": 1396,
+      "checksumSha256": "2ad1b8b9f7fb2a66d194426b34ed839fbabc2b4d355d807ac3a4d71e1ad004eb"
+    },
+    {
+      "surah": 105,
+      "file": "105.json",
+      "ayahs": 5,
+      "byteSize": 986,
+      "checksumSha256": "5308fc96fd423cbfc5b6767a780e84efd7054c96c5072d00c6a6c9a8e7ed34af"
+    },
+    {
+      "surah": 106,
+      "file": "106.json",
+      "ayahs": 4,
+      "byteSize": 838,
+      "checksumSha256": "75815f960d968439fd8b7d45d4f566138d0043bd3e7fb452f08ea0e910432818"
+    },
+    {
+      "surah": 107,
+      "file": "107.json",
+      "ayahs": 7,
+      "byteSize": 1042,
+      "checksumSha256": "76a93a8e5aade7416b787defe535070641168a57839fe40745ea202b5db03bb5"
+    },
+    {
+      "surah": 108,
+      "file": "108.json",
+      "ayahs": 3,
+      "byteSize": 781,
+      "checksumSha256": "6a6bc9d44fc988c0fe2e58a812b2977f8fdd15130fd3d8e1bfb8a457d954f0f5"
+    },
+    {
+      "surah": 109,
+      "file": "109.json",
+      "ayahs": 6,
+      "byteSize": 964,
+      "checksumSha256": "b1cd0e87cb930b1071c57a2f482f72a4df0e41f09bd6f147d9b7083e9cf7c5bb"
+    },
+    {
+      "surah": 110,
+      "file": "110.json",
+      "ayahs": 3,
+      "byteSize": 849,
+      "checksumSha256": "a83e0b5d644b041d502c45132f74a9411e0c0eb504e3e3b10f5567b49018a918"
+    },
+    {
+      "surah": 111,
+      "file": "111.json",
+      "ayahs": 5,
+      "byteSize": 1092,
+      "checksumSha256": "b3d9197a2006c53d8c94d1e45eff5ed58e735365e7e16efa966c3caa88b40938"
+    },
+    {
+      "surah": 112,
+      "file": "112.json",
+      "ayahs": 4,
+      "byteSize": 799,
+      "checksumSha256": "8a1e36eeae348dacea1db40448b8f3cf13918303975bbb6d870a7eb6981bad22"
+    },
+    {
+      "surah": 113,
+      "file": "113.json",
+      "ayahs": 5,
+      "byteSize": 846,
+      "checksumSha256": "e5345931ea5ca0c2863a18145fb972777c90663d53f22fc94b8a1c5b482c2699"
+    },
+    {
+      "surah": 114,
+      "file": "114.json",
+      "ayahs": 6,
+      "byteSize": 961,
+      "checksumSha256": "3fca583ac3f0a9802dc6d9c46189b2cf57a44faed0c176c7925894126679ebc1"
+    }
+  ]
+}

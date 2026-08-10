@@ -1,0 +1,78 @@
+{
+  "schemaVersion": 1,
+  "staging": [
+    {
+      "name": "إبهاج أهل الصناعة بدراسة حديث بعثت بالسيف بين يدي الساعة - أبو ذر السمهري اليماني.pdf",
+      "verdict": {
+        "kind": "allow"
+      }
+    },
+    {
+      "name": "الإلجام - أبو عبد الله محمد المنصور.pdf",
+      "verdict": {
+        "kind": "allow"
+      }
+    },
+    {
+      "name": "الدولة الإسلامية بين الحقيقة والوهم - أبو عبد الله محمد المنصور.pdf",
+      "verdict": {
+        "kind": "allow"
+      }
+    },
+    {
+      "name": "تمجيس الجذور  - أبو عبد الله محمد المنصور.pdf",
+      "verdict": {
+        "kind": "allow"
+      }
+    },
+    {
+      "name": "مفاهيم إسلامية حول الدين والدولة - أبو الأعلى المودودي.pdf",
+      "verdict": {
+        "kind": "allow"
+      }
+    },
+    {
+      "name": "نحن والحضارة الغربية - أبو الأعلى المودودي.pdf",
+      "verdict": {
+        "kind": "allow"
+      }
+    }
+  ],
+  "originalBok": [
+    {
+      "name": "الأمة الإسلامية، وحدتها ووسطيتها وآفاق المستقبل - أبو الحسن الندوي.bok",
+      "verdict": {
+        "kind": "allow",
+        "container": "database"
+      }
+    },
+    {
+      "name": "الإسلام والحكم - أبو الحسن الندوي.bok",
+      "verdict": {
+        "kind": "allow",
+        "container": "database"
+      }
+    },
+    {
+      "name": "السيرة النبوية - أبو الحسن الندوي.bok",
+      "verdict": {
+        "kind": "allow",
+        "container": "database"
+      }
+    },
+    {
+      "name": "ردة ولا أبا بكر لها - أبو الحسن الندوي.bok",
+      "verdict": {
+        "kind": "allow",
+        "container": "database"
+      }
+    },
+    {
+      "name": "ماذا خسر العالم بانحطاط المسلمين - أبو الحسن الندوي.bok",
+      "verdict": {
+        "kind": "allow",
+        "container": "database"
+      }
+    }
+  ]
+}

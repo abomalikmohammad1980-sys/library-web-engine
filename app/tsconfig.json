@@ -1,0 +1,25 @@
+{
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    "composite": false,
+    "declaration": false,
+    "noEmit": true,
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "types": ["vite/client"],
+    "paths": {
+      "@engine/ooxml-model": ["packages/ooxml-model/src/index.ts"],
+      "@engine/ooxml-dom": ["packages/ooxml-dom/src/index.ts"],
+      "@engine/layout": ["packages/layout/src/index.ts"],
+      "@engine/shaper": ["packages/shaper/src/index.ts"],
+      "@engine/bidi": ["packages/bidi/src/index.ts"],
+      "@engine/font-system": ["packages/font-system/src/index.ts"],
+      "@engine/scene": ["packages/scene/src/index.ts"],
+      "@engine/paint": ["packages/paint/src/index.ts"],
+      "@engine/interact": ["packages/interact/src/index.ts"],
+      "@library/word-cover": ["packages/word-cover/src/index.ts"],
+      "@library/source-sync": ["packages/source-sync/src/index.ts"]
+    }
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["src/**/*.test.ts"]
+}

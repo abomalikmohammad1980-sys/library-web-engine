@@ -9,3 +9,8 @@ Thumbs.db
 .env
 .env.*
 tools/census/output/
+tmp/
+app/.*build*/
+app/.verify-*/
+alpha-publish/
+tools/shamela-lucene-probe.java

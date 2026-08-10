@@ -1,0 +1,62 @@
+{
+  "schemaVersion": 1,
+  "datasetId": "quranpedia-hafs-uthmani-fatiha-demo",
+  "records": [
+    {
+      "ayahId": "1:1",
+      "surah": 1,
+      "ayah": 1,
+      "sourceRecordId": 62251,
+      "script": "uthmani",
+      "text": "بِسۡمِ ٱللَّهِ ٱلرَّحۡمَٰنِ ٱلرَّحِيمِ"
+    },
+    {
+      "ayahId": "1:2",
+      "surah": 1,
+      "ayah": 2,
+      "sourceRecordId": 62252,
+      "script": "uthmani",
+      "text": "ٱلۡحَمۡدُ لِلَّهِ رَبِّ ٱلۡعَٰلَمِينَ"
+    },
+    {
+      "ayahId": "1:3",
+      "surah": 1,
+      "ayah": 3,
+      "sourceRecordId": 62253,
+      "script": "uthmani",
+      "text": "ٱلرَّحۡمَٰنِ ٱلرَّحِيمِ"
+    },
+    {
+      "ayahId": "1:4",
+      "surah": 1,
+      "ayah": 4,
+      "sourceRecordId": 62254,
+      "script": "uthmani",
+      "text": "مَٰلِكِ يَوۡمِ ٱلدِّينِ"
+    },
+    {
+      "ayahId": "1:5",
+      "surah": 1,
+      "ayah": 5,
+      "sourceRecordId": 62255,
+      "script": "uthmani",
+      "text": "إِيَّاكَ نَعۡبُدُ وَإِيَّاكَ نَسۡتَعِينُ"
+    },
+    {
+      "ayahId": "1:6",
+      "surah": 1,
+      "ayah": 6,
+      "sourceRecordId": 62256,
+      "script": "uthmani",
+      "text": "ٱهۡدِنَا ٱلصِّرَٰطَ ٱلۡمُسۡتَقِيمَ"
+    },
+    {
+      "ayahId": "1:7",
+      "surah": 1,
+      "ayah": 7,
+      "sourceRecordId": 62257,
+      "script": "uthmani",
+      "text": "صِرَٰطَ ٱلَّذِينَ أَنۡعَمۡتَ عَلَيۡهِمۡ غَيۡرِ ٱلۡمَغۡضُوبِ عَلَيۡهِمۡ وَلَا ٱلضَّآلِّينَ"
+    }
+  ]
+}

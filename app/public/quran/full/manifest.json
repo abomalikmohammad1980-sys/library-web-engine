@@ -1,0 +1,941 @@
+{
+  "datasetId": "quranpedia-hafs-uthmani-full",
+  "kind": "ayah-text",
+  "schemaVersion": 1,
+  "dataVersion": "1.0.0",
+  "checksumSha256": "153aec6dd05dac6616a23da55c02780eb6ed86dbc041a60c016edc614cdfa906",
+  "byteSize": 1899474,
+  "locale": "ar",
+  "script": "uthmani",
+  "qiraa": "عاصم",
+  "riwaya": "حفص",
+  "publicationStatus": "publishable-user-attested-waqf-reuse",
+  "search": {
+    "file": "search-index.json",
+    "checksumSha256": "8f5be71f7edafed1ea02d896b1b7faa92f6c3b086ffeea696b07629aa657a57d",
+    "byteSize": 2721216,
+    "normalizationVersion": "arabic-broad-v1"
+  },
+  "provenance": {
+    "sourceName": "الموسوعة القرآنية Quranpedia",
+    "sourceUrl": "https://api.quranpedia.net/v1/mushafs/2/{surah}",
+    "licenseId": "USER-ATTESTED-WAQF-REUSE",
+    "attribution": "الموسوعة القرآنية Quranpedia — API v1؛ مصحف حفص النصي بالخط العثماني.",
+    "permissionBasis": "إقرار صاحب مشروع الخزانة بتاريخ 2026-08-09 بأن المصدر وقفي مصرح بالانتفاع والنشر في الخزانة الوقفية؛ لا يمثل معرف SPDX.",
+    "retrievedAt": "2026-08-09T02:34:58.952Z",
+    "sources": [
+      {
+        "surah": 1,
+        "url": "https://api.quranpedia.net/v1/mushafs/2/1",
+        "etag": null,
+        "checksumSha256": "b79e60c69a283cf1a3e2d98337e36bb83534e779349e103ef269aefbf1bfeef0",
+        "byteLength": 2974,
+        "resumed": false
+      },
+      {
+        "surah": 2,
+        "url": "https://api.quranpedia.net/v1/mushafs/2/2",
+        "etag": null,
+        "checksumSha256": "21ce658adc3ee0b59d4e734ff6c758b9b260ce65e59a751cdab108005e1b42fd",
+        "byteLength": 362136,
+        "resumed": false
+      },
+      {
+        "surah": 3,
+        "url": "https://api.quranpedia.net/v1/mushafs/2/3",
+        "etag": null,
+        "checksumSha256": "d52f60563326efcf5e89761d583c9c1fc72ef9db07860e717d9c4e1177faeff7",
+        "byteLength": 212464,
+        "resumed": false
+      },
+      {
+        "surah": 4,
+        "url": "https://api.quranpedia.net/v1/mushafs/2/4",
+        "etag": null,
+        "checksumSha256": "bc09cc6d7c118b33633055351143b6ec35ebd59af18c122a124b8a9932f27e61",
+        "byteLength": 222510,
+        "resumed": false
+      },
+      {
+        "surah": 5,
+        "url": "https://api.quranpedia.net/v1/mushafs/2/5",
+        "etag": null,
+        "checksumSha256": "c4014d9424250e3c1f35f91a504135d15287293aa979ac59b9375a881eb197bb",
+        "byteLength": 164935,
+        "resumed": false
+      },
+      {
+        "surah": 6,
+        "url": "https://api.quranpedia.net/v1/mushafs/2/6",
+        "etag": null,
+        "checksumSha256": "80f6ecac59c6bc359249991bcd9340a59cd3bce240dbf3b844ccc4b6e757400f",
+        "byteLength": 181922,
+        "resumed": false
+      },
+      {
+        "surah": 7,
+        "url": "https://api.quranpedia.net/v1/mushafs/2/7",
+        "etag": null,
+        "checksumSha256": "1da68dfe5b0f961b85fcff9431d4e8c75599f8c6cc83b525daa79e35c34a15d8",
+        "byteLength": 207482,
+        "resumed": false
+      },
+      {
+        "surah": 8,
+        "url": "https://api.quranpedia.net/v1/mushafs/2/8",
+        "etag": null,
+        "checksumSha256": "2de1e3e6991e362da82d901ad8ce252f21db1f09ede6e231bcc465b5f10f89ba",
+        "byteLength": 77301,
+        "resumed": false
+      },
+      {
+        "surah": 9,
+        "url": "https://api.quranpedia.net/v1/mushafs/2/9",
+        "etag": null,
+        "checksumSha256": "42fde2bc0b7ec9cae64a73b6f3631b4486ba7a2bfea8bf4b7de182e3439843b9",
+        "byteLength": 153417,
+        "resumed": false
+      },
+      {
+        "surah": 10,
+        "url": "https://api.quranpedia.net/v1/mushafs/2/10",
+        "etag": null,
+        "checksumSha256": "af03f5193fe8deadbefa840c0390a9ecb5103ac9d701cb4b27df46bddf25ca6d",
+        "byteLength": 109658,
+        "resumed": false
+      },
+      {
+        "surah": 11,
+        "url": "https://api.quranpedia.net/v1/mushafs/2/11",
+        "etag": null,
+        "checksumSha256": "8f9843b2e55150457609062fbc71e8bca13b6abc60b2d39a9b8dd311ab4d11d5",
+        "byteLength": 115572,
+        "resumed": false
+      },
+      {
+        "surah": 12,
+        "url": "https://api.quranpedia.net/v1/mushafs/2/12",
+        "etag": null,
+        "checksumSha256": "79cc1e5900fa49f6c52420aaff83da7a282761a75074d3c50829da61d2afe314",
+        "byteLength": 107108,
+        "resumed": false
+      },
+      {
+        "surah": 13,
+        "url": "https://api.quranpedia.net/v1/mushafs/2/13",
+        "etag": null,
+        "checksumSha256": "bc1bc896f5a70a405d4567eff03ab7da7bae341208690a4bc42e251c5254ae61",
+        "byteLength": 50098,
+        "resumed": false
+      },
+      {
+        "surah": 14,
+        "url": "https://api.quranpedia.net/v1/mushafs/2/14",
+        "etag": null,
+        "checksumSha256": "00f661470e9f822fe0a068f77d58990669855bc39436c512dd05984c9b49779c",
+        "byteLength": 51231,
+        "resumed": false
+      },
+      {
+        "surah": 15,
+        "url": "https://api.quranpedia.net/v1/mushafs/2/15",
+        "etag": null,
+        "checksumSha256": "7ad90f18f5e0273e1a4e5eb2c12039cedec7df3ebb737a995e13546f4c0521ea",
+        "byteLength": 51545,
+        "resumed": false
+      },
+      {
+        "surah": 16,
+        "url": "https://api.quranpedia.net/v1/mushafs/2/16",
+        "etag": null,
+        "checksumSha256": "aea562048ce892917adec0e19dffd45ff93d7114dbd650fe5fb694034ab0a590",
+        "byteLength": 115898,
+        "resumed": false
+      },
+      {
+        "surah": 17,
+        "url": "https://api.quranpedia.net/v1/mushafs/2/17",
+        "etag": null,
+        "checksumSha256": "ccab2273e16b17a13f305433d97e84e1f2416a3d42993f0fae9ba496e2613c66",
+        "byteLength": 98901,
+        "resumed": false
+      },
+      {
+        "surah": 18,
+        "url": "https://api.quranpedia.net/v1/mushafs/2/18",
+        "etag": null,
+        "checksumSha256": "7260af63dd069db7ed9aac3fd8a2d840dc14e5708fc55b403110a38a9c5d245b",
+        "byteLength": 97683,
+        "resumed": false
+      },
+      {
+        "surah": 19,
+        "url": "https://api.quranpedia.net/v1/mushafs/2/19",
+        "etag": null,
+        "checksumSha256": "31a4befe5af06168d5d2e13fb7e0f41ec1ebdae563aa57e7a8e88bdd7c8bddd1",
+        "byteLength": 64933,
+        "resumed": false
+      },
+      {
+        "surah": 20,
+        "url": "https://api.quranpedia.net/v1/mushafs/2/20",
+        "etag": null,
+        "checksumSha256": "c264b5b1f7c34a10e8ec0777792d6e496b27baca2fbe2f08091cb0ab6fd6ab35",
+        "byteLength": 89038,
+        "resumed": false
+      },
+      {
+        "surah": 21,
+        "url": "https://api.quranpedia.net/v1/mushafs/2/21",
+        "etag": null,
+        "checksumSha256": "1d2241c54702cffe4b12dcb6b63b951c6554b14719020f934e0fdc701a3d4806",
+        "byteLength": 80022,
+        "resumed": false
+      },
+      {
+        "surah": 22,
+        "url": "https://api.quranpedia.net/v1/mushafs/2/22",
+        "etag": null,
+        "checksumSha256": "a2ace77e89495c941e0a4789ede80f77cd7fe420ca9a6cbd74dfe58b53dd865f",
+        "byteLength": 76624,
+        "resumed": false
+      },
+      {
+        "surah": 23,
+        "url": "https://api.quranpedia.net/v1/mushafs/2/23",
+        "etag": null,
+        "checksumSha256": "c46533c889b1caaee8257c0270ea337eabec4ad0acebc997af91023f5f386ba5",
+        "byteLength": 73849,
+        "resumed": false
+      },
+      {
+        "surah": 24,
+        "url": "https://api.quranpedia.net/v1/mushafs/2/24",
+        "etag": null,
+        "checksumSha256": "21bad45e0288c53a23d6e6cd45a0a3e382861e3c6262e9743ca9b50bd6fea77e",
+        "byteLength": 79706,
+        "resumed": false
+      },
+      {
+        "surah": 25,
+        "url": "https://api.quranpedia.net/v1/mushafs/2/25",
+        "etag": null,
+        "checksumSha256": "c768115295a3cad538d27fa0fb806d4e5e91b9f131b8d133618b674b151ca245",
+        "byteLength": 59149,
+        "resumed": false
+      },
+      {
+        "surah": 26,
+        "url": "https://api.quranpedia.net/v1/mushafs/2/26",
+        "etag": null,
+        "checksumSha256": "0c33001d91a07a898c16e71897423df36758176b2f47e2d39c3bdd499cd355c9",
+        "byteLength": 106169,
+        "resumed": false
+      },
+      {
+        "surah": 27,
+        "url": "https://api.quranpedia.net/v1/mushafs/2/27",
+        "etag": null,
+        "checksumSha256": "2ec0f823736f04823008ea44f10d76656c5fb746e799019bbc20b7a0e063d949",
+        "byteLength": 73715,
+        "resumed": false
+      },
+      {
+        "surah": 28,
+        "url": "https://api.quranpedia.net/v1/mushafs/2/28",
+        "etag": null,
+        "checksumSha256": "7c2e64772e2bf47d84e36ad24ef3d215429f5ae8ad9774339a81abcb89a3c42e",
+        "byteLength": 86215,
+        "resumed": false
+      },
+      {
+        "surah": 29,
+        "url": "https://api.quranpedia.net/v1/mushafs/2/29",
+        "etag": null,
+        "checksumSha256": "34c40bbe85bcd6006a346abc9154bc16c5c20b9961c4c5a1de4cf755b48fe0b2",
+        "byteLength": 63144,
+        "resumed": false
+      },
+      {
+        "surah": 30,
+        "url": "https://api.quranpedia.net/v1/mushafs/2/30",
+        "etag": null,
+        "checksumSha256": "f5cb1e0a25b55fb515563975e38204e714e8c372b14ad792043713ba1ee33938",
+        "byteLength": 52007,
+        "resumed": false
+      },
+      {
+        "surah": 31,
+        "url": "https://api.quranpedia.net/v1/mushafs/2/31",
+        "etag": null,
+        "checksumSha256": "3c89a895b76c33b434778fc65e4f5afe51ecf5e8c0bdc942ecfe212e4877edff",
+        "byteLength": 31701,
+        "resumed": false
+      },
+      {
+        "surah": 32,
+        "url": "https://api.quranpedia.net/v1/mushafs/2/32",
+        "etag": null,
+        "checksumSha256": "33bf45130d808faba9b0fb6667e5a2c807ac4db8b83128b8e0268a792e7f122f",
+        "byteLength": 23793,
+        "resumed": false
+      },
+      {
+        "surah": 33,
+        "url": "https://api.quranpedia.net/v1/mushafs/2/33",
+        "etag": null,
+        "checksumSha256": "a66746a7be4fadc9de04e1683c897fe181283dbeaeb3edd5526d8c46172de3fc",
+        "byteLength": 80498,
+        "resumed": false
+      },
+      {
+        "surah": 34,
+        "url": "https://api.quranpedia.net/v1/mushafs/2/34",
+        "etag": null,
+        "checksumSha256": "d738ba3084ce30c28aeadae1d576ea1914476540ec2df52fb4146a8d4b2125c2",
+        "byteLength": 52141,
+        "resumed": false
+      },
+      {
+        "surah": 35,
+        "url": "https://api.quranpedia.net/v1/mushafs/2/35",
+        "etag": null,
+        "checksumSha256": "989e41031c563d08c97d9ce5f9005c6aed16eb42447d73eb49b599cf61432e5a",
+        "byteLength": 46069,
+        "resumed": false
+      },
+      {
+        "surah": 36,
+        "url": "https://api.quranpedia.net/v1/mushafs/2/36",
+        "etag": null,
+        "checksumSha256": "6c3ffb28d6e0ebe5283ba9a28d2095faaa18cbe49c7f115451ab87feb399dc67",
+        "byteLength": 51161,
+        "resumed": false
+      },
+      {
+        "surah": 37,
+        "url": "https://api.quranpedia.net/v1/mushafs/2/37",
+        "etag": null,
+        "checksumSha256": "a5321a01aaed57b142a879db10ed5818371d93d5fd77bbd5bb6505c80c126259",
+        "byteLength": 77524,
+        "resumed": false
+      },
+      {
+        "surah": 38,
+        "url": "https://api.quranpedia.net/v1/mushafs/2/38",
+        "etag": null,
+        "checksumSha256": "8b0ae44b71182ae0704471b38c6b09eb93af3b6236a210b7a41db86dc6922d70",
+        "byteLength": 52428,
+        "resumed": false
+      },
+      {
+        "surah": 39,
+        "url": "https://api.quranpedia.net/v1/mushafs/2/39",
+        "etag": null,
+        "checksumSha256": "b78451aa284bcf7d4f4ca8f6ea03e3da08a83018127b7f00a3418ee3909e79bb",
+        "byteLength": 70953,
+        "resumed": false
+      },
+      {
+        "surah": 40,
+        "url": "https://api.quranpedia.net/v1/mushafs/2/40",
+        "etag": null,
+        "checksumSha256": "9763d3d86ed7daf53463cbbd829b6e535b8c454b617284e050399853f33c466e",
+        "byteLength": 74697,
+        "resumed": false
+      },
+      {
+        "surah": 41,
+        "url": "https://api.quranpedia.net/v1/mushafs/2/41",
+        "etag": null,
+        "checksumSha256": "dc9b795457664ca808bae90311b882509940bb2578a7d9d1bfa66625663a6e32",
+        "byteLength": 49225,
+        "resumed": false
+      },
+      {
+        "surah": 42,
+        "url": "https://api.quranpedia.net/v1/mushafs/2/42",
+        "etag": null,
+        "checksumSha256": "a329c64d23b040d833a8f0b13c9d68c4dde2f301bc07b7e0e3a8f83ddc3fbb94",
+        "byteLength": 50760,
+        "resumed": false
+      },
+      {
+        "surah": 43,
+        "url": "https://api.quranpedia.net/v1/mushafs/2/43",
+        "etag": null,
+        "checksumSha256": "44e02e8f269c5942b2fb93e540c1407c37d28a65f18e1a03b9cd245733677351",
+        "byteLength": 58176,
+        "resumed": false
+      },
+      {
+        "surah": 44,
+        "url": "https://api.quranpedia.net/v1/mushafs/2/44",
+        "etag": null,
+        "checksumSha256": "931543ff8446fa1c219e7bf2dbeeaf0fdf04e044ad634fb4d477bfb87e13af46",
+        "byteLength": 27441,
+        "resumed": false
+      },
+      {
+        "surah": 45,
+        "url": "https://api.quranpedia.net/v1/mushafs/2/45",
+        "etag": null,
+        "checksumSha256": "3cc12814d64d7bc87ed36f9359a605679894419bcaba7cdb5e04c34abf0d53ae",
+        "byteLength": 30947,
+        "resumed": false
+      },
+      {
+        "surah": 46,
+        "url": "https://api.quranpedia.net/v1/mushafs/2/46",
+        "etag": null,
+        "checksumSha256": "58d6af801a5182453328129981c66f332045852dc25e822716e11785704afe52",
+        "byteLength": 37521,
+        "resumed": false
+      },
+      {
+        "surah": 47,
+        "url": "https://api.quranpedia.net/v1/mushafs/2/47",
+        "etag": null,
+        "checksumSha256": "1941e2ceeb567219b7e4720a08474e7d297eca0300d7ba549fe8fbab763dfa05",
+        "byteLength": 35432,
+        "resumed": false
+      },
+      {
+        "surah": 48,
+        "url": "https://api.quranpedia.net/v1/mushafs/2/48",
+        "etag": null,
+        "checksumSha256": "e1977ff507d8626a4945c60d2ead1f81c3e7a1163df0d39db0c5eab335aac29b",
+        "byteLength": 34287,
+        "resumed": false
+      },
+      {
+        "surah": 49,
+        "url": "https://api.quranpedia.net/v1/mushafs/2/49",
+        "etag": null,
+        "checksumSha256": "9e744dfd9ace9d61188b0f3999fca5a1024246c706cf72daa895be4afb701a00",
+        "byteLength": 21252,
+        "resumed": false
+      },
+      {
+        "surah": 50,
+        "url": "https://api.quranpedia.net/v1/mushafs/2/50",
+        "etag": null,
+        "checksumSha256": "809f73a5b403ff66f029c3d4eebb70ab166b39c8a70d1e75a8f2678952fd4ea9",
+        "byteLength": 25801,
+        "resumed": false
+      },
+      {
+        "surah": 51,
+        "url": "https://api.quranpedia.net/v1/mushafs/2/51",
+        "etag": null,
+        "checksumSha256": "f9696f5a9d66bcc38ac500bb00ddae61261c1c7ea3c23cc18f3095437e183ccd",
+        "byteLength": 28507,
+        "resumed": false
+      },
+      {
+        "surah": 52,
+        "url": "https://api.quranpedia.net/v1/mushafs/2/52",
+        "etag": null,
+        "checksumSha256": "44b92987837ec37b09245642f37380907be1fe949443c93f8dfa01e270ffbe0b",
+        "byteLength": 24058,
+        "resumed": false
+      },
+      {
+        "surah": 53,
+        "url": "https://api.quranpedia.net/v1/mushafs/2/53",
+        "etag": null,
+        "checksumSha256": "c2d977f47911238036f4d246b1383201f7ab56b0f73b6706bb5e7511feed8641",
+        "byteLength": 27987,
+        "resumed": false
+      },
+      {
+        "surah": 54,
+        "url": "https://api.quranpedia.net/v1/mushafs/2/54",
+        "etag": null,
+        "checksumSha256": "d6cfc668ee633235294ed740f166b3e6a9f1fd1eaf0b91badadd8d40b1ee8138",
+        "byteLength": 27319,
+        "resumed": false
+      },
+      {
+        "surah": 55,
+        "url": "https://api.quranpedia.net/v1/mushafs/2/55",
+        "etag": null,
+        "checksumSha256": "bebdfd324f03117147a0c6b434127be7a4f8377ea378062c16185da488518bf5",
+        "byteLength": 33353,
+        "resumed": false
+      },
+      {
+        "surah": 56,
+        "url": "https://api.quranpedia.net/v1/mushafs/2/56",
+        "etag": null,
+        "checksumSha256": "6f0cc9a060c145c771587492d6959a82e085abf3ca5ad34960f55489e9053add",
+        "byteLength": 36940,
+        "resumed": false
+      },
+      {
+        "surah": 57,
+        "url": "https://api.quranpedia.net/v1/mushafs/2/57",
+        "etag": null,
+        "checksumSha256": "aab871949b253b509c4b7a586341f9287b1d6e227c625fdfb8660344693a8439",
+        "byteLength": 34732,
+        "resumed": false
+      },
+      {
+        "surah": 58,
+        "url": "https://api.quranpedia.net/v1/mushafs/2/58",
+        "etag": null,
+        "checksumSha256": "407a6b029a683ad001c1b2cb1d06bbb7dc6024f39d2826cb6c986d314d2ac8ec",
+        "byteLength": 28010,
+        "resumed": false
+      },
+      {
+        "surah": 59,
+        "url": "https://api.quranpedia.net/v1/mushafs/2/59",
+        "etag": null,
+        "checksumSha256": "21b7892f4cfe852fa2f54feb1f0289579b99452b5c5c599a444e94421fa6427e",
+        "byteLength": 27030,
+        "resumed": false
+      },
+      {
+        "surah": 60,
+        "url": "https://api.quranpedia.net/v1/mushafs/2/60",
+        "etag": null,
+        "checksumSha256": "f3ac9279185d1dcdba91efb6a78723fca38111e6b9f4e6e341619d090b65f915",
+        "byteLength": 20661,
+        "resumed": false
+      },
+      {
+        "surah": 61,
+        "url": "https://api.quranpedia.net/v1/mushafs/2/61",
+        "etag": null,
+        "checksumSha256": "5d8abc1f8dcc7d2f44675c7e456ba4b8fc629f5f04a4f507ec9bc2d7a17350e6",
+        "byteLength": 13686,
+        "resumed": false
+      },
+      {
+        "surah": 62,
+        "url": "https://api.quranpedia.net/v1/mushafs/2/62",
+        "etag": null,
+        "checksumSha256": "499314532532109f3fb408319e90770217847b075398ac99c35b8c165f17aaec",
+        "byteLength": 10812,
+        "resumed": false
+      },
+      {
+        "surah": 63,
+        "url": "https://api.quranpedia.net/v1/mushafs/2/63",
+        "etag": null,
+        "checksumSha256": "820c141f6bfe53739e5895031331041d13d727124fbf896ddef412e91b110b36",
+        "byteLength": 11419,
+        "resumed": false
+      },
+      {
+        "surah": 64,
+        "url": "https://api.quranpedia.net/v1/mushafs/2/64",
+        "etag": null,
+        "checksumSha256": "c744657e93898acb67b206a9abb5a86f9c2f0e4bf5623e543887a6153d36a98d",
+        "byteLength": 15894,
+        "resumed": false
+      },
+      {
+        "surah": 65,
+        "url": "https://api.quranpedia.net/v1/mushafs/2/65",
+        "etag": null,
+        "checksumSha256": "6e716604441d184eced4e708009d5a48ece9bf8358868ac44aa78524c590e534",
+        "byteLength": 16606,
+        "resumed": false
+      },
+      {
+        "surah": 66,
+        "url": "https://api.quranpedia.net/v1/mushafs/2/66",
+        "etag": null,
+        "checksumSha256": "681bdc8013fe7a90215724b55323ab2798e95fd3833a161aec8c153b06141245",
+        "byteLength": 15031,
+        "resumed": false
+      },
+      {
+        "surah": 67,
+        "url": "https://api.quranpedia.net/v1/mushafs/2/67",
+        "etag": null,
+        "checksumSha256": "1fe1f53a8f3b0009078eaa39475786fe6c522129a8a75bc1fc916639990f2fd5",
+        "byteLength": 21113,
+        "resumed": false
+      },
+      {
+        "surah": 68,
+        "url": "https://api.quranpedia.net/v1/mushafs/2/68",
+        "etag": null,
+        "checksumSha256": "722a828cd30d005c08326190b2cc8770c93e51b1f712064a56aeb9852927f492",
+        "byteLength": 24027,
+        "resumed": false
+      },
+      {
+        "surah": 69,
+        "url": "https://api.quranpedia.net/v1/mushafs/2/69",
+        "etag": null,
+        "checksumSha256": "cd3bc65624dea2aa251633eeb77c1452bf3ec2a1b020b2dc299de4a755f1f5b4",
+        "byteLength": 22271,
+        "resumed": false
+      },
+      {
+        "surah": 70,
+        "url": "https://api.quranpedia.net/v1/mushafs/2/70",
+        "etag": null,
+        "checksumSha256": "efedafbe5962358fd5a55bcae4d2a9a0a8c7c3676aa0770aec9ab8e7616fb00a",
+        "byteLength": 19063,
+        "resumed": false
+      },
+      {
+        "surah": 71,
+        "url": "https://api.quranpedia.net/v1/mushafs/2/71",
+        "etag": null,
+        "checksumSha256": "e1b833e263c63415f0c1ab9fec86c826ac06d5b28d4c4dbdc145d2cb1b176266",
+        "byteLength": 16078,
+        "resumed": false
+      },
+      {
+        "surah": 72,
+        "url": "https://api.quranpedia.net/v1/mushafs/2/72",
+        "etag": null,
+        "checksumSha256": "d555ab386cadaeb65a495eabf2a516979c31a9126164b22b8a4fde80fa85cef8",
+        "byteLength": 18153,
+        "resumed": false
+      },
+      {
+        "surah": 73,
+        "url": "https://api.quranpedia.net/v1/mushafs/2/73",
+        "etag": null,
+        "checksumSha256": "6438f7e5f4d826ef4e120476ac8f9865077b391886af597454846e29f6dc7287",
+        "byteLength": 13477,
+        "resumed": false
+      },
+      {
+        "surah": 74,
+        "url": "https://api.quranpedia.net/v1/mushafs/2/74",
+        "etag": null,
+        "checksumSha256": "63e25800e106322ab50d203a2a2dbbb04af4fce9df78a6956240a76614ffbfaf",
+        "byteLength": 22062,
+        "resumed": false
+      },
+      {
+        "surah": 75,
+        "url": "https://api.quranpedia.net/v1/mushafs/2/75",
+        "etag": null,
+        "checksumSha256": "8bd74accb648208d916d8eb8a9c63e6b52061d387a88359c16e46e327045ba5e",
+        "byteLength": 15201,
+        "resumed": false
+      },
+      {
+        "surah": 76,
+        "url": "https://api.quranpedia.net/v1/mushafs/2/76",
+        "etag": null,
+        "checksumSha256": "d8d9c9ca0d33de041569cbe372e519a70f591e7609b16fbaacf8461fe4fbe876",
+        "byteLength": 17915,
+        "resumed": false
+      },
+      {
+        "surah": 77,
+        "url": "https://api.quranpedia.net/v1/mushafs/2/77",
+        "etag": null,
+        "checksumSha256": "8be2ea15905be5fa497b91aab2569682b01b816b2abf99cc296ad4ec008b6c2b",
+        "byteLength": 18234,
+        "resumed": false
+      },
+      {
+        "surah": 78,
+        "url": "https://api.quranpedia.net/v1/mushafs/2/78",
+        "etag": null,
+        "checksumSha256": "fd26fb77ecd872669e8e5de8669ecc8a80f26c92124b72c5c961dae97a4c9bb7",
+        "byteLength": 15950,
+        "resumed": false
+      },
+      {
+        "surah": 79,
+        "url": "https://api.quranpedia.net/v1/mushafs/2/79",
+        "etag": null,
+        "checksumSha256": "06d740a4be8413accf7c46a999defd5184064575592c51c5d9dcfe1013c38084",
+        "byteLength": 17116,
+        "resumed": false
+      },
+      {
+        "surah": 80,
+        "url": "https://api.quranpedia.net/v1/mushafs/2/80",
+        "etag": null,
+        "checksumSha256": "ce756ca037d738d6edc147727861edd67496e731cc91d92b6ead1ea574f266bb",
+        "byteLength": 14050,
+        "resumed": false
+      },
+      {
+        "surah": 81,
+        "url": "https://api.quranpedia.net/v1/mushafs/2/81",
+        "etag": null,
+        "checksumSha256": "0a4c061931d20f2266faac6dbd6cb46da52d4c7b5367af4727c30577e20250e2",
+        "byteLength": 10158,
+        "resumed": false
+      },
+      {
+        "surah": 82,
+        "url": "https://api.quranpedia.net/v1/mushafs/2/82",
+        "etag": null,
+        "checksumSha256": "242fae1de26361a989fa84d615864cdf4c4cb7f6855f413b16b354aed819669f",
+        "byteLength": 7164,
+        "resumed": false
+      },
+      {
+        "surah": 83,
+        "url": "https://api.quranpedia.net/v1/mushafs/2/83",
+        "etag": null,
+        "checksumSha256": "4a69141e4edeed9dd206dfc9e03145aa7993f2a05783b13796b050e2af895663",
+        "byteLength": 15030,
+        "resumed": false
+      },
+      {
+        "surah": 84,
+        "url": "https://api.quranpedia.net/v1/mushafs/2/84",
+        "etag": null,
+        "checksumSha256": "26f87f700279e4e7780c68af468a890e8878d82e6162a795803369f9bc196553",
+        "byteLength": 9522,
+        "resumed": false
+      },
+      {
+        "surah": 85,
+        "url": "https://api.quranpedia.net/v1/mushafs/2/85",
+        "etag": null,
+        "checksumSha256": "a103a0676d5983c7ef7a632f308babf964b62cf056503700a5fcb137da85d686",
+        "byteLength": 9161,
+        "resumed": false
+      },
+      {
+        "surah": 86,
+        "url": "https://api.quranpedia.net/v1/mushafs/2/86",
+        "etag": null,
+        "checksumSha256": "7bcea17c5a774bdd33ebfb85cac795b042c6b1e4d428e9a0e89045b976385a02",
+        "byteLength": 5931,
+        "resumed": false
+      },
+      {
+        "surah": 87,
+        "url": "https://api.quranpedia.net/v1/mushafs/2/87",
+        "etag": null,
+        "checksumSha256": "f1266d34372004e6530b056410ff71e0e725b0dd94ea08633e264d0d2b775a30",
+        "byteLength": 6875,
+        "resumed": false
+      },
+      {
+        "surah": 88,
+        "url": "https://api.quranpedia.net/v1/mushafs/2/88",
+        "etag": null,
+        "checksumSha256": "e00d6ea9d363c6cf52695a83abd0b1a4e1fd0bbdc485debc8b1632375f87caf5",
+        "byteLength": 8984,
+        "resumed": false
+      },
+      {
+        "surah": 89,
+        "url": "https://api.quranpedia.net/v1/mushafs/2/89",
+        "etag": null,
+        "checksumSha256": "3c1b69722770e0ad6cf677d457d046be0ca4291c3139dfc1d3f85187130057f2",
+        "byteLength": 12142,
+        "resumed": false
+      },
+      {
+        "surah": 90,
+        "url": "https://api.quranpedia.net/v1/mushafs/2/90",
+        "etag": null,
+        "checksumSha256": "bff0b8e9e0706460f387c098596765ca7287816e4d3b6da895b18b2d2f92a33b",
+        "byteLength": 7546,
+        "resumed": false
+      },
+      {
+        "surah": 91,
+        "url": "https://api.quranpedia.net/v1/mushafs/2/91",
+        "etag": null,
+        "checksumSha256": "e763d77cfe14e1eaf5a53cf0831d540a17eef796990df6c9563b7184d100f677",
+        "byteLength": 5541,
+        "resumed": false
+      },
+      {
+        "surah": 92,
+        "url": "https://api.quranpedia.net/v1/mushafs/2/92",
+        "etag": null,
+        "checksumSha256": "e2d4bb11f1a33e8278e37af20b4bf0c6d6d4f4442e27cc2b15fbd63ca40c5eae",
+        "byteLength": 7500,
+        "resumed": false
+      },
+      {
+        "surah": 93,
+        "url": "https://api.quranpedia.net/v1/mushafs/2/93",
+        "etag": null,
+        "checksumSha256": "10d5996bbec5a72171a108cd0c3541846aa9fe24c8f5383b6f45354a934bb499",
+        "byteLength": 3941,
+        "resumed": false
+      },
+      {
+        "surah": 94,
+        "url": "https://api.quranpedia.net/v1/mushafs/2/94",
+        "etag": null,
+        "checksumSha256": "0d76dcb222bcf2dc481e758100df5075fd05e99d765c5b4be02e4a8f56cd3a81",
+        "byteLength": 2550,
+        "resumed": false
+      },
+      {
+        "surah": 95,
+        "url": "https://api.quranpedia.net/v1/mushafs/2/95",
+        "etag": null,
+        "checksumSha256": "f89479e3dded766c670e3e0055115c60bd1b32e141f4a5f1041487da27d3c40b",
+        "byteLength": 3182,
+        "resumed": false
+      },
+      {
+        "surah": 96,
+        "url": "https://api.quranpedia.net/v1/mushafs/2/96",
+        "etag": null,
+        "checksumSha256": "860182e8626551fae5a6d078556d2a0cb66a0877329302edab2977d4367b96b2",
+        "byteLength": 6792,
+        "resumed": false
+      },
+      {
+        "surah": 97,
+        "url": "https://api.quranpedia.net/v1/mushafs/2/97",
+        "etag": null,
+        "checksumSha256": "06a5f11eae96accf018927421d09df06517d1fc757c7fc8efaa8df5da2e8bbbc",
+        "byteLength": 2273,
+        "resumed": false
+      },
+      {
+        "surah": 98,
+        "url": "https://api.quranpedia.net/v1/mushafs/2/98",
+        "etag": null,
+        "checksumSha256": "5ca880a37eed26e3d3ece87b9f1d88a14abb40c8f6df57bfc0c2a3bcab069aae",
+        "byteLength": 6196,
+        "resumed": false
+      },
+      {
+        "surah": 99,
+        "url": "https://api.quranpedia.net/v1/mushafs/2/99",
+        "etag": null,
+        "checksumSha256": "8ea2579a70781d2734061affc961e8f7a61e96d888f9d18e1f12a62d19a2a0ed",
+        "byteLength": 3271,
+        "resumed": false
+      },
+      {
+        "surah": 100,
+        "url": "https://api.quranpedia.net/v1/mushafs/2/100",
+        "etag": null,
+        "checksumSha256": "1fa08ae62b65f66cbdc18d1cb5062e61810c4830f3074e64adf88c8fa1a71210",
+        "byteLength": 3980,
+        "resumed": false
+      },
+      {
+        "surah": 101,
+        "url": "https://api.quranpedia.net/v1/mushafs/2/101",
+        "etag": null,
+        "checksumSha256": "0901068ed6b4a18dc1611973f9615c27febfc587e46b5376445542483dab737e",
+        "byteLength": 3739,
+        "resumed": false
+      },
+      {
+        "surah": 102,
+        "url": "https://api.quranpedia.net/v1/mushafs/2/102",
+        "etag": null,
+        "checksumSha256": "17829b138145bc5ab225e8cf29ac0fb8edbfc9ced8ff6362b8727da633e2705b",
+        "byteLength": 2900,
+        "resumed": false
+      },
+      {
+        "surah": 103,
+        "url": "https://api.quranpedia.net/v1/mushafs/2/103",
+        "etag": null,
+        "checksumSha256": "e06f72c48396a599ba90ea692f5e8fb20115c502a86934853d0703045ae4808c",
+        "byteLength": 1340,
+        "resumed": false
+      },
+      {
+        "surah": 104,
+        "url": "https://api.quranpedia.net/v1/mushafs/2/104",
+        "etag": null,
+        "checksumSha256": "dd5f3097089e44778b5f04c703298feb3709aab0de0cb9877f7c5adf6e491cea",
+        "byteLength": 3247,
+        "resumed": false
+      },
+      {
+        "surah": 105,
+        "url": "https://api.quranpedia.net/v1/mushafs/2/105",
+        "etag": null,
+        "checksumSha256": "10eaf8797ab7212751546c962fc6ca9b66c938a69bc9748db81d69cc3fa59318",
+        "byteLength": 2067,
+        "resumed": false
+      },
+      {
+        "surah": 106,
+        "url": "https://api.quranpedia.net/v1/mushafs/2/106",
+        "etag": null,
+        "checksumSha256": "d71eb19d3595abf32e9498da4e86f9e5ed528f87e8d80b3fd9d868bdde7e8885",
+        "byteLength": 1626,
+        "resumed": false
+      },
+      {
+        "surah": 107,
+        "url": "https://api.quranpedia.net/v1/mushafs/2/107",
+        "etag": null,
+        "checksumSha256": "d45ba75bfa8a51ceffd76991b6c81e80992e00da27ba0da3a3e0395cb1c5d236",
+        "byteLength": 2568,
+        "resumed": false
+      },
+      {
+        "surah": 108,
+        "url": "https://api.quranpedia.net/v1/mushafs/2/108",
+        "etag": null,
+        "checksumSha256": "3b93367e04aa9eb86ef19faa12bc36da4566c7a8f6b4d5e9db5b42df2be5efa2",
+        "byteLength": 1083,
+        "resumed": false
+      },
+      {
+        "surah": 109,
+        "url": "https://api.quranpedia.net/v1/mushafs/2/109",
+        "etag": null,
+        "checksumSha256": "c9e718406277acf8b878ad67883ff1e663a64803e3ffeedc788b18e3891b69a1",
+        "byteLength": 2266,
+        "resumed": false
+      },
+      {
+        "surah": 110,
+        "url": "https://api.quranpedia.net/v1/mushafs/2/110",
+        "etag": null,
+        "checksumSha256": "fb53ad8c35a1b4dee6e1c20050a9ed508cb4d49b7ac47b6459022685f0d9f76e",
+        "byteLength": 1504,
+        "resumed": false
+      },
+      {
+        "surah": 111,
+        "url": "https://api.quranpedia.net/v1/mushafs/2/111",
+        "etag": null,
+        "checksumSha256": "c7cad37b3871feb727e9c92e2d5a3dd353fa2dc59d0c92a1a063df80d219293b",
+        "byteLength": 1914,
+        "resumed": false
+      },
+      {
+        "surah": 112,
+        "url": "https://api.quranpedia.net/v1/mushafs/2/112",
+        "etag": null,
+        "checksumSha256": "9910b409e10d4a98cc32ee3355e82c5baba6dc58628c7588e76544d30ada15ab",
+        "byteLength": 1327,
+        "resumed": false
+      },
+      {
+        "surah": 113,
+        "url": "https://api.quranpedia.net/v1/mushafs/2/113",
+        "etag": null,
+        "checksumSha256": "5e93d4102e64a0f41602851cefc788042f552d793d2b31890c7fb62e36c4b9c7",
+        "byteLength": 1762,
+        "resumed": false
+      },
+      {
+        "surah": 114,
+        "url": "https://api.quranpedia.net/v1/mushafs/2/114",
+        "etag": null,
+        "checksumSha256": "5fbf969cc1f3ab21c0e21b4f1d03ea0106cd83b8600c91a78008665f14b0fddd",
+        "byteLength": 1995,
+        "resumed": false
+      }
+    ]
+  }
+}

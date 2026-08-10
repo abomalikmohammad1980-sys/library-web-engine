@@ -1,0 +1,131 @@
+{
+  "schemaVersion": 1,
+  "inspection": "mdb-reader structural table/object inventory",
+  "results": [
+    {
+      "name": "الأمة الإسلامية، وحدتها ووسطيتها وآفاق المستقبل - أبو الحسن الندوي.bok",
+      "verdict": "allow",
+      "tables": [
+        "Main",
+        "men_b",
+        "men_u",
+        "men_h",
+        "Shorts",
+        "Shrooh",
+        "com",
+        "abc",
+        "nBound",
+        "oShr",
+        "oShrooh",
+        "avPdf",
+        "sPdf",
+        "b19739",
+        "t19739"
+      ],
+      "unexpectedTables": [],
+      "bookId": 19739,
+      "bodyTable": "b19739",
+      "readablePageProbe": true
+    },
+    {
+      "name": "الإسلام والحكم - أبو الحسن الندوي.bok",
+      "verdict": "allow",
+      "tables": [
+        "Main",
+        "men_b",
+        "men_u",
+        "men_h",
+        "Shorts",
+        "Shrooh",
+        "com",
+        "abc",
+        "nBound",
+        "oShr",
+        "oShrooh",
+        "avPdf",
+        "sPdf",
+        "b2274",
+        "t2274"
+      ],
+      "unexpectedTables": [],
+      "bookId": 2274,
+      "bodyTable": "b2274",
+      "readablePageProbe": true
+    },
+    {
+      "name": "السيرة النبوية - أبو الحسن الندوي.bok",
+      "verdict": "allow",
+      "tables": [
+        "Main",
+        "men_b",
+        "men_u",
+        "men_h",
+        "Shorts",
+        "Shrooh",
+        "com",
+        "abc",
+        "nBound",
+        "oShr",
+        "oShrooh",
+        "avPdf",
+        "sPdf",
+        "b6984",
+        "t6984"
+      ],
+      "unexpectedTables": [],
+      "bookId": 6984,
+      "bodyTable": "b6984",
+      "readablePageProbe": true
+    },
+    {
+      "name": "ردة ولا أبا بكر لها - أبو الحسن الندوي.bok",
+      "verdict": "allow",
+      "tables": [
+        "Main",
+        "men_b",
+        "men_u",
+        "men_h",
+        "Shorts",
+        "Shrooh",
+        "com",
+        "abc",
+        "nBound",
+        "oShr",
+        "oShrooh",
+        "avPdf",
+        "sPdf",
+        "b4523",
+        "t4523"
+      ],
+      "unexpectedTables": [],
+      "bookId": 4523,
+      "bodyTable": "b4523",
+      "readablePageProbe": true
+    },
+    {
+      "name": "ماذا خسر العالم بانحطاط المسلمين - أبو الحسن الندوي.bok",
+      "verdict": "allow",
+      "tables": [
+        "Main",
+        "men_b",
+        "men_u",
+        "men_h",
+        "Shorts",
+        "Shrooh",
+        "com",
+        "abc",
+        "nBound",
+        "oShr",
+        "oShrooh",
+        "avPdf",
+        "sPdf",
+        "b2673",
+        "t2673"
+      ],
+      "unexpectedTables": [],
+      "bookId": 2673,
+      "bodyTable": "b2673",
+      "readablePageProbe": true
+    }
+  ]
+}

@@ -1,0 +1,4 @@
+CREATE TABLE book_builds (id TEXT PRIMARY KEY, book_id TEXT NOT NULL, source_revision_id TEXT NOT NULL UNIQUE, status TEXT NOT NULL, manifest_json TEXT NOT NULL, created_at TEXT NOT NULL, record_version INTEGER NOT NULL DEFAULT 0, FOREIGN KEY(book_id) REFERENCES books(id));
+CREATE TABLE build_jobs (id TEXT PRIMARY KEY, build_id TEXT NOT NULL, book_id TEXT NOT NULL, source_revision_id TEXT NOT NULL, kind TEXT NOT NULL, state TEXT NOT NULL, attempt INTEGER NOT NULL DEFAULT 0, next_attempt_at_ms INTEGER NOT NULL, lease_id TEXT, lease_until_ms INTEGER, record_version INTEGER NOT NULL DEFAULT 0, last_error TEXT, UNIQUE(build_id,kind), FOREIGN KEY(build_id) REFERENCES book_builds(id));
+CREATE INDEX build_jobs_runnable ON build_jobs(state,next_attempt_at_ms,lease_until_ms);
+CREATE TABLE book_publications (book_id TEXT PRIMARY KEY, active_build_id TEXT, active_source_revision_id TEXT, record_version INTEGER NOT NULL DEFAULT 0, FOREIGN KEY(book_id) REFERENCES books(id));

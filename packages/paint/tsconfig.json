@@ -1,0 +1,17 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "src",
+    "lib": ["ES2022", "DOM"]
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["src/**/*.test.ts"],
+  "references": [
+    { "path": "../font-system" },
+    { "path": "../ooxml-dom" },
+    { "path": "../ooxml-model" },
+    { "path": "../scene" },
+    { "path": "../shaper" }
+  ]
+}
