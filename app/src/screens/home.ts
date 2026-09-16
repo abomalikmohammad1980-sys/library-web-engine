@@ -128,7 +128,7 @@ function hero(): HTMLElement {
     h('p', { class: 'home-hero__ayah' }, '﴿ وَقُل رَّبِّ زِدْنِي عِلْمًا ﴾'),
     h('p', { class: 'home-hero__hadith' }, '«طلب العلم فريضة على كل مسلم»'),
   ))
-  hero.appendChild(h('h1', { id: 'home-title' }, 'مرحبًا بك في ', h('span', { class: 'home-hero__title-brand' }, 'الخِزانة')))
+  hero.appendChild(h('h1', { id: 'home-title' }, h('span', { class: 'home-hero__title-brand' }, 'الخزانة'), ': المكتبة الإسلامية الذكية'))
   hero.appendChild(h('p', { class: 'home-hero__sub' }, 'تابع قراءتك، راجع محفوظاتك، أنجز بحوثك، وعش وقتك مع خير جليس، وإن علمت فاعمل وانطلق داعيةً مجاهدًا تنشر الهدى في كل مكان.'))
   return hero
 }
