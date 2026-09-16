@@ -59,6 +59,7 @@ const localFailedBooks=new Map<string,StoredBook>()
 const localUnopenedBooks=new Map<string,StoredBook>()
 let localIndexScope:string|undefined
 let localIndexGeneration=0
+let structuralSearchGeneration=0
 let invalidateLocalIndex:(()=>void)|undefined
 function ensureLocalIndexIdentity():void{
   const scope=currentLibraryIdentityScope()
@@ -79,7 +80,7 @@ function invalidateLocalSearchBooks():void{
   localFailedBooks.clear()
   localUnopenedBooks.clear()
 }
-if(typeof window!=='undefined')window.addEventListener('library-changed',invalidateLocalSearchBooks)
+if(typeof window!=='undefined')window.addEventListener('library-changed',()=>{structuralSearchGeneration++;invalidateLocalSearchBooks()})
 /** Explicit retry resets failed derived indexes, never the user's book data. */
 export function retryFailedLocalSearchIndex():void{ensureLocalIndexIdentity();if(localIndexFailed)invalidateLocalSearchBooks()}
 const localCandidateIndex=new Map<string,LocalCandidate[]>()
@@ -308,8 +309,11 @@ function structuralSearchDocument(book:StoredBook):StructuralSearchDocument{
 /** بحث في كل الكتب. يُرجع النتائج مرتبة حسب الملاءمة. */
 export async function searchAllBooks(query: string, options: SearchQueryOptions = {}): Promise<SearchResultSet> {
   ensureLocalIndexIdentity()
-  const searchGeneration=localIndexGeneration,searchScope=localIndexScope
-  const active = (): void => { if (options.signal?.aborted||searchGeneration!==localIndexGeneration||searchScope!==currentLibraryIdentityScope()) throw new DOMException('Search superseded', 'AbortError') }
+  const searchGeneration=localIndexGeneration,structuralGeneration=structuralSearchGeneration,searchScope=localIndexScope
+  // Preparing derived body indexes must not cancel independent TOC/metadata
+  // reads. Actual library changes and account switches still invalidate both.
+  const searchesBody=(options.fields??['body']).includes('body')
+  const active = (): void => { if (options.signal?.aborted||(searchesBody?searchGeneration!==localIndexGeneration:structuralGeneration!==structuralSearchGeneration)||searchScope!==currentLibraryIdentityScope()) throw new DOMException('Search superseded', 'AbortError') }
   active()
   const expression=parseAdvancedSearchQuery(query)
   const q = expression.query.trim()
@@ -425,15 +429,16 @@ export async function searchAllBooks(query: string, options: SearchQueryOptions 
       structuralFields.push(['heading',headings.entries.map(entry=>({...entry,normalized:normalizeArabicSearch(entry.value)}))])
       if(!headings.complete){(results.headingIndexMissingBookIds??=[]).push(book.id);results.coverageComplete=false}
     }
-    const chronology = searchAuthorChronology(book, authorRecords)
-    const metadata = { authors, tags, category: effectiveBookCategory(book), ...chronology }
     for (const [field, candidates] of structuralFields) {
       if (field === 'heading' && fields.has('body')) continue
       if (!fields.has(field)) continue
       const matches=candidates.filter(item=>item.value&&item.normalized.includes(normalizedQuery)&&!matchesSearchExclusions(item.value,expression.excluded))
+      if(!matches.length)continue
+      const metadata = { authors, tags, category: effectiveBookCategory(book), ...searchAuthorChronology(book, authorRecords) }
       for(const candidate of field==='heading'?matches:matches.slice(0,1))results.push({ bookId: book.id, title: book.title, author: book.author, ...metadata, paraIndex: candidate.paragraphIndex??-1, ...(candidate.pageIndex===undefined?{}:{pageIndex:candidate.pageIndex}), snippet: candidate.value, matchText: candidate.value, field, ...(field==='heading'?{sectionHeading:candidate.value,...(candidate.pageLabel?{pageLabel:candidate.pageLabel}:{}),...(candidate.partLabel?{partLabel:candidate.partLabel}:{})}:{}) })
     }
     if (!fields.has('body')) continue
+    const metadata = { authors, tags, category: effectiveBookCategory(book), ...searchAuthorChronology(book, authorRecords) }
     let bookParagraphs:IndexedParagraph[]
     try{bookParagraphs=await persistentIndexedParagraphs(book,options.signal)}catch(error){
       if(options.signal?.aborted)throw error

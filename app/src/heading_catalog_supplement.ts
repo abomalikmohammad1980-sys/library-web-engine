@@ -2,6 +2,7 @@ import type {CentralHeadingProvider} from './central_heading_integration'
 import {shamelaPublicBookId} from './shamela_public_identity'
 import {fetchPackedHeadingPartition} from './heading_dictionary_release'
 import {batchHeadingRanges} from './heading_range_batch'
+import {loadHeadingBookRanges} from './heading_book_ranges'
 
 /** Stable concatenation of disjoint, independently verified heading releases. */
 export function combineHeadingProviders(first:CentralHeadingProvider,second:CentralHeadingProvider):CentralHeadingProvider{
@@ -40,7 +41,7 @@ export function combineHeadingProviders(first:CentralHeadingProvider,second:Cent
 }
 
 export async function withCatalogHeadingSupplement(primary:CentralHeadingProvider):Promise<CentralHeadingProvider>{
- const [{default:descriptor},{CentralHeadingSearchClient}]=await Promise.all([import('./heading_catalog_supplement.generated.json'),import('./central_heading_search')])
+ const [{default:descriptor},{CentralHeadingSearchClient},bookRanges]=await Promise.all([import('./heading_catalog_supplement.generated.json'),import('./central_heading_search'),loadHeadingBookRanges('supplement')])
  const baseURL=new URL(descriptor.baseURL,document.baseURI).href
  const batchedFetch=batchHeadingRanges(fetch)
  const fetchVerified:typeof fetch=async(input,init)=>{
@@ -55,5 +56,5 @@ export async function withCatalogHeadingSupplement(primary:CentralHeadingProvide
   if(bytes.length!==descriptor.manifestBytes||sha!==descriptor.manifestSha256)throw Error('heading_supplement_integrity')
   return new Response(bytes,{headers:{'content-type':'application/json'}})
  }
- return combineHeadingProviders(primary,{releaseId:descriptor.manifestSha256,coveredBookIds:new Set(descriptor.sourceBookIds.map(shamelaPublicBookId)),client:new CentralHeadingSearchClient({baseURL,fetch:fetchVerified,planTokens:true,maxCandidateEntries:200_000})})
+ return combineHeadingProviders(primary,{releaseId:descriptor.manifestSha256,coveredBookIds:new Set(descriptor.sourceBookIds.map(shamelaPublicBookId)),client:new CentralHeadingSearchClient({baseURL,fetch:fetchVerified,planTokens:true,maxCandidateEntries:200_000,bookRanges})})
 }

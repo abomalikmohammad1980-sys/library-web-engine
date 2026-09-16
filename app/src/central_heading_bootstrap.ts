@@ -1,5 +1,6 @@
 import {centralHeadingProvider,configureCentralHeadingSearch,type CentralHeadingProvider} from './central_heading_integration'
 import {shamelaPublicBookId} from './shamela_public_identity'
+import {loadHeadingBookRanges} from './heading_book_ranges'
 // Release owner enables only after the R2 integrity gate and public config copy.
 export const CENTRAL_HEADING_RELEASE_ENABLED=true
 export const CENTRAL_HEADING_CONFIG_SHA='62f0baee0d621d7b45335244bd2a2de4f654a6525a66e83d59b21eb2d646a837'
@@ -38,12 +39,13 @@ export async function ensureCentralHeadingProvider(signal?:AbortSignal):Promise<
  if(!CENTRAL_HEADING_RELEASE_ENABLED)return undefined
  pending??=(async()=>{
   // Independent modules/configuration must not form a serial HTTP waterfall.
-  const [release,{CentralHeadingSearchClient},dictionary,{withCatalogHeadingSupplement}]=await Promise.all([
+  const [release,{CentralHeadingSearchClient},dictionary,{withCatalogHeadingSupplement},bookRanges]=await Promise.all([
    fetchRelease(),import('./central_heading_search'),
    import('./heading_dictionary_release').then(module=>module.headingDictionaryOptions(document.baseURI)),
    import('./heading_catalog_supplement'),
+   loadHeadingBookRanges('primary'),
   ])
-  const value={releaseId:release.releaseId,coveredBookIds:new Set(release.coveredSourceBookIds.map(shamelaPublicBookId)),client:new CentralHeadingSearchClient({baseURL:new URL(release.baseURL,location.origin).href,planTokens:true,dictionaryBinary:release.dictionaryBinary,...dictionary,rowConcurrency:16})}
+  const value={releaseId:release.releaseId,coveredBookIds:new Set(release.coveredSourceBookIds.map(shamelaPublicBookId)),client:new CentralHeadingSearchClient({baseURL:new URL(release.baseURL,location.origin).href,planTokens:true,dictionaryBinary:release.dictionaryBinary,...dictionary,rowConcurrency:16,bookRanges})}
   const complete=await withCatalogHeadingSupplement(value)
   configureCentralHeadingSearch(complete);return complete
  })().catch(error=>{pending=undefined;throw error})
