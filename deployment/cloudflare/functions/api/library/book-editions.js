@@ -1,6 +1,7 @@
 import {json,trustedAccount,trustedMutation,canEditLibrary} from '../_account-contract.js'
 import {isCentrallyHidden} from '../_book-intake.js'
 import {boundedBytes} from '../../_seo-toc.js'
+import {seoShard} from '../../../../app/src/page_meta_model.ts'
 
 const valid=id=>typeof id==='string'&&/^[A-Za-z0-9_-]{1,200}$/.test(id)
 const publicRow=row=>row?.visibility==='public'&&row.review_status==='approved'
@@ -24,7 +25,7 @@ export async function visibleEditionBook(context,id,account){
   return work?{id,title:work.title,visibility:'public',review_status:'approved',packaged:true}:null
  }
  const source=Number(id)>=410000000?String(Number(id)-410000000):id
- const shard=String(Number(source)%64).padStart(2,'0')
+ const shard=seoShard(source)
  const response=await context.env.ASSETS.fetch(new URL(`/data/seo/books-${shard}.json`,context.request.url))
  if(!response.ok||Number(response.headers.get('content-length'))>1048576)return null
  if(!response.body)return null
