@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "catalogId": "quranpedia-recitations-v1",
+  "entryCount": 359,
+  "rejected": [],
+  "checksumSha256": "3728fbdc1183fa27924893d5d8c62584dc6162766fb18026675c8029791080a4",
+  "sourceChecksumSha256": "c966b7eb18e1575bf94f869ec102aeaf562bc5a598c8a979f807368a8fde9a3b",
+  "sourceUrl": "https://api.quranpedia.net/v1/reciters",
+  "retrievedAt": "2026-08-09T02:57:21.856Z",
+  "etag": null,
+  "permissionBasis": "USER-ATTESTED-WAQF-REUSE 2026-08-09; no SPDX claim"
+}
