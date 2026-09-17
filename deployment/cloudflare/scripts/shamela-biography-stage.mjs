@@ -1,7 +1,7 @@
 import {readFile,mkdir,lstat,realpath,copyFile,readdir} from 'node:fs/promises'
 import {resolve,relative} from 'node:path'
 import {createHash} from 'node:crypto'
-const pin='f3554cdbfca97dd9605a85b1c991b4e630a6be450fc0b49616ef05efe85b8127',sha=b=>createHash('sha256').update(b).digest('hex')
+const pin='e7c669fa5bb1f72ee5c13761a2cd18f57b3b750cda8c7533bfefd598bb16b2ac',sha=b=>createHash('sha256').update(b).digest('hex')
 async function safe(root,path){const target=resolve(root,path),realRoot=await realpath(root),actual=await realpath(target),rel=relative(realRoot,actual);if(rel.startsWith('..')||rel.includes(':')||(await lstat(target)).isSymbolicLink())throw Error('biography_stage_path');return target}
 /** Select declared immutable files only; never recursively copy old generations or delete them. */
 export async function stageShamelaBiographies(sourceRoot,destinationRoot){
