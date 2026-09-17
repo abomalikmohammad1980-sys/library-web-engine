@@ -27,6 +27,7 @@ import {adminPublishedLibrary} from '../admin_published_library'
 import {accountReportsControl} from '../admin_book_reports'
 import {editorialRecommendationsPanel} from '../editorial_recommendations_panel'
 import {createSubmissionFilterCache,type SubmissionPage} from '../submission_filter_cache'
+import {appendBokEditorLaunch} from '../bok_editor_launch'
 
 export function adminBooksScreen(): HTMLElement {
   const claims = currentAccountClaims()
@@ -79,7 +80,7 @@ export function publishedBookEditor(book:StoredBook,openImmediately=false):HTMLE
  if(book.managedSource!=='published'||!hasAccountPermission(currentAccountClaims(),'book:edit-published-metadata'))return host
  const toggle=h('button',{type:'button',class:'btn btn--secondary'},'تحرير بيانات الكتاب') as HTMLButtonElement
  host.append(toggle)
- const open=async()=>{toggle.disabled=true;const identity=currentAccountClaims();try{const versions=await loadCentralBookVersions();const current=currentAccountClaims();if(!identity||current?.subject!==identity.subject||current.sessionId!==identity.sessionId||!hasAccountPermission(current,'book:edit-published-metadata'))return;host.replaceChildren(adminRow(book,versions.get(centralBookRecordId(book.id))??0,0));if(book.sourceFormat==='shamela-bok'&&import.meta.env.DEV){const launch=h('button',{class:'btn btn--secondary',type:'button'},'تحرير نص BOK (مسودة)');launch.onclick=async()=>{launch.disabled=true;try{const {bokTextEditor}=await import('../bok_text_editor');if(currentAccountClaims()?.subject!==identity.subject||currentAccountClaims()?.sessionId!==identity.sessionId||!host.isConnected)return;host.append(bokTextEditor(book));launch.remove()}catch{toast('تعذّر فتح محرر النص.');launch.disabled=false}};host.append(launch)}}catch(error){toast(accountErrorArabic(error,'تعذّر تحميل بيانات التحرير.'))}finally{toggle.disabled=false}}
+ const open=async()=>{toggle.disabled=true;const identity=currentAccountClaims();try{const versions=await loadCentralBookVersions();const current=currentAccountClaims();if(!identity||current?.subject!==identity.subject||current.sessionId!==identity.sessionId||!hasAccountPermission(current,'book:edit-published-metadata'))return;host.replaceChildren(adminRow(book,versions.get(centralBookRecordId(book.id))??0,0));void appendBokEditorLaunch(host,book)}catch(error){toast(accountErrorArabic(error,'تعذّر تحميل بيانات التحرير.'))}finally{toggle.disabled=false}}
  toggle.onclick=open;if(openImmediately)void open()
  return host
 }

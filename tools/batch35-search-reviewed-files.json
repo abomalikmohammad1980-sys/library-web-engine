@@ -1,0 +1,54 @@
+{
+  "runtime": [
+    "app/src/search_field_boundaries.ts",
+    "app/src/search_field_overlay.ts",
+    "app/src/search_field_posting_page.ts",
+    "app/src/search_field_source_snippet.ts",
+    "app/src/search_field_release.ts",
+    "app/src/shamela_search_v2.ts",
+    "app/src/shamela_search_client.ts",
+    "app/src/engine/search_store.ts",
+    "app/src/screens/search.ts",
+    "app/src/public_book_search.ts"
+  ],
+  "runtimeDependencyOwnedByBokAgent": ["app/src/bok_active_release.ts"],
+  "tests": [
+    "app/src/search_field_boundaries.test.ts",
+    "app/src/search_field_boundary_provider.test.ts",
+    "app/src/search_field_overlay.test.ts",
+    "app/src/search_field_overlay.real.test.ts",
+    "app/src/search_field_posting_page.test.ts",
+    "app/src/search_field_source_snippet.test.ts",
+    "app/src/search_field_release.test.ts",
+    "app/src/scoped_central_search_integration.test.ts",
+    "app/src/scoped_local_search_integration.test.ts",
+    "app/src/scoped_search_count_identity.test.ts",
+    "app/src/engine/scoped_content_index.test.ts",
+    "app/src/engine/scoped_content_matches.test.ts",
+    "app/src/public_book_search.test.ts",
+    "app/src/public_book_search_integration.test.ts"
+  ],
+  "uploadAndBuildTools": [
+    "tools/field-overlay-upload-plan.mjs",
+    "tools/field-overlay-s3-transport.mjs",
+    "tools/field-overlay-upload-state.mjs",
+    "tools/field-overlay-upload-cli.mjs",
+    "tools/field-overlay-upload.test.mjs",
+    "tools/batch35-search-candidate-config.js",
+    "tools/batch35-search-candidate-config.test.mjs",
+    "tools/inject-batch35-search-candidate.mjs",
+    "tools/inject-batch35-search-candidate.test.mjs",
+    "tools/batch35-search-reviewed-files.json"
+  ],
+  "reports": [
+    "docs/design-audit/FIELD_SEARCH_WIRING_20260917.md",
+    "docs/design-audit/PUBLIC_UPLOAD_SEARCH_20260917.md"
+  ],
+  "notes": [
+    "No artifact directory, deployment receipt or remote activation is staged by this manifest.",
+    "Public-upload server, migration and server tests were already handled in the parent's backend commit.",
+    "The field uploader no longer imports any Merkle CLI, plan, transport or prototype. Its only non-local dependency is the already declared @aws-sdk/client-s3 package.",
+    "Existing tracked runtime dependencies include search_field_boundary_provider.ts, search_content_scope.ts, engine/scoped_content_index.ts and engine/scoped_content_matches.ts.",
+    "The BOK-owned runtime dependency and its focused tests must be included through that agent's reviewed manifest in the combined commit."
+  ]
+}

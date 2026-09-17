@@ -4,6 +4,7 @@ import {centralBookRecordId} from './central_book_action'
 import {bokTextHash,findBokText,replaceBokText,type BokTextPage,type BokTextDraft} from './bok_text_model'
 import {bokTextDraftRequest,captureBokEditorIdentity} from './bok_text_service'
 import {downloadArtifact} from './artifact_download'
+import {bokEditorialCapabilities,bokPublicationRequest,bokPublicationStatus} from './bok_publication_service'
 import {renderBoundUiTemplate,uiTemplateText,uiTemplateAttribute,uiLabelParameter} from './ui_template_binding'
 
 /** Draft-only workbench: does not mutate the source BOK or published reader/index. */
@@ -77,12 +78,15 @@ export function bokTextEditor(book:StoredBook):HTMLElement{
  const reset=button('استعادة نص الأصل',()=>{const page=pages[index];if(page&&current()&&!busy&&confirm(renderBoundUiTemplate('bok-reset-confirm',{},document.documentElement.lang||'ar'))){text.value=page.text;availability()}})
  const exportDraft=button('تصدير النص للمراجعة',()=>{const page=pages[index];if(page&&current())downloadArtifact({fileName:`bok-${page.id}-draft.txt`,mimeType:'text/plain;charset=utf-8',content:text.value})})
  const exportRelease=button('تجهيز مرشح النص والبحث',()=>void prepareRelease())
- async function prepareRelease(){
+ const submitRelease=button('طلب نشر التصحيحات',()=>void prepareRelease(true));submitRelease.hidden=true
+ const refreshJob=button('حالة طلب النشر',()=>void loadJob());refreshJob.hidden=true
+ async function loadJob(){try{const job=await bokPublicationRequest(current,id);if(current())message.textContent=job?bokPublicationStatus(job):'لا يوجد طلب نشر مسجّل لهذا الكتاب.'}catch(error){if(current())message.textContent=error instanceof Error?error.message:'تعذّر تحميل حالة الطلب.'}}
+ async function prepareRelease(submit=false){
   if(!current()||busy)return
   if(dirty()){message.textContent='احفظ مسودة الصفحة أولًا قبل تجهيز مرشح النشر.';return}
   if(!drafts.size){message.textContent='افتح مسودات الصفحات المراد مراجعتها أولًا.';return}
-  if(!confirm('سيُجهّز ملف مراجعة للصفحات التي فتحت مسوداتها هنا فقط، مع فهرس بحث مطابق. هذا لا ينشر التعديلات للعامة. هل تتابع؟'))return
-  busy=true;availability();exportRelease.disabled=true
+  if(!confirm(submit?'سيُسجّل طلب نشر للصفحات التي فتحت مسوداتها وراجعتها هنا فقط. لن تُنشر تلقائيًا قبل بناء الإصدار والتحقق منه. هل تتابع؟':'سيُجهّز ملف مراجعة للصفحات التي فتحت مسوداتها هنا فقط، مع فهرس بحث مطابق. هذا لا ينشر التعديلات للعامة. هل تتابع؟'))return
+  busy=true;availability();exportRelease.disabled=true;submitRelease.disabled=true
   try{
    // Re-read the server revisions at review time; never export stale cached drafts.
    const reviewed=[]
@@ -91,16 +95,17 @@ export function bokTextEditor(book:StoredBook):HTMLElement{
     if(!actual||actual.revision!==expected.revision||actual.baseHash!==expected.baseHash||actual.text!==expected.text)throw Error('تغيّرت مسودة أثناء المراجعة؛ حمّل النسخة الأحدث قبل التجهيز.')
     reviewed.push({...actual,pageId,expectedRevision:expected.revision})
    }
+   if(submit){const job=await bokPublicationRequest(current,id,{sourceHash:book.originalSha256,reviews:reviewed.map(({pageId,revision,baseHash,text})=>({pageId,revision,baseHash,text}))});if(current()&&job){message.textContent=bokPublicationStatus(job);refreshJob.hidden=false}return}
    const {buildBokTextRelease}=await import('./bok_text_release')
    const release=await buildBokTextRelease(book,book.originalSha256,reviewed)
    if(!current())return
    downloadArtifact({fileName:`bok-${id}-${release.revisionHash.slice(0,12)}-candidate.json`,mimeType:'application/json',content:JSON.stringify(release)})
    message.textContent='جُهّز مرشح المراجعة بالنص والفهرس معًا. لم يتغير الكتاب المنشور؛ يلزم تفعيلهما معًا بعد التحقق.'
   }catch(error){if(current())message.textContent=error instanceof Error?error.message:'تعذّر تجهيز مرشح النشر.'}
-  finally{if(current()){busy=false;exportRelease.disabled=false;availability()}}
+  finally{if(current()){busy=false;exportRelease.disabled=false;submitRelease.disabled=false;availability()}}
  }
  position.onchange=()=>go(Number(position.value)-1)
- root.append(h('h3',null,'تحرير نص الكتاب'),h('p',null,'مسودات تصحيح النص. البحث يشمل النص الأصلي والمسودات التي فتحتها هنا. نشر التصحيحات وتحديث فهرس البحث غير مفعّلين بعد.'),h('div',{class:'bok-text-editor__tools'},query,search,replacement,replace),h('div',{class:'bok-text-editor__tools'},prev,label,position,next),text,h('details',null,h('summary',null,'مقارنة بالنص الأصلي'),original),h('div',{class:'bok-text-editor__tools'},save,reload,reset,exportDraft,exportRelease),message)
+ root.append(h('h3',null,'تحرير نص الكتاب'),h('p',null,'مسودات تصحيح النص. البحث يشمل النص الأصلي والمسودات التي فتحتها هنا. طلب النشر يحتاج بناء الإصدار والتحقق منه قبل أن يظهر للقارئ.'),h('div',{class:'bok-text-editor__tools'},query,search,replacement,replace),h('div',{class:'bok-text-editor__tools'},prev,label,position,next),text,h('details',null,h('summary',null,'مقارنة بالنص الأصلي'),original),h('div',{class:'bok-text-editor__tools'},save,reload,reset,exportDraft,exportRelease,submitRelease,refreshJob),message)
  const abort=new AbortController()
  const clear=()=>{ticket++;drafts.clear();root.replaceChildren(h('p',null,'أُغلق محرر النص لتغيّر الصفحة أو الحساب.'));abort.abort()}
  window.addEventListener('alkhizana:account-changed',clear,{signal:abort.signal})
@@ -108,6 +113,6 @@ export function bokTextEditor(book:StoredBook):HTMLElement{
  window.addEventListener('beforeunload',event=>{if(current()&&dirty()){event.preventDefault();event.returnValue=''}},{signal:abort.signal})
  document.addEventListener('click',event=>{const link=(event.target as Element|null)?.closest?.('a[href]');if(current()&&dirty()&&link&&!root.contains(link)&&!confirm(renderBoundUiTemplate('bok-leave-editor-confirm',{},document.documentElement.lang||'ar'))){event.preventDefault();event.stopImmediatePropagation()}},{capture:true,signal:abort.signal})
  // Mount happens immediately at the caller; no hidden/background fetch before permission checks.
- queueMicrotask(()=>{if(current())void open(0)})
+ queueMicrotask(()=>{if(current()){void open(0);void bokEditorialCapabilities(current).then(features=>{if(current()){submitRelease.hidden=!features.submissionEnabled;refreshJob.hidden=!features.submissionEnabled}}).catch(()=>undefined)}})
  return root
 }

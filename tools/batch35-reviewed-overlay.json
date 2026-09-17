@@ -1,0 +1,60 @@
+{
+  "source": [
+    "app/src/page_meta.ts",
+    "app/src/page_meta_model.ts",
+    "app/src/screens/reader.ts",
+    "app/src/router.ts",
+    "app/src/bok_active_release.ts",
+    "app/src/bok_editor_launch.ts",
+    "app/src/bok_publication_service.ts",
+    "app/src/bok_text_editor.ts",
+    "app/src/screens/admin_books.ts",
+    "app/src/shamela_pack_seed.ts",
+    "app/src/search_field_boundaries.ts",
+    "app/src/search_field_overlay.ts",
+    "app/src/search_field_posting_page.ts",
+    "app/src/search_field_source_snippet.ts",
+    "app/src/search_field_release.ts",
+    "app/src/shamela_search_v2.ts",
+    "app/src/shamela_search_client.ts",
+    "app/src/engine/search_store.ts",
+    "app/src/screens/search.ts",
+    "app/src/public_book_search.ts"
+  ],
+  "functions": [
+    "alpha-publish/functions/r2/[[path]].js",
+    "alpha-publish/functions/library/[[path]].js",
+    "alpha-publish/functions/api/library/book-editions.js",
+    "alpha-publish/functions/api/_bok-release-pointer.js",
+    "alpha-publish/functions/api/library/bok-release.js",
+    "alpha-publish/functions/api/admin/bok-publication.js",
+    "alpha-publish/functions/_middleware.js",
+    "alpha-publish/functions/_seo-live-record.js",
+    "alpha-publish/functions/_seo-public-toc.js",
+    "alpha-publish/functions/api/_public-book-index-jobs.js",
+    "alpha-publish/functions/api/_public-book-index-read.js",
+    "alpha-publish/functions/api/_public-book-search.js",
+    "alpha-publish/functions/api/internal/public-book-index.js",
+    "alpha-publish/functions/api/search/public-books.js"
+  ],
+  "public": ["app/public/sw.js"],
+  "migrations": [
+    "alpha-publish/migrations/0032_bok_release_pointer.sql",
+    "alpha-publish/migrations/0033_public_book_index_jobs.sql",
+    "alpha-publish/migrations/0034_bok_publication_jobs.sql",
+    "alpha-publish/migrations/0035_public_book_search.sql"
+  ],
+  "reviewMetadata": {
+    "status": "proposal-only-not-built-or-deployed",
+    "baseline": "batch33",
+    "baselineDeployFingerprint": "885d409c1ffca23258ba90ae5c5e6edfabb641ca73c8dbb9a921b75591828157",
+    "baselineFunctionsFingerprint": "9c34bbf263598353a5d5689b4be33cd4189555274f0abc9729713cb6fa14284f",
+    "candidateConfigSource": "tools/batch35-search-candidate-config.js",
+    "candidateConfigAction": "Pending explicit builder hook: copy to candidate-only asset, add script before app module, restamp service worker and regenerate integrity inventory. Never edit live or baseline config.",
+    "candidatePublicUploadActivation": "Only together: __PUBLIC_BOOK_SEARCH_ENABLED__=true and server PUBLIC_BOOK_SEARCH_ENABLED=true plus PUBLIC_BOOK_INGESTION_ENABLED=true, reviewed migrations and isolated acceptance. Root must explicitly approve candidate hook; production flags unchanged by this proposal.",
+    "bokFlags": "Keep __BOK_RELEASES_ENABLED__, BOK_RELEASE_ACTIVATION_ENABLED, BOK_TEXT_EDITING_ENABLED and BOK_PUBLICATION_JOBS_ENABLED absent/off in production. Durable jobs remain awaiting_operator; no completed automated BOK build/publish claim.",
+    "sourceOwners": {"batch34":"root","BOK":"bok_cloud_complete","fieldAndPublicSearch":"search_complete","ingestion":"release_audit","SEO":"bok_cloud_complete"},
+    "excluded": ["All other dirty source files", "Unreviewed Quran/tafsir/generated corpus changes", "App/dist and local build output", "Test fixtures or session credentials", "Ingestion secrets", "Whole working-tree copy"],
+    "reviewGates": ["Check every overlay file against owner-reviewed content and hash-pin at build start", "Validate imported runtime dependencies exist in frozen baseline or explicit overlay", "Audit remote schema before ordered migrations; never blindly reapply", "Fresh verify all remote field manifest segments before complete=true activation", "Test combined reader, search, paging, SEO, PWA and isolated upload lifecycle", "Keep production disabled until root approval and combined acceptance"]
+  }
+}

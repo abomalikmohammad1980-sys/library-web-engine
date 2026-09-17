@@ -28,6 +28,7 @@ import { setSourceDocumentTitle } from '../translation'
 import { orderedBooks } from '../book_ordering'
 import { SEARCH_CONTENT_SCOPE_OPTIONS, parseSearchContentScope } from '../search_content_scope_options'
 import {pageJump} from '../page_jump'
+import {hasSearchFieldRelease} from '../search_field_release'
 
 type SearchSort = 'death' | 'relevance' | 'chronological' | 'tree'
 interface SearchContext { books: Map<string, StoredBook>; globalNumbers: Map<SearchResult, number> }
@@ -90,7 +91,7 @@ export function searchScreen({previewContentScope=false}:{previewContentScope?:b
   const scope = searchScope()
   // Temporary preview gate. A supplied content URL still reaches the backend
   // fail-closed boundary; hiding an unfinished control must not widen a query.
-  ;(scope.element.querySelector('.search-content-scope') as HTMLElement).hidden=!previewContentScope
+  ;(scope.element.querySelector('.search-content-scope') as HTMLElement).hidden=!previewContentScope&&!hasSearchFieldRelease()
   form.append(h('div', { class: 'search-options-row' }, modes.element, scope.fieldsElement), h('div', { class: 'search-form__main' }, field, submit), scope.element)
   root.appendChild(form)
 
@@ -181,7 +182,7 @@ export function searchScreen({previewContentScope=false}:{previewContentScope?:b
       if((found.unavailableBookIds?.length||found.headingIndexMissingBookIds?.length)&&!loadedCatalog)void ensureCatalog().catch(()=>undefined)
       const books=loadedCatalog??[]
       if (current !== request || resourceScope.disposed) return
-      const loadMore=async(offset:number,limit:number)=>{const rows=await searchAllBooks(effective,{...options,resultOffset:offset,resultLimit:limit});return (options.fields&&!options.fields.includes('body'))||(options.contentScope&&options.contentScope!=='both')?rows:rows.filter(row=>row.sourceKind==='shamela4.1')}
+      const loadMore=async(offset:number,limit:number)=>{const rows=await searchAllBooks(effective,{...options,resultOffset:offset,resultLimit:limit});return (options.fields&&!options.fields.includes('body'))||(options.contentScope&&options.contentScope!=='both')?rows:rows.filter(row=>row.sourceKind==='shamela4.1'||row.publicUpload)}
       results.removeAttribute('aria-busy');renderSearchResults(results, found, query, effective, mode, books, resourceScope,loadMore,scope.element,scope.values,catalogBooks,scope.applyFacet,ensureCatalog,options);if(location.hostname==='localhost'||location.hostname==='127.0.0.1')console.debug(`search_screen_phase ${JSON.stringify({name:'render-complete',ms:Math.round(performance.now()-renderStarted)})}`)
       const missing=[...new Set([...(found.headingIndexMissingBookIds??[]),...(found.unavailableBookIds??[]),...(found.pendingBookIds??[]),...(found.unopenedBookIds??[])])].filter(id=>id!=='local-formats')
       if(found.localIndexFailed||missing.length){
@@ -468,7 +469,7 @@ function searchWelcome(): HTMLElement {
   return h('div', { class: 'search-welcome' }, icon('search', 28), h('h2', null, 'الوصول إلى النص، لا مجرد اسم الكتاب'), h('p', null, 'اكتب عبارتك وحدد النطاق والحقول. تظهر النتائج متتابعة مع المؤلف والتصنيف والصفحة، وتفتح كل مطابقة في موضعها.'))
 }
 
-function renderSearchResults(root: HTMLElement, all: SearchResult[] & {localIndexFailed?:boolean;unavailableBookIds?:string[];pendingBookIds?:string[];unopenedBookIds?:string[];headingIndexMissingBookIds?:string[];coverageComplete?:boolean;totalOccurrences?:number}, query: string, effective: string, mode: SearchMode, storedBooks: StoredBook[], resourceScope = captureRouteResourceScope(),loadMore?: (offset:number,limit:number)=>Promise<SearchResult[]>,scopeElement?:HTMLElement,scopeValues?:()=>SearchQueryOptions,catalogBooks?:Promise<StoredBook[]>,applyFacet?:(facet:SearchTableFacet)=>void,ensureCatalog?:()=>Promise<StoredBook[]>,requestOptions?:SearchQueryOptions): void {
+function renderSearchResults(root: HTMLElement, all: SearchResult[] & {localIndexFailed?:boolean;unavailableBookIds?:string[];pendingBookIds?:string[];unopenedBookIds?:string[];headingIndexMissingBookIds?:string[];coverageComplete?:boolean;totalOccurrences?:number;totalDocuments?:number}, query: string, effective: string, mode: SearchMode, storedBooks: StoredBook[], resourceScope = captureRouteResourceScope(),loadMore?: (offset:number,limit:number)=>Promise<SearchResult[]>,scopeElement?:HTMLElement,scopeValues?:()=>SearchQueryOptions,catalogBooks?:Promise<StoredBook[]>,applyFacet?:(facet:SearchTableFacet)=>void,ensureCatalog?:()=>Promise<StoredBook[]>,requestOptions?:SearchQueryOptions): void {
   const requestedScope=scopeValues
   let appliedScope=requestedScope?.()??{}
   const countedScope=searchScopeCountIdentity(requestOptions??appliedScope)
@@ -580,14 +581,14 @@ function renderSearchResults(root: HTMLElement, all: SearchResult[] & {localInde
     const range={start:resultPage*pageSize,end:Math.min(activeResults.length,(resultPage+1)*pageSize)}
 if(range.start!==renderedStart||range.end!==renderedEnd){const rows:SearchTableRow[]=activeResults.slice(range.start,range.end).map(result=>{const stored=books.get(result.bookId),categoryName=stored?effectiveBookCategory(stored):canonicalBookCategory(result.category);return{key:searchResultIdentity(result),ordinal:context.globalNumbers.get(result)??0,bookId:result.bookId,...((result.pageIndex??result.paraIndex)>=0?{pageIndex:result.pageIndex??result.paraIndex}:{}),bookTitle:result.title,authorName:result.author,...(result.deathYearHijri!=null?{deathYearHijri:result.deathYearHijri}:{}),...(categoryName?{categoryName}:{}),snippet:result.snippet,fullText:result.matchText,...(result.sectionHeading?{sectionHeading:result.sectionHeading}:{}),...(result.partLabel?{partLabel:result.partLabel}:{}),...(result.pageLabel?{pageLabel:result.pageLabel}:{}),href:searchResultHref(result),...(result.occurrenceCount?{occurrenceCount:result.occurrenceCount}:{})}});list.replaceChildren(searchResultsTable(rows,effective,applyFacet));renderedStart=range.start;renderedEnd=range.end}
     // التصفية محلية؛ جلب دفعة إضافية لا يبدأ إلا بالنقر على التالي.
-    const moreRemote=Boolean(loadMore)&&!exhausted&&fetchedOffset<(all.totalOccurrences??all.length)
+    const moreRemote=Boolean(loadMore)&&!exhausted&&fetchedOffset<(all.totalDocuments??all.totalOccurrences??all.length)
     const hasNext=range.end<activeResults.length||moreRemote
     const sameCountScope=searchScopeCountIdentity(scopeValues?.()??{})===countedScope
     summary.textContent=`${sameCountScope?(all.totalOccurrences??all.length):activeResults.length} ${sameCountScope?'موضعًا مطابقًا':'نتيجة ضمن المحمّل'} · المعروض ${activeResults.length?range.start+1:0}–${range.end} · ${pageSize} نتيجة في الصفحة`
     pageStatus.replaceChildren(loadError?uiTemplateText('search-next-failed',{}):fetching?uiTemplateText('search-next-loading',{}):uiTemplateText(hasNext?'search-pagination-range':'search-pagination-end',{p1:activeResults.length?range.start+1:0,p2:range.end}))
     pagination.toggleAttribute('aria-busy',fetching)
     previous.disabled=resultPage===0||fetching;next.disabled=!hasNext||fetching
-    jump.update(resultPage,Math.ceil((exhausted?activeResults.length:Math.max(activeResults.length,all.totalOccurrences??0))/pageSize),fetching)
+    jump.update(resultPage,Math.ceil((exhausted?activeResults.length:Math.max(activeResults.length,all.totalDocuments??all.totalOccurrences??0))/pageSize),fetching)
     next.textContent=loadError?'إعادة المحاولة':'التالي'
   }
   const reset = (preservePage=false): void => {
@@ -609,7 +610,7 @@ if(range.start!==renderedStart||range.end!==renderedEnd){const rows:SearchTableR
   const advance=async():Promise<void>=>{
     if(resourceScope.disposed||!viewport.isConnected||fetching)return
     if((resultPage+1)*pageSize<activeResults.length){resultPage++;loadError='';renderWindow();focusPage();return}
-    if(!loadMore||fetching||exhausted||fetchedOffset>=(all.totalOccurrences??all.length))return
+    if(!loadMore||fetching||exhausted||fetchedOffset>=(all.totalDocuments??all.totalOccurrences??all.length))return
     // Fetch only the next visible page. Prefetching five pages made one click
     // wait for many unrelated row ranges and magnified transient failures.
     fetching=true;loadError='';renderWindow();const requestedOffset=fetchedOffset,fetchedLimit=pageSize,version=viewVersion;let moved=false;fetchedOffset+=fetchedLimit

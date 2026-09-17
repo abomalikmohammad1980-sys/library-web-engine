@@ -9,6 +9,12 @@ import { PackedTermDirectoryLite } from './packed_term_directory_lite'
 import {createTrustedMerkleDirectory,snapshotMerkleOptIn} from './packed_term_directory_provider'
 import type {PackedTermDirectoryMerkle} from './packed_term_directory_merkle'
 import {bindSearchRecovery,snapshotSearchRecovery,type SearchRecoveryConfig} from './search_recovery_binding'
+import { loadSearchFieldOverlay } from './search_field_overlay'
+import {pinBokActiveRelease,pinnedBokSearchConfig,pinnedBokSearchManifestHash} from './bok_active_release'
+import { searchFieldPostingPage } from './search_field_posting_page'
+import { searchFieldTokenSourceRange } from './search_field_source_snippet'
+
+export type SeparatedV2SearchBinding = { manifestUrl: string; manifestSha256: string; sourceIndexSha256: string; packedReleaseId: string; packedManifestSha256: string; expectedBooks: number; expectedSegments: number }
 
 type Manifest={contract:string;buckets?:number;bucketCount?:number;postingBucketCount?:number;coverageComplete:boolean;counts?:{books:number};routePattern:string;postingPattern?:string;postingFiles?:Array<{id:string;file:string;byteLength:number}>;batchTermPattern?:string;batchSnippetPattern?:string;segmentTermPattern?:string;segmentSnippetPattern?:string;batches?:string[];segments?:string[]}
 type Posting=[string,number[],number?]
@@ -31,6 +37,51 @@ export const choosePackedPhraseAnchor=(_words:string[],entries:Array<{byteLength
 const snippetHit=(row:Snippet,query:string):SearchHit=>{const text=cleanShamelaPlainText(row[3]),normalized=normalizeArabicSearchWithMap(text),wanted=normalizeArabicSearch(query),foldedOffset=normalized.text.indexOf(wanted),matchOffset=foldedOffset<0?0:(normalized.originalOffsets[foldedOffset]??0);return{id:row[0],bookId:row[1],paragraphIndex:row[2],text,matchOffset,...(row[4]?{author:row[4]}:{}),...(row[5]!=null?{deathYearHijri:row[5]}:{}),...(row[6]!=null?{pageLabel:String(row[6])}:{}),...(row[7]?{sectionHeading:cleanShamelaPlainText(row[7])}:{}),...(row[8]!=null?{partLabel:String(row[8])}:{})}}
 
 export class ShamelaSearchV2Client{
+  /** Explicit release binding only; never activates an incomplete candidate. */
+  async searchSeparated(query:string,scope:'body'|'foot',binding:SeparatedV2SearchBinding,offset=0,limit=100,bookIds?:string[],signal?:AbortSignal){
+    const config={...binding},check=()=>signal?.throwIfAborted(),before=this.bytesFetched
+    check()
+    if(scope!=='body'&&scope!=='foot')throw Error('search_field_scope_invalid')
+    if(!Number.isSafeInteger(offset)||offset<0||!Number.isSafeInteger(limit)||limit<1||limit>500)throw Error('search_field_page_range')
+    const packed=await this.getPackedManifest(),manifest=await this.getManifest()
+    check()
+    if(!packed||packed.releaseId!==config.packedReleaseId||this.packedManifestSha256!==config.packedManifestSha256||!manifest.coverageComplete||packed.counts.books!==config.expectedBooks||packed.counts.segments!==config.expectedSegments)throw Error('search_field_release_mismatch')
+    const overlay=await loadSearchFieldOverlay(config,this.fetcher)
+    if(!overlay.coverageComplete)throw Error('search_field_coverage_incomplete')
+    if(overlay.counts.documents!==packed.counts.documents||overlay.counts.positions!==packed.counts.positions)throw Error('search_field_release_counts')
+    if(bookIds){const covered=new Set(overlay.coveredBookIds);if(bookIds.some(id=>!covered.has(id)))throw Error('search_field_scope_unavailable')}
+    const words=normalizeArabicSearch(query).split(' ').filter(Boolean)
+    if(!words.length)throw Error('search_field_query_empty')
+    const merkle=await this.merkleDirectory(packed),lite=merkle?undefined:this.liteDirectory(packed)
+    if(!merkle&&!lite&&!this.hasCompleteTermDirectory(packed))throw Error('search_field_term_directory_unavailable')
+    const lists:GlobalPosting[][]=[]
+    for(const word of words){
+      check()
+      const entry=merkle?await merkle.lookup(word):lite?await this.liteTermEntry(word,lite):await this.packedTermEntry(word,packed)
+      if(!entry)return{hits:[],total:0,totalDocuments:0,totalOccurrences:0,indexedBooks:config.expectedBooks,coverageComplete:true,networkBytes:this.bytesFetched-before}
+      lists.push((await this.packedTermValue(word,packed,entry))[1])
+    }
+    await this.ensureRecovery();check()
+    const allowed=bookIds?new Set(bookIds):undefined,maps=lists.map(rows=>new Map(rows.map(row=>[row[0],row] as const))),anchor=lists.reduce((best,rows,index)=>rows.length<lists[best]!.length?index:best,0)
+    const segments=new Map<string,string>()
+    const candidates=lists[anchor]!.filter(row=>this.documentAllowed(row[0])&&(!allowed||allowed.has(row[0].split(':')[0]!))&&maps.every(map=>map.has(row[0]))).map(row=>{segments.set(row[0],row[3]);return{id:row[0],positionsByQueryWord:maps.map(map=>map.get(row[0])![1]),...(row[2]===undefined?{}:{deathYearHijri:row[2]})}})
+    const sourceRows=new Map<string,Snippet>(),pattern=manifest.segmentSnippetPattern??manifest.batchSnippetPattern?.replace('{batch}','{segment}')
+    if(!pattern)throw Error('search_field_snippet_pattern')
+    const page=await searchFieldPostingPage({query,scope,offset,limit,candidates,boundaries:overlay,coverage:{complete:true,unavailableBookIds:[]},...(signal?{signal}:{}),hydrate:async id=>{
+      check()
+      const path=pattern.replace('{segment}',segments.get(id)!).replace('{bucket}',bucketFor(id,manifest.bucketCount??manifest.buckets??512))
+      const row=(await this.snippetRows(path,new Set([id]))).find(row=>row[0]===id)
+      if(!row)throw Error('search_field_snippet_missing')
+      const boundaries=await overlay.book(id.split(':')[0]!)
+      if(!boundaries)throw Error('search_field_boundary_missing')
+      sourceRows.set(id,row)
+      return{fullText:row[3],range:searchFieldTokenSourceRange(row[3],boundaries.tokenRange(id,scope))}
+    }})
+    check()
+    if(!page.coverageComplete)throw Error('search_field_coverage_incomplete')
+    const hits=page.hits.map(hit=>({...snippetHit(sourceRows.get(hit.id)!,query),text:hit.text,matchOffset:hit.matchOffset,occurrenceCount:hit.occurrenceCount}))
+    return{...page,hits,total:page.totalOccurrences,indexedBooks:config.expectedBooks,networkBytes:this.bytesFetched-before}
+  }
   private recoveryConfig:SearchRecoveryConfig|undefined
   private recoveryTask:ReturnType<typeof bindSearchRecovery>|undefined
   private recoveredExclusions:ReadonlySet<string>=new Set()
@@ -92,7 +143,7 @@ export class ShamelaSearchV2Client{
     // boundary; do not attach one subscriber's signal to everyone else's read.
     try{return await state.reader.lookup(word)}finally{const bytes=state.reader.stats.bytes;this.bytesFetched+=bytes-state.accountedBytes;state.accountedBytes=bytes}
   }
-  private packedConfig(){const configured=(globalThis as typeof globalThis&{__SHAMELA_SEARCH_V2_PACKED__?:PackedConfig}).__SHAMELA_SEARCH_V2_PACKED__,config=configured??localPackedConfig();return config&&packedSearchConfigAllowedOnHost(config)?config:undefined}
+  private packedConfig():PackedConfig|undefined{const configured=pinnedBokSearchConfig()??(globalThis as typeof globalThis&{__SHAMELA_SEARCH_V2_PACKED__?:PackedConfig}).__SHAMELA_SEARCH_V2_PACKED__,config=configured??localPackedConfig();return config&&packedSearchConfigAllowedOnHost(config)?config:undefined}
   private async sha256(bytes:Uint8Array){const owned=bytes.slice().buffer as ArrayBuffer;return [...new Uint8Array(await crypto.subtle.digest('SHA-256',owned))].map(x=>x.toString(16).padStart(2,'0')).join('')}
   private async packedEntry(path:string,manifest:PackedManifest):Promise<PackedEntry>{const config=this.packedConfig()!,indexId=bucketFor(path,manifest.indexBucketCount),index=await this.rawJson<{entries:Array<[string,PackedEntry]>}>(`${config.controlBaseUrl.replace(/\/$/u,'')}/${manifest.indexPattern.replace('{bucket}',indexId)}?v=${encodeURIComponent(manifest.releaseId)}`),entry=index.entries.find(x=>x[0]===path)?.[1];if(!entry)throw new Error('shamela_search_v2_packed_key_missing');return entry}
   private hasCompleteTermDirectory(manifest:PackedManifest):boolean{
@@ -122,7 +173,7 @@ export class ShamelaSearchV2Client{
     const index=await cached as {entries:Array<[string,PackedEntry]>};return index.entries.find(entry=>entry[0]===word)?.[1];
   }
   private async packedTermValue(word:string,manifest:PackedManifest,entry:PackedEntry):Promise<[string,GlobalPosting[]]>{return this.packedTerms.get(manifest.releaseId,word,entry.byteLength,async()=>{const config=this.packedConfig()!,chunks=await loadPackedParts(entry.parts,async part=>{const base=config.projectBaseUrls[part.project];if(!base)throw new Error('shamela_search_v2_packed_project_missing');const bytes=await this.packedTransport.read(base,part,manifest.releaseId,bytes=>this.sha256(bytes),globalThis.location?.origin,config.compressedParts===true);this.bytesFetched+=bytes.byteLength;return bytes});const out=await assembleVerifiedPackedParts(chunks,entry,bytes=>this.sha256(bytes));const row=JSON.parse(new TextDecoder().decode(out)) as [string,GlobalPosting[]];if(row[0]!==word)throw new Error('shamela_search_v2_packed_term_mismatch');return row})}
-private loadPackedManifest(){return this.packedManifest??=(async()=>{const config=this.packedConfig();if(!config)return null;this.merkleOptIn=snapshotMerkleOptIn(config.termDirectoryMerkle);this.merkleControlBaseUrl=config.controlBaseUrl;try{const localHost=globalThis.location?.hostname==='localhost'||globalThis.location?.hostname==='127.0.0.1'||globalThis.location?.hostname==='[::1]',response=await this.fetcher(`${config.controlBaseUrl.replace(/\/$/u,'')}/manifest.json`,localHost?{signal:AbortSignal.timeout(2_000)}:undefined);if(!response.ok){if(this.merkleOptIn!==undefined)throw Error('shamela_search_v2_merkle_manifest_http');return null}const bytes=new Uint8Array(await response.arrayBuffer());this.bytesFetched+=bytes.byteLength;if(this.merkleOptIn!==undefined||this.recoveryConfig)this.packedManifestSha256=await this.sha256(bytes);const value=JSON.parse(new TextDecoder().decode(bytes)) as PackedManifest;if(value.contract==='shamela-search-v2/packed-manifest-1'&&value.coverageComplete)return value;if(this.merkleOptIn!==undefined)throw Error('shamela_search_v2_merkle_manifest_invalid');return null}catch(error){if(this.merkleOptIn!==undefined)throw error;return null}})()}
+private loadPackedManifest(){return this.packedManifest??=(async()=>{await pinBokActiveRelease(this.fetcher);const config=this.packedConfig();if(!config)return null;this.merkleOptIn=snapshotMerkleOptIn(config.termDirectoryMerkle);this.merkleControlBaseUrl=config.controlBaseUrl;try{const localHost=globalThis.location?.hostname==='localhost'||globalThis.location?.hostname==='127.0.0.1'||globalThis.location?.hostname==='[::1]',response=await this.fetcher(`${config.controlBaseUrl.replace(/\/$/u,'')}/manifest.json`,localHost?{signal:AbortSignal.timeout(2_000)}:undefined);if(!response.ok){if(this.merkleOptIn!==undefined||pinnedBokSearchManifestHash())throw Error('shamela_search_v2_merkle_manifest_http');return null}const bytes=new Uint8Array(await response.arrayBuffer());this.bytesFetched+=bytes.byteLength;this.packedManifestSha256=await this.sha256(bytes);if(pinnedBokSearchManifestHash()&&pinnedBokSearchManifestHash()!==this.packedManifestSha256)throw Error('bok_search_manifest_mismatch');const value=JSON.parse(new TextDecoder().decode(bytes)) as PackedManifest;if(value.contract==='shamela-search-v2/packed-manifest-1'&&value.coverageComplete)return value;if(this.merkleOptIn!==undefined||pinnedBokSearchManifestHash())throw Error('shamela_search_v2_merkle_manifest_invalid');return null}catch(error){if(this.merkleOptIn!==undefined||pinnedBokSearchManifestHash())throw error;return null}})()}
   private async getPackedManifest(){
     const pending=this.loadPackedManifest()
     try{const result=await pending;if(!result&&this.packedManifest===pending)delete this.packedManifest;return result}

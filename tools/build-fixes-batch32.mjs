@@ -8,6 +8,7 @@ import assert from 'node:assert/strict'
 import {build,loadConfigFromFile} from 'vite'
 import {inventory,verifyPagesConfiguration} from '../alpha-publish/scripts/release-integrity.mjs'
 import {stampServiceWorkerRelease} from '../alpha-publish/scripts/service-worker-release.mjs'
+import {injectBatch35SearchCandidate} from './inject-batch35-search-candidate.mjs'
 const candidate=process.env.KHIZANA_FIXES_CANDIDATE??'batch32'
 assert(/^batch\d+$/u.test(candidate),'invalid_candidate_name')
 const baselineName=process.env.KHIZANA_FIXES_BASELINE??'batch31'
@@ -53,11 +54,25 @@ await build({...config,base:'/',configFile:false,plugins:[plugin(),{name:'frozen
 const oldOut=resolve(base,'deploy/pages-dist')
 await cp(oldOut,out,{recursive:true,errorOnExist:true,force:false,filter:p=>{const name=relative(oldOut,p).replaceAll('\\','/');return name!=='assets'&&!name.startsWith('assets/')&&!['index.html','sw.js','q13-manifest.json'].includes(name)}})
 await cp(resolve(work,'compiled/assets'),resolve(out,'assets'),{recursive:true})
-const html=await readFile(resolve(work,'compiled/index.html'),'utf8')
+let html=await readFile(resolve(work,'compiled/index.html'),'utf8')
+let searchCandidate=null
+if(candidate==='batch35'){
+ searchCandidate=injectBatch35SearchCandidate({html,configSource:await readFile(resolve(root,'tools/batch35-search-candidate-config.js'),'utf8'),candidate,serverAcceptance:{PUBLIC_BOOK_SEARCH_ENABLED:'true',HEADING_QUERY_ENABLED:'0'}})
+ html=searchCandidate.html
+ await writeFile(resolve(out,searchCandidate.scriptPath.slice(1)),searchCandidate.scriptSource)
+}
 await writeFile(resolve(out,'index.html'),html)
 await writeFile(resolve(out,'sw.js'),stampServiceWorkerRelease(await readFile(resolve(oldOut,'sw.js'),'utf8'),html))
 await cp(resolve(base,'deploy/functions'),resolve(work,'deploy/functions'),{recursive:true})
 await cp(resolve(base,'deploy/wrangler.toml'),resolve(work,'deploy/wrangler.toml'))
+if(searchCandidate){
+ const configPath=resolve(work,'deploy/wrangler.toml')
+ let config=await readFile(configPath,'utf8')
+ assert(!/PUBLIC_BOOK_(SEARCH|INGESTION)_ENABLED/.test(config),'candidate_server_flags_require_review')
+ config=config.replace('[vars]','[vars]\nPUBLIC_BOOK_SEARCH_ENABLED = "true"\nPUBLIC_BOOK_INGESTION_ENABLED = "true"\nHEADING_QUERY_ENABLED = "0"').replace(/HEADING_QUERY_ENABLED = "1"/g,'HEADING_QUERY_ENABLED = "0"')
+ await writeFile(configPath,config)
+ await writeFile(resolve(work,'search-candidate.json'),JSON.stringify({...searchCandidate,html:undefined,scriptSource:undefined,requiredAcceptance:['fresh remote SHA verification of all 8595 field assets','isolated combined consumer acceptance','production migrations and live smoke before Actions gates']},null,2))
+}
 for(const path of overlay.functions){assert(path.startsWith('alpha-publish/functions/'));const target=resolve(work,'deploy/functions',path.slice('alpha-publish/functions/'.length));await mkdir(resolve(target,'..'),{recursive:true});await writeFile(target,reviewedBytes.get(path))}
 for(const path of overlay.public){assert(path.startsWith('app/public/'));const target=resolve(out,path.slice('app/public/'.length));await mkdir(resolve(target,'..'),{recursive:true});await writeFile(target,path==='app/public/sw.js'?stampServiceWorkerRelease(reviewedBytes.get(path).toString('utf8'),html):reviewedBytes.get(path))}
 for(const path of overlay.migrations){assert(path.startsWith('alpha-publish/migrations/'));const target=resolve(work,'deploy/migrations',path.slice('alpha-publish/migrations/'.length));await mkdir(resolve(target,'..'),{recursive:true});await writeFile(target,reviewedBytes.get(path))}

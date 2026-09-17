@@ -18,6 +18,8 @@ import { canonicalBookCategory, effectiveBookCategory } from '../taxonomy_links'
 import { headingIndex } from './heading_index'
 import {ensureCentralHeadingProvider} from '../central_heading_bootstrap'
 import {localSearchBookFingerprint,orderedWordVolumes} from './word_volume_identity'
+import { searchFieldReleaseBinding } from '../search_field_release'
+import {publicBookSearchEnabled,searchPublicBooks} from '../public_book_search'
 
 interface IndexedParagraph { index: number; text: string; volumeIndex?:number; sourceVolumeNumber?:number; sourceParagraphIndex?:number; pageLabel?:string; partLabel?:string; sectionHeading?:string }
 interface LocalIndexedParagraph extends IndexedParagraph { normalizedText:string }
@@ -166,6 +168,7 @@ async function localSearchIndex():Promise<LocalIndexedBook[]>{return localFedera
 })()}
 
 export interface SearchResult {
+  publicUpload?:boolean
   volumeIndex?:number
   resultKey?: string
   bookId: string
@@ -192,7 +195,7 @@ export interface SearchResult {
   pageLabel?: string
   partLabel?: string
 }
-export interface SearchResultSet extends Array<SearchResult> { localIndexFailed?:boolean; unavailableBookIds?:string[]; pendingBookIds?:string[]; unopenedBookIds?:string[]; headingIndexMissingBookIds?:string[]; coverageComplete?:boolean; totalOccurrences?:number }
+export interface SearchResultSet extends Array<SearchResult> { localIndexFailed?:boolean; unavailableBookIds?:string[]; pendingBookIds?:string[]; unopenedBookIds?:string[]; headingIndexMissingBookIds?:string[]; coverageComplete?:boolean; totalOccurrences?:number; totalDocuments?:number }
 
 export type SearchField = 'body' | 'heading' | 'tag' | 'category' | 'card'
 
@@ -257,6 +260,7 @@ export function shamelaMetadataScopeBookIds(index: ShamelaAuthorIndex, options: 
 }
 
 function storedBookMatchesMetadata(book: StoredBook, options: SearchQueryOptions): boolean {
+  if(publicBookSearchEnabled()&&book.id.startsWith('central-submission:'))return false
   const authors = book.authors?.length ? book.authors.map(author => author.name) : [book.author]
   if (options.bookIds?.length && !options.bookIds.includes(book.id)) return false
   if (options.authors?.length && !options.authors.some(author => authors.includes(author))) return false
@@ -308,6 +312,15 @@ function structuralSearchDocument(book:StoredBook):StructuralSearchDocument{
 
 /** بحث في كل الكتب. يُرجع النتائج مرتبة حسب الملاءمة. */
 export async function searchAllBooks(query: string, options: SearchQueryOptions = {}): Promise<SearchResultSet> {
+ if(!publicBookSearchEnabled())return searchExistingBooks(query,options)
+ const [existing,uploaded]=await Promise.all([searchExistingBooks(query,options),searchPublicBooks(query,options)])
+ // Public uploads are authoritative server data, never stale cached copies.
+ const result=existing.filter(row=>!row.bookId.startsWith('central-submission:')) as SearchResultSet
+ Object.assign(result,{coverageComplete:existing.coverageComplete!==false&&uploaded.coverageComplete!==false,totalOccurrences:(existing.totalOccurrences??existing.length)+(uploaded.totalOccurrences??0),unavailableBookIds:existing.unavailableBookIds,pendingBookIds:existing.pendingBookIds,unopenedBookIds:existing.unopenedBookIds,headingIndexMissingBookIds:existing.headingIndexMissingBookIds,localIndexFailed:existing.localIndexFailed})
+ if(existing.totalDocuments!==undefined)result.totalDocuments=existing.totalDocuments+(uploaded.totalDocuments??0)
+ result.pendingBookIds=[...(existing.pendingBookIds??[]),...(uploaded.pendingBookIds??[])];result.unavailableBookIds=[...(existing.unavailableBookIds??[]),...(uploaded.unavailableBookIds??[])];result.push(...uploaded);sortSearchResultsByDeath(result);return result
+}
+async function searchExistingBooks(query: string, options: SearchQueryOptions = {}): Promise<SearchResultSet> {
   ensureLocalIndexIdentity()
   const searchGeneration=localIndexGeneration,structuralGeneration=structuralSearchGeneration,searchScope=localIndexScope
   // Preparing derived body indexes must not cancel independent TOC/metadata
@@ -324,16 +337,18 @@ export async function searchAllBooks(query: string, options: SearchQueryOptions 
   // Only an explicit, wholly local selection has verified structural sources.
   // Global, unknown and central selections remain closed until the overlay exists.
   if(fields.has('body')&&options.contentScope&&options.contentScope!=='both'){
-    if(!options.bookIds?.length||!['body','foot'].includes(options.contentScope))throw new Error('search_content_scope_index_unavailable')
+    const release=searchFieldReleaseBinding()
+    if((!release&&!options.bookIds?.length)||!['body','foot'].includes(options.contentScope))throw new Error('search_content_scope_index_unavailable')
     const stored=await listStoredBooks();active()
-    const byId=new Map(stored.map(book=>[book.id,book])),selected=[...new Set(options.bookIds)]
-    if(selected.some(id=>{const book=byId.get(id);return !book||book.sourceKind==='shamela4.1'||Boolean(shamelaSourceBookId(id))}))throw new Error('search_content_scope_index_unavailable')
+    const byId=new Map(stored.map(book=>[book.id,book])),selected=[...new Set(options.bookIds?.length?options.bookIds:stored.map(book=>book.id))]
+    if(selected.some(id=>{const book=byId.get(id);return release?!book&&!shamelaSourceBookId(id):!book||book.sourceKind==='shamela4.1'||Boolean(shamelaSourceBookId(id))}))throw new Error('search_content_scope_index_unavailable')
     const [{scopedContentIndex},{matchScopedContent},authorRecords]=await Promise.all([import('./scoped_content_index'),import('./scoped_content_matches'),listAuthorRecords(false)]);active()
     const result:SearchResultSet=[],unavailable:string[]=[]
     let totalOccurrences=0
     const scheduler=createSearchYieldScheduler()
     for(const id of selected){
       await scheduler.checkpoint();active()
+      if(shamelaSourceBookId(id)||byId.get(id)?.sourceKind==='shamela4.1')continue
       const original=byId.get(id)!,book={...original,...searchAuthorChronology(original,authorRecords)}
       if(!storedBookMatchesMetadata(book,options))continue
       try{
@@ -349,10 +364,42 @@ export async function searchAllBooks(query: string, options: SearchQueryOptions 
         }
       }catch(error){active();unavailable.push(book.id)}
     }
-    active();sortSearchResultsByDeath(result)
     const offset=Math.max(0,Math.floor(options.resultOffset??0)),limit=Math.max(1,Math.min(500,Math.floor(options.resultLimit??40)))
+    let totalDocuments=result.length,remoteCoverage=true
+    if(release&&(!options.bookIds?.length||options.bookIds.some(id=>Boolean(shamelaSourceBookId(id))))){
+      warmFastAuthorIndex();await waitForSearchMetadata(options.signal);active()
+      if(!fastAuthorIndex)throw new Error('search_metadata_unavailable')
+      const catalog=options.categories?.length?await listBooks({requireCompleteCatalog:true}):[];active()
+      const scope=shamelaMetadataScope(fastAuthorIndex,options,catalog)
+      remoteCoverage=scope.coverageComplete
+      const names=new Map(fastAuthorIndex.authors.flatMap(author=>author.books.map(book=>[shamelaSearchMetadataKey(book.sourceBookId),{title:book.title,author:author.name,deathYearHijri:author.deathYearHijri}] as const)))
+      if(scope.bookIds?.length!==0){
+        let remoteOffset=0,remoteTotal=Infinity
+        // Read only the central prefix needed to merge this page with local
+        // matches. Exclusions require the full scoped stream before counting.
+        while(remoteOffset<remoteTotal&&(expression.excluded.length>0||remoteOffset<offset+limit)){
+          const remote=await shamelaSearchClient().searchSeparatedV2(q,options.contentScope,release,remoteOffset,Math.min(500,expression.excluded.length?500:offset+limit-remoteOffset),scope.bookIds?.map(shamelaPublicBookId),options.signal);active()
+          remoteTotal=remote.totalDocuments
+          if(remoteOffset===0&&!expression.excluded.length){totalDocuments+=remote.totalDocuments;totalOccurrences+=remote.totalOccurrences}
+          if(!remote.coverageComplete)throw Error('search_field_coverage_incomplete')
+          if(!remote.hits.length&&remoteOffset<remoteTotal)throw Error('search_field_page_incomplete')
+          for(const hit of remote.hits){
+            if(matchesSearchExclusions(hit.text,expression.excluded))continue
+            const sourceId=shamelaSearchMetadataKey(hit.bookId),meta=names.get(sourceId)
+            if(!meta)throw Error('search_metadata_unavailable')
+            const start=Math.max(0,hit.matchOffset-90),end=Math.min(hit.text.length,hit.matchOffset+q.length+170)
+            const occurrenceCount=hit.occurrenceCount??1
+            if(expression.excluded.length){totalDocuments++;totalOccurrences+=occurrenceCount}
+            const deathYearHijri=hit.deathYearHijri??meta.deathYearHijri
+            result.push({bookId:shamelaPublicBookId(sourceId),title:meta.title,author:hit.author?.trim()||meta.author,authors:[hit.author?.trim()||meta.author],tags:[],...(deathYearHijri===undefined?{}:{deathYearHijri}),paraIndex:hit.paragraphIndex,snippet:`${start?'…':''}${hit.text.slice(start,end)}${end<hit.text.length?'…':''}`,matchText:hit.text,field:'body',occurrenceCount,sourceKind:'shamela4.1',...(hit.pageLabel?{pageLabel:hit.pageLabel}:{}),...(hit.partLabel?{partLabel:hit.partLabel}:{}),...(hit.sectionHeading?{sectionHeading:hit.sectionHeading}:{})})
+          }
+          remoteOffset+=remote.hits.length
+        }
+      }
+    }
+    active();sortSearchResultsByDeath(result)
     const page=result.slice(offset,offset+limit) as SearchResultSet
-    page.totalOccurrences=totalOccurrences;page.coverageComplete=unavailable.length===0;page.unavailableBookIds=[...new Set(unavailable)];page.pendingBookIds=[]
+    page.totalOccurrences=totalOccurrences;page.totalDocuments=totalDocuments;page.coverageComplete=remoteCoverage&&unavailable.length===0;page.unavailableBookIds=[...new Set(unavailable)];page.pendingBookIds=[]
     return page
   }
   // Heading release and catalog metadata are independent reads. Start them

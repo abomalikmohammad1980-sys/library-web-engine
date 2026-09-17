@@ -1,0 +1,57 @@
+{
+  "runtime": [
+    "app/src/bok_active_release.ts",
+    "app/src/bok_editor_launch.ts",
+    "app/src/bok_publication_service.ts",
+    "app/src/bok_text_editor.ts",
+    "app/src/screens/admin_books.ts",
+    "app/src/shamela_pack_seed.ts"
+  ],
+  "backend": [
+    "deployment/cloudflare/functions/api/_bok-release-pointer.js",
+    "deployment/cloudflare/functions/api/library/bok-release.js",
+    "deployment/cloudflare/functions/api/admin/bok-publication.js",
+    "deployment/cloudflare/migrations/0034_bok_publication_jobs.sql",
+    "deployment/cloudflare/functions/library/[[path]].js",
+    "deployment/cloudflare/functions/r2/[[path]].js"
+  ],
+  "tests": [
+    "app/src/bok_active_release.test.ts",
+    "app/src/bok_publication_service.test.ts",
+    "tools/bok-activation-pointer.test.mjs",
+    "tools/bok-publication-jobs.test.mjs",
+    "tools/register-bok-verified-release.test.mjs",
+    "tools/public-library-binding.test.mjs",
+    "tools/prepare-batch35-preview.test.mjs"
+  ],
+  "tools": [
+    "tools/register-bok-verified-release.mjs",
+    "tools/bok-cloud-reader-search.ts",
+    "tools/bok-baseline-search-environment.config.ts",
+    "tools/prepare-bok-cloud-acceptance.mjs",
+    "tools/prepare-bok-cloud-reader-search.mjs",
+    "tools/prepare-bok-cloud-pointer-fixture.mjs",
+    "tools/prepare-bok-cloud-jobs.mjs",
+    "tools/run-bok-cloud-acceptance.mjs",
+    "tools/run-bok-cloud-jobs.mjs",
+    "tools/prepare-edition-cloud-acceptance.mjs",
+    "tools/run-edition-cloud-acceptance.mjs",
+    "tools/prepare-batch35-preview.mjs"
+  ],
+  "reports": [
+    "docs/design-audit/BOK_CLOUD_GATE_20260917.md",
+    "docs/design-audit/PDF_EDITION_CLOUD_ACCEPTANCE_20260917.md"
+  ],
+  "manifests": [
+    "tools/batch35-bok-reviewed-files.json",
+    "tools/batch35-reviewed-overlay.json"
+  ],
+  "reviewNotes": {
+    "alreadyCommittedDependencies": ["deployment/cloudflare/migrations/0032_bok_release_pointer.sql", "deployment/cloudflare/functions/_seo-live-record.js", "deployment/cloudflare/functions/_seo-public-toc.js"],
+    "sharedSearchOwner": "app/src/shamela_search_v2.ts is in batch35-search-reviewed-files.json and depends on bok_active_release.ts above; stage once from the combined reviewed content.",
+    "clientClosure": "bok_editor_launch -> bok_publication_service -> bok_active_release; bok_text_editor -> bok_publication_service; shamela_pack_seed and shamela_search_v2 -> bok_active_release. Other relative runtime imports exist in frozen batch33.",
+    "backendClosure": "BOK publication uses existing _account-contract.js, _bok-text-drafts.js and _access-session.js. Release pointer uses existing account/session contracts. Public read gateways use existing _r2-read.js. All checked against frozen batch33 functions.",
+    "excluded": [".artifacts and all generated seed SQL", "Private sessions and credentials", "Alpha nested git originals (tracked deployment mirror listed instead)", "Unrelated source/test changes", "Already committed ingestion and SEO files", "No full BOK operator pipeline completion claim"],
+    "activation": "All production BOK flags remain off. No production deployment or staging performed by this manifest. Preview helper is local preparation only."
+  }
+}

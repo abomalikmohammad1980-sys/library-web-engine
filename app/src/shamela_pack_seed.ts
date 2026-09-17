@@ -13,6 +13,7 @@ import {fetchShamelaPackBytes,ShamelaPackSeedError} from './shamela_pack_transpo
 import {currentAccountClaims} from './account_authority'
 import {getAnnotations,saveAnnotations} from './annotation_store'
 import {revalidateBokAnnotations} from './bok_annotation_revalidation'
+import {activeBokReaderEntry} from './bok_active_release'
 export {ShamelaPackSeedError} from './shamela_pack_transport'
 
 export interface ShamelaPackCatalog { title: string | null; author: string | null; authorId: string | null; deathYearHijri?:number|null; category: string | null; publicationYearHijri: number | null; rawSourceMetadata: string | null }
@@ -270,8 +271,10 @@ export async function ensureShamelaBookReady(id:string):Promise<StoredBook>{
  if(offline&&existing?.bokPages?.length&&existing.bokToc!==undefined&&existing.bokTextVersion===CURRENT_SHAMELA_PACK_TEXT_VERSION&&!shouldParseRawBok(existing,'shamela-bok'))return existing
  const fast=await locateShamelaBookFast(sourceBookId).catch(()=>undefined)
  const fastCandidates:LocatedShamelaPackBook[]=fast?applyCentralBookOverrides([fast],override?[override]:[]):[]
- const located=fastCandidates[0]??(await sessionCatalog()).find(x=>x.entry.bookId===sourceBookId)
+ let located=fastCandidates[0]??(await sessionCatalog()).find(x=>x.entry.bookId===sourceBookId)
  if(!located)throw new ShamelaPackSeedError('shamela_pack_book_not_found')
+ const corrected=await activeBokReaderEntry(sourceBookId)
+ if(corrected)located={...located,root:corrected.root,entry:{...located.entry,...corrected.entry,catalog:located.entry.catalog} as ShamelaPackManifestBook}
  if(existing&&!shamelaBookNeedsHydration(existing,located.entry))return existing
  let {book}=await reconcileCatalogEntry(located.entry)
  if(override){book=applyCentralOverrideToStoredBook(book,override);await restoreArchivedBook(book)}

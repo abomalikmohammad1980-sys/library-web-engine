@@ -1,7 +1,7 @@
 import type { SearchHit, SearchPage, SearchWorkerRequest, SearchWorkerResponse, SerializedSearchShard } from '../../packages/search/src/index'
 import { shamelaSourceBookId } from './shamela_public_identity'
 import { fetchPagesDataAsset } from './pages_data_release'
-import { ShamelaSearchV2Client } from './shamela_search_v2'
+import { ShamelaSearchV2Client, type SeparatedV2SearchBinding } from './shamela_search_v2'
 
 export interface ShamelaSearchManifest { contract:string; source?:{booksDigestSha256?:string}; counts?:{books:number;documents:number;postings:number}; routing?:{manifest:string}; shards:Array<{id:string;bookId:string;batch?:string;file:string;byteLength:number;sha256:string}> }
 interface RoutingManifest { contract:string; bucketCount:number; globalPattern:string; batchPattern:string; batches:string[] }
@@ -28,6 +28,15 @@ const localSearchHost=()=>globalThis.location?.hostname==='localhost'||globalThi
 const withLocalV2Deadline=<T>(promise:Promise<T>,signal?:AbortSignal):Promise<T>=>{const active=abortableSearch(promise,signal);if(!localSearchHost())return active;let timer:ReturnType<typeof setTimeout>;const deadline=new Promise<never>((_,reject)=>{timer=setTimeout(()=>reject(new Error('shamela_search_v2_cold_deadline')),5000)});return Promise.race([active,deadline]).finally(()=>clearTimeout(timer))}
 
 export class ShamelaSearchClient {
+  async searchSeparatedV2(query:string,scope:'body'|'foot',binding:SeparatedV2SearchBinding,offset=0,limit=100,bookIds?:string[],signal?:AbortSignal){
+    signal?.throwIfAborted()
+    const sourceIds=bookIds?.map(shamelaSourceBookId)
+    if(sourceIds?.some(id=>!id))throw Error('search_field_scope_contains_local_books')
+    // No legacy fallback: an unsplit index cannot answer a field-scoped query.
+    const page=await abortableSearch(this.v2.searchSeparated(query,scope,binding,offset,limit,sourceIds as string[]|undefined,signal),signal)
+    signal?.throwIfAborted()
+    return{...page,offset,limit,unavailableBookIds:[],pendingBookIds:[]}
+  }
   private manifest?:Promise<ShamelaSearchManifest>; private v2ScopeIds=new WeakMap<string[],{sourceIds:string[];invalid:string[]}>(); private routing?:Promise<RoutingManifest>; private routeBuckets=new Map<string,Promise<Map<string,string[]>>>(); private loaded=new Set<string>(); private pending=new Map<string,(r:SearchWorkerResponse)=>void>(); private serial=0;private readonly v2:ShamelaSearchV2Client
   constructor(private readonly worker:WorkerPort,private readonly fetcher:typeof fetch=(input,init)=>globalThis.fetch(input,init),v2Fetcher:typeof fetch=fetcher){this.v2=new ShamelaSearchV2Client(v2Fetcher);worker.addEventListener('message',e=>{const done=this.pending.get(e.data.requestId);if(done){this.pending.delete(e.data.requestId);done(e.data)}})}
     async searchCompleteV2(query:string,offset=0,limit=40,bookIds?:string[],signal?:AbortSignal):Promise<ShamelaSearchPage>{if(signal?.aborted)throw new DOMException('Search superseded','AbortError');let compiled=bookIds?this.v2ScopeIds.get(bookIds):undefined;if(bookIds&&!compiled){const mapped=bookIds.map(shamelaSourceBookId);compiled={sourceIds:mapped.filter((x):x is string=>Boolean(x)),invalid:bookIds.filter((_,index)=>!mapped[index])};this.v2ScopeIds.set(bookIds,compiled)}const invalid=compiled?.invalid??[],sourceIds=compiled?.sourceIds;try{const page=await withLocalV2Deadline(this.v2.search(query,offset,limit,sourceIds),signal);if(signal?.aborted)throw new DOMException('Search superseded','AbortError');return{total:page.total,offset,limit,hits:page.hits,unavailableBookIds:invalid,pendingBookIds:[],coverageComplete:page.coverageComplete&&invalid.length===0&&page.indexedBooks===8594}}catch(error){if(this.v2.hasSourceRecovery||signal?.aborted||error instanceof DOMException&&error.name==='AbortError')throw error;return this.search(query,offset,limit,bookIds,signal,true)}}
