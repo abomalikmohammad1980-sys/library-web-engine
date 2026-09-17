@@ -48,7 +48,7 @@ jobs:
         env:
           PUBLIC_BOOK_INGESTION_ENABLED: 'true'
           PUBLIC_BOOK_INGESTION_ACCEPTED: ${{ vars.PUBLIC_BOOK_INGESTION_ACCEPTED }}
-          PUBLIC_BOOK_INDEX_RUNNER_TOKEN: ${{ secrets.PUBLIC_BOOK_INDEX_RUNNER_TOKEN }}
+          PUBLIC_BOOK_INDEX_RUNNER_TOKEN: ${{ secrets.PUBLIC_BOOK_INDEX_PREVIEW_RUNNER_TOKEN }}
           PUBLIC_BOOK_INDEX_GATEWAY_ORIGIN: https://khizana-bok-acceptance-20260917.pages.dev
           PUBLIC_BOOK_TARGET_ID: ${{ inputs.book_id }}
           PUBLIC_BOOK_TARGET_VERSION: ${{ inputs.content_version }}
