@@ -1,16 +1,20 @@
 import {plainSeoText} from '../../app/src/page_meta_model.ts'
 // Reads only already-public metadata. No owner, session, object key or private text is selected.
 // Refresh on every request: additions/edits/deletions need no redeployment or stale index cache.
-export async function refreshPublicSeoRecord(db,kind,id,record){
- if(!db)return record
+export async function refreshPublicSeoRecord(db,kind,id,record,{publicUpload=false}={}){
+ const uploaded=kind==='books'&&(publicUpload||!/^\d+$/.test(id))
+ if(!db)return uploaded?undefined:record
+ // A fresh primary session is needed on every HTTP/cache visibility check.
+ // Do not reuse a previous session whose next query may be served by a replica.
+ if(typeof db.withSession==='function')db=db.withSession('first-primary')
  if(kind==='books'){
   const publicId=/^\d+$/.test(id)?String(410000000+Number(id)):id
-  const overrideIds=/^\d+$/.test(id)?[publicId,id,'shamela-'+id]:[id,'central-submission:'+id,'account-book:'+id]
+  const overrideIds=uploaded?[id,'central-submission:'+id,'account-book:'+id]:[publicId,id,'shamela-'+id]
   // Any private/deleted alias vetoes publication, matching ingestion eligibility.
   // Revision ordering is meaningful only after this privacy fence.
   const override=await db.prepare("SELECT title,author,category,visibility,logically_deleted_at,updated_at FROM central_book_overrides WHERE book_id IN (?1,?2,?3) ORDER BY CASE WHEN visibility<>'public' OR logically_deleted_at IS NOT NULL THEN 0 ELSE 1 END, revision DESC LIMIT 1").bind(...overrideIds).first()
   if(override&&(override.visibility!=='public'||override.logically_deleted_at))return undefined
-  if(!record){
+  if(uploaded||!record){
    const row=await db.prepare("SELECT id,title,author,category,updated_at FROM user_books WHERE id=?1 AND visibility='public' AND review_status='approved' AND deleted_at IS NULL LIMIT 1").bind(id).first()
    if(!row)return undefined
    record={id:row.id,title:plainSeoText(row.title),author:plainSeoText(row.author),category:plainSeoText(row.category??''),updatedAt:row.updated_at}

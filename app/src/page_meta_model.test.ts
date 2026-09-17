@@ -1,6 +1,6 @@
 import {expect,it} from 'vitest'
 import {readFileSync} from 'node:fs'
-import {pageMetaFor,seoShard,PUBLIC_PAGE_META,buildBookDescription,truncateSeoDescription,publicPageHeading} from './page_meta_model'
+import {pageMetaFor,seoShard,PUBLIC_PAGE_META,buildBookDescription,truncateSeoDescription,publicPageHeading,publicPaginationCanonicalPath} from './page_meta_model'
 it('uses safe labelled Arabic descriptions without case inflection or repeated section prefixes',()=>{
  const description=buildBookDescription({id:'1',title:'كتاب السنة',author:'أبو موسى',deathYearHijri:581,category:'كتب السنة'})
  expect(description).toBe('كتاب السنة — المؤلف: أبو موسى (ت 581 هـ). القسم: كتب السنة. اقرأ الكتاب كاملًا وتصفح فهرس محتوياته في الخِزانة.')
@@ -55,4 +55,22 @@ it('never assigns a canonical to private, search or unresolved identities',()=>{
  for(const path of ['/settings','/search?q=x','/me','/books/local%3Aone','/authors/999999','/authors?create=1'])expect(pageMetaFor(path)).toMatchObject({robots:'noindex, follow'})
  for(const path of ['/settings','/search?q=x','/books/local%3Aone'])expect(pageMetaFor(path).canonicalPath).toBeUndefined()
  expect(seoShard('000020')).toBe('04');expect(()=>seoShard('../20')).toThrow()
+})
+it('canonicalizes positive public listing pages without losing fixed metadata',()=>{
+ for(const path of ['/authors','/browse','/new-books']){
+  expect(pageMetaFor(path+'?page=1').canonicalPath).toBe(path)
+  expect(pageMetaFor(path+'?page=2&utm_source=x#section')).toMatchObject({canonicalPath:path+'?page=2',robots:'index, follow',title:PUBLIC_PAGE_META[path][0]})
+  expect(publicPaginationCanonicalPath(path+'?page=002')).toBe(path+'?page=2')
+ }
+ const author={id:'000020',name:'الشافعي',biography:'ترجمته'}
+ expect(pageMetaFor('/authors/000020?page=2',author)).toMatchObject({canonicalPath:'/authors/000020?page=2',title:'الشافعي: سيرته وكتبه | الخِزانة',robots:'index, follow'})
+ expect(pageMetaFor('/authors/000020?page=1',author).canonicalPath).toBe('/authors/000020')
+})
+it('does not create canonical query URLs from malformed, ambiguous or non-listing state',()=>{
+ for(const query of ['page=0','page=-1','page=1.5','page=NaN','page=','page=2&page=3','page=1000001','page=9007199254740992','page=2%23bad'])expect(publicPaginationCanonicalPath('/authors?'+query)).toBe('/authors')
+ for(const path of ['/quran','/sunnah','/features','/books/21633','/books/local/abc'])expect(publicPaginationCanonicalPath(path+'?page=2')).toBe(path)
+ expect(pageMetaFor('/authors?page=2&create=1')).toMatchObject({robots:'noindex, follow'})
+ expect(pageMetaFor('/authors?page=2&create=1').canonicalPath).toBeUndefined()
+ expect(pageMetaFor('/authors/999999?page=2').canonicalPath).toBeUndefined()
+ expect(pageMetaFor('/search?page=2&q=x').canonicalPath).toBeUndefined()
 })

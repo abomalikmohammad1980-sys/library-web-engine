@@ -42,10 +42,20 @@ const PUBLIC_PAGE_HEADINGS:Readonly<Record<string,string>>={
 export function publicPageHeading(path:string):string|undefined{
  return PUBLIC_PAGE_HEADINGS[path.split(/[?#]/)[0]||'/']
 }
+/** Only real public listing routes retain their page state in canonicals.
+ * Reader positions, search queries and unrelated filters never become canonical. */
+export function publicPaginationCanonicalPath(path:string):string{
+ const pathname=path.split(/[?#]/)[0]||'/'
+ if(!/^\/(?:authors(?:\/\d{6,12})?|browse|new-books)$/.test(pathname))return pathname
+ const query=path.split('#')[0]!.split('?')[1]??'',values=new URLSearchParams(query).getAll('page')
+ if(values.length!==1||!/^\d+$/.test(values[0]!))return pathname
+ const page=Number(values[0])
+ return Number.isSafeInteger(page)&&page>1&&page<=1000000?`${pathname}?page=${page}`:pathname
+}
 export function pageMetaFor(path:string,record?:PublicSeoRecord):PageMeta{
- const canonicalPath=path.split(/[?#]/)[0]||'/'
+ const pathname=path.split(/[?#]/)[0]||'/',canonicalPath=publicPaginationCanonicalPath(path)
  if(new URLSearchParams(path.split('?')[1]??'').has('create'))return{title:'إضافة مؤلف | الخِزانة',description:'إدارة بيانات مؤلف في الخِزانة.',robots:'noindex, follow'}
- const fixed=PUBLIC_PAGE_META[canonicalPath]
+ const fixed=PUBLIC_PAGE_META[pathname]
  if(fixed)return{title:fixed[0],description:fixed[1],canonicalPath,robots:'index, follow'}
  if(record?.name&&/^\/authors\//.test(canonicalPath))return{title:`${record.name}: سيرته وكتبه | الخِزانة`,description:plainSeoText(record.biography||`${record.name}${record.deathYearHijri?` (ت ${record.deathYearHijri} هـ)`:''}؛ سيرته وكتبه المتاحة في مكتبة الخِزانة.`).slice(0,220),canonicalPath,robots:'index, follow'}
  if(record?.title&&record.author&&/^\/books\//.test(canonicalPath))return{title:`${record.title} — ${record.author} | الخِزانة`,description:buildBookDescription(record),canonicalPath,robots:'index, follow'}

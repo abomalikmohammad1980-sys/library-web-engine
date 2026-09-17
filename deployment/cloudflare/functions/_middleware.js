@@ -7,6 +7,8 @@ import {refreshPublicSeoRecord} from './_seo-live-record.js'
 import {publicSitemap,publicSitemapPages} from './_seo-public-sitemap.js'
 import {boundedBytes} from './_seo-toc.js'
 import {seoPresentation,seoNavLabels} from './_seo-presentation.js'
+import {loadSeoDataRelease,seoListingPage} from './_seo-data-release.js'
+import {renderSeoListing,relatedSeoRows} from './_seo-listings.js'
 const escape=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))
 async function smallJson(response){
  if(!response.ok)throw Error('seo_data_unavailable')
@@ -52,9 +54,13 @@ export async function onRequest(context){
  const canonicalPath=canonicalizePath(path)
  const match=/^\/(authors|books)\/(\d{1,12})$/.exec(canonicalPath)
  try{
-  if(match){const kind=match[1],id=kind==='authors'?match[2].padStart(6,'0'):String(Number(match[2]));const data=await smallJson(await env.ASSETS.fetch(new URL(`/data/seo/${kind}-${seoShard(id)}.json`,url)));record=await refreshPublicSeoRecord(env.VISITORS_DB,kind,id,data.records[id]);if(!record)status=404;else if(path!==`/${kind}/${id}`){url.pathname=`/${kind}/${id}`;return Response.redirect(url.href,301)}}
-  else if(/^\/books\/public\/[A-Za-z0-9_-]{1,200}$/.test(path)){record=await refreshPublicSeoRecord(env.VISITORS_DB,'books',path.split('/')[3]);if(!record)status=404}
+  const release=match||PUBLIC_PAGE_META[path]?await loadSeoDataRelease(env,url):null
+  if(match){const kind=match[1],id=kind==='authors'?match[2].padStart(6,'0'):String(Number(match[2]));const frozen=release?await release.identity(kind,id):(await smallJson(await env.ASSETS.fetch(new URL(`/data/seo/${kind}-${seoShard(id)}.json`,url)))).records[id];record=await refreshPublicSeoRecord(env.VISITORS_DB,kind,id,frozen);if(!record)status=404;else if(path!==`/${kind}/${id}`){url.pathname=`/${kind}/${id}`;return Response.redirect(url.href,301)}}
+  else if(/^\/books\/public\/[A-Za-z0-9_-]{1,200}$/.test(path)){record=await refreshPublicSeoRecord(env.VISITORS_DB,'books',path.split('/')[3],undefined,{publicUpload:true});if(!record)status=404}
   else if(/^\/authors\//.test(path))status=404
+  const listKey=record?.name?'author:'+record.id:['/authors','/browse','/new-books'].includes(path)?path.slice(1):null
+  let listing
+  if(release&&listKey&&status===200){const page=seoListingPage(url);listing=page===null?null:await release.listing(listKey,page);if(!listing){status=404;record=undefined}}
   // Opaque local/account book identities belong to the private SPA, never public SEO.
   const meta=status===404?{title:'الصفحة غير موجودة | الخِزانة',description:'لم يُعثر على الكتاب أو المؤلف المطلوب.',robots:'noindex, follow'}:pageMetaFor(path+url.search,record)
   const schema=[{'@context':'https://schema.org','@type':'BreadcrumbList',itemListElement:[{'@type':'ListItem',position:1,name:'الخِزانة',item:SEO_ORIGIN+'/'},...(path==='/'?[]:[{'@type':'ListItem',position:2,name:record?.title??record?.name??meta.title,item:SEO_ORIGIN+path}])]}]
@@ -64,6 +70,13 @@ export async function onRequest(context){
   if(record?.title){
    body+=`<p>${record.authorId?`<a href="/authors/${escape(record.authorId)}">${escape(record.author)}</a>`:escape(record.author)}${record.deathYearHijri?` (ت ${record.deathYearHijri} هـ)`:''}</p><p>${escape(record.category)}</p><a href="/browse">تصفح الأقسام</a>`
    schema.push({'@context':'https://schema.org','@type':'Book',name:record.title,url:SEO_ORIGIN+path,author:{'@type':'Person',name:record.author,...(record.authorId?{url:SEO_ORIGIN+'/authors/'+record.authorId}:{})},genre:record.category,inLanguage:'ar'})
+   if(release){
+    for(const [key,label] of [[record.authorId?'author:'+record.authorId:null,'كتب أخرى للمؤلف'],[record.category?'category:'+record.category:null,'من القسم نفسه']]){
+     if(!key)continue
+     const group=await release.listing(key,1),rows=relatedSeoRows(group?.rows??[],record.id)
+     if(rows.length)body+=`<section><h2>${label}</h2><ul>${rows.map(row=>`<li><a href="${escape(row.href)}">${escape(row.title)}</a></li>`).join('')}</ul></section>`
+    }
+   }
    if(record.toc){
     const rows=await readSeoToc(env.ASSETS,url,record.toc,env.LIBRARY_R2),rawPage=url.searchParams.get('tocPage')??'1'
     const tocPage=/^[1-9]\d{0,5}$/.test(rawPage)?Number(rawPage):1,start=(tocPage-1)*200
@@ -83,12 +96,13 @@ export async function onRequest(context){
     }
    }
   }else if(record?.name){
-   body+=`<ul>${(record.books??[]).map(b=>`<li><a href="/books/${escape(b.id)}">${escape(b.title)}</a></li>`).join('')}</ul>`
+   body+=listing?renderSeoListing(listing,path):`<ul>${(record.books??[]).map(b=>`<li><a href="/books/${escape(b.id)}">${escape(b.title)}</a></li>`).join('')}</ul>`
    schema.push({'@context':'https://schema.org','@type':'Person',name:record.name,url:SEO_ORIGIN+path,description:meta.description})
-  }else if(PUBLIC_PAGE_META[path]){
+  }else if(status===200&&PUBLIC_PAGE_META[path]){
    body+=`<nav aria-label="أقسام الخزانة">${Object.keys(PUBLIC_PAGE_META).map(p=>`<a href="${p}">${escape(seoNavLabels[p])}</a>`).join('')}</nav>`
-   const kind=path==='/authors'?'authors':'books',data=await smallJson(await env.ASSETS.fetch(new URL(`/data/seo/${kind}-00.json`,url)))
-   body+=`<ul>${Object.values(data.records).slice(0,40).map(row=>`<li><a href="/${kind}/${escape(row.id)}">${escape(row.title??row.name)}</a></li>`).join('')}</ul>`
+   if(listing)body+=renderSeoListing(listing,path)
+   else if(release){const sample=await release.listing('new-books',1);body+=`<ul>${(sample?.rows??[]).slice(0,12).map(row=>`<li><a href="${escape(row.href)}">${escape(row.title)}</a></li>`).join('')}</ul>`}
+   else{const kind=path==='/authors'?'authors':'books',data=await smallJson(await env.ASSETS.fetch(new URL(`/data/seo/${kind}-00.json`,url)));body+=`<ul>${Object.values(data.records).slice(0,40).map(row=>`<li><a href="/${kind}/${escape(row.id)}">${escape(row.title??row.name)}</a></li>`).join('')}</ul>`}
    schema.push({'@context':'https://schema.org','@type':'CollectionPage',name:meta.title,url:SEO_ORIGIN+path,description:meta.description})
   }
   body+='</main>'

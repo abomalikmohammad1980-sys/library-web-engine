@@ -16,6 +16,11 @@ but are NOT integrated or deployed. Read SEO_STAGE_A_PROGRESS_20260917.md,
 SEO_EDGE_CACHE_A1_20260917.md and SEO_LISTING_PAGINATION_PROPOSAL_20260917.md.
 Continue helper integration, fresh uploaded-record visibility before cache,
 categories routes/sitemap/listing data, then fullstageA preview and30URL p95.
+Latest continuation implemented optional pinned identity/listing consumption,
+100row server pagination, relatedlinks, freshuploadprivacy and pagecanonicals.
+Local realHTML+R2 regression passes; data prepared frombatch34 but NOT uploaded,
+activated or deployed. See SEO_LISTINGS_INTEGRATION_20260917.md. Remaining:
+categoriesroutes/sitemap, edgecache orchestration, uploadverification andpreview.
 Do not confuse local helpers with completed stageA or stageB. New attachment's
 OCR requirement is not implemented by old PDF-bookmarks-only adapter.
 

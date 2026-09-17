@@ -29,6 +29,7 @@ test('actual SQL: an older hidden or deleted alias vetoes a newer public overrid
  const sql=new DatabaseSync(':memory:')
  try{
   sql.exec('CREATE TABLE central_book_overrides(book_id TEXT PRIMARY KEY,title TEXT,author TEXT,category TEXT,visibility TEXT,logically_deleted_at TEXT,updated_at TEXT,revision INTEGER)')
+  sql.exec("CREATE TABLE user_books(id TEXT PRIMARY KEY,title TEXT,author TEXT,category TEXT,visibility TEXT,review_status TEXT,deleted_at TEXT,updated_at TEXT); INSERT INTO user_books VALUES('upload','upload','author','category','public','approved',NULL,'1')")
   const adapter={prepare:query=>({bind:(...args)=>({first:async()=>sql.prepare(query).get(...args)??null})})}
   for(const [id,privateAlias,publicAlias] of [['upload','central-submission:upload','account-book:upload'],['21633','shamela-21633','410021633']]){
    for(const [visibility,deleted] of [['hidden',null],['unlisted',null],['public','2026-09-17']]){
@@ -41,4 +42,38 @@ test('actual SQL: an older hidden or deleted alias vetoes a newer public overrid
    assert.equal((await refreshPublicSeoRecord(adapter,'books',id,{id,title:'packaged public',author:'author'})).title,'newer public')
   }
  }finally{sql.close()}
+})
+test('a supplied uploaded record cannot bypass authoritative withdrawal or approval checks',async()=>{
+ const sql=new DatabaseSync(':memory:')
+ try{
+  sql.exec('CREATE TABLE central_book_overrides(book_id TEXT PRIMARY KEY,title TEXT,author TEXT,category TEXT,visibility TEXT,logically_deleted_at TEXT,updated_at TEXT,revision INTEGER); CREATE TABLE user_books(id TEXT PRIMARY KEY,title TEXT,author TEXT,category TEXT,visibility TEXT,review_status TEXT,deleted_at TEXT,updated_at TEXT)')
+  const adapter={prepare:query=>({bind:(...args)=>({first:async()=>sql.prepare(query).get(...args)??null})})}
+  for(const id of ['upload','21633']){
+   const stale={id,title:'old private title',author:'old author',toc:{sha:'stale'},authorId:'000020',deathYearHijri:204}
+   const options={publicUpload:true}
+   for(const [visibility,review,deleted] of [['private','approved',null],['public','pending',null],['public','rejected',null],['public','approved','2026-09-17']]){
+    sql.exec('DELETE FROM user_books')
+    sql.prepare('INSERT INTO user_books VALUES(?,?,?,?,?,?,?,?)').run(id,'current','current author','category',visibility,review,deleted,'2')
+    assert.equal(await refreshPublicSeoRecord(adapter,'books',id,stale,options),undefined)
+   }
+   sql.exec('DELETE FROM user_books')
+   assert.equal(await refreshPublicSeoRecord(adapter,'books',id,stale,options),undefined)
+   sql.prepare('INSERT INTO user_books VALUES(?,?,?,?,?,?,?,?)').run(id,'fresh title','fresh author','fresh category','public','approved',null,'3')
+   assert.deepEqual(await refreshPublicSeoRecord(adapter,'books',id,stale,options),{id,title:'fresh title',author:'fresh author',category:'fresh category',updatedAt:'3'})
+  }
+ }finally{sql.close()}
+})
+test('uploaded metadata fails closed on missing database or failed authoritative query',async()=>{
+ const stale={id:'upload',title:'old',author:'old'}
+ assert.equal(await refreshPublicSeoRecord(undefined,'books','upload',stale),undefined)
+ assert.equal(await refreshPublicSeoRecord(undefined,'books','21633',{...stale,id:'21633'},{publicUpload:true}),undefined)
+ const broken={prepare(sql){if(sql.includes('user_books'))throw Error('offline');return {bind:()=>({first:async()=>null})}}}
+ await assert.rejects(refreshPublicSeoRecord(broken,'books','upload',stale),/offline/)
+})
+test('live metadata selects a fresh primary session and upload aliases even for numeric upload IDs',async()=>{
+ const queries=db([{sql:/central_book_overrides/,args:['21633','central-submission:21633','account-book:21633'],row:null},{sql:/user_books/,args:['21633'],row:{id:'21633',title:'fresh',author:'author'}}])
+ let sessions=0
+ const database={withSession(mode){assert.equal(mode,'first-primary');sessions++;return queries}}
+ assert.equal((await refreshPublicSeoRecord(database,'books','21633',{id:'21633',title:'old'},{publicUpload:true})).title,'fresh')
+ assert.equal(sessions,1)
 })
