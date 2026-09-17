@@ -5,8 +5,8 @@ export async function trustedAccessName(identity,assertion,env,{fetcher=fetch}={
  try{
   const domain=new URL(env.ACCOUNT_ACCESS_DOMAIN)
   if(domain.protocol!=='https:'||!domain.hostname.endsWith('.cloudflareaccess.com')||domain.username||domain.password||domain.port||domain.pathname!=='/'||domain.search||domain.hash||!/^[-\w]+\.[-\w]+\.[-\w]+$/.test(assertion)||assertion.length>16384)return ''
-  const response=await fetcher(`${domain.origin}/cdn-cgi/access/get-identity`,{headers:{cookie:`CF_Authorization=${assertion}`,accept:'application/json'},redirect:'error',signal:AbortSignal.timeout(2000)})
-  if(!response.ok||!response.body)return ''
+  const response=await fetcher(`${domain.origin}/cdn-cgi/access/get-identity`,{headers:{cookie:`CF_Authorization=${assertion}`,accept:'application/json'},redirect:'manual',signal:AbortSignal.timeout(2000)})
+  if(!response.ok||!response.body){await response.body?.cancel().catch(()=>{});return ''}
   const reader=response.body.getReader(),parts=[];let size=0
   try{for(;;){const {done,value}=await reader.read();if(done)break;size+=value.byteLength;if(size>32768)throw Error('size');parts.push(value)}}catch(e){await reader.cancel();throw e}finally{reader.releaseLock()}
   const bytes=new Uint8Array(size);let offset=0;for(const part of parts){bytes.set(part,offset);offset+=part.length}

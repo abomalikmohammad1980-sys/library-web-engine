@@ -9,9 +9,19 @@ function setup(){const sql=new DatabaseSync(':memory:');sql.exec(`CREATE TABLE p
  const db={prepare(query){return{bind:(...args)=>({run:async()=>sql.prepare(query).run(...args),first:async()=>sql.prepare(query).get(...args)})}},withSession(mode){assert.equal(mode,'first-primary');return db}}
  return{sql,env:{VISITORS_DB:db,INDEXNOW_ENABLED:'true',INDEXNOW_SUBMISSION_APPROVED:'true',INDEXNOW_KEY:key}}}
 const event={bookId:'book-one',contentVersion:1,action:'upsert'},clock={now:()=>100,token:()=> 'safe-lease-token-12345'}
+test('redirects are rejected durably without following their Location',async()=>{
+ for(const status of [301,302,303,307,308]){
+  const f=setup();let calls=0,cancelled=false
+  const fetcher=async(url,init)=>{calls++;assert.equal(url,'https://api.indexnow.org/indexnow');assert.equal(init.redirect,'manual');return new Response(new ReadableStream({cancel(){cancelled=true}}),{status,headers:{location:'https://untrusted.invalid/collect'}})}
+  assert.equal((await notifyPublicBookIndexNow(f.env,event,{...clock,fetcher})).status,'failed')
+  assert.equal((await notifyPublicBookIndexNow(f.env,event,{...clock,fetcher})).status,'failed')
+  assert.equal(calls,1);assert.equal(cancelled,true)
+  assert.equal(f.sql.prepare('SELECT http_status FROM public_book_indexnow').get().http_status,status);f.sql.close()
+ }
+})
 test('accepted receipt is idempotent, fixed URL only, 202 means accepted not indexed',async()=>{
  const f=setup();let calls=0
- const fetcher=async(url,init)=>{calls++;assert.equal(url,'https://api.indexnow.org/indexnow');assert.equal(init.redirect,'error');const body=JSON.parse(init.body);assert.deepEqual(body.urlList,['https://khzanah.com/books/public/book-one']);return new Response(null,{status:202})}
+ const fetcher=async(url,init)=>{calls++;assert.equal(url,'https://api.indexnow.org/indexnow');assert.equal(init.redirect,'manual');const body=JSON.parse(init.body);assert.deepEqual(body.urlList,['https://khzanah.com/books/public/book-one']);return new Response(null,{status:202})}
  assert.equal((await notifyPublicBookIndexNow(f.env,event,{...clock,fetcher})).status,'accepted')
  assert.equal((await notifyPublicBookIndexNow(f.env,event,{...clock,fetcher})).status,'accepted');assert.equal(calls,1);f.sql.close()
 })

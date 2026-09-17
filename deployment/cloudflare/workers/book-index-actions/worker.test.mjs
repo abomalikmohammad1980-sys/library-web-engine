@@ -35,7 +35,7 @@ test('fixed repo/ref/version dispatch200 stores run identity and deduplicates ac
   assert.equal((await f.call()).status,202);assert.equal((await f.call()).status,202)
   assert.equal(calls.filter(c=>c.url.endsWith('/dispatches')).length,1)
   assert.equal(calls[0].url,'https://api.github.com/repos/abomalikmohammad1980-sys/library-web-engine/actions/workflows/public-book-ingestion-targeted.yml/dispatches')
-  assert.equal(calls[0].init.headers['x-github-api-version'],'2026-03-10');assert.equal(calls[0].init.redirect,'error')
+  assert.equal(calls[0].init.headers['x-github-api-version'],'2026-03-10');assert.ok(calls.every(c=>c.init.redirect==='manual'))
   assert.deepEqual(JSON.parse(calls[0].init.body),{ref:'main',inputs:{book_id:'book',content_version:'1'}})
   assert.equal(f.sql.prepare('SELECT run_id FROM public_book_actions_dispatches').get().run_id,123)
  }finally{f.sql.close()}
@@ -57,6 +57,22 @@ test('five bounded ambiguous network dispatch failures never fabricate ready or 
   assert.equal(f.sql.prepare('SELECT state FROM public_book_index_jobs').get().state,'queued')
  }finally{f.sql.close()}
 })
+test('dispatch failures retain only numeric HTTP status, never response body or credential',async()=>{
+ const f=fixture(async()=>new Response('sensitive token details',{status:403}));try{
+  const response=await f.call();assert.equal(response.status,503)
+  assert.doesNotMatch(await response.text(),/sensitive|token details/)
+  assert.equal(f.sql.prepare('SELECT error_code FROM public_book_actions_dispatches').get().error_code,'dispatch_http_403')
+ }finally{f.sql.close()}
+})
+
+test('redirect response is rejected without forwarding credentials or accepting a run',async()=>{
+ let calls=0;const f=fixture(async(_url,init)=>{calls++;assert.equal(init.redirect,'manual');return new Response(null,{status:302,headers:{location:'https://untrusted.invalid/'}})});try{
+  assert.equal((await f.call()).status,503);assert.equal(calls,1)
+  const row=f.sql.prepare('SELECT state,run_id,error_code FROM public_book_actions_dispatches').get()
+  assert.equal(row.state,'failed');assert.equal(row.run_id,null);assert.equal(row.error_code,'dispatch_http_302')
+ }finally{f.sql.close()}
+})
+
 test('new target workflow is manual-only, doubly gated, isolated origin and inputs never interpolated into commands',()=>{
  const yaml=readFileSync(new URL('../../../../.github/workflows/public-book-ingestion-targeted.yml',import.meta.url),'utf8')
  assert.match(yaml,/BOOK_INDEX_TARGETED_ACTIONS_ENABLED == 'true'/);assert.match(yaml,/PUBLIC_BOOK_INGESTION_ACCEPTED == 'true'/)

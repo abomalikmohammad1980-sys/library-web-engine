@@ -43,7 +43,7 @@ export function createActionsExtractor({fetcher=fetch,now=()=>Math.floor(Date.no
     else{
      let run
      try{
-      const response=await fetcher(API+'/actions/runs/'+prior.run_id,{headers,redirect:'error',signal:AbortSignal.timeout(10000)})
+      const response=await fetcher(API+'/actions/runs/'+prior.run_id,{headers,redirect:'manual',signal:AbortSignal.timeout(10000)})
       if(response.status!==200){await response.body?.cancel();return json({pending:true},202)}
       run=await boundedJson(response,65536)
      }catch{return json({pending:true},202)}
@@ -64,14 +64,19 @@ export function createActionsExtractor({fetcher=fetch,now=()=>Math.floor(Date.no
  AND EXISTS(SELECT 1 FROM public_book_event_state s WHERE s.book_id=?1 AND s.content_version=?2 AND s.visibility='public') RETURNING attempts`).bind(event.bookId,event.contentVersion,lease,time+30,time).first()
    if(!claimed)return json({pending:true},202)
    if(!await eligible(db,event))return json({error:'stale_event'},409)
-   let response,runId=null,accepted=false
+   let response,runId=null,accepted=false,failureCode='dispatch_unavailable'
    try{
-    response=await fetcher(API+'/actions/workflows/'+WORKFLOW+'/dispatches',{method:'POST',headers,redirect:'error',signal:AbortSignal.timeout(10000),body:JSON.stringify({ref:'main',inputs:{book_id:event.bookId,content_version:String(event.contentVersion)}})})
-    if(response.status===200){const result=await boundedJson(response,16384);if(Number.isSafeInteger(result.workflow_run_id)&&result.workflow_run_id>0){runId=result.workflow_run_id;accepted=true}}
+    response=await fetcher(API+'/actions/workflows/'+WORKFLOW+'/dispatches',{method:'POST',headers,redirect:'manual',signal:AbortSignal.timeout(10000),body:JSON.stringify({ref:'main',inputs:{book_id:event.bookId,content_version:String(event.contentVersion)}})})
+    failureCode='dispatch_http_'+response.status
+    if(response.status===200){failureCode='dispatch_response_invalid';const result=await boundedJson(response,16384);if(Number.isSafeInteger(result.workflow_run_id)&&result.workflow_run_id>0){runId=result.workflow_run_id;accepted=true}}
     else if(response.status===204){await response.body?.cancel();accepted=true}
     else await response.body?.cancel()
-   }catch{/* Ambiguous network delivery may create a duplicate; target lease fences it. */}
-   const updated=await db.prepare("UPDATE public_book_actions_dispatches SET state=?3,run_id=?4,error_code=?5,lease_token=NULL,lease_until=0,next_attempt_at=?6,updated_at=?7 WHERE book_id=?1 AND content_version=?2 AND lease_token=?8 RETURNING book_id").bind(event.bookId,event.contentVersion,accepted?'dispatched':'failed',runId,accepted?null:'dispatch_unavailable',accepted?0:time+60,time,lease).first()
+   }catch(error){
+    // Keep a tiny diagnostic vocabulary, never provider text or request headers.
+    if(!response)failureCode=error?.name==='TimeoutError'?'dispatch_timeout':error?.name==='TypeError'?'dispatch_network_type_error':'dispatch_network_error'
+    // Ambiguous network delivery may create a duplicate; target lease fences it.
+   }
+   const updated=await db.prepare("UPDATE public_book_actions_dispatches SET state=?3,run_id=?4,error_code=?5,lease_token=NULL,lease_until=0,next_attempt_at=?6,updated_at=?7 WHERE book_id=?1 AND content_version=?2 AND lease_token=?8 RETURNING book_id").bind(event.bookId,event.contentVersion,accepted?'dispatched':'failed',runId,accepted?null:failureCode,accepted?0:time+60,time,lease).first()
    if(!updated)return json({error:'dispatch_lease_changed'},503)
    return accepted?json({pending:true},202):json({error:'dispatch_unavailable'},503)
   }catch{return json({error:'extractor_unavailable'},503)}
