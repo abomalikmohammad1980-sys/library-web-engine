@@ -13,4 +13,4 @@ export const seoPresentation = `<style id="seo-presentation">
 .app-boot-pending #app>.seo-page{visibility:hidden}
 .app-boot-pending #app:has(>.seo-page)::before{content:"";position:absolute;inset:24px max(16px,calc((100% - 1100px)/2));height:220px;border-radius:20px;background:linear-gradient(var(--surface-card,#fffdf8),var(--surface-card,#fffdf8)) 0 0/100% 64px no-repeat,linear-gradient(var(--surface-card,#fffdf8),var(--surface-card,#fffdf8)) 0 92px/100% 128px no-repeat;pointer-events:none}
 </style>`
-export const seoNavLabels = {'/':'الرئيسية','/features':'ميزات الخزانة','/quran':'القرآن الكريم','/sunnah':'السنة النبوية','/authors':'المؤلفون','/browse':'تصفح الكتب','/new-books':'جديد الكتب'}
+export const seoNavLabels = {'/':'الرئيسية','/features':'ميزات الخزانة','/quran':'القرآن الكريم','/sunnah':'السنة النبوية','/authors':'المؤلفون','/browse':'تصفح الكتب','/categories':'أقسام الكتب','/new-books':'جديد الكتب'}

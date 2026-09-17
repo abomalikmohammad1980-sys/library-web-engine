@@ -24,7 +24,7 @@ import {bindPageMeta} from './page_meta'
 export {WELCOME_SEEN_KEY} from './account_landing'
 
 interface Route {
-  name: 'recommendations' | 'not-found' | 'welcome' | 'home' | 'quotes' | 'new-books' | 'features' | 'quran' | 'quran-tafsir' | 'sunnah' | 'sunnah-source' | 'browse' | 'reader' | 'book' | 'shelves' | 'reading-plans' | 'research-projects' | 'editions' | 'series' | 'data-quality' | 'me' | 'settings' | 'notes' | 'library' | 'authors' | 'author' | 'people' | 'search' | 'admin-books' | 'sign-in'
+  name: 'categories' | 'recommendations' | 'not-found' | 'welcome' | 'home' | 'quotes' | 'new-books' | 'features' | 'quran' | 'quran-tafsir' | 'sunnah' | 'sunnah-source' | 'browse' | 'reader' | 'book' | 'shelves' | 'reading-plans' | 'research-projects' | 'editions' | 'series' | 'data-quality' | 'me' | 'settings' | 'notes' | 'library' | 'authors' | 'author' | 'people' | 'search' | 'admin-books' | 'sign-in'
   param?: string
   canonicalHash?: string
 }
@@ -35,6 +35,7 @@ export function parseHash(hash: string, bookRoutes: readonly CanonicalBookRoute[
   if (parts.length === 0) return {name:accountLandingRoute()}
   if(!validRouteShape(parts))return {name:'not-found'}
   const [first, second] = parts
+  if (first === 'categories') return {name:'categories',...(second?{param:decodeRouteParam(second)}:{})}
   if (first === 'welcome') return {name:accountLandingRoute(true)}
   if (first === 'features') return { name: 'features' }
   if (first === 'quotes') return {name:'quotes'}
@@ -88,6 +89,7 @@ type ResolvedScreen = { content: HTMLElement; activeHash: string }
 type RouteLoader = (route: Route) => Promise<ResolvedScreen>
 
 const routeLoaders: Record<Exclude<Route['name'], 'reader' | 'book'>, RouteLoader> = {
+  categories:async route=>({content:(await import('./screens/categories')).categoriesScreen(route.param),activeHash:'#/browse'}),
   recommendations:async()=>({content:(await import('./screens/recommendations')).recommendationsScreen(),activeHash:'#/'}),
   'not-found':async()=>({content:h('main',{id:'main-content',tabindex:-1,class:'page-content'},h('h1',null,'404 — الصفحة غير موجودة'),h('p',null,'الرابط غير صحيح أو أن الصفحة لم تعد متاحة.'),h('a',{href:'#/',class:'btn btn--primary'},'العودة إلى الرئيسية')),activeHash:''}),
   quotes: async () => ({content:(await import('./screens/quotes')).quotesScreen(),activeHash:'#/'}),
@@ -120,6 +122,7 @@ const routeLoaders: Record<Exclude<Route['name'], 'reader' | 'book'>, RouteLoade
 
 export function preloadRoute(route: Route): Promise<unknown> {
   switch (route.name) {
+    case 'categories': return import('./screens/categories')
     case 'not-found': return Promise.resolve()
     case 'quotes': return import('./screens/quotes')
     case 'reader': case 'book': return import('./screens/reader')

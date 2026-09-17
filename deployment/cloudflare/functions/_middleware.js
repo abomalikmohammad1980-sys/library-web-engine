@@ -9,6 +9,7 @@ import {boundedBytes} from './_seo-toc.js'
 import {seoPresentation,seoNavLabels} from './_seo-presentation.js'
 import {loadSeoDataRelease,seoListingPage} from './_seo-data-release.js'
 import {renderSeoListing,relatedSeoRows} from './_seo-listings.js'
+import {serveVersionedPublicHtml} from './_seo-edge-cache.js'
 const escape=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))
 async function smallJson(response){
  if(!response.ok)throw Error('seo_data_unavailable')
@@ -50,30 +51,40 @@ export async function onRequest(context){
   headers.set('X-Robots-Tag','noindex, follow');headers.set('cache-control','no-store')
   return new Response(request.method==='HEAD'?null:page.body,{status:404,headers})
  }
- let record,status=200
+ let record,baseRecord,status=200
  const canonicalPath=canonicalizePath(path)
  const match=/^\/(authors|books)\/(\d{1,12})$/.exec(canonicalPath)
+ const categoryPath=path==='/categories'||path.startsWith('/categories/')
+ const categoryName=path.startsWith('/categories/')?decodeURIComponent(path.slice('/categories/'.length)):undefined
  try{
-  const release=match||PUBLIC_PAGE_META[path]?await loadSeoDataRelease(env,url):null
-  if(match){const kind=match[1],id=kind==='authors'?match[2].padStart(6,'0'):String(Number(match[2]));const frozen=release?await release.identity(kind,id):(await smallJson(await env.ASSETS.fetch(new URL(`/data/seo/${kind}-${seoShard(id)}.json`,url)))).records[id];record=await refreshPublicSeoRecord(env.VISITORS_DB,kind,id,frozen);if(!record)status=404;else if(path!==`/${kind}/${id}`){url.pathname=`/${kind}/${id}`;return Response.redirect(url.href,301)}}
+  const release=match||PUBLIC_PAGE_META[path]||categoryPath?await loadSeoDataRelease(env,url):null
+  if(categoryPath&&!release)throw Error('seo_categories_release_required')
+  if(match){const kind=match[1],id=kind==='authors'?match[2].padStart(6,'0'):String(Number(match[2]));baseRecord=release?await release.identity(kind,id):(await smallJson(await env.ASSETS.fetch(new URL(`/data/seo/${kind}-${seoShard(id)}.json`,url)))).records[id];record=await refreshPublicSeoRecord(env.VISITORS_DB,kind,id,baseRecord);if(!record)status=404;else if(path!==`/${kind}/${id}`){url.pathname=`/${kind}/${id}`;return Response.redirect(url.href,301)}}
   else if(/^\/books\/public\/[A-Za-z0-9_-]{1,200}$/.test(path)){record=await refreshPublicSeoRecord(env.VISITORS_DB,'books',path.split('/')[3],undefined,{publicUpload:true});if(!record)status=404}
   else if(/^\/authors\//.test(path))status=404
-  const listKey=record?.name?'author:'+record.id:['/authors','/browse','/new-books'].includes(path)?path.slice(1):null
+  const listKey=categoryPath?(categoryName?'category:'+categoryName:'categories'):record?.name?'author:'+record.id:['/authors','/browse','/new-books'].includes(path)?path.slice(1):null
   let listing
   if(release&&listKey&&status===200){const page=seoListingPage(url);listing=page===null?null:await release.listing(listKey,page);if(!listing){status=404;record=undefined}}
+  const loadRelated=async current=>{
+   if(!release||!current?.title)return []
+   const groups=[]
+   for(const [key,label] of [[current.authorId?'author:'+current.authorId:null,'كتب أخرى للمؤلف'],[current.category?'category:'+current.category:null,'من القسم نفسه']]){
+    if(key){const group=await release.listing(key,1);groups.push({label,rows:relatedSeoRows(group?.rows??[],current.id)})}
+   }
+   return groups
+  }
+  const renderPage=async(record,status,listing,related=[])=>{
   // Opaque local/account book identities belong to the private SPA, never public SEO.
-  const meta=status===404?{title:'الصفحة غير موجودة | الخِزانة',description:'لم يُعثر على الكتاب أو المؤلف المطلوب.',robots:'noindex, follow'}:pageMetaFor(path+url.search,record)
+  const meta=status===404?{title:'الصفحة غير موجودة | الخِزانة',description:'لم يُعثر على الكتاب أو المؤلف المطلوب.',robots:'noindex, follow'}:pageMetaFor(path+url.search,record??(categoryName?{id:'',category:categoryName}:undefined))
   const schema=[{'@context':'https://schema.org','@type':'BreadcrumbList',itemListElement:[{'@type':'ListItem',position:1,name:'الخِزانة',item:SEO_ORIGIN+'/'},...(path==='/'?[]:[{'@type':'ListItem',position:2,name:record?.title??record?.name??meta.title,item:SEO_ORIGIN+path}])]}]
   if(path==='/')schema.push({'@context':'https://schema.org','@type':'WebSite',name:'الخزانة',alternateName:'الخزانة: المكتبة الإسلامية الذكية',url:SEO_ORIGIN+'/',inLanguage:'ar'})
-  const heading=status===404?meta.title:record?.title??record?.name??publicPageHeading(path)??meta.title
+  const heading=status===404?meta.title:record?.title??record?.name??categoryName??publicPageHeading(path)??meta.title
   let body=`<main id="main-content" class="seo-page${path==='/'?' seo-page--home':''}"><h1>${escape(heading)}</h1><p>${escape(meta.description)}</p>`
   if(record?.title){
-   body+=`<p>${record.authorId?`<a href="/authors/${escape(record.authorId)}">${escape(record.author)}</a>`:escape(record.author)}${record.deathYearHijri?` (ت ${record.deathYearHijri} هـ)`:''}</p><p>${escape(record.category)}</p><a href="/browse">تصفح الأقسام</a>`
+   body+=`<p>${record.authorId?`<a href="/authors/${escape(record.authorId)}">${escape(record.author)}</a>`:escape(record.author)}${record.deathYearHijri?` (ت ${record.deathYearHijri} هـ)`:''}</p><p>${release&&record.category?`<a href="/categories/${encodeURIComponent(record.category)}">${escape(record.category)}</a>`:escape(record.category)}</p><a href="/browse">تصفح الأقسام</a>`
    schema.push({'@context':'https://schema.org','@type':'Book',name:record.title,url:SEO_ORIGIN+path,author:{'@type':'Person',name:record.author,...(record.authorId?{url:SEO_ORIGIN+'/authors/'+record.authorId}:{})},genre:record.category,inLanguage:'ar'})
    if(release){
-    for(const [key,label] of [[record.authorId?'author:'+record.authorId:null,'كتب أخرى للمؤلف'],[record.category?'category:'+record.category:null,'من القسم نفسه']]){
-     if(!key)continue
-     const group=await release.listing(key,1),rows=relatedSeoRows(group?.rows??[],record.id)
+    for(const {label,rows} of related){
      if(rows.length)body+=`<section><h2>${label}</h2><ul>${rows.map(row=>`<li><a href="${escape(row.href)}">${escape(row.title)}</a></li>`).join('')}</ul></section>`
     }
    }
@@ -98,7 +109,7 @@ export async function onRequest(context){
   }else if(record?.name){
    body+=listing?renderSeoListing(listing,path):`<ul>${(record.books??[]).map(b=>`<li><a href="/books/${escape(b.id)}">${escape(b.title)}</a></li>`).join('')}</ul>`
    schema.push({'@context':'https://schema.org','@type':'Person',name:record.name,url:SEO_ORIGIN+path,description:meta.description})
-  }else if(status===200&&PUBLIC_PAGE_META[path]){
+  }else if(status===200&&(PUBLIC_PAGE_META[path]||categoryPath)){
    body+=`<nav aria-label="أقسام الخزانة">${Object.keys(PUBLIC_PAGE_META).map(p=>`<a href="${p}">${escape(seoNavLabels[p])}</a>`).join('')}</nav>`
    if(listing)body+=renderSeoListing(listing,path)
    else if(release){const sample=await release.listing('new-books',1);body+=`<ul>${(sample?.rows??[]).slice(0,12).map(row=>`<li><a href="${escape(row.href)}">${escape(row.title)}</a></li>`).join('')}</ul>`}
@@ -114,5 +125,23 @@ export async function onRequest(context){
   const headers=new Headers(rewritten.headers);headers.set('content-type','text/html; charset=utf-8');headers.set('cache-control','no-cache');headers.delete('content-length');headers.delete('etag')
   if(preview||meta.robots.includes('noindex'))headers.set('X-Robots-Tag','noindex, follow');else headers.delete('X-Robots-Tag')
   return new Response(request.method==='HEAD'?null:rewritten.body,{status,headers})
+  }
+  // Cache only immutable-catalog book/author pages after fresh authoritative
+  // visibility checks. Public uploads have a separate generation pipeline.
+  if(release&&match&&env.SEO_HTML_CACHE_VERSION){
+   if(!/^[a-f0-9]{40,64}$/.test(env.SEO_HTML_CACHE_VERSION))throw Error('seo_cache_version')
+   return await serveVersionedPublicHtml({request,cache:caches.default,deploymentVersion:env.SEO_HTML_CACHE_VERSION,
+    loadSnapshot:async()=>{
+     if(status!==200||!baseRecord)return null
+     const current=await refreshPublicSeoRecord(env.VISITORS_DB,match[1],baseRecord.id,baseRecord)
+     if(!current)return null
+     const currentListing=listKey?await release.listing(listKey,seoListingPage(url)):undefined
+     if(listKey&&!currentListing)return null
+     const related=await loadRelated(current)
+     return{public:true,versionMaterial:{release:env.SEO_DATA_RELEASE_SHA256,record:current,listing:currentListing,related},record:current,listing:currentListing,related}
+    },render:snapshot=>renderPage(snapshot?.record,snapshot?200:404,snapshot?.listing,snapshot?.related),
+    ...(context.waitUntil?{waitUntil:promise=>context.waitUntil(promise)}:{})})
+  }
+  return await renderPage(record,status,listing,await loadRelated(record))
  }catch(error){console.error('seo_render_failed',error instanceof Error?error.message:'unknown');return new Response('تعذّر تحميل الصفحة مؤقتًا',{status:503,headers:{'content-type':'text/plain; charset=utf-8','X-Robots-Tag':'noindex','cache-control':'no-store'}})}
 }

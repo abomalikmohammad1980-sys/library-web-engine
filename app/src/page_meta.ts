@@ -1,5 +1,5 @@
 import {SEO_ORIGIN,type PageMeta} from './page_meta_model'
-import {pageMetaFor,loadedReaderPageMeta,type PublicSeoRecord} from './page_meta_model'
+import {pageMetaFor,loadedReaderPageMeta,publicPaginationCanonicalPath,type PublicSeoRecord} from './page_meta_model'
 /** Replace, rather than accumulate, metadata on SPA navigation. */
 export function setPageMeta({title,description,canonicalPath,robots='index, follow'}:PageMeta):void{
  document.title=title
@@ -11,7 +11,7 @@ export function setPageMeta({title,description,canonicalPath,robots='index, foll
  document.head.querySelectorAll('link[rel="canonical"]').forEach(node=>node.remove())
  if(canonicalPath&&!robots.includes('noindex')){
   if(!canonicalPath.startsWith('/')||canonicalPath.startsWith('//'))throw Error('canonical_path_invalid')
-  const url=new URL(canonicalPath,SEO_ORIGIN);url.search='';url.hash=''
+  const url=new URL(publicPaginationCanonicalPath(canonicalPath),SEO_ORIGIN);url.hash=''
   const link=document.createElement('link');link.rel='canonical';link.href=url.href;document.head.append(link)
  }
 }
@@ -21,7 +21,7 @@ export function bindPageMeta(content:HTMLElement,isCurrent:()=>boolean):()=>void
  let meta=pageMetaFor(path),last='',hasRemoteRecord=false
  const apply=()=>{if(isCurrent()&&!controller.signal.aborted){
   const reader=content.matches('[data-reader-title]')?content:content.querySelector<HTMLElement>('[data-reader-title]')
-  const resolved=hasRemoteRecord?meta:loadedReaderPageMeta(path,reader?.dataset.readerTitle??'',reader?.dataset.readerAuthor??'')??meta
+  const resolved=content.dataset.seoCategory? pageMetaFor(path,{id:'',category:content.dataset.seoCategory}):hasRemoteRecord?meta:loadedReaderPageMeta(path,reader?.dataset.readerTitle??'',reader?.dataset.readerAuthor??'')??meta
   const key=JSON.stringify(resolved);if(key!==last||document.title!==resolved.title){setPageMeta(resolved);last=key}
  }}
  apply()
@@ -31,6 +31,6 @@ export function bindPageMeta(content:HTMLElement,isCurrent:()=>boolean):()=>void
  }).catch(()=>{if(!controller.signal.aborted)apply()})}
  // Screen title setters also run after local/cloud data resolves. Restore the
  // unified route contract once that DOM update is complete, without observing head.
- const observer=new MutationObserver(apply);observer.observe(content,{subtree:true,childList:true,characterData:true,attributes:true,attributeFilter:['data-reader-title','data-reader-author']})
+ const observer=new MutationObserver(apply);observer.observe(content,{subtree:true,childList:true,characterData:true,attributes:true,attributeFilter:['data-reader-title','data-reader-author','data-seo-category']})
  return()=>{controller.abort();observer.disconnect()}
 }

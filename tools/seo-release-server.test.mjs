@@ -13,10 +13,10 @@ test('release-bound real HTML: complete pagination, related links, privacy veto 
  const descriptor=Buffer.from(JSON.stringify({contract:'seo-data-release/1',identities:identities.descriptor,listings:{releaseId:listings.report.releaseId}}))
  const sha=createHash('sha256').update(descriptor).digest('hex')
  const compiled=await build({stdin:{contents:`import {onRequest} from './alpha-publish/functions/_middleware.js';export default {fetch(request,env){
- env.VISITORS_DB={prepare(){return{bind(){return{first:async()=>null,all:async()=>({results:[{book_id:'shamela-2'}]})}}}}};
+ env.VISITORS_DB={prepare(){return{bind(...ids){return{first:async()=>{const state=await(await env.STATE.fetch('https://state.test')).json();if(ids.includes('1')&&(state.hidden||state.title))return{visibility:state.hidden?'private':'public',title:state.title,category:'قسم',updated_at:state.title};return null},all:async()=>({results:[{book_id:'shamela-2'}]})}}}}};
  return onRequest({request,env,next:()=>new Response('passthrough')})}}`,resolveDir:resolve(import.meta.dirname,'..')},bundle:true,write:false,format:'esm',platform:'browser',target:'es2022'})
- const reads=[]
- const mf=new Miniflare({modules:true,script:compiled.outputFiles[0].text,compatibilityDate:'2026-05-22',bindings:{SEO_DATA_RELEASE_SHA256:sha},r2Buckets:['LIBRARY_R2'],serviceBindings:{ASSETS:async request=>{
+ const reads=[];let state={hidden:false,title:null}
+ const mf=new Miniflare({modules:true,script:compiled.outputFiles[0].text,compatibilityDate:'2026-05-22',bindings:{SEO_DATA_RELEASE_SHA256:sha,SEO_HTML_CACHE_VERSION:'a'.repeat(40)},r2Buckets:['LIBRARY_R2'],serviceBindings:{STATE:async()=>Response.json(state),ASSETS:async request=>{
   const path=new URL(request.url).pathname;reads.push(path)
   if(path==='/data/seo/release.json')return new Response(descriptor)
   if(path==='/index.html')return new Response('<html><head><title>x</title></head><body><div id="app"></div></body></html>',{headers:{'content-type':'text/html'}})
@@ -26,7 +26,7 @@ test('release-bound real HTML: complete pagination, related links, privacy veto 
   const bucket=await mf.getR2Bucket('LIBRARY_R2')
   for(const [key,bytes] of identities.objects)await bucket.put(key,bytes)
   for(const [name,bytes] of listings.files)await bucket.put(`seo/listings/${listings.report.releaseId}/${name}`,bytes)
-  for(const path of ['/browse','/new-books','/authors/000020']){
+  for(const path of ['/browse','/new-books','/authors/000020','/categories/'+encodeURIComponent('قسم')]){
    const ids=[]
    for(let page=1;page<=3;page++){
     const suffix=page===1?'':`?page=${page}`,response=await mf.dispatchFetch('https://khzanah.com'+path+suffix),html=await response.text()
@@ -45,6 +45,21 @@ test('release-bound real HTML: complete pagination, related links, privacy veto 
   assert.match(html,/كتب أخرى للمؤلف/);assert.match(html,/من القسم نفسه/)
   assert.equal([...html.matchAll(/href="\/books\/\d+"/g)].length,24)
   assert.doesNotMatch(html,/href="\/books\/(1|2)"/)
+  const categoryResponse=await mf.dispatchFetch('https://khzanah.com/categories'),categoryHtml=await categoryResponse.text()
+  assert.equal(categoryResponse.status,200);assert.match(categoryHtml,/href="\/categories\/%/)
+  const missingCategory=await mf.dispatchFetch('https://khzanah.com/categories/missing')
+  assert.equal(missingCategory.status,404);assert.doesNotMatch(await missingCategory.text(),/rel="canonical"/)
+  const before=reads.filter(p=>p==='/index.html').length
+  const warm=await mf.dispatchFetch('https://khzanah.com/books/1')
+  assert.match(warm.headers.get('cache-control'),/private, no-store/)
+  assert.equal(await warm.text(),html)
+  assert.equal(reads.filter(p=>p==='/index.html').length,before,'warm cache must skip HTML rendering')
+  state={hidden:false,title:'عنوان معدل'}
+  assert.match(await(await mf.dispatchFetch('https://khzanah.com/books/1')).text(),/عنوان معدل/)
+  state={hidden:true,title:null}
+  const removed=await mf.dispatchFetch('https://khzanah.com/books/1'),removedHtml=await removed.text()
+  assert.equal(removed.status,404);assert.doesNotMatch(removedHtml,/عنوان معدل|rel="canonical"/)
+  state={hidden:false,title:null}
   const preview=await mf.dispatchFetch('https://preview.pages.dev/authors?page=1')
   assert.equal(preview.status,200);assert.match(preview.headers.get('x-robots-tag'),/noindex/)
   assert(reads.every(path=>['/data/seo/release.json','/index.html'].includes(path)))

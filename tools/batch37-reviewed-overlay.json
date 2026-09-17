@@ -1,0 +1,7 @@
+{
+  "source": ["app/src/page_meta_model.ts", "app/src/page_meta.ts", "app/src/path_location.ts", "app/src/http_route_policy.ts", "app/src/shamela_biography.ts", "app/src/route_shape.ts", "app/src/router.ts", "app/src/navigation_accessibility.ts", "app/src/screens/categories.ts"],
+  "functions": ["alpha-publish/functions/_middleware.js", "alpha-publish/functions/_seo-public-toc.js", "alpha-publish/functions/_seo-live-record.js", "alpha-publish/functions/_seo-presentation.js", "alpha-publish/functions/_seo-data-release.js", "alpha-publish/functions/_seo-identity.js", "alpha-publish/functions/_seo-listings.js", "alpha-publish/functions/_seo-edge-cache.js", "alpha-publish/functions/api/_public-book-index-read.js", "alpha-publish/functions/api/_public-book-index-jobs.js"],
+  "public": ["app/public/data/shamela-biographies.manifest.json"],
+  "migrations": [],
+  "reviewMetadata": {"scope":"SEO stage A preview: bounded identity/listings, categories, private-safe versioned cache; requires immutable data verification and preview configuration before deployment", "baseline":"published batch34", "productionAuthorized":false}
+}

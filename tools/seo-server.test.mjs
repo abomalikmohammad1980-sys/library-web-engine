@@ -108,7 +108,7 @@ test('real HTMLRewriter: public identity, canonical, private and missing routes,
   const routes=JSON.parse(await readFile(resolve(root,'alpha-publish/scripts/pages-static/_routes.json'),'utf8'))
   assert(!routes.exclude.includes('/library/*'),'R2 library gateway must remain callable')
   let total=0
-  for(const name of report.sitemaps){const xml=await readFile(resolve(output,name),'utf8');const urls=[...xml.matchAll(/<loc>(.*?)<\/loc>/g)].map(x=>x[1]);assert.ok(urls.length<=5000);for(const url of urls){assert.match(url,/^https:\/\/khzanah\.com\/(?:$|features$|quran$|sunnah$|browse$|new-books$|authors(?:\/\d+)?$|books\/\d+$)/);assert.ok(!url.includes('#'))}total+=urls.length}
-  assert.equal(total,report.counts.books+report.counts.authors+report.counts.staticPages)
+  for(const name of report.sitemaps){const xml=await readFile(resolve(output,name),'utf8');const urls=[...xml.matchAll(/<loc>(.*?)<\/loc>/g)].map(x=>x[1]);assert.ok(urls.length<=5000);for(const url of urls){assert.match(url,/^https:\/\/khzanah\.com\/(?:$|features$|quran$|sunnah$|browse$|new-books$|categories(?:\/[^/?#]+)?$|authors(?:\/\d+)?$|books\/\d+$)/);assert.ok(!url.includes('#'))}total+=urls.length}
+  assert.equal(total,report.counts.books+report.counts.authors+report.counts.staticPages+report.counts.categories)
  }finally{await mf?.dispose();await rm(output,{recursive:true,force:true})}
 })

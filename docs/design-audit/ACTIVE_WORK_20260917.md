@@ -21,6 +21,11 @@ Latest continuation implemented optional pinned identity/listing consumption,
 Local realHTML+R2 regression passes; data prepared frombatch34 but NOT uploaded,
 activated or deployed. See SEO_LISTINGS_INTEGRATION_20260917.md. Remaining:
 categoriesroutes/sitemap, edgecache orchestration, uploadverification andpreview.
+Next continuation completedcategoriesSPA/server/sitemap andbookauthor edgecache;
+60focused tests+typecheck+frozenbatch37build passed. See SEO_BATCH37_LOCAL_20260917.md.
+batch37is finalized localpreviewcandidate19999assets, notdeployed. SEO R2upload
+session50970 mustfinish then freshverify515objects beforepreviewdeployment.
+Previouscommit1348c20 nowpushed. No productionchange;30URLp95 notyetmeasured.
 Do not confuse local helpers with completed stageA or stageB. New attachment's
 OCR requirement is not implemented by old PDF-bookmarks-only adapter.
 
