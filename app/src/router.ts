@@ -167,6 +167,9 @@ function finishRoute(root: HTMLElement, content: HTMLElement, activeHash: string
 }
 
 async function renderReader(route: Route, root: HTMLElement, generation: number, focusMain: boolean): Promise<void> {
+  // Metadata hydration may finish after navigation moved to another screen.
+  // Fence before recording activity or replacing that newer screen's content.
+  if (generation !== renderGeneration) return
   const bookId = route.param!
   recordBookOpened(bookId)
   const loading = h('main', { class: 'reader-route-loading reader-route-loading--instant', id: 'main-content', tabindex: -1, 'aria-label': 'قارئ الكتاب' }, readerLoadingPaper())
