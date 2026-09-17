@@ -5,7 +5,7 @@ import {extractPublicBookBounded} from './public-book-index-executor.mjs'
 import {observeStageBFormats} from './observe-stageb-format-fixtures.mjs'
 test('four generated format fixtures exercise actual parsers, native TOCs and no PDF body',async()=>{
  const files=await buildStageBFormatFixtures();assert.equal(files.length,4)
- for(const f of files){const out=await extractPublicBookBounded({mime:f.mime,bytes:f.bytes});if(f.mime==='application/pdf'){assert.deepEqual(out.rows,[]);assert.equal(out.pdfClassification.kind,'scanned');assert.equal(out.headings.length,f.headingQuery?1:0)}else assert(out.rows.some(row=>row.text.includes(f.bodyQuery)));if(f.headingQuery)assert(out.headings.some(h=>h.value.includes(f.headingQuery)))}
+ for(const f of files){const out=await extractPublicBookBounded({mime:f.mime,bytes:f.bytes});if(f.mime==='application/pdf'){assert.deepEqual(out.rows,[]);assert.equal(out.pdfClassification.kind,'scanned');assert.equal(out.headings.length,f.headingQuery?1:0)}else assert(out.rows.some(row=>new RegExp('(^|\\s)'+f.bodyQuery+'(?=\\s|$)').test(row.text)),'body token must retain its block boundary: '+f.kind);if(f.headingQuery)assert(out.headings.some(h=>h.value.includes(f.headingQuery)))}
  const seed=stageBSeedSql(files);assert.doesNotMatch(seed,/DELETE|UPDATE|super-admin/);assert.equal((seed.match(/INSERT INTO user_books/g)??[]).length,4)
 })
 test('operator plan refuses production or mixed D1 bindings',()=>{

@@ -51,7 +51,8 @@ try{
    const {renderMarkdownPages}=await import('../app/src/markdown_render.ts')
    const rendered=renderMarkdownPages(decodeUtf8Text(bytes))
    try{
-    rows=rendered.pages.map((page,pageIndex)=>{page.querySelector('.reader__text-folio')?.remove();return {text:page.textContent??'',pageIndex,volumeIndex:0}}).filter(row=>row.text.trim())
+    const {renderedSearchText}=await import('./public-book-rendered-text.mjs')
+    rows=rendered.pages.map((page,pageIndex)=>{page.querySelector('.reader__text-folio')?.remove();return {text:renderedSearchText(page),pageIndex,volumeIndex:0}}).filter(row=>row.text.trim())
     headings=rendered.toc.map(t=>({value:t.title,pageIndex:t.page-1,bookmark:t.bookmark}))
    }finally{for(const url of rendered.assetUrls)URL.revokeObjectURL(url)}
   }finally{dom.window.close()}

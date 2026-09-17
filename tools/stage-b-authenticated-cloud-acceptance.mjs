@@ -32,14 +32,22 @@ for(const [table,required] of Object.entries({
  account_devices:['owner_subject','device_id','label','platform','revoked_at'],
  account_access_sessions:['token_hash','subject','device_id','expires_at'],
  account_blocks:['subject','blocked'],
+ central_authors:['author_id','hidden_at'],
+ author_overrides:['author_id','disabled','fields_json'],
+ central_book_overrides:['book_id','category','revision','visibility','logically_deleted_at'],
+ user_book_metadata:['book_id','central_author_id'],
+ oversight_events:['entity_type','entity_id','actor_subject','revision'],
  public_book_actions_dispatches:['book_id','content_version','run_id'],
  books_index_state:['book_id','indexed_at','status']
 })){
  const columns=new Set(sql(`PRAGMA table_info(${table})`).map(row=>row.name))
  if(required.some(name=>!columns.has(name)))throw Error('isolated_schema_prerequisite_missing:'+table)
 }
+const ownerGuard=sql("SELECT sql FROM sqlite_master WHERE type='trigger' AND name='oversight_user_books_update'")[0]?.sql??''
+if(!ownerGuard.includes("NEW.review_status='pending'")||!ownerGuard.includes("OLD.visibility='private'"))throw Error('isolated_owner_edit_guard_prerequisite_missing')
 const initial=sql(`SELECT b.id,b.owner_subject,b.review_version,b.author,b.category,b.visibility,a.role FROM user_books b JOIN accounts a ON a.subject=b.owner_subject WHERE b.id='${book}' AND b.owner_subject='${owner}' AND b.deleted_at IS NULL`)[0]
-assert.ok(initial,'synthetic fixture missing');assert.equal(initial.role,'super-admin');assert.equal(initial.visibility,'public')
+assert.ok(initial,'synthetic fixture missing');assert.equal(initial.role,'super-admin');assert.ok(['public','private'].includes(initial.visibility))
+const category=initial.category?.trim()||'اختبارات الفهرسة المعزولة'
 const token=randomBytes(32).toString('hex'),device=randomBytes(32).toString('hex'),hash=x=>createHash('sha256').update(x).digest('hex')
 const tokenHash=hash(token),deviceHash=hash(device),expiry=Math.floor(Date.now()/1000)+1800
 const cookie=`__Host-khizana-access-session=${token}; __Host-khizana-device=${device}`
@@ -57,7 +65,7 @@ try{
  sessionCreated=true
  // This existing admin mutation genuinely commits new public metadata and calls waitUntil wake.
  const title='Isolated Stage B acceptance '+Date.now()
- const edited=await(await request(reviewPath,{method:'PATCH',authenticated:true,body:{decision:'publish',reviewVersion:initial.review_version,metadata:{title,author:initial.author,category:initial.category??''}}})).json()
+ const edited=await(await request(reviewPath,{method:'PATCH',authenticated:true,body:{decision:'publish',reviewVersion:initial.review_version,metadata:{title,author:initial.author,category}}})).json()
  assert.equal(edited.visibility,'public');assert.equal(edited.reviewVersion,initial.review_version+1)
  const event=sql(`SELECT content_version,index_generation FROM public_book_event_state WHERE book_id='${book}' AND visibility='public'`)[0]
  assert.ok(event)
@@ -81,8 +89,9 @@ try{
  await request('/books/public/'+book,{status:410})
  assert.equal(await searchCount(),0)
  assert.ok(!(await(await request('/sitemap-public.xml')).text()).includes('/books/public/'+book))
+ console.log(JSON.stringify({phase:'withdrawal-410-search-zero-sitemap-absent',book}))
  // Owner editing is allowed only AFTER withdrawal; no R2/source deletion is needed.
- const privateEdit=await(await request('/api/account/books/'+book,{method:'PATCH',authenticated:true,body:{title:'Isolated private acceptance',author:initial.author,category:initial.category??'',reviewVersion:withdrawn.reviewVersion}})).json()
+ const privateEdit=await(await request('/api/account/books/'+book,{method:'PATCH',authenticated:true,body:{title:'Isolated private acceptance',author:initial.author,category,reviewVersion:withdrawn.reviewVersion}})).json()
  assert.equal(privateEdit.reviewStatus,'pending')
  await request('/books/public/'+book,{status:410});assert.equal(await searchCount(),0)
  console.log(JSON.stringify({phase:'withdrawal-immediately-private-and-owner-edit-verified',book,finalVisibility:'private',sourceDeleted:false}))
