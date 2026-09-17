@@ -17,12 +17,40 @@ export async function planFieldOverlay(directory=ARTIFACT){
  if(new Set(jobs.map(j=>j.remoteKey)).size!==8595)throw Error('duplicate_job')
  return{contract:'khizana-field-overlay-upload/1',manifestSha256:PIN,prefix:PREFIX,manifestUrl:`https://khzanah.com/${PREFIX}/manifest.json`,objects:jobs.length,bytes:jobs.reduce((n,j)=>n+j.bytes,0),concurrency:2,retries:2,activated:false,jobs}
 }
-export async function transferFieldOverlay({plan,journal={},transport,readLocal,persist,signal,maxObjects,maxBytes,freshVerify=false}){
+export async function transferFieldOverlay({plan,journal={},transport,readLocal,persist,signal,maxObjects,maxBytes,freshVerify=false,freshState={},persistFresh=async()=>{}}){
  if(plan.manifestSha256!==PIN||plan.prefix!==PREFIX||!Number.isSafeInteger(maxObjects)||maxObjects<1||maxObjects>8595||!Number.isSafeInteger(maxBytes)||maxBytes<1||maxBytes>200000000)throw Error('limits')
  for(const job of plan.jobs)validateFieldJob(job)
  const matches=job=>journal[job.remoteKey]?.sha256===job.sha256&&journal[job.remoteKey]?.bytes===job.bytes&&journal[job.remoteKey]?.remoteVerified===true
  const check=(job,bytes)=>{if(!bytes||bytes.length!==job.bytes||sha(bytes)!==job.sha256)throw Error('immutable_remote_mismatch')}
- if(freshVerify){if(plan.jobs.length>maxObjects||plan.bytes>maxBytes||!plan.jobs.every(matches))throw Error('fresh_verify_requires_full_budget_and_journal');for(const job of plan.jobs){signal?.throwIfAborted();check(job,await transport.get(job.remoteKey,job.bytes))}return{complete:true,activated:false,freshVerifiedObjects:plan.jobs.length,manifestSha256:PIN}}
+ if(freshVerify){
+  if(plan.jobs.length>maxObjects||plan.bytes>maxBytes||!plan.jobs.every(matches))throw Error('fresh_verify_requires_full_budget_and_journal')
+  const now=Date.now()
+  if(freshState.manifestSha256!==PIN||!Number.isSafeInteger(freshState.startedAt)||freshState.startedAt>now||now-freshState.startedAt>6*60*60*1000){freshState.manifestSha256=PIN;freshState.startedAt=now;freshState.objects={}}
+  if(!freshState.objects||Array.isArray(freshState.objects)||typeof freshState.objects!=='object')throw Error('fresh_verify_state')
+  const freshMatches=job=>freshState.objects[job.remoteKey]?.sha256===job.sha256&&freshState.objects[job.remoteKey]?.bytes===job.bytes
+  const pending=plan.jobs.filter(job=>!freshMatches(job));let saved=0,checkpoint=Promise.resolve()
+  // Same two-request ceiling as transfer. Drain both workers before returning
+  // or failing, and never treat the old journal as fresh verification evidence.
+  let next=0,failed=false
+  const results=await Promise.allSettled(Array.from({length:2},async()=>{
+   while(!failed&&next<pending.length){
+    const job=pending[next++]
+    try{
+     for(let attempt=0;;attempt++){
+      signal?.throwIfAborted()
+      try{check(job,await transport.get(job.remoteKey,job.bytes));freshState.objects[job.remoteKey]={sha256:job.sha256,bytes:job.bytes};break}
+      catch(error){if(!error.transient||attempt>=2)throw error;await new Promise(done=>setTimeout(done,250*(attempt+1)))}
+     }
+     if(++saved%100===0){const snapshot=structuredClone(freshState);checkpoint=checkpoint.then(()=>persistFresh(snapshot));await checkpoint}
+    }
+    catch(error){failed=true;throw error}
+   }
+  }))
+  await checkpoint;await persistFresh(freshState)
+  const failure=results.find(result=>result.status==='rejected');if(failure)throw failure.reason
+  if(!plan.jobs.every(freshMatches))throw Error('fresh_verify_incomplete')
+  return{complete:true,activated:false,freshVerifiedObjects:plan.jobs.length,manifestSha256:PIN,verificationStartedAt:new Date(freshState.startedAt).toISOString(),verificationCompletedAt:new Date().toISOString()}
+ }
  const selected=[];let bytes=0
  for(const job of plan.jobs){if(matches(job))continue;if(selected.length>=maxObjects||bytes+job.bytes>maxBytes)break;selected.push(job);bytes+=job.bytes}
  let checkpoint=Promise.resolve(),cursor=0,stopped=false

@@ -9,7 +9,13 @@ export function searchFieldReleaseBinding(): Readonly<SeparatedV2SearchBinding> 
   if (!v || v.complete !== true || !sha.test(v.manifestSha256) || !sha.test(v.sourceIndexSha256) || !sha.test(v.packedManifestSha256) || !v.packedReleaseId || !Number.isSafeInteger(v.expectedBooks) || v.expectedBooks < 1 || !Number.isSafeInteger(v.expectedSegments) || v.expectedSegments < 1) throw Error('search_field_release_config')
   const url = new URL(v.manifestUrl)
   if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password || url.hash || url.search) throw Error('search_field_release_config')
-  return Object.freeze({ manifestUrl: url.href, manifestSha256: v.manifestSha256, sourceIndexSha256: v.sourceIndexSha256, packedManifestSha256: v.packedManifestSha256, packedReleaseId: v.packedReleaseId, expectedBooks: v.expectedBooks, expectedSegments: v.expectedSegments })
+  let sourceRows:SeparatedV2SearchBinding['sourceRows']
+  if(v.sourceRows!==undefined){
+    const source=new URL(v.sourceRows.manifestUrl)
+    if(!sha.test(v.sourceRows.manifestSha256)||source.origin!==url.origin||source.username||source.password||source.search||source.hash)throw Error('search_field_release_config')
+    sourceRows=Object.freeze({manifestUrl:source.href,manifestSha256:v.sourceRows.manifestSha256})
+  }
+  return Object.freeze({ manifestUrl: url.href, manifestSha256: v.manifestSha256, sourceIndexSha256: v.sourceIndexSha256, packedManifestSha256: v.packedManifestSha256, packedReleaseId: v.packedReleaseId, expectedBooks: v.expectedBooks, expectedSegments: v.expectedSegments,...(sourceRows?{sourceRows}:{}) })
 }
 
 export function hasSearchFieldRelease(): boolean {

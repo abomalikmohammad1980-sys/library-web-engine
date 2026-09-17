@@ -1,6 +1,6 @@
 import type { SearchHit } from '../../packages/search/src/index'
 import { normalizeArabicSearch, normalizeArabicSearchWithMap } from '../../packages/search/src/index'
-import { cleanShamelaPlainText } from './shamela_text_presentation'
+import { cleanShamelaPlainText, remapShamelaPlainTextOffset } from './shamela_text_presentation'
 import { PackedTermCache } from './packed_term_cache'
 import { assembleVerifiedPackedParts } from './verified_packed_parts'
 import { PackedPartTransport } from './packed_part_transport'
@@ -13,8 +13,9 @@ import { loadSearchFieldOverlay } from './search_field_overlay'
 import {pinBokActiveRelease,pinnedBokSearchConfig,pinnedBokSearchManifestHash} from './bok_active_release'
 import { searchFieldPostingPage } from './search_field_posting_page'
 import { searchFieldTokenSourceRange } from './search_field_source_snippet'
+import { loadFieldRawRows } from './search_field_raw_rows'
 
-export type SeparatedV2SearchBinding = { manifestUrl: string; manifestSha256: string; sourceIndexSha256: string; packedReleaseId: string; packedManifestSha256: string; expectedBooks: number; expectedSegments: number }
+export type SeparatedV2SearchBinding = { manifestUrl: string; manifestSha256: string; sourceIndexSha256: string; packedReleaseId: string; packedManifestSha256: string; expectedBooks: number; expectedSegments: number; sourceRows?: {manifestUrl:string;manifestSha256:string} }
 
 type Manifest={contract:string;buckets?:number;bucketCount?:number;postingBucketCount?:number;coverageComplete:boolean;counts?:{books:number};routePattern:string;postingPattern?:string;postingFiles?:Array<{id:string;file:string;byteLength:number}>;batchTermPattern?:string;batchSnippetPattern?:string;segmentTermPattern?:string;segmentSnippetPattern?:string;batches?:string[];segments?:string[]}
 type Posting=[string,number[],number?]
@@ -49,6 +50,7 @@ export class ShamelaSearchV2Client{
     const overlay=await loadSearchFieldOverlay(config,this.fetcher)
     if(!overlay.coverageComplete)throw Error('search_field_coverage_incomplete')
     if(overlay.counts.documents!==packed.counts.documents||overlay.counts.positions!==packed.counts.positions)throw Error('search_field_release_counts')
+    const rawRows=config.sourceRows?await loadFieldRawRows(config.sourceRows,config.manifestSha256,config.expectedBooks,overlay.counts.documents,this.fetcher):undefined
     if(bookIds){const covered=new Set(overlay.coveredBookIds);if(bookIds.some(id=>!covered.has(id)))throw Error('search_field_scope_unavailable')}
     const words=normalizeArabicSearch(query).split(' ').filter(Boolean)
     if(!words.length)throw Error('search_field_query_empty')
@@ -75,11 +77,18 @@ export class ShamelaSearchV2Client{
       const boundaries=await overlay.book(id.split(':')[0]!)
       if(!boundaries)throw Error('search_field_boundary_missing')
       sourceRows.set(id,row)
+      if(rawRows){
+        const source=await rawRows.row(id,scope)
+        // Preserve token/position proof even when presentation snippets omit
+        // headings or were clipped. Never infer ownership from display text.
+        searchFieldTokenSourceRange(source.fullText,boundaries.tokenRange(id,scope))
+        return source
+      }
       return{fullText:row[3],range:searchFieldTokenSourceRange(row[3],boundaries.tokenRange(id,scope))}
     }})
     check()
     if(!page.coverageComplete)throw Error('search_field_coverage_incomplete')
-    const hits=page.hits.map(hit=>({...snippetHit(sourceRows.get(hit.id)!,query),text:hit.text,matchOffset:hit.matchOffset,occurrenceCount:hit.occurrenceCount}))
+    const hits=page.hits.map(hit=>({...snippetHit(sourceRows.get(hit.id)!,query),text:cleanShamelaPlainText(hit.text),matchOffset:remapShamelaPlainTextOffset(hit.text,hit.matchOffset),occurrenceCount:hit.occurrenceCount}))
     return{...page,hits,total:page.totalOccurrences,indexedBooks:config.expectedBooks,networkBytes:this.bytesFetched-before}
   }
   private recoveryConfig:SearchRecoveryConfig|undefined

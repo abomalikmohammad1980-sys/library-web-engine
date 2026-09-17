@@ -5,7 +5,7 @@ export function safeFailure(e, at) {
   if (filesystem.includes(e?.code)) return { phase: at, code: `fs_${e.code.toLowerCase()}`, category: 'filesystem' };
   const known = ['usage','limits','config_format','config_duplicate','config_unsupported','config_size','journal_size','journal_invalid','descriptor_pin','term_count','local_path_escape','invalid_job','duplicate_job','local_sha','immutable_remote_mismatch','missing_after_put','fresh_verify_requires_full_budget_and_journal','fresh_verify_mismatch','s3_endpoint','s3_config','s3_key','s3_size','s3_condition','s3_body','s3_timeout','s3_run_timeout','s3_network','s3_closed','stopped'];
   const message = typeof e?.message === 'string' ? e.message : '';
-  const code = known.includes(message) || /^s3_http_(400|401|403|404|408|409|412|425|429|500|502|503|504)$/.test(message) ? message : 'unknown';
+  const code = known.includes(message) || /^(?:s3|public)_http_(400|401|403|404|408|409|412|425|429|500|502|503|504)$/.test(message) || /^(?:public_verify_(?:key|size)|source_range_(?:remote_integrity|local_integrity))$/.test(message) ? message : e?.name === 'TimeoutError' ? 'public_timeout' : e instanceof TypeError ? 'network_or_type_error' : 'unknown';
   const category = code.startsWith('config_') ? 'credential_config' : code.startsWith('s3_') ? 'transport' : code === 'stopped' ? 'cancelled' : 'validation_or_unknown';
   return { phase: at, code, category };
 }
