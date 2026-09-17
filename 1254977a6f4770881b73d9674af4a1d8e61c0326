@@ -1,0 +1,95 @@
+{
+  "schemaVersion": 1,
+  "sourceRoot": "B:\\المكتبة\\الخزانة\\كتب للاختبار\\للنشر",
+  "results": [
+    {
+      "source": "إبهاج أهل الصناعة بدراسة حديث بعثت بالسيف بين يدي الساعة - أبو ذر السمهري اليماني.docx",
+      "status": "sanitized",
+      "output": "docs\\qa\\publish-sanitized-staging\\إبهاج أهل الصناعة بدراسة حديث بعثت بالسيف بين يدي الساعة - أبو ذر السمهري اليماني.docx",
+      "sourceSha256": "8c00714f804020916e95c7eaafa7473489229f0311b494289cf9663ad0ff2321",
+      "outputSha256": "7c464cf9b0b1ceb3560dd2c1d44c816eb5e682490abdc5d9b7dda03d71b1598f",
+      "details": {
+        "entries": 22,
+        "media": 2
+      }
+    },
+    {
+      "source": "إبهاج أهل الصناعة بدراسة حديث بعثت بالسيف بين يدي الساعة - أبو ذر السمهري اليماني.pdf",
+      "status": "sanitized",
+      "output": "docs\\qa\\publish-sanitized-staging\\إبهاج أهل الصناعة بدراسة حديث بعثت بالسيف بين يدي الساعة - أبو ذر السمهري اليماني.pdf",
+      "sourceSha256": "16a36ee97936d2ce9cd907ee58c27c7810321ee69b2dad4fb0b2e73e1eaaa9f1",
+      "outputSha256": "1710eb407ee9587a5d05d0c6409bf7ded33c90534ae69c19ff65bcb4cfac490c",
+      "details": {
+        "pages": 22,
+        "textSha256": "fdfac98433081ccb39a4a94d6494f03fbc025925d3c800e5de0dda03699de139",
+        "textChars": 37325,
+        "images": 3
+      }
+    },
+    {
+      "source": "الإلجام - أبو عبد الله محمد المنصور.pdf",
+      "status": "sanitized",
+      "output": "docs\\qa\\publish-sanitized-staging\\الإلجام - أبو عبد الله محمد المنصور.pdf",
+      "sourceSha256": "37d72968519557f0cdb4edc9fddd33fd9e916271dc50db1d75989b67bdb8603b",
+      "outputSha256": "5c3e930068234f9a1ca7a89267ae9efb745592fdc13a9567f8ae66a9f19e60e4",
+      "details": {
+        "pages": 42,
+        "textSha256": "4dc9630c0d200ed0e89cff182b9a6ca1fee6dfc9d1bea58325c35092f8308711",
+        "textChars": 73898,
+        "images": 9
+      }
+    },
+    {
+      "source": "الدولة الإسلامية بين الحقيقة والوهم - أبو عبد الله محمد المنصور.pdf",
+      "status": "sanitized",
+      "output": "docs\\qa\\publish-sanitized-staging\\الدولة الإسلامية بين الحقيقة والوهم - أبو عبد الله محمد المنصور.pdf",
+      "sourceSha256": "2a3a88753698058ca54592f4d53cc62b24aa26c11fa863dc37f35301e25c61e4",
+      "outputSha256": "3a2b6f4b237e167974fc318b60f7afb4b75a83d8239c654f205d8495ec5eff30",
+      "details": {
+        "pages": 240,
+        "textSha256": "87b91535c8aa466b43e69cd1ce4b1648f31faa2aa9b746cd946e7e9fd6b86c9f",
+        "textChars": 250366,
+        "images": 1
+      }
+    },
+    {
+      "source": "تمجيس الجذور  - أبو عبد الله محمد المنصور.pdf",
+      "status": "sanitized",
+      "output": "docs\\qa\\publish-sanitized-staging\\تمجيس الجذور  - أبو عبد الله محمد المنصور.pdf",
+      "sourceSha256": "b04148ab8c92c8f7247fb47b40839d8a1d6027406c7279105c3b050462dbdc38",
+      "outputSha256": "4ff05121cf90017f41cec9d0a77d0c5f9ffc78eeadc5408e57fdae9dee7f04c3",
+      "details": {
+        "pages": 64,
+        "textSha256": "d4ce5c18200183bba9603271f387cccdfe5f94100f795ee0cc957b198e5a3de3",
+        "textChars": 64825,
+        "images": 0
+      }
+    },
+    {
+      "source": "مفاهيم إسلامية حول الدين والدولة - أبو الأعلى المودودي.pdf",
+      "status": "sanitized",
+      "output": "docs\\qa\\publish-sanitized-staging\\مفاهيم إسلامية حول الدين والدولة - أبو الأعلى المودودي.pdf",
+      "sourceSha256": "6e49fe50594c715bd4981d064632bb0a9fddda71d387b38600666e5a449a0c48",
+      "outputSha256": "466e08d68c25b8d35da935163e9a52c8d830b750f456a206446b5415368ddb10",
+      "details": {
+        "pages": 253,
+        "textSha256": "913c6e2c32d99e4baff62cf421a494730cb043924f2c6bf46406573b59c641bd",
+        "textChars": 0,
+        "images": 253
+      }
+    },
+    {
+      "source": "نحن والحضارة الغربية - أبو الأعلى المودودي.pdf",
+      "status": "sanitized",
+      "output": "docs\\qa\\publish-sanitized-staging\\نحن والحضارة الغربية - أبو الأعلى المودودي.pdf",
+      "sourceSha256": "e3b8cb195ad1a4792eb84bcacee26565c18bbdb90230d2dda4d3d26f3fbd8b40",
+      "outputSha256": "681b335cc1b59fc189bfaf427c797bc39a0cfd9024a1a97b4bda19c415a1b756",
+      "details": {
+        "pages": 310,
+        "textSha256": "049e1137aa5cab9b2da3d4e1d30aaef66dbb50a911ebe90e9ce1adf264cfbc65",
+        "textChars": 0,
+        "images": 310
+      }
+    }
+  ]
+}

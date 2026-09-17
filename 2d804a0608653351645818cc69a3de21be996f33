@@ -1,0 +1,16 @@
+import type{QuarantineRecord,RegisterSyncDeviceRequest,RevisionHistorySnapshot,SourceConflictResolutionRequest,SourceConflictResolutionResult,SourceRevisionRollbackRequest,SourceRevisionRollbackResult,SyncAccountUsage,SyncDevice}from"./remote-api.js";
+export class SourceSyncHttpError extends Error{constructor(readonly code:string,readonly status:number,readonly retryable:boolean){super(code)}}
+export interface Etagged<T>{value:T;etag:string|null;notModified:boolean}
+export class SourceSyncHttpClient{private readonly base:URL;constructor(base:string|URL,private readonly token:()=>Promise<string|null>,private readonly fetchImpl:typeof fetch=fetch,private readonly retries=1){this.base=new URL(base)}
+ revisions(bookId:string,etag?:string,signal?:AbortSignal){return this.get<RevisionHistorySnapshot>(`books/${encodeURIComponent(bookId)}/source-revisions`,etag,signal)}
+ devices(etag?:string,signal?:AbortSignal){return this.get<SyncDevice[]>("devices",etag,signal)}
+ usage(etag?:string,signal?:AbortSignal){return this.get<SyncAccountUsage>("account/usage",etag,signal)}
+ quarantineStatus(bookId:string,etag?:string,signal?:AbortSignal){return this.get<QuarantineRecord[]>(`books/${encodeURIComponent(bookId)}/quarantine-status`,etag,signal)}
+ registerDevice(input:RegisterSyncDeviceRequest,signal?:AbortSignal){return this.send<SyncDevice>("devices","POST",input,signal)}
+ revokeDevice(deviceId:string,signal?:AbortSignal){return this.send<{deviceId:string;revoked:true}>(`devices/${encodeURIComponent(deviceId)}/revoke`,"POST",{},signal)}
+ rollback(bookId:string,input:SourceRevisionRollbackRequest,signal?:AbortSignal){return this.send<SourceRevisionRollbackResult>(`books/${encodeURIComponent(bookId)}/source-revisions/rollback`,"POST",input,signal)}
+ resolveConflict(bookId:string,input:SourceConflictResolutionRequest,signal?:AbortSignal){return this.send<SourceConflictResolutionResult>(`books/${encodeURIComponent(bookId)}/source-revisions/resolve-conflict`,"POST",input,signal)}
+ private async get<T>(path:string,etag?:string,signal?:AbortSignal):Promise<Etagged<T>>{const r=await this.request(path,{method:"GET",...(signal?{signal}:{}),headers:{...(etag?{"if-none-match":etag}:{})}});if(r.status===304)return{value:undefined as T,etag:etag??null,notModified:true};return{value:await r.json()as T,etag:r.headers.get("etag"),notModified:false}}
+ private async send<T>(path:string,method:string,body:unknown,signal?:AbortSignal){const r=await this.request(path,{method,...(signal?{signal}:{}),headers:{"content-type":"application/json"},body:JSON.stringify(body)});return await r.json()as T}
+ private async request(path:string,init:RequestInit){const token=(await this.token())?.trim();if(!token)throw new SourceSyncHttpError("unauthenticated",401,false);for(let attempt=0;;attempt++){try{const r=await this.fetchImpl(new URL(path,this.base),{...init,headers:{authorization:`Bearer ${token}`,...init.headers}});if(r.status===304)return r;if(r.ok)return r;let code="source_sync_failed";try{code=String(((await r.clone().json())as any)?.error?.code??code)}catch{}const retryable=r.status===408||r.status===429||r.status>=500;if(retryable&&attempt<this.retries)continue;throw new SourceSyncHttpError(code,r.status,retryable)}catch(e){if(init.signal?.aborted)throw e;if(!(e instanceof SourceSyncHttpError)&&attempt<this.retries)continue;throw e}}}
+}

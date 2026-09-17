@@ -1,0 +1,6 @@
+{
+  "name": "@library/source-sync-cloudflare", "version": "0.0.0", "private": true, "type": "module",
+  "main": "dist/index.js", "types": "dist/index.d.ts",
+  "scripts": { "build": "tsc -b", "test": "vitest run --root ../.. packages/source-sync-cloudflare/src", "staging:local": "vitest run --root ../.. packages/source-sync-cloudflare/src/local-staging-gate.test.ts --maxWorkers=1" },
+  "devDependencies": { "@types/node": "^22.20.1", "typescript": "^5.6.0" }
+}

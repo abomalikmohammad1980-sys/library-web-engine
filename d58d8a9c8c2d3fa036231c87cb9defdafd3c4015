@@ -1,0 +1,5 @@
+import{describe,expect,it,vi}from"vitest";import{QuarantineAdminClient}from"./quarantine-client.js";
+describe("quarantine admin client",()=>{
+ it("uses the service token and least privilege scope for reads",async()=>{const fetchImpl=vi.fn(async()=>Response.json([])),client=new QuarantineAdminClient("https://sync.example/build-service/",async()=>"service-secret",fetchImpl as typeof fetch);await client.list(7);const init=fetchImpl.mock.calls[0]![1] as RequestInit;expect(init.headers).toMatchObject({authorization:"Bearer service-secret","x-service-scopes":"quarantine:read"})});
+ it("uses resolve scope for lease and resolution",async()=>{const fetchImpl=vi.fn(async()=>Response.json({recordVersion:1})),client=new QuarantineAdminClient("https://sync.example/build-service/",async()=>"service-secret",fetchImpl as typeof fetch);await client.lease("q",{leaseId:"l",leaseMs:1000,expectedRecordVersion:0});await client.resolve({quarantineId:"q",resolutionId:"r",leaseId:"l",decision:"reject",reason:"unsafe",expectedRecordVersion:1});for(const call of fetchImpl.mock.calls)expect((call[1] as RequestInit).headers).toMatchObject({"x-service-scopes":"quarantine:resolve"})});
+});

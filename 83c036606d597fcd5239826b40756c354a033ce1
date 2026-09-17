@@ -1,0 +1,20 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`service descriptors > returns dry install/uninstall plans requiring caller confirmation 1`] = `
+"[Unit]
+Description=Khizana Word source sync (khizana.sync)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart="/opt/Khizana Sync/bin/sync" run --config "/home/a&b/sync config.json"
+Restart=on-failure
+RestartSec=10
+StandardOutput=append:"/home/a/logs/out.log"
+StandardError=append:"/home/a/logs/err.log"
+
+[Install]
+WantedBy=default.target
+"
+`;

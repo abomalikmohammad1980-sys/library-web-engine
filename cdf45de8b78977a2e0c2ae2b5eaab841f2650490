@@ -1,0 +1,170 @@
+/* Base — reset, typography, a11y foundations (RTL-first, logical properties) */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: calc(16px * var(--interface-scale, 1));
+  -webkit-text-size-adjust: 100%;
+}
+
+.a11y-reduce-motion *, .a11y-reduce-motion *::before, .a11y-reduce-motion *::after { scroll-behavior: auto !important; animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; }
+.a11y-high-contrast { --border-default: #534a3d; --ink-muted: #463f35; --read-border: #51483a; --brand-primary: #075b45; --brand-primary-dark: #003f30; }
+[data-app-theme='dark'].a11y-high-contrast { --border-default: #aeb9af; --ink-muted: #e1e7de; --read-border: #aeb9af; --brand-primary: #9be5bf; --brand-primary-dark: #d2f6e3; }
+[data-app-theme='light'].a11y-high-contrast { --border-default: #303833; --ink-muted: #29322c; --read-border: #303833; --brand-primary: #004f3b; --brand-primary-dark: #003528; }
+[data-app-theme='sepia'].a11y-high-contrast { --border-default: #5f4326; --ink-muted: #4b351f; --read-border: #5f4326; --brand-primary: #563716; --brand-primary-dark: #36210d; }
+
+body {
+  font-family: var(--font-ui);
+  font-weight: 400;
+  font-size: var(--step-body);
+  line-height: 1.7;
+  color: var(--text-body);
+  background-color: #f1ede3;
+  background-image:
+    radial-gradient(circle at 8% 2%, rgba(176, 122, 38, .13), transparent 23rem),
+    radial-gradient(circle at 94% 9%, rgba(34, 105, 78, .14), transparent 28rem),
+    repeating-linear-gradient(45deg, transparent 0 39px, rgba(42, 102, 78, .03) 39px 40px, transparent 40px 79px),
+    repeating-linear-gradient(-45deg, transparent 0 39px, rgba(158, 108, 37, .026) 39px 40px, transparent 40px 79px),
+    linear-gradient(145deg, #f5f1e8, #ece8dd 52%, #f6f2e8);
+  background-attachment: fixed;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+[data-app-theme='light'] body { background: var(--paper-bg); }
+[data-app-theme='dark'] body { background: radial-gradient(circle at 92% 3%, rgba(80,135,105,.12), transparent 28rem), var(--paper-bg); }
+[data-app-theme='sepia'] body { background: radial-gradient(circle at 8% 2%, rgba(111,74,31,.12), transparent 24rem), var(--paper-bg); }
+
+html.a11y-high-contrast body {
+  background: var(--surface-page);
+}
+
+img,
+svg,
+canvas {
+  display: block;
+  max-width: 100%;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+  background: none;
+  border: none;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+ul,
+ol {
+  list-style: none;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-serif-display);
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+h1 {
+  font-size: var(--step-h1);
+}
+
+h2 {
+  font-size: var(--step-h2);
+}
+
+h3 {
+  font-size: var(--step-h3);
+}
+
+/* Keyboard focus — visible on every interactive element */
+:focus-visible {
+  outline: 2px solid var(--brand-primary);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+::selection {
+  background: var(--brand-selection);
+  color: var(--ink-strong);
+}
+
+#app {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Scrollbar — quiet and warm */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: var(--radius-pill);
+  border: 2px solid var(--paper-bg);
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* Visually-hidden utility for screen readers */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@media (forced-colors: active) {
+  :root { color-scheme: light dark; }
+  body, .site-header, .bottom-nav, .reader, .reading, .reading__page-slot { background: Canvas; color: CanvasText; }
+  a, button, input, select, textarea, summary, [tabindex]:not([tabindex="-1"]) { forced-color-adjust: auto; }
+  .btn, button, input, select, textarea,
+  .book-card, .library-card, .author-card, .home-popular-card, .home-new-card,
+  .state-view, .reader__toolbar, .reading__page-slot { border: 1px solid CanvasText; box-shadow: none; }
+  a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible,
+  textarea:focus-visible, summary:focus-visible, [tabindex]:focus-visible { outline: 3px solid Highlight; outline-offset: 3px; }
+  [aria-current="page"], [aria-pressed="true"], input:checked + span { background: Highlight; color: HighlightText; }
+  .state-view__icon, .offline-banner, .toast { border: 1px solid CanvasText; background: Canvas; color: CanvasText; }
+}

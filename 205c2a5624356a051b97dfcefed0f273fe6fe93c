@@ -1,0 +1,2716 @@
+{
+  "schemaVersion": 1,
+  "profiler": {
+    "name": "shamela-sqlite-profiler",
+    "version": "1.0.0"
+  },
+  "projectRelativeInputs": [
+    "shamela-sources/shamela4_1/database/master.db",
+    "shamela-sources/shamela4_1/database/cover.db",
+    "shamela-sources/shamela4_1/database/book/489/96489.db",
+    "shamela-sources/shamela4_1/database/book/001/1001.db",
+    "shamela-sources/shamela4_1/database/book/002/1002.db",
+    "shamela-sources/shamela4_1/database/book/674/29674.db",
+    "shamela-sources/shamela4_1/database/book/107/27107.db",
+    "shamela-sources/shamela4_1/database/book/678/5678.db"
+  ],
+  "databaseCount": 8,
+  "schemaCount": 3,
+  "schemaGroups": [
+    {
+      "schemaFingerprint": "60add71e469deb8262205ecb36569b5d95bbf2c2ec00a3190899fbf4410d7f8d",
+      "databaseCount": 1,
+      "logicalPaths": [
+        "shamela-sources/shamela4_1/database/cover.db"
+      ]
+    },
+    {
+      "schemaFingerprint": "71d562b393feb4d6e0ab6c363528b2f77a186d3a4631c09c372461eb794af118",
+      "databaseCount": 1,
+      "logicalPaths": [
+        "shamela-sources/shamela4_1/database/master.db"
+      ]
+    },
+    {
+      "schemaFingerprint": "e7e390b3757a6c6b6dfa28dce62de5955c07fe19db34279142c1b3c0d6a4890f",
+      "databaseCount": 6,
+      "logicalPaths": [
+        "shamela-sources/shamela4_1/database/book/001/1001.db",
+        "shamela-sources/shamela4_1/database/book/002/1002.db",
+        "shamela-sources/shamela4_1/database/book/107/27107.db",
+        "shamela-sources/shamela4_1/database/book/489/96489.db",
+        "shamela-sources/shamela4_1/database/book/674/29674.db",
+        "shamela-sources/shamela4_1/database/book/678/5678.db"
+      ]
+    }
+  ],
+  "databases": [
+    {
+      "logicalPath": "shamela-sources/shamela4_1/database/book/001/1001.db",
+      "fileName": "1001.db",
+      "byteLength": 57344,
+      "sourceSha256": "37a6c69eff009318b1ae740d205942093c47fa797dec789ba8080b63ecc4dfe3",
+      "sqlite": {
+        "userVersion": 0,
+        "applicationId": 0,
+        "integrity": [
+          "ok"
+        ]
+      },
+      "objects": [
+        {
+          "type": "index",
+          "name": "correspond",
+          "sqlSha256": "066e56567f5b8f8f89c92598c50689a6adabf4057453e6d0f2f41008eeff1ce0"
+        },
+        {
+          "type": "index",
+          "name": "number",
+          "sqlSha256": "b03d67b44d3faaddae9172cb6d2806df0d29d850f579de656dc9600456feadcd"
+        },
+        {
+          "type": "index",
+          "name": "page_id",
+          "sqlSha256": "adc54e2999949b5f21dc6a5aba197e31abf25a3c7e8a0ac012f057c300ff9062"
+        },
+        {
+          "type": "index",
+          "name": "parent",
+          "sqlSha256": "9f283dd1c6075b00505dbf3f4721281841f4daa11dbd78d1185c6af9bb191bc4"
+        },
+        {
+          "type": "index",
+          "name": "part",
+          "sqlSha256": "996524c1b7f84b31ee41d0097c07cff00a88f2d3b742c3aab0fa7a9135691471"
+        },
+        {
+          "type": "table",
+          "name": "page",
+          "sqlSha256": "8e92aae0e412f1729735f6d6a2bee54863d8cbd3d5fc5548ee93384f51618e12"
+        },
+        {
+          "type": "table",
+          "name": "title",
+          "sqlSha256": "71e8e207dead1a0a82cbaf95420662dc15793af814ea383aad8fc86cbfb464f5"
+        }
+      ],
+      "tables": [
+        {
+          "name": "page",
+          "rowCount": 258,
+          "columns": [
+            {
+              "ordinal": 0,
+              "name": "id",
+              "declaredType": "INTEGER",
+              "notNull": false,
+              "defaultSql": null,
+              "primaryKeyOrdinal": 1,
+              "hidden": 0
+            },
+            {
+              "ordinal": 1,
+              "name": "part",
+              "declaredType": "TEXT",
+              "notNull": false,
+              "defaultSql": null,
+              "primaryKeyOrdinal": 0,
+              "hidden": 0
+            },
+            {
+              "ordinal": 2,
+              "name": "page",
+              "declaredType": "INTEGER",
+              "notNull": false,
+              "defaultSql": null,
+              "primaryKeyOrdinal": 0,
+              "hidden": 0
+            },
+            {
+              "ordinal": 3,
+              "name": "number",
+              "declaredType": "INTEGER",
+              "notNull": false,
+              "defaultSql": null,
+              "primaryKeyOrdinal": 0,
+              "hidden": 0
+            },
+            {
+              "ordinal": 4,
+              "name": "services",
+              "declaredType": "TEXT",
+              "notNull": false,
+              "defaultSql": null,
+              "primaryKeyOrdinal": 0,
+              "hidden": 0
+            }
+          ],
+          "foreignKeys": [],
+          "typeProfiles": [
+            {
+              "column": "id",
+              "observations": [
+                {
+                  "storageType": "integer",
+                  "count": 258,
+                  "minLength": null,
+                  "maxLength": null
+                }
+              ]
+            },
+            {
+              "column": "part",
+              "observations": [
+                {
+                  "storageType": "null",
+                  "count": 258,
+                  "minLength": null,
+                  "maxLength": null
+                }
+              ]
+            },
+            {
+              "column": "page",
+              "observations": [
+                {
+                  "storageType": "integer",
+                  "count": 258,
+                  "minLength": null,
+                  "maxLength": null
+                }
+              ]
+            },
+            {
+              "column": "number",
+              "observations": [
+                {
+                  "storageType": "null",
+                  "count": 258,
+                  "minLength": null,
+                  "maxLength": null
+                }
+              ]
+            },
+            {
+              "column": "services",
+              "observations": [
+                {
+                  "storageType": "null",
+                  "count": 258,
+                  "minLength": null,
+                  "maxLength": null
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "title",
+          "rowCount": 493,
+          "columns": [
+            {
+              "ordinal": 0,
+              "name": "id",
+              "declaredType": "INTEGER",
+              "notNull": false,
+              "defaultSql": null,
+              "primaryKeyOrdinal": 1,
+              "hidden": 0
+            },
+            {
+              "ordinal": 1,
+              "name": "page",
+              "declaredType": "INTEGER",
+              "notNull": false,
+              "defaultSql": null,
+              "primaryKeyOrdinal": 0,
+              "hidden": 0
+            },
+            {
+              "ordinal": 2,
+              "name": "parent",
+              "declaredType": "INTEGER",
+              "notNull": false,
+              "defaultSql": null,
+              "primaryKeyOrdinal": 0,
+              "hidden": 0
+            }
+          ],
+          "foreignKeys": [],
+          "typeProfiles": [
+            {
+              "column": "id",
+              "observations": [
+                {
+                  "storageType": "integer",
+                  "count": 493,
+                  "minLength": null,
+                  "maxLength": null
+                }
+              ]
+            },
+            {
+              "column": "page",
+              "observations": [
+                {
+                  "storageType": "integer",
+                  "count": 493,
+                  "minLength": null,
+                  "maxLength": null
+                }
+              ]
+            },
+            {
+              "column": "parent",
+              "observations": [
+                {
+                  "storageType": "integer",
+                  "count": 493,
+                  "minLength": null,
+                  "maxLength": null
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "schemaFingerprint": "e7e390b3757a6c6b6dfa28dce62de5955c07fe19db34279142c1b3c0d6a4890f",
+      "privacy": {
+        "sampledValues": false,
+        "typeProfilesOnly": true,
+        "sqlTextStored": false
+      }
+    },
+    {
+      "logicalPath": "shamela-sources/shamela4_1/database/book/002/1002.db",
+      "fileName": "1002.db",
+      "byteLength": 217088,
+      "sourceSha256": "8553a26d60f49b3de3c18ec4c2269e9043c0aa6602d2d4944281649820d4369c",
+      "sqlite": {
+        "userVersion": 0,
+        "applicationId": 0,
+        "integrity": [
+          "ok"
+        ]
+      },
+      "objects": [
+        {
+          "type": "index",
+          "name": "correspond",
+          "sqlSha256": "066e56567f5b8f8f89c92598c50689a6adabf4057453e6d0f2f41008eeff1ce0"
+        },
+        {
+          "type": "index",
+          "name": "number",
+          "sqlSha256": "b03d67b44d3faaddae9172cb6d2806df0d29d850f579de656dc9600456feadcd"
+        },
+        {
+          "type": "index",
+          "name": "page_id",
+          "sqlSha256": "adc54e2999949b5f21dc6a5aba197e31abf25a3c7e8a0ac012f057c300ff9062"
+        },
+        {
+          "type": "index",
+          "name": "parent",
+          "sqlSha256": "9f283dd1c6075b00505dbf3f4721281841f4daa11dbd78d1185c6af9bb191bc4"
+        },
+        {
+          "type": "index",
+          "name": "part",
+          "sqlSha256": "996524c1b7f84b31ee41d0097c07cff00a88f2d3b742c3aab0fa7a9135691471"
+        },
+        {
+          "type": "table",
+          "name": "page",
+          "sqlSha256": "8e92aae0e412f1729735f6d6a2bee54863d8cbd3d5fc5548ee93384f51618e12"
+        },
+        {
+          "type": "table",
+          "name": "title",
+          "sqlSha256": "71e8e207dead1a0a82cbaf95420662dc15793af814ea383aad8fc86cbfb464f5"
+        }
+      ],
+      "tables": [
+        {
+          "name": "page",
+          "rowCount": 4204,
+          "columns": [
+            {
+              "ordinal": 0,
+              "name": "id",
+              "declaredType": "INTEGER",
+              "notNull": false,
+              "defaultSql": null,
+              "primaryKeyOrdinal": 1,
+              "hidden": 0
+            },
+            {
+              "ordinal": 1,
+              "name": "part",
+              "declaredType": "TEXT",
+              "notNull": false,
+              "defaultSql": null,
+              "primaryKeyOrdinal": 0,
+              "hidden": 0
+            },
+            {
+              "ordinal": 2,
+              "name": "page",
+              "declaredType": "INTEGER",
+              "notNull": false,
+              "defaultSql": null,
+              "primaryKeyOrdinal": 0,
+              "hidden": 0
+            },
+            {
+              "ordinal": 3,
+              "name": "number",
+              "declaredType": "INTEGER",
+              "notNull": false,
+              "defaultSql": null,
+              "primaryKeyOrdinal": 0,
+              "hidden": 0
+            },
+            {
+              "ordinal": 4,
+              "name": "services",
+              "declaredType": "TEXT",
+              "notNull": false,
+              "defaultSql": null,
+              "primaryKeyOrdinal": 0,
+              "hidden": 0
+            }
+          ],
+          "foreignKeys": [],
+          "typeProfiles": [
+            {
+              "column": "id",
+              "observations": [
+                {
+                  "storageType": "integer",
+                  "count": 4204,
+                  "minLength": null,
+                  "maxLength": null
+                }
+              ]
+            },
+            {
+              "column": "part",
+              "observations": [
+                {
+                  "storageType": "text",
+                  "count": 4204,
+                  "minLength": 1,
+                  "maxLength": 1
+                }
+              ]
+            },
+            {
+              "column": "page",
+              "observations": [
+                {
+                  "storageType": "integer",
+                  "count": 4203,
+                  "minLength": null,
+                  "maxLength": null
+                },
+                {
+                  "storageType": "null",
+                  "count": 1,
+                  "minLength": null,
+                  "maxLength": null
+                }
+              ]
+            },
+            {
+              "column": "number",
+              "observations": [
+                {
+                  "storageType": "null",
+                  "count": 4204,
+                  "minLength": null,
+                  "maxLength": null
+                }
+              ]
+            },
+            {
+              "column": "services",
+              "observations": [
+                {
+                  "storageType": "null",
+                  "count": 4204,
+                  "minLength": null,
+                  "maxLength": null
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "title",
+          "rowCount": 60,
+          "columns": [
+            {
+              "ordinal": 0,
+              "name": "id",
+              "declaredType": "INTEGER",
+              "notNull": false,
+              "defaultSql": null,
+              "primaryKeyOrdinal": 1,
+              "hidden": 0
+            },
+            {
+              "ordinal": 1,
+              "name": "page",
+              "declaredType": "INTEGER",
+              "notNull": false,
+              "defaultSql": null,
+              "primaryKeyOrdinal": 0,
+              "hidden": 0
+            },
+            {
+              "ordinal": 2,
+              "name": "parent",
+              "declaredType": "INTEGER",
+              "notNull": false,
+              "defaultSql": null,
+              "primaryKeyOrdinal": 0,
+              "hidden": 0
+            }
+          ],
+          "foreignKeys": [],
+          "typeProfiles": [
+            {
+              "column": "id",
+              "observations": [
+                {
+                  "storageType": "integer",
+                  "count": 60,
+                  "minLength": null,
+                  "maxLength": null
+                }
+              ]
+            },
+            {
+              "column": "page",
+              "observations": [
+                {
+                  "storageType": "integer",
+                  "count": 60,
+                  "minLength": null,
+                  "maxLength": null
+                }
+              ]
+            },
+            {
+              "column": "parent",
+              "observations": [
+                {
+                  "storageType": "integer",
+                  "count": 60,
+                  "minLength": null,
+                  "maxLength": null
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "schemaFingerprint": "e7e390b3757a6c6b6dfa28dce62de5955c07fe19db34279142c1b3c0d6a4890f",
+      "privacy": {
+        "sampledValues": false,
+        "typeProfilesOnly": true,
+        "sqlTextStored": false
+      }
+    },
+    {
+      "logicalPath": "shamela-sources/shamela4_1/database/book/107/27107.db",
+      "fileName": "27107.db",
+      "byteLength": 8130560,
+      "sourceSha256": "40174d0f4ac0884f7d0f2511922aac2f3fd7c5510da924d04b33269e68751823",
+      "sqlite": {
+        "userVersion": 0,
+        "applicationId": 0,
+        "integrity": [
+          "ok"
+        ]
+      },
+      "objects": [
+        {
+          "type": "index",
+          "name": "correspond",
+          "sqlSha256": "066e56567f5b8f8f89c92598c50689a6adabf4057453e6d0f2f41008eeff1ce0"
+        },
+        {
+          "type": "index",
+          "name": "number",
+          "sqlSha256": "b03d67b44d3faaddae9172cb6d2806df0d29d850f579de656dc9600456feadcd"
+        },
+        {
+          "type": "index",
+          "name": "page_id",
+          "sqlSha256": "adc54e2999949b5f21dc6a5aba197e31abf25a3c7e8a0ac012f057c300ff9062"
+        },
+        {
+          "type": "index",
+          "name": "parent",
+          "sqlSha256": "9f283dd1c6075b00505dbf3f4721281841f4daa11dbd78d1185c6af9bb191bc4"
+        },
+        {
+          "type": "index",
+          "name": "part",
+          "sqlSha256": "996524c1b7f84b31ee41d0097c07cff00a88f2d3b742c3aab0fa7a9135691471"
+        },
+        {
+          "type": "table",
+          "name": "page",
+          "sqlSha256": "8e92aae0e412f1729735f6d6a2bee54863d8cbd3d5fc5548ee93384f51618e12"
+        },
+        {
+          "type": "table",
+          "name": "title",
+          "sqlSha256": "71e8e207dead1a0a82cbaf95420662dc15793af814ea383aad8fc86cbfb464f5"
+        }
+      ],
+      "tables": [
+        {
+          "name": "page",
+          "rowCount": 90753,
+          "columns": [
+            {
+              "ordinal": 0,
+              "name": "id",
+              "declaredType": "INTEGER",
+              "notNull": false,
+              "defaultSql": null,
+              "primaryKeyOrdinal": 1,
+              "hidden": 0
+            },
+            {
+              "ordinal": 1,
+              "name": "part",
+              "declaredType": "TEXT",
+              "notNull": false,
+              "defaultSql": null,
+              "primaryKeyOrdinal": 0,
+              "hidden": 0
+            },
+            {
+              "ordinal": 2,
+              "name": "page",
+              "declaredType": "INTEGER",
+              "notNull": false,
+              "defaultSql": null,
+              "primaryKeyOrdinal": 0,
+              "hidden": 0
+            },
+            {
+              "ordinal": 3,
+              "name": "number",
+              "declaredType": "INTEGER",
+              "notNull": false,
+              "defaultSql": null,
+              "primaryKeyOrdinal": 0,
+              "hidden": 0
+            },
+            {
+              "ordinal": 4,
+              "name": "services",
+              "declaredType": "TEXT",
+              "notNull": false,
+              "defaultSql": null,
+              "primaryKeyOrdinal": 0,
+              "hidden": 0
+            }
+          ],
+          "foreignKeys": [],
+          "typeProfiles": [
+            {
+              "column": "id",
+              "observations": [
+                {
+                  "storageType": "integer",
+                  "count": 90753,
+                  "minLength": null,
+                  "maxLength": null
+                }
+              ]
+            },
+            {
+              "column": "part",
+              "observations": [
+                {
+                  "storageType": "text",
+                  "count": 90753,
+                  "minLength": 1,
+                  "maxLength": 2
+                }
+              ]
+            },
+            {
+              "column": "page",
+              "observations": [
+                {
+                  "storageType": "integer",
+                  "count": 90750,
+                  "minLength": null,
+                  "maxLength": null
+                },
+                {
+                  "storageType": "null",
+                  "count": 3,
+                  "minLength": null,
+                  "maxLength": null
+                }
+              ]
+            },
+            {
+              "column": "number",
+              "observations": [
+                {
+                  "storageType": "integer",
+                  "count": 90747,
+                  "minLength": null,
+                  "maxLength": null
+                },
+                {
+                  "storageType": "null",
+                  "count": 6,
+                  "minLength": null,
+                  "maxLength": null
+                }
+              ]
+            },
+            {
+              "column": "services",
+              "observations": [
+                {
+                  "storageType": "null",
+                  "count": 90753,
+                  "minLength": null,
+                  "maxLength": null
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "title",
+          "rowCount": 92242,
+          "columns": [
+            {
+              "ordinal": 0,
+              "name": "id",
+              "declaredType": "INTEGER",
+              "notNull": false,
+              "defaultSql": null,
+              "primaryKeyOrdinal": 1,
+              "hidden": 0
+            },
+            {
+              "ordinal": 1,
+              "name": "page",
+              "declaredType": "INTEGER",
+              "notNull": false,
+              "defaultSql": null,
+              "primaryKeyOrdinal": 0,
+              "hidden": 0
+            },
+            {
+              "ordinal": 2,
+              "name": "parent",
+              "declaredType": "INTEGER",
+              "notNull": false,
+              "defaultSql": null,
+              "primaryKeyOrdinal": 0,
+              "hidden": 0
+            }
+          ],
+          "foreignKeys": [],
+          "typeProfiles": [
+            {
+              "column": "id",
+              "observations": [
+                {
+                  "storageType": "integer",
+                  "count": 92242,
+                  "minLength": null,
+                  "maxLength": null
+                }
+              ]
+            },
+            {
+              "column": "page",
+              "observations": [
+                {
+                  "storageType": "integer",
+                  "count": 92242,
+                  "minLength": null,
+                  "maxLength": null
+                }
+              ]
+            },
+            {
+              "column": "parent",
+              "observations": [
+                {
+                  "storageType": "integer",
+                  "count": 92242,
+                  "minLength": null,
+                  "maxLength": null
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "schemaFingerprint": "e7e390b3757a6c6b6dfa28dce62de5955c07fe19db34279142c1b3c0d6a4890f",
+      "privacy": {
+        "sampledValues": false,
+        "typeProfilesOnly": true,
+        "sqlTextStored": false
+      }
+    },
+    {
+      "logicalPath": "shamela-sources/shamela4_1/database/book/489/96489.db",
+      "fileName": "96489.db",
+      "byteLength": 32768,
+      "sourceSha256": "21e6fedc7ea4aff96b2604df4c96b3675a10f0fe4913cbafd5526594686ffe54",
+      "sqlite": {
+        "userVersion": 0,
+        "applicationId": 0,
+        "integrity": [
+          "ok"
+        ]
+      },
+      "objects": [
+        {
+          "type": "index",
+          "name": "correspond",
+          "sqlSha256": "066e56567f5b8f8f89c92598c50689a6adabf4057453e6d0f2f41008eeff1ce0"
+        },
+        {
+          "type": "index",
+          "name": "number",
+          "sqlSha256": "b03d67b44d3faaddae9172cb6d2806df0d29d850f579de656dc9600456feadcd"
+        },
+        {
+          "type": "index",
+          "name": "page_id",
+          "sqlSha256": "adc54e2999949b5f21dc6a5aba197e31abf25a3c7e8a0ac012f057c300ff9062"
+        },
+        {
+          "type": "index",
+          "name": "parent",
+          "sqlSha256": "9f283dd1c6075b00505dbf3f4721281841f4daa11dbd78d1185c6af9bb191bc4"
+        },
+        {
+          "type": "index",
+          "name": "part",
+          "sqlSha256": "996524c1b7f84b31ee41d0097c07cff00a88f2d3b742c3aab0fa7a9135691471"
+        },
+        {
+          "type": "table",
+          "name": "page",
+          "sqlSha256": "8e92aae0e412f1729735f6d6a2bee54863d8cbd3d5fc5548ee93384f51618e12"
+        },
+        {
+          "type": "table",
+          "name": "title",
+          "sqlSha256": "71e8e207dead1a0a82cbaf95420662dc15793af814ea383aad8fc86cbfb464f5"
+        }
+      ],
+      "tables": [
+        {
+          "name": "page",
+          "rowCount": 35,
+          "columns": [
+            {
+              "ordinal": 0,
+              "name": "id",
+              "declaredType": "INTEGER",
+              "notNull": false,
+              "defaultSql": null,
+              "primaryKeyOrdinal": 1,
+              "hidden": 0
+            },
+            {
+              "ordinal": 1,
+              "name": "part",
+              "declaredType": "TEXT",
+              "notNull": false,
+              "defaultSql": null,
+              "primaryKeyOrdinal": 0,
+              "hidden": 0
+            },
+            {
+              "ordinal": 2,
+              "name": "page",
+              "declaredType": "INTEGER",
+              "notNull": false,
+              "defaultSql": null,
+              "primaryKeyOrdinal": 0,
+              "hidden": 0
+            },
+            {
+              "ordinal": 3,
+              "name": "number",
+              "declaredType": "INTEGER",
+              "notNull": false,
+              "defaultSql": null,
+              "primaryKeyOrdinal": 0,
+              "hidden": 0
+            },
+            {
+              "ordinal": 4,
+              "name": "services",
+              "declaredType": "TEXT",
+              "notNull": false,
+              "defaultSql": null,
+              "primaryKeyOrdinal": 0,
+              "hidden": 0
+            }
+          ],
+          "foreignKeys": [],
+          "typeProfiles": [
+            {
+              "column": "id",
+              "observations": [
+                {
+                  "storageType": "integer",
+                  "count": 35,
+                  "minLength": null,
+                  "maxLength": null
+                }
+              ]
+            },
+            {
+              "column": "part",
+              "observations": [
+                {
+                  "storageType": "null",
+                  "count": 35,
+                  "minLength": null,
+                  "maxLength": null
+                }
+              ]
+            },
+            {
+              "column": "page",
+              "observations": [
+                {
+                  "storageType": "integer",
+                  "count": 34,
+                  "minLength": null,
+                  "maxLength": null
+                },
+                {
+                  "storageType": "null",
+                  "count": 1,
+                  "minLength": null,
+                  "maxLength": null
+                }
+              ]
+            },
+            {
+              "column": "number",
+              "observations": [
+                {
+                  "storageType": "null",
+                  "count": 35,
+                  "minLength": null,
+                  "maxLength": null
+                }
+              ]
+            },
+            {
+              "column": "services",
+              "observations": [
+                {
+                  "storageType": "null",
+                  "count": 35,
+                  "minLength": null,
+                  "maxLength": null
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "title",
+          "rowCount": 66,
+          "columns": [
+            {
+              "ordinal": 0,
+              "name": "id",
+              "declaredType": "INTEGER",
+              "notNull": false,
+              "defaultSql": null,
+              "primaryKeyOrdinal": 1,
+              "hidden": 0
+            },
+            {
+              "ordinal": 1,
+              "name": "page",
+              "declaredType": "INTEGER",
+              "notNull": false,
+              "defaultSql": null,
+              "primaryKeyOrdinal": 0,
+              "hidden": 0
+            },
+            {
+              "ordinal": 2,
+              "name": "parent",
+              "declaredType": "INTEGER",
+              "notNull": false,
+              "defaultSql": null,
+              "primaryKeyOrdinal": 0,
+              "hidden": 0
+            }
+          ],
+          "foreignKeys": [],
+          "typeProfiles": [
+            {
+              "column": "id",
+              "observations": [
+                {
+                  "storageType": "integer",
+                  "count": 66,
+                  "minLength": null,
+                  "maxLength": null
+                }
+              ]
+            },
+            {
+              "column": "page",
+              "observations": [
+                {
+                  "storageType": "integer",
+                  "count": 66,
+                  "minLength": null,
+                  "maxLength": null
+                }
+              ]
+            },
+            {
+              "column": "parent",
+              "observations": [
+                {
+                  "storageType": "integer",
+                  "count": 66,
+                  "minLength": null,
+                  "maxLength": null
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "schemaFingerprint": "e7e390b3757a6c6b6dfa28dce62de5955c07fe19db34279142c1b3c0d6a4890f",
+      "privacy": {
+        "sampledValues": false,
+        "typeProfilesOnly": true,
+        "sqlTextStored": false
+      }
+    },
+    {
+      "logicalPath": "shamela-sources/shamela4_1/database/book/674/29674.db",
+      "fileName": "29674.db",
+      "byteLength": 3526656,
+      "sourceSha256": "dba3683199176b4820b531c3cf7ab8aa5ee628240ffc30f9ed81986a8a587d46",
+      "sqlite": {
+        "userVersion": 0,
+        "applicationId": 0,
+        "integrity": [
+          "ok"
+        ]
+      },
+      "objects": [
+        {
+          "type": "index",
+          "name": "correspond",
+          "sqlSha256": "066e56567f5b8f8f89c92598c50689a6adabf4057453e6d0f2f41008eeff1ce0"
+        },
+        {
+          "type": "index",
+          "name": "number",
+          "sqlSha256": "b03d67b44d3faaddae9172cb6d2806df0d29d850f579de656dc9600456feadcd"
+        },
+        {
+          "type": "index",
+          "name": "page_id",
+          "sqlSha256": "adc54e2999949b5f21dc6a5aba197e31abf25a3c7e8a0ac012f057c300ff9062"
+        },
+        {
+          "type": "index",
+          "name": "parent",
+          "sqlSha256": "9f283dd1c6075b00505dbf3f4721281841f4daa11dbd78d1185c6af9bb191bc4"
+        },
+        {
+          "type": "index",
+          "name": "part",
+          "sqlSha256": "996524c1b7f84b31ee41d0097c07cff00a88f2d3b742c3aab0fa7a9135691471"
+        },
+        {
+          "type": "table",
+          "name": "page",
+          "sqlSha256": "8e92aae0e412f1729735f6d6a2bee54863d8cbd3d5fc5548ee93384f51618e12"
+        },
+        {
+          "type": "table",
+          "name": "title",
+          "sqlSha256": "71e8e207dead1a0a82cbaf95420662dc15793af814ea383aad8fc86cbfb464f5"
+        }
+      ],
+      "tables": [
+        {
+          "name": "page",
+          "rowCount": 65431,
+          "columns": [
+            {
+              "ordinal": 0,
+              "name": "id",
+              "declaredType": "INTEGER",
+              "notNull": false,
+              "defaultSql": null,
+              "primaryKeyOrdinal": 1,
+              "hidden": 0
+            },
+            {
+              "ordinal": 1,
+              "name": "part",
+              "declaredType": "TEXT",
+              "notNull": false,
+              "defaultSql": null,
+              "primaryKeyOrdinal": 0,
+              "hidden": 0
+            },
+            {
+              "ordinal": 2,
+              "name": "page",
+              "declaredType": "INTEGER",
+              "notNull": false,
+              "defaultSql": null,
+              "primaryKeyOrdinal": 0,
+              "hidden": 0
+            },
+            {
+              "ordinal": 3,
+              "name": "number",
+              "declaredType": "INTEGER",
+              "notNull": false,
+              "defaultSql": null,
+              "primaryKeyOrdinal": 0,
+              "hidden": 0
+            },
+            {
+              "ordinal": 4,
+              "name": "services",
+              "declaredType": "TEXT",
+              "notNull": false,
+              "defaultSql": null,
+              "primaryKeyOrdinal": 0,
+              "hidden": 0
+            }
+          ],
+          "foreignKeys": [],
+          "typeProfiles": [
+            {
+              "column": "id",
+              "observations": [
+                {
+                  "storageType": "integer",
+                  "count": 65431,
+                  "minLength": null,
+                  "maxLength": null
+                }
+              ]
+            },
+            {
+              "column": "part",
+              "observations": [
+                {
+                  "storageType": "text",
+                  "count": 65431,
+                  "minLength": 1,
+                  "maxLength": 4
+                }
+              ]
+            },
+            {
+              "column": "page",
+              "observations": [
+                {
+                  "storageType": "integer",
+                  "count": 64406,
+                  "minLength": null,
+                  "maxLength": null
+                },
+                {
+                  "storageType": "null",
+                  "count": 1025,
+                  "minLength": null,
+                  "maxLength": null
+                }
+              ]
+            },
+            {
+              "column": "number",
+              "observations": [
+                {
+                  "storageType": "null",
+                  "count": 65431,
+                  "minLength": null,
+                  "maxLength": null
+                }
+              ]
+            },
+            {
+              "column": "services",
+              "observations": [
+                {
+                  "storageType": "null",
+                  "count": 65431,
+                  "minLength": null,
+                  "maxLength": null
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "title",
+          "rowCount": 15740,
+          "columns": [
+            {
+              "ordinal": 0,
+              "name": "id",
+              "declaredType": "INTEGER",
+              "notNull": false,
+              "defaultSql": null,
+              "primaryKeyOrdinal": 1,
+              "hidden": 0
+            },
+            {
+              "ordinal": 1,
+              "name": "page",
+              "declaredType": "INTEGER",
+              "notNull": false,
+              "defaultSql": null,
+              "primaryKeyOrdinal": 0,
+              "hidden": 0
+            },
+            {
+              "ordinal": 2,
+              "name": "parent",
+              "declaredType": "INTEGER",
+              "notNull": false,
+              "defaultSql": null,
+              "primaryKeyOrdinal": 0,
+              "hidden": 0
+            }
+          ],
+          "foreignKeys": [],
+          "typeProfiles": [
+            {
+              "column": "id",
+              "observations": [
+                {
+                  "storageType": "integer",
+                  "count": 15740,
+                  "minLength": null,
+                  "maxLength": null
+                }
+              ]
+            },
+            {
+              "column": "page",
+              "observations": [
+                {
+                  "storageType": "integer",
+                  "count": 15740,
+                  "minLength": null,
+                  "maxLength": null
+                }
+              ]
+            },
+            {
+              "column": "parent",
+              "observations": [
+                {
+                  "storageType": "integer",
+                  "count": 15740,
+                  "minLength": null,
+                  "maxLength": null
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "schemaFingerprint": "e7e390b3757a6c6b6dfa28dce62de5955c07fe19db34279142c1b3c0d6a4890f",
+      "privacy": {
+        "sampledValues": false,
+        "typeProfilesOnly": true,
+        "sqlTextStored": false
+      }
+    },
+    {
+      "logicalPath": "shamela-sources/shamela4_1/database/book/678/5678.db",
+      "fileName": "5678.db",
+      "byteLength": 11800576,
+      "sourceSha256": "d77f11a1a229eda065815588d31f37b5687e267a6311ff5ed23337d65e5dac45",
+      "sqlite": {
+        "userVersion": 0,
+        "applicationId": 0,
+        "integrity": [
+          "ok"
+        ]
+      },
+      "objects": [
+        {
+          "type": "index",
+          "name": "correspond",
+          "sqlSha256": "066e56567f5b8f8f89c92598c50689a6adabf4057453e6d0f2f41008eeff1ce0"
+        },
+        {
+          "type": "index",
+          "name": "number",
+          "sqlSha256": "b03d67b44d3faaddae9172cb6d2806df0d29d850f579de656dc9600456feadcd"
+        },
+        {
+          "type": "index",
+          "name": "page_id",
+          "sqlSha256": "adc54e2999949b5f21dc6a5aba197e31abf25a3c7e8a0ac012f057c300ff9062"
+        },
+        {
+          "type": "index",
+          "name": "parent",
+          "sqlSha256": "9f283dd1c6075b00505dbf3f4721281841f4daa11dbd78d1185c6af9bb191bc4"
+        },
+        {
+          "type": "index",
+          "name": "part",
+          "sqlSha256": "996524c1b7f84b31ee41d0097c07cff00a88f2d3b742c3aab0fa7a9135691471"
+        },
+        {
+          "type": "table",
+          "name": "page",
+          "sqlSha256": "8e92aae0e412f1729735f6d6a2bee54863d8cbd3d5fc5548ee93384f51618e12"
+        },
+        {
+          "type": "table",
+          "name": "title",
+          "sqlSha256": "71e8e207dead1a0a82cbaf95420662dc15793af814ea383aad8fc86cbfb464f5"
+        }
+      ],
+      "tables": [
+        {
+          "name": "page",
+          "rowCount": 124569,
+          "columns": [
+            {
+              "ordinal": 0,
+              "name": "id",
+              "declaredType": "INTEGER",
+              "notNull": false,
+              "defaultSql": null,
+              "primaryKeyOrdinal": 1,
+              "hidden": 0
+            },
+            {
+              "ordinal": 1,
+              "name": "part",
+              "declaredType": "TEXT",
+              "notNull": false,
+              "defaultSql": null,
+              "primaryKeyOrdinal": 0,
+              "hidden": 0
+            },
+            {
+              "ordinal": 2,
+              "name": "page",
+              "declaredType": "INTEGER",
+              "notNull": false,
+              "defaultSql": null,
+              "primaryKeyOrdinal": 0,
+              "hidden": 0
+            },
+            {
+              "ordinal": 3,
+              "name": "number",
+              "declaredType": "INTEGER",
+              "notNull": false,
+              "defaultSql": null,
+              "primaryKeyOrdinal": 0,
+              "hidden": 0
+            },
+            {
+              "ordinal": 4,
+              "name": "services",
+              "declaredType": "TEXT",
+              "notNull": false,
+              "defaultSql": null,
+              "primaryKeyOrdinal": 0,
+              "hidden": 0
+            }
+          ],
+          "foreignKeys": [],
+          "typeProfiles": [
+            {
+              "column": "id",
+              "observations": [
+                {
+                  "storageType": "integer",
+                  "count": 124569,
+                  "minLength": null,
+                  "maxLength": null
+                }
+              ]
+            },
+            {
+              "column": "part",
+              "observations": [
+                {
+                  "storageType": "text",
+                  "count": 124569,
+                  "minLength": 1,
+                  "maxLength": 3
+                }
+              ]
+            },
+            {
+              "column": "page",
+              "observations": [
+                {
+                  "storageType": "integer",
+                  "count": 124569,
+                  "minLength": null,
+                  "maxLength": null
+                }
+              ]
+            },
+            {
+              "column": "number",
+              "observations": [
+                {
+                  "storageType": "integer",
+                  "count": 123066,
+                  "minLength": null,
+                  "maxLength": null
+                },
+                {
+                  "storageType": "null",
+                  "count": 1503,
+                  "minLength": null,
+                  "maxLength": null
+                }
+              ]
+            },
+            {
+              "column": "services",
+              "observations": [
+                {
+                  "storageType": "null",
+                  "count": 124569,
+                  "minLength": null,
+                  "maxLength": null
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "title",
+          "rowCount": 136957,
+          "columns": [
+            {
+              "ordinal": 0,
+              "name": "id",
+              "declaredType": "INTEGER",
+              "notNull": false,
+              "defaultSql": null,
+              "primaryKeyOrdinal": 1,
+              "hidden": 0
+            },
+            {
+              "ordinal": 1,
+              "name": "page",
+              "declaredType": "INTEGER",
+              "notNull": false,
+              "defaultSql": null,
+              "primaryKeyOrdinal": 0,
+              "hidden": 0
+            },
+            {
+              "ordinal": 2,
+              "name": "parent",
+              "declaredType": "INTEGER",
+              "notNull": false,
+              "defaultSql": null,
+              "primaryKeyOrdinal": 0,
+              "hidden": 0
+            }
+          ],
+          "foreignKeys": [],
+          "typeProfiles": [
+            {
+              "column": "id",
+              "observations": [
+                {
+                  "storageType": "integer",
+                  "count": 136957,
+                  "minLength": null,
+                  "maxLength": null
+                }
+              ]
+            },
+            {
+              "column": "page",
+              "observations": [
+                {
+                  "storageType": "integer",
+                  "count": 136957,
+                  "minLength": null,
+                  "maxLength": null
+                }
+              ]
+            },
+            {
+              "column": "parent",
+              "observations": [
+                {
+                  "storageType": "integer",
+                  "count": 136957,
+                  "minLength": null,
+                  "maxLength": null
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "schemaFingerprint": "e7e390b3757a6c6b6dfa28dce62de5955c07fe19db34279142c1b3c0d6a4890f",
+      "privacy": {
+        "sampledValues": false,
+        "typeProfilesOnly": true,
+        "sqlTextStored": false
+      }
+    },
+    {
+      "logicalPath": "shamela-sources/shamela4_1/database/cover.db",
+      "fileName": "cover.db",
+      "byteLength": 51658752,
+      "sourceSha256": "83f47d72363a4f2df073cd0fbd2ede995164c83d1a4279e8345108aeba07eabf",
+      "sqlite": {
+        "userVersion": 0,
+        "applicationId": 0,
+        "integrity": [
+          "ok"
+        ]
+      },
+      "objects": [
+        {
+          "type": "table",
+          "name": "cover",
+          "sqlSha256": "40d62f11b764ad6448839cdca6103caf9cc020ea804ea73b3a369b5ef7945891"
+        },
+        {
+          "type": "table",
+          "name": "db_ver",
+          "sqlSha256": "61c345342abe3d4cd3febae29dca42b824c925040540057e44a91bea595c6591"
+        }
+      ],
+      "tables": [
+        {
+          "name": "cover",
+          "rowCount": 1369,
+          "columns": [
+            {
+              "ordinal": 0,
+              "name": "id",
+              "declaredType": "INTEGER",
+              "notNull": false,
+              "defaultSql": null,
+              "primaryKeyOrdinal": 1,
+              "hidden": 0
+            },
+            {
+              "ordinal": 1,
+              "name": "cover",
+              "declaredType": "BLOB",
+              "notNull": false,
+              "defaultSql": null,
+              "primaryKeyOrdinal": 0,
+              "hidden": 0
+            }
+          ],
+          "foreignKeys": [],
+          "typeProfiles": [
+            {
+              "column": "id",
+              "observations": [
+                {
+                  "storageType": "integer",
+                  "count": 1369,
+                  "minLength": null,
+                  "maxLength": null
+                }
+              ]
+            },
+            {
+              "column": "cover",
+              "observations": [
+                {
+                  "storageType": "blob",
+                  "count": 1369,
+                  "minLength": 10364,
+                  "maxLength": 160686
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "db_ver",
+          "rowCount": 1,
+          "columns": [
+            {
+              "ordinal": 0,
+              "name": "value",
+              "declaredType": "INTEGER",
+              "notNull": false,
+              "defaultSql": null,
+              "primaryKeyOrdinal": 0,
+              "hidden": 0
+            }
+          ],
+          "foreignKeys": [],
+          "typeProfiles": [
+            {
+              "column": "value",
+              "observations": [
+                {
+                  "storageType": "integer",
+                  "count": 1,
+                  "minLength": null,
+                  "maxLength": null
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "schemaFingerprint": "60add71e469deb8262205ecb36569b5d95bbf2c2ec00a3190899fbf4410d7f8d",
+      "privacy": {
+        "sampledValues": false,
+        "typeProfilesOnly": true,
+        "sqlTextStored": false
+      }
+    },
+    {
+      "logicalPath": "shamela-sources/shamela4_1/database/master.db",
+      "fileName": "master.db",
+      "byteLength": 3403776,
+      "sourceSha256": "8179021cf95df1c411bec58607e7a35f4226f9bb03f675f0a8d574078d2626f8",
+      "sqlite": {
+        "userVersion": 0,
+        "applicationId": 0,
+        "integrity": [
+          "ok"
+        ]
+      },
+      "objects": [
+        {
+          "type": "index",
+          "name": "alpha_author",
+          "sqlSha256": "d08669766f297e85570486dc77882462bbff97e318c910f6ad8c1fb4b08627bd"
+        },
+        {
+          "type": "index",
+          "name": "alpha_book",
+          "sqlSha256": "5ecfb5ab7465c42de678e1d2b1142492928d87e4ce556dd6acfc2e18d2c7c436"
+        },
+        {
+          "type": "index",
+          "name": "author_id",
+          "sqlSha256": "8d0f90822efffb7631dfe26d1b2f949890bbff489435c669b9cb2d5795a1391f"
+        },
+        {
+          "type": "index",
+          "name": "book_category",
+          "sqlSha256": "2138c90b73f43bc9bf1036f46e4cb654ecab2891ef1842435ef01ed89d9b031f"
+        },
+        {
+          "type": "index",
+          "name": "book_id",
+          "sqlSha256": "661eb702f3c06c728f688557fbd17a3dd93d5e14235a45a02bd36e0085d54163"
+        },
+        {
+          "type": "index",
+          "name": "book_type",
+          "sqlSha256": "0f8a1fb0e840d8357542e466f3d1cffd665a0c1fb4721ef3b884048175df2135"
+        },
+        {
+          "type": "index",
+          "name": "book_up",
+          "sqlSha256": "c865a50ff524685ad82f5b73a5188fd946ae06a5b0f3609f2cb8561c2d5746a1"
+        },
+        {
+          "type": "index",
+          "name": "category_order",
+          "sqlSha256": "4058cbfe91bba72cf240c74cf3b8b751842cfc3eb42c3749aee0361198d2eb48"
+        },
+        {
+          "type": "index",
+          "name": "coauthor_id",
+          "sqlSha256": "46658fd5d037c797ce00f7cd5599514076017540ac51656df4eff246c7244187"
+        },
+        {
+          "type": "index",
+          "name": "cobook_id",
+          "sqlSha256": "969f9e6ee49f2462455df04da0d5f16902a0ceb46aa3c4ea895b5c15c1e26bcb"
+        },
+        {
+          "type": "index",
+          "name": "cover_ondisk",
+          "sqlSha256": "ef19e2c1d705b8fe77397a050b11795f219b07d80bd765c339c94bd9bba82b71"
+        },
+        {
+          "type": "index",
+          "name": "cover_online",
+          "sqlSha256": "3ac817a973de763f4e2d5b13a46e06f5c09a6f46a63cbeb546e1b982b573e61c"
+        },
+        {
+          "type": "index",
+          "name": "death_number",
+          "sqlSha256": "64fc39d15ad647b1c449173a973031243953c49f2b0ab3a4f36d78eb90d6c1b4"
+        },
+        {
+          "type": "index",
+          "name": "group_id",
+          "sqlSha256": "5b2e861cf3be1517b6a8e921710c1dff9be848073650b81af9a5a68d4431d5e9"
+        },
+        {
+          "type": "index",
+          "name": "group_order",
+          "sqlSha256": "4d95853e2d32ea3f33f763148e5f776e6d904bc1ea296b591c6996ec652a2bcd"
+        },
+        {
+          "type": "index",
+          "name": "hidden",
+          "sqlSha256": "d2607328555469c6a7a1de08b1e0018d03040749f4e56321c83b274129ffdf4f"
+        },
+        {
+          "type": "index",
+          "name": "key",
+          "sqlSha256": "afada5e9902095aacb87b6becd127ce96a529a8291fa44c46baef94db945315f"
+        },
+        {
+          "type": "index",
+          "name": "major_ondisk",
+          "sqlSha256": "fbb9c6d6db525e31dccfdeb86cd45e51ef45a1134ddc9ca3e6ed8d32713668b4"
+        },
+        {
+          "type": "index",
+          "name": "major_online",
+          "sqlSha256": "974d121e38d012a6f0b38fd7cddd77a92571fdfafe954346cb69c96c6d86b772"
+        },
+        {
+          "type": "index",
+          "name": "minor_ondisk",
+          "sqlSha256": "696499f0201f1679139e8c55e9f7294b1df6e57bd333bc89228773378d3ddf27"
+        },
+        {
+          "type": "index",
+          "name": "minor_online",
+          "sqlSha256": "76d7d974b8befd08db21dfaa4981fc0764a4d6dc94fd5b2c4346a4bc09853bb5"
+        },
+        {
+          "type": "index",
+          "name": "parent",
+          "sqlSha256": "8f8cc072c17aea310b61dbe092d24a166b47583fd9d1eeb904ef0c43faf29419"
+        },
+        {
+          "type": "index",
+          "name": "pdf_ondisk",
+          "sqlSha256": "bf9bb81f4db0ef680c5f17c82cf38edbff57aa7c41a0e2ba1f37d1051c2741a0"
+        },
+        {
+          "type": "index",
+          "name": "pdf_online",
+          "sqlSha256": "c6ec657d0a08f0031f1f0544e7cb6a45de964f230b79195d7a8dd39a97f5c596"
+        },
+        {
+          "type": "index",
+          "name": "printed",
+          "sqlSha256": "9924f41b369f5f407693a8f80aa9eff59ab72212e0d36f820700b3fc4cf33bab"
+        },
+        {
+          "type": "index",
+          "name": "ver",
+          "sqlSha256": "5c110b980ecdf7eb571e47959ec9d5824a2629b0a14cc63619dadd25730b431a"
+        },
+        {
+          "type": "table",
+          "name": "author",
+          "sqlSha256": "efdc41a4b35dfe878aa77be7535d34cff87416f86259565a1251527e8570fea7"
+        },
+        {
+          "type": "table",
+          "name": "author_book",
+          "sqlSha256": "32b33857021f14fd6e630927db0ca8618c36a09bbb02db08ed1574b696234140"
+        },
+        {
+          "type": "table",
+          "name": "book",
+          "sqlSha256": "1c287c56c440da362aff5525db32f48b57c7c22d0cafec14ce055d719b56dec6"
+        },
+        {
+          "type": "table",
+          "name": "category",
+          "sqlSha256": "68c7d11ccadf9bdf0bf81d438423ef0e9066fdffec481ae6e3d8eefb8370b8b6"
+        },
+        {
+          "type": "table",
+          "name": "coauthor_book",
+          "sqlSha256": "525fe5e10f4eb828d9da81a1ceec5ab30128e943f58c1c624adc06a8190e6bc7"
+        },
+        {
+          "type": "table",
+          "name": "db_ver",
+          "sqlSha256": "61c345342abe3d4cd3febae29dca42b824c925040540057e44a91bea595c6591"
+        },
+        {
+          "type": "table",
+          "name": "version",
+          "sqlSha256": "ca27a6bb48b99d0e67d8c7a493a533ac93b646ddc9be5cfc22733bc8f4d83d40"
+        }
+      ],
+      "tables": [
+        {
+          "name": "author",
+          "rowCount": 3188,
+          "columns": [
+            {
+              "ordinal": 0,
+              "name": "author_id",
+              "declaredType": "INTEGER",
+              "notNull": false,
+              "defaultSql": null,
+              "primaryKeyOrdinal": 1,
+              "hidden": 0
+            },
+            {
+              "ordinal": 1,
+              "name": "author_name",
+              "declaredType": "TEXT",
+              "notNull": false,
+              "defaultSql": null,
+              "primaryKeyOrdinal": 0,
+              "hidden": 0
+            },
+            {
+              "ordinal": 2,
+              "name": "death_number",
+              "declaredType": "INTEGER",
+              "notNull": false,
+              "defaultSql": null,
+              "primaryKeyOrdinal": 0,
+              "hidden": 0
+            },
+            {
+              "ordinal": 3,
+              "name": "death_text",
+              "declaredType": "TEXT",
+              "notNull": false,
+              "defaultSql": null,
+              "primaryKeyOrdinal": 0,
+              "hidden": 0
+            },
+            {
+              "ordinal": 4,
+              "name": "alpha",
+              "declaredType": "INTEGER",
+              "notNull": false,
+              "defaultSql": null,
+              "primaryKeyOrdinal": 0,
+              "hidden": 0
+            }
+          ],
+          "foreignKeys": [],
+          "typeProfiles": [
+            {
+              "column": "author_id",
+              "observations": [
+                {
+                  "storageType": "integer",
+                  "count": 3188,
+                  "minLength": null,
+                  "maxLength": null
+                }
+              ]
+            },
+            {
+              "column": "author_name",
+              "observations": [
+                {
+                  "storageType": "text",
+                  "count": 3188,
+                  "minLength": 1,
+                  "maxLength": 45
+                }
+              ]
+            },
+            {
+              "column": "death_number",
+              "observations": [
+                {
+                  "storageType": "integer",
+                  "count": 3188,
+                  "minLength": null,
+                  "maxLength": null
+                }
+              ]
+            },
+            {
+              "column": "death_text",
+              "observations": [
+                {
+                  "storageType": "null",
+                  "count": 1067,
+                  "minLength": null,
+                  "maxLength": null
+                },
+                {
+                  "storageType": "text",
+                  "count": 2121,
+                  "minLength": 2,
+                  "maxLength": 9
+                }
+              ]
+            },
+            {
+              "column": "alpha",
+              "observations": [
+                {
+                  "storageType": "integer",
+                  "count": 2790,
+                  "minLength": null,
+                  "maxLength": null
+                },
+                {
+                  "storageType": "null",
+                  "count": 398,
+                  "minLength": null,
+                  "maxLength": null
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "author_book",
+          "rowCount": 8635,
+          "columns": [
+            {
+              "ordinal": 0,
+              "name": "author_id",
+              "declaredType": "INTEGER",
+              "notNull": false,
+              "defaultSql": null,
+              "primaryKeyOrdinal": 0,
+              "hidden": 0
+            },
+            {
+              "ordinal": 1,
+              "name": "book_id",
+              "declaredType": "INTEGER",
+              "notNull": false,
+              "defaultSql": null,
+              "primaryKeyOrdinal": 0,
+              "hidden": 0
+            }
+          ],
+          "foreignKeys": [],
+          "typeProfiles": [
+            {
+              "column": "author_id",
+              "observations": [
+                {
+                  "storageType": "integer",
+                  "count": 8635,
+                  "minLength": null,
+                  "maxLength": null
+                }
+              ]
+            },
+            {
+              "column": "book_id",
+              "observations": [
+                {
+                  "storageType": "integer",
+                  "count": 8635,
+                  "minLength": null,
+                  "maxLength": null
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "book",
+          "rowCount": 8595,
+          "columns": [
+            {
+              "ordinal": 0,
+              "name": "book_id",
+              "declaredType": "INTEGER",
+              "notNull": false,
+              "defaultSql": null,
+              "primaryKeyOrdinal": 1,
+              "hidden": 0
+            },
+            {
+              "ordinal": 1,
+              "name": "book_name",
+              "declaredType": "TEXT",
+              "notNull": false,
+              "defaultSql": null,
+              "primaryKeyOrdinal": 0,
+              "hidden": 0
+            },
+            {
+              "ordinal": 2,
+              "name": "book_category",
+              "declaredType": "INTEGER",
+              "notNull": false,
+              "defaultSql": null,
+              "primaryKeyOrdinal": 0,
+              "hidden": 0
+            },
+            {
+              "ordinal": 3,
+              "name": "book_type",
+              "declaredType": "INTEGER",
+              "notNull": false,
+              "defaultSql": null,
+              "primaryKeyOrdinal": 0,
+              "hidden": 0
+            },
+            {
+              "ordinal": 4,
+              "name": "book_date",
+              "declaredType": "INTEGER",
+              "notNull": false,
+              "defaultSql": null,
+              "primaryKeyOrdinal": 0,
+              "hidden": 0
+            },
+            {
+              "ordinal": 5,
+              "name": "authors",
+              "declaredType": "TEXT",
+              "notNull": false,
+              "defaultSql": null,
+              "primaryKeyOrdinal": 0,
+              "hidden": 0
+            },
+            {
+              "ordinal": 6,
+              "name": "main_author",
+              "declaredType": "INTEGER",
+              "notNull": false,
+              "defaultSql": null,
+              "primaryKeyOrdinal": 0,
+              "hidden": 0
+            },
+            {
+              "ordinal": 7,
+              "name": "printed",
+              "declaredType": "INTEGER",
+              "notNull": false,
+              "defaultSql": null,
+              "primaryKeyOrdinal": 0,
+              "hidden": 0
+            },
+            {
+              "ordinal": 8,
+              "name": "group_id",
+              "declaredType": "INTEGER",
+              "notNull": false,
+              "defaultSql": null,
+              "primaryKeyOrdinal": 0,
+              "hidden": 0
+            },
+            {
+              "ordinal": 9,
+              "name": "hidden",
+              "declaredType": "INTEGER",
+              "notNull": false,
+              "defaultSql": null,
+              "primaryKeyOrdinal": 0,
+              "hidden": 0
+            },
+            {
+              "ordinal": 10,
+              "name": "major_online",
+              "declaredType": "INTEGER",
+              "notNull": false,
+              "defaultSql": null,
+              "primaryKeyOrdinal": 0,
+              "hidden": 0
+            },
+            {
+              "ordinal": 11,
+              "name": "minor_online",
+              "declaredType": "INTEGER",
+              "notNull": false,
+              "defaultSql": null,
+              "primaryKeyOrdinal": 0,
+              "hidden": 0
+            },
+            {
+              "ordinal": 12,
+              "name": "major_ondisk",
+              "declaredType": "INTEGER",
+              "notNull": false,
+              "defaultSql": null,
+              "primaryKeyOrdinal": 0,
+              "hidden": 0
+            },
+            {
+              "ordinal": 13,
+              "name": "minor_ondisk",
+              "declaredType": "INTEGER",
+              "notNull": false,
+              "defaultSql": null,
+              "primaryKeyOrdinal": 0,
+              "hidden": 0
+            },
+            {
+              "ordinal": 14,
+              "name": "pdf_links",
+              "declaredType": "TEXT",
+              "notNull": false,
+              "defaultSql": null,
+              "primaryKeyOrdinal": 0,
+              "hidden": 0
+            },
+            {
+              "ordinal": 15,
+              "name": "pdf_ondisk",
+              "declaredType": "INTEGER",
+              "notNull": false,
+              "defaultSql": null,
+              "primaryKeyOrdinal": 0,
+              "hidden": 0
+            },
+            {
+              "ordinal": 16,
+              "name": "pdf_online",
+              "declaredType": "INTEGER",
+              "notNull": false,
+              "defaultSql": null,
+              "primaryKeyOrdinal": 0,
+              "hidden": 0
+            },
+            {
+              "ordinal": 17,
+              "name": "cover_ondisk",
+              "declaredType": "INTEGER",
+              "notNull": false,
+              "defaultSql": null,
+              "primaryKeyOrdinal": 0,
+              "hidden": 0
+            },
+            {
+              "ordinal": 18,
+              "name": "cover_online",
+              "declaredType": "INTEGER",
+              "notNull": false,
+              "defaultSql": null,
+              "primaryKeyOrdinal": 0,
+              "hidden": 0
+            },
+            {
+              "ordinal": 19,
+              "name": "meta_data",
+              "declaredType": "TEXT",
+              "notNull": false,
+              "defaultSql": null,
+              "primaryKeyOrdinal": 0,
+              "hidden": 0
+            },
+            {
+              "ordinal": 20,
+              "name": "parent",
+              "declaredType": "INTEGER",
+              "notNull": false,
+              "defaultSql": null,
+              "primaryKeyOrdinal": 0,
+              "hidden": 0
+            },
+            {
+              "ordinal": 21,
+              "name": "alpha",
+              "declaredType": "INTEGER",
+              "notNull": false,
+              "defaultSql": null,
+              "primaryKeyOrdinal": 0,
+              "hidden": 0
+            },
+            {
+              "ordinal": 22,
+              "name": "group_order",
+              "declaredType": "INTEGER",
+              "notNull": false,
+              "defaultSql": null,
+              "primaryKeyOrdinal": 0,
+              "hidden": 0
+            },
+            {
+              "ordinal": 23,
+              "name": "book_up",
+              "declaredType": "INTEGER",
+              "notNull": false,
+              "defaultSql": null,
+              "primaryKeyOrdinal": 0,
+              "hidden": 0
+            }
+          ],
+          "foreignKeys": [],
+          "typeProfiles": [
+            {
+              "column": "book_id",
+              "observations": [
+                {
+                  "storageType": "integer",
+                  "count": 8595,
+                  "minLength": null,
+                  "maxLength": null
+                }
+              ]
+            },
+            {
+              "column": "book_name",
+              "observations": [
+                {
+                  "storageType": "text",
+                  "count": 8595,
+                  "minLength": 5,
+                  "maxLength": 133
+                }
+              ]
+            },
+            {
+              "column": "book_category",
+              "observations": [
+                {
+                  "storageType": "integer",
+                  "count": 8595,
+                  "minLength": null,
+                  "maxLength": null
+                }
+              ]
+            },
+            {
+              "column": "book_type",
+              "observations": [
+                {
+                  "storageType": "integer",
+                  "count": 8595,
+                  "minLength": null,
+                  "maxLength": null
+                }
+              ]
+            },
+            {
+              "column": "book_date",
+              "observations": [
+                {
+                  "storageType": "integer",
+                  "count": 8595,
+                  "minLength": null,
+                  "maxLength": null
+                }
+              ]
+            },
+            {
+              "column": "authors",
+              "observations": [
+                {
+                  "storageType": "text",
+                  "count": 8595,
+                  "minLength": 1,
+                  "maxLength": 20
+                }
+              ]
+            },
+            {
+              "column": "main_author",
+              "observations": [
+                {
+                  "storageType": "integer",
+                  "count": 8595,
+                  "minLength": null,
+                  "maxLength": null
+                }
+              ]
+            },
+            {
+              "column": "printed",
+              "observations": [
+                {
+                  "storageType": "integer",
+                  "count": 8595,
+                  "minLength": null,
+                  "maxLength": null
+                }
+              ]
+            },
+            {
+              "column": "group_id",
+              "observations": [
+                {
+                  "storageType": "integer",
+                  "count": 626,
+                  "minLength": null,
+                  "maxLength": null
+                },
+                {
+                  "storageType": "null",
+                  "count": 7969,
+                  "minLength": null,
+                  "maxLength": null
+                }
+              ]
+            },
+            {
+              "column": "hidden",
+              "observations": [
+                {
+                  "storageType": "integer",
+                  "count": 8595,
+                  "minLength": null,
+                  "maxLength": null
+                }
+              ]
+            },
+            {
+              "column": "major_online",
+              "observations": [
+                {
+                  "storageType": "integer",
+                  "count": 8595,
+                  "minLength": null,
+                  "maxLength": null
+                }
+              ]
+            },
+            {
+              "column": "minor_online",
+              "observations": [
+                {
+                  "storageType": "integer",
+                  "count": 8595,
+                  "minLength": null,
+                  "maxLength": null
+                }
+              ]
+            },
+            {
+              "column": "major_ondisk",
+              "observations": [
+                {
+                  "storageType": "integer",
+                  "count": 8595,
+                  "minLength": null,
+                  "maxLength": null
+                }
+              ]
+            },
+            {
+              "column": "minor_ondisk",
+              "observations": [
+                {
+                  "storageType": "integer",
+                  "count": 8595,
+                  "minLength": null,
+                  "maxLength": null
+                }
+              ]
+            },
+            {
+              "column": "pdf_links",
+              "observations": [
+                {
+                  "storageType": "null",
+                  "count": 6849,
+                  "minLength": null,
+                  "maxLength": null
+                },
+                {
+                  "storageType": "text",
+                  "count": 1746,
+                  "minLength": 12,
+                  "maxLength": 1247
+                }
+              ]
+            },
+            {
+              "column": "pdf_ondisk",
+              "observations": [
+                {
+                  "storageType": "integer",
+                  "count": 3542,
+                  "minLength": null,
+                  "maxLength": null
+                },
+                {
+                  "storageType": "null",
+                  "count": 5053,
+                  "minLength": null,
+                  "maxLength": null
+                }
+              ]
+            },
+            {
+              "column": "pdf_online",
+              "observations": [
+                {
+                  "storageType": "integer",
+                  "count": 1685,
+                  "minLength": null,
+                  "maxLength": null
+                },
+                {
+                  "storageType": "null",
+                  "count": 6910,
+                  "minLength": null,
+                  "maxLength": null
+                }
+              ]
+            },
+            {
+              "column": "cover_ondisk",
+              "observations": [
+                {
+                  "storageType": "integer",
+                  "count": 1369,
+                  "minLength": null,
+                  "maxLength": null
+                },
+                {
+                  "storageType": "null",
+                  "count": 7226,
+                  "minLength": null,
+                  "maxLength": null
+                }
+              ]
+            },
+            {
+              "column": "cover_online",
+              "observations": [
+                {
+                  "storageType": "integer",
+                  "count": 1370,
+                  "minLength": null,
+                  "maxLength": null
+                },
+                {
+                  "storageType": "null",
+                  "count": 7225,
+                  "minLength": null,
+                  "maxLength": null
+                }
+              ]
+            },
+            {
+              "column": "meta_data",
+              "observations": [
+                {
+                  "storageType": "text",
+                  "count": 8595,
+                  "minLength": 20,
+                  "maxLength": 665
+                }
+              ]
+            },
+            {
+              "column": "parent",
+              "observations": [
+                {
+                  "storageType": "integer",
+                  "count": 85,
+                  "minLength": null,
+                  "maxLength": null
+                },
+                {
+                  "storageType": "null",
+                  "count": 8510,
+                  "minLength": null,
+                  "maxLength": null
+                }
+              ]
+            },
+            {
+              "column": "alpha",
+              "observations": [
+                {
+                  "storageType": "integer",
+                  "count": 6542,
+                  "minLength": null,
+                  "maxLength": null
+                },
+                {
+                  "storageType": "null",
+                  "count": 2053,
+                  "minLength": null,
+                  "maxLength": null
+                }
+              ]
+            },
+            {
+              "column": "group_order",
+              "observations": [
+                {
+                  "storageType": "integer",
+                  "count": 17,
+                  "minLength": null,
+                  "maxLength": null
+                },
+                {
+                  "storageType": "null",
+                  "count": 8578,
+                  "minLength": null,
+                  "maxLength": null
+                }
+              ]
+            },
+            {
+              "column": "book_up",
+              "observations": [
+                {
+                  "storageType": "null",
+                  "count": 8595,
+                  "minLength": null,
+                  "maxLength": null
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "category",
+          "rowCount": 41,
+          "columns": [
+            {
+              "ordinal": 0,
+              "name": "category_id",
+              "declaredType": "INTEGER",
+              "notNull": false,
+              "defaultSql": null,
+              "primaryKeyOrdinal": 1,
+              "hidden": 0
+            },
+            {
+              "ordinal": 1,
+              "name": "category_name",
+              "declaredType": "TEXT",
+              "notNull": false,
+              "defaultSql": null,
+              "primaryKeyOrdinal": 0,
+              "hidden": 0
+            },
+            {
+              "ordinal": 2,
+              "name": "category_order",
+              "declaredType": "INTEGER",
+              "notNull": false,
+              "defaultSql": null,
+              "primaryKeyOrdinal": 0,
+              "hidden": 0
+            }
+          ],
+          "foreignKeys": [],
+          "typeProfiles": [
+            {
+              "column": "category_id",
+              "observations": [
+                {
+                  "storageType": "integer",
+                  "count": 41,
+                  "minLength": null,
+                  "maxLength": null
+                }
+              ]
+            },
+            {
+              "column": "category_name",
+              "observations": [
+                {
+                  "storageType": "text",
+                  "count": 41,
+                  "minLength": 1,
+                  "maxLength": 27
+                }
+              ]
+            },
+            {
+              "column": "category_order",
+              "observations": [
+                {
+                  "storageType": "integer",
+                  "count": 40,
+                  "minLength": null,
+                  "maxLength": null
+                },
+                {
+                  "storageType": "text",
+                  "count": 1,
+                  "minLength": 1,
+                  "maxLength": 1
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "coauthor_book",
+          "rowCount": 57,
+          "columns": [
+            {
+              "ordinal": 0,
+              "name": "author_id",
+              "declaredType": "INTEGER",
+              "notNull": false,
+              "defaultSql": null,
+              "primaryKeyOrdinal": 0,
+              "hidden": 0
+            },
+            {
+              "ordinal": 1,
+              "name": "book_id",
+              "declaredType": "INTEGER",
+              "notNull": false,
+              "defaultSql": null,
+              "primaryKeyOrdinal": 0,
+              "hidden": 0
+            }
+          ],
+          "foreignKeys": [],
+          "typeProfiles": [
+            {
+              "column": "author_id",
+              "observations": [
+                {
+                  "storageType": "integer",
+                  "count": 57,
+                  "minLength": null,
+                  "maxLength": null
+                }
+              ]
+            },
+            {
+              "column": "book_id",
+              "observations": [
+                {
+                  "storageType": "integer",
+                  "count": 57,
+                  "minLength": null,
+                  "maxLength": null
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "db_ver",
+          "rowCount": 1,
+          "columns": [
+            {
+              "ordinal": 0,
+              "name": "value",
+              "declaredType": "INTEGER",
+              "notNull": false,
+              "defaultSql": null,
+              "primaryKeyOrdinal": 0,
+              "hidden": 0
+            }
+          ],
+          "foreignKeys": [],
+          "typeProfiles": [
+            {
+              "column": "value",
+              "observations": [
+                {
+                  "storageType": "integer",
+                  "count": 1,
+                  "minLength": null,
+                  "maxLength": null
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "version",
+          "rowCount": 5,
+          "columns": [
+            {
+              "ordinal": 0,
+              "name": "key",
+              "declaredType": "TEXT",
+              "notNull": false,
+              "defaultSql": null,
+              "primaryKeyOrdinal": 0,
+              "hidden": 0
+            },
+            {
+              "ordinal": 1,
+              "name": "value",
+              "declaredType": "INTEGER",
+              "notNull": false,
+              "defaultSql": null,
+              "primaryKeyOrdinal": 0,
+              "hidden": 0
+            }
+          ],
+          "foreignKeys": [],
+          "typeProfiles": [
+            {
+              "column": "key",
+              "observations": [
+                {
+                  "storageType": "text",
+                  "count": 5,
+                  "minLength": 1,
+                  "maxLength": 6
+                }
+              ]
+            },
+            {
+              "column": "value",
+              "observations": [
+                {
+                  "storageType": "integer",
+                  "count": 5,
+                  "minLength": null,
+                  "maxLength": null
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "schemaFingerprint": "71d562b393feb4d6e0ab6c363528b2f77a186d3a4631c09c372461eb794af118",
+      "privacy": {
+        "sampledValues": false,
+        "typeProfilesOnly": true,
+        "sqlTextStored": false
+      }
+    }
+  ],
+  "reportFingerprint": "50dd6e8b1df9647a0f8d5f5ea5c58e7bfbb96e94ab0284aaddc496afbdbb7c6e"
+}

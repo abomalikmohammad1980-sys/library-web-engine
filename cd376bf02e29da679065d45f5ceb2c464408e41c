@@ -1,0 +1,20 @@
+{
+  "name": "library-web-engine",
+  "private": true,
+  "packageManager": "pnpm@10.12.1",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "pnpm -r build",
+    "test": "vitest run",
+    "typecheck": "tsc -b",
+    "oracle:check": "pnpm --filter @engine/ooxml-model build && pnpm --filter @engine/layout build && node tools/word-oracle/run_all.mjs both --check"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.1",
+    "harfbuzzjs": "^1.4.0",
+    "typescript": "^5.6.0",
+    "vitest": "^3.0.0"
+  }
+}

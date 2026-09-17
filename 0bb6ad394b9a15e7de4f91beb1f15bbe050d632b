@@ -1,0 +1,3217 @@
+{
+  "schemaVersion": 1,
+  "researchedAt": "2026-08-08",
+  "inputFile": "pasted-text.txt",
+  "counts": {
+    "total": 221,
+    "existing": 23,
+    "added": 3,
+    "review": 6,
+    "unresolved": 189
+  },
+  "records": [
+    {
+      "input": "آدم غدن (عزام الأمريكي)",
+      "canonical": "آدم غدن",
+      "aliases": [
+        "عزام الأمريكي"
+      ],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "عبد الكريم الجزائري (أبو أحمد)",
+      "canonical": "عبد الكريم الجزائري",
+      "aliases": [
+        "أبو أحمد"
+      ],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "عمر يوسف جمعة (أبو أنس الشامي)",
+      "canonical": "عمر يوسف جمعة",
+      "aliases": [
+        "أبو أنس الشامي"
+      ],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "أبو أيمن الهلالي",
+      "canonical": "أبو أيمن الهلالي",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "مصطفى (أبو إبراهيم)",
+      "canonical": "مصطفى (أبو إبراهيم)",
+      "aliases": [
+        "أبو إبراهيم"
+      ],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "review",
+      "reason": "general-or-kunya-only-identity"
+    },
+    {
+      "input": "محمود الزويد (أبو إسحاق)",
+      "canonical": "محمود الزويد",
+      "aliases": [
+        "أبو إسحاق"
+      ],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "أبو الأعلى المودودي",
+      "canonical": "أبو الأعلى المودودي",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [
+        {
+          "url": "https://shamela.ws/author/197",
+          "accessedAt": "2026-08-08"
+        }
+      ],
+      "confidence": "high",
+      "disposition": "existing",
+      "matchMethod": "exact-name-or-alias",
+      "existingId": "shamela-197"
+    },
+    {
+      "input": "عبد المجيد عامر (أبو البراء الإبي)",
+      "canonical": "عبد المجيد عامر",
+      "aliases": [
+        "أبو البراء الإبي"
+      ],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "أبو الحسن الأزدي",
+      "canonical": "أبو الحسن الأزدي",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "أبو الحسن الندوي",
+      "canonical": "أبو الحسن الندوي",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [
+        {
+          "url": "https://shamela.ws/author/990",
+          "accessedAt": "2026-08-08"
+        }
+      ],
+      "confidence": "high",
+      "disposition": "existing",
+      "matchMethod": "exact-name-or-alias",
+      "existingId": "shamela-990"
+    },
+    {
+      "input": "رشيد بن محمد البليدي (أبو الحسن)",
+      "canonical": "رشيد بن محمد البليدي",
+      "aliases": [
+        "أبو الحسن"
+      ],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "أبو الزهراء الزبيدي",
+      "canonical": "أبو الزهراء الزبيدي",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "عبد الإله يوسف الجزائري (أبو العزير)",
+      "canonical": "عبد الإله يوسف الجزائري",
+      "aliases": [
+        "أبو العزير"
+      ],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "يحيى بن طاهر الفرغلي (أبو الفتح)",
+      "canonical": "يحيى بن طاهر الفرغلي",
+      "aliases": [
+        "أبو الفتح"
+      ],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "الصارم العراقي (أبو الفضل العراقي)",
+      "canonical": "الصارم العراقي",
+      "aliases": [
+        "أبو الفضل العراقي"
+      ],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "أبو الليث الليبي القاسمي",
+      "canonical": "أبو الليث الليبي القاسمي",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "أبو المحتسب المقدسي",
+      "canonical": "أبو المحتسب المقدسي",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "أبو المنذر الشنقيطي",
+      "canonical": "أبو المنذر الشنقيطي",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "سامي الساعدي (أبو المنذر)",
+      "canonical": "سامي الساعدي",
+      "aliases": [
+        "أبو المنذر"
+      ],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "عبد اللطيف موسى (أبو النور المقدسي)",
+      "canonical": "عبد اللطيف موسى",
+      "aliases": [
+        "أبو النور المقدسي"
+      ],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "أبو الوفاء التونسي",
+      "canonical": "أبو الوفاء التونسي",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "خالد الأغا (أبو الوليد الغزي الأنصاري)",
+      "canonical": "خالد الأغا",
+      "aliases": [
+        "أبو الوليد الغزي الأنصاري"
+      ],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "عبد المنعم مصطفى حليمة (أبو بصير الطرطوسي)",
+      "canonical": "عبد المنعم مصطفى حليمة",
+      "aliases": [
+        "أبو بصير الطرطوسي"
+      ],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "ناصر الوحيشي (أبو بصير)",
+      "canonical": "ناصر الوحيشي",
+      "aliases": [
+        "أبو بصير"
+      ],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "فارس آل شويل الزهراني (أبو جندل الأزدي)",
+      "canonical": "فارس آل شويل الزهراني",
+      "aliases": [
+        "أبو جندل الأزدي"
+      ],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "أبو حذيفة الحرابي الليبي",
+      "canonical": "أبو حذيفة الحرابي الليبي",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "أبو حذيفة السوداني",
+      "canonical": "أبو حذيفة السوداني",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "سفيان عزلي الجزائري (أبو حفص)",
+      "canonical": "سفيان عزلي الجزائري",
+      "aliases": [
+        "أبو حفص"
+      ],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "عبد المنعم بن عز الدين البدوي (أبو حمزة المهاجر)",
+      "canonical": "عبد المنعم بن عز الدين البدوي",
+      "aliases": [
+        "أبو حمزة المهاجر"
+      ],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "محمد بن محمود البَحْطِيطي (أبو دجانة الباشا)",
+      "canonical": "محمد بن محمود البَحْطِيطي",
+      "aliases": [
+        "أبو دجانة الباشا"
+      ],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "همام خليل أبو ملال (أبو دجانة الخراساني)",
+      "canonical": "همام خليل أبو ملال",
+      "aliases": [
+        "أبو دجانة الخراساني"
+      ],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "أبو ذر السمهري اليماني",
+      "canonical": "أبو ذر السمهري اليماني",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "أبو سعد العاملي",
+      "canonical": "أبو سعد العاملي",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "سعيد الشهري (أبو سفيان الأزدي)",
+      "canonical": "سعيد الشهري",
+      "aliases": [
+        "أبو سفيان الأزدي"
+      ],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "حسان حسين آدم (أبو سلمان الصومالي)",
+      "canonical": "حسان حسين آدم",
+      "aliases": [
+        "أبو سلمان الصومالي"
+      ],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "أبو سليمان المهاجر",
+      "canonical": "أبو سليمان المهاجر",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "طلحة المسير (أبو شعيب المصري)",
+      "canonical": "طلحة محمد المسير",
+      "aliases": [
+        "أبو شعيب المصري"
+      ],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [
+        {
+          "url": "https://shamela.ws/author/2426",
+          "accessedAt": "2026-08-08"
+        }
+      ],
+      "confidence": "high",
+      "disposition": "existing",
+      "matchMethod": "unique-ordered-token-alias",
+      "existingId": "shamela-2426"
+    },
+    {
+      "input": "أبو طلال القاسمي",
+      "canonical": "أبو طلال القاسمي",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "أحمد (أبو عبد الإله)",
+      "canonical": "أحمد",
+      "aliases": [
+        "أبو عبد الإله"
+      ],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "review",
+      "reason": "general-or-kunya-only-identity"
+    },
+    {
+      "input": "أبو عبد الرحمن البتيري",
+      "canonical": "أبو عبد الرحمن البتيري",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "عبد الرحيم عطون (أبو عبد الله الشامي)",
+      "canonical": "عبد الرحيم عطون",
+      "aliases": [
+        "أبو عبد الله الشامي"
+      ],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "أبو عبد الله الليبي",
+      "canonical": "أبو عبد الله الليبي",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "عبد الرحمن العلي (أبو عبد الله المهاجر)",
+      "canonical": "عبد الرحمن العلي",
+      "aliases": [
+        "أبو عبد الله المهاجر"
+      ],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "الميلودي زكريا (أبو عبد الله)",
+      "canonical": "الميلودي زكريا",
+      "aliases": [
+        "أبو عبد الله"
+      ],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "عماد التونسي (أبو عبد الله)",
+      "canonical": "عماد التونسي",
+      "aliases": [
+        "أبو عبد الله"
+      ],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "محمد المنصور (أبو عبد الله)",
+      "canonical": "محمد المنصور",
+      "aliases": [
+        "أبو عبد الله"
+      ],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "عبد الله خالد العدم (أبو عبيدة المقدسي)",
+      "canonical": "عبد الله خالد العدم",
+      "aliases": [
+        "أبو عبيدة المقدسي"
+      ],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "يوسف العنابي (أبو عبيدة)",
+      "canonical": "يوسف العنابي",
+      "aliases": [
+        "أبو عبيدة"
+      ],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "أبو عصام الأندلسي",
+      "canonical": "أبو عصام الأندلسي",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "محمد بن عبد الله الجابر آل أبو العينين التميمي (أبو عمر السيف)",
+      "canonical": "محمد بن عبد الله الجابر آل أبو العينين التميمي",
+      "aliases": [
+        "أبو عمر السيف"
+      ],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "أبو عياض التونسي",
+      "canonical": "أبو عياض التونسي",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "أبو فراس السوري",
+      "canonical": "أبو فراس السوري",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "عمر بن محمود أبو عمر (أبو قتادة الفلسطيني)",
+      "canonical": "عمر بن محمود أبو عمر",
+      "aliases": [
+        "أبو قتادة الفلسطيني"
+      ],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "أبو ماريا القحطاني",
+      "canonical": "أبو ماريا القحطاني",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "أبو ماريا القرشي",
+      "canonical": "أبو ماريا القرشي",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "جمال زينية (أبو مالك التلي)",
+      "canonical": "جمال زينية",
+      "aliases": [
+        "أبو مالك التلي"
+      ],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "أبو محمد الجولاني",
+      "canonical": "أبو محمد الجولاني",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "أبو محمد الطحاوي",
+      "canonical": "أبو محمد الطحاوي",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "عاصم البرقاوي (أبو محمد المقدسي)",
+      "canonical": "عاصم البرقاوي",
+      "aliases": [
+        "أبو محمد المقدسي"
+      ],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "أبو محمود الفلسطيني",
+      "canonical": "أبو محمود الفلسطيني",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "أحمد الزهراني (أبو مريم الأزدي)",
+      "canonical": "أحمد بن عبد الله الزهراني",
+      "aliases": [
+        "أبو مريم الأزدي"
+      ],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [
+        {
+          "url": "https://shamela.ws/author/1595",
+          "accessedAt": "2026-08-08"
+        }
+      ],
+      "confidence": "high",
+      "disposition": "existing",
+      "matchMethod": "unique-ordered-token-alias",
+      "existingId": "shamela-1595"
+    },
+    {
+      "input": "أبو مسلم الجزائري",
+      "canonical": "أبو مسلم الجزائري",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "أحمد الخلايلة (أبو مصعب الزرقاوي)",
+      "canonical": "أحمد الخلايلة",
+      "aliases": [
+        "أبو مصعب الزرقاوي"
+      ],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "عمر عبد الحكيم (أبو مصعب السوري)",
+      "canonical": "عمر عبد الحكيم",
+      "aliases": [
+        "أبو مصعب السوري"
+      ],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "عبد الودود (أبو مصعب)",
+      "canonical": "عبد الودود",
+      "aliases": [
+        "أبو مصعب"
+      ],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "أبو هاجر الليبي",
+      "canonical": "أبو هاجر الليبي",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "قاسم الريمي (أبو هريرة الصنعاني)",
+      "canonical": "قاسم الريمي",
+      "aliases": [
+        "أبو هريرة الصنعاني"
+      ],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "أبو وليد الغامدي",
+      "canonical": "أبو وليد الغامدي",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "أبو يحيى الشنقيطي",
+      "canonical": "أبو يحيى الشنقيطي",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "حسن محمد قائد (أبو يحيى الليبي)",
+      "canonical": "حسن محمد قائد",
+      "aliases": [
+        "أبو يحيى الليبي"
+      ],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "أبو يزن الشامي",
+      "canonical": "أبو يزن الشامي",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "أبو يوسف الأردني (شاعر)",
+      "canonical": "أبو يوسف الأردني",
+      "aliases": [
+        "شاعر"
+      ],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "أحمد بن حمود الخالدي",
+      "canonical": "أحمد بن حمود الخالدي",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "أحمد شاكر",
+      "canonical": "أحمد شاكر",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": 1377,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [
+        {
+          "url": "https://shamela.ws/author/1145",
+          "accessedAt": "2026-08-08"
+        }
+      ],
+      "confidence": "high",
+      "disposition": "existing",
+      "matchMethod": "exact-name-or-alias",
+      "existingId": "shamela-1145"
+    },
+    {
+      "input": "أحمد عشوش",
+      "canonical": "أحمد عشوش",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "أحمد فاروق",
+      "canonical": "أحمد فاروق",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "أحمد مولانا",
+      "canonical": "أحمد مولانا",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "أحمد ولد الكوري الشنقيطي",
+      "canonical": "أحمد ولد الكوري الشنقيطي",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "أسامة بن محمد لادن (أبو عبد الله)",
+      "canonical": "أسامة بن محمد لادن",
+      "aliases": [
+        "أبو عبد الله"
+      ],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "أسامة محمود",
+      "canonical": "أسامة محمود",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "أكرم حجازي",
+      "canonical": "أكرم حجازي",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "أنس خطاب",
+      "canonical": "أنس خطاب",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "أنور العولقي",
+      "canonical": "أنور العولقي",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "أواب بن حسن الحسني",
+      "canonical": "أواب بن حسن الحسني",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "أيمن الظواهري",
+      "canonical": "أيمن الظواهري",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "إبراهيم السكران",
+      "canonical": "إبراهيم السكران",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "إبراهيم القوصي (خبيب السوداني)",
+      "canonical": "إبراهيم القوصي",
+      "aliases": [
+        "خبيب السوداني"
+      ],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "إبراهيم بن عبد العزيز بركات",
+      "canonical": "إبراهيم بن عبد العزيز بركات",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "إياد قنيبي",
+      "canonical": "إياد قنيبي",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "الملا محمد عمر",
+      "canonical": "الملا محمد عمر",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "بكر أبو زيد",
+      "canonical": "بكر أبو زيد",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": 1429,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [
+        {
+          "url": "https://shamela.ws/author/145",
+          "accessedAt": "2026-08-08"
+        }
+      ],
+      "confidence": "high",
+      "disposition": "existing",
+      "matchMethod": "exact-name-or-alias",
+      "existingId": "shamela-145"
+    },
+    {
+      "input": "تركي البنعلي",
+      "canonical": "تركي البنعلي",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "جلال الدين (أبو الفتوح)",
+      "canonical": "جلال الدين",
+      "aliases": [
+        "أبو الفتوح"
+      ],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "جلال بلعيدي",
+      "canonical": "جلال بلعيدي",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "جهيمان بن سيف العتيبي",
+      "canonical": "جهيمان بن سيف العتيبي",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "محمد المرشدي (حارث بن غازي النظاري)",
+      "canonical": "محمد المرشدي",
+      "aliases": [
+        "حارث بن غازي النظاري"
+      ],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "حاكم المطيري",
+      "canonical": "حاكم المطيري",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "حسام عبد الرؤوف",
+      "canonical": "حسام عبد الرؤوف",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "حسن بن علي الكتاني (الشريف أبو محمد)",
+      "canonical": "حسن بن علي الكتاني",
+      "aliases": [
+        "الشريف أبو محمد"
+      ],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "حسني أدهم جرار",
+      "canonical": "حسني أدهم جرار",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "حسين بن محمود",
+      "canonical": "حسين بن محمود",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "حمد بن ريس الريس",
+      "canonical": "حمد بن ريس الريس",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "حمد بن عبد الله بن إبراهيم الحميدي",
+      "canonical": "حمد بن عبد الله بن إبراهيم الحميدي",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "حمد حمود العثمان التميمي",
+      "canonical": "حمد حمود العثمان التميمي",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "حمزة بن أسامة بن لادن",
+      "canonical": "حمزة بن أسامة بن لادن",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "حمود بن عقلاء الشعيبي",
+      "canonical": "حمود بن عقلاء الشعيبي",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "خالد الفليج",
+      "canonical": "خالد الفليج",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "خالد باطرفي",
+      "canonical": "خالد باطرفي",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "خالد عبد الرحمن الحسينان (أبو زيد الكويتي)",
+      "canonical": "خالد الحسينان",
+      "aliases": [
+        "أبو زيد الكويتي"
+      ],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [
+        {
+          "url": "https://shamela.ws/author/2286",
+          "accessedAt": "2026-08-08"
+        }
+      ],
+      "confidence": "high",
+      "disposition": "existing",
+      "matchMethod": "unique-ordered-token-alias",
+      "existingId": "shamela-2286"
+    },
+    {
+      "input": "ثامر سويلم (خطاب)",
+      "canonical": "ثامر سويلم",
+      "aliases": [
+        "خطاب"
+      ],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "رفاعي أحمد طه",
+      "canonical": "رفاعي أحمد طه",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "رفاعي سرور",
+      "canonical": "رفاعي سرور",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "سامي العريدي",
+      "canonical": "سامي العريدي",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "سراج الدين زريقات",
+      "canonical": "سراج الدين زريقات",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "سعد بن عاطف العولقي",
+      "canonical": "سعد بن عاطف العولقي",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "سعود بن حمود العتيبي",
+      "canonical": "سعود بن حمود العتيبي",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "سلطان بن بجاد العتيبي (أبو عبد الرحمن الأثري)",
+      "canonical": "سلطان بن بجاد العتيبي",
+      "aliases": [
+        "أبو عبد الرحمن الأثري"
+      ],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "سليمان بن ناصر العلوان",
+      "canonical": "سليمان بن ناصر العلوان",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "سليمان جاسم (أبو غيث)",
+      "canonical": "سليمان جاسم",
+      "aliases": [
+        "أبو غيث"
+      ],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "سمير بن خليل المالكي الحسني المكي",
+      "canonical": "سمير بن خليل المالكي الحسني المكي",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "سيد قطب",
+      "canonical": "سيد قطب",
+      "aliases": [
+        "سيد إبراهيم حسين الشاذلي قطب"
+      ],
+      "birthYearHijri": null,
+      "deathYearHijri": 1386,
+      "contemporary": false,
+      "briefBiography": "كاتب ومفكر مصري عمل في الأدب والتعليم، ومن أشهر مؤلفاته «في ظلال القرآن» و«معالم في الطريق». توفي في القاهرة سنة 1966م.",
+      "sources": [
+        {
+          "url": "https://en.wikipedia.org/wiki/Sayyid_Qutb",
+          "accessedAt": "2026-08-08"
+        }
+      ],
+      "confidence": "high",
+      "disposition": "add",
+      "supplementId": "supplement-sayyid-qutb"
+    },
+    {
+      "input": "محمد صلاح الدين زيدان (سيف العدل)",
+      "canonical": "محمد صلاح الدين زيدان",
+      "aliases": [
+        "سيف العدل"
+      ],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "صادق بن عبد الله الهاشمي",
+      "canonical": "صادق بن عبد الله الهاشمي",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "صالح الشنقيطي (أبو الأرقم)",
+      "canonical": "صالح الشنقيطي",
+      "aliases": [
+        "أبو الأرقم"
+      ],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "صالح العوفي",
+      "canonical": "صالح العوفي",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "صالح عبد السيد (أبو يحيى الليبي)",
+      "canonical": "صالح عبد السيد",
+      "aliases": [
+        "أبو يحيى الليبي"
+      ],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "صفاء الضوي العدوي",
+      "canonical": "صفاء الضوي العدوي",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "صلاح بن عبد الفتاح الخالدي",
+      "canonical": "صلاح الخالدي",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [
+        {
+          "url": "https://shamela.ws/author/1200",
+          "accessedAt": "2026-08-08"
+        }
+      ],
+      "confidence": "high",
+      "disposition": "existing",
+      "matchMethod": "unique-ordered-token-alias",
+      "existingId": "shamela-1200"
+    },
+    {
+      "input": "طارق عبد الحليم",
+      "canonical": "طارق عبد الحليم",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [
+        {
+          "url": "https://shamela.ws/author/191",
+          "accessedAt": "2026-08-08"
+        }
+      ],
+      "confidence": "high",
+      "disposition": "existing",
+      "matchMethod": "exact-name-or-alias",
+      "existingId": "shamela-191"
+    },
+    {
+      "input": "عادل العباب (أبو الزبير)",
+      "canonical": "عادل العباب",
+      "aliases": [
+        "أبو الزبير"
+      ],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "عاصم (أبو حيان)",
+      "canonical": "عاصم",
+      "aliases": [
+        "أبو حيان"
+      ],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "review",
+      "reason": "general-or-kunya-only-identity"
+    },
+    {
+      "input": "عاصم عمر",
+      "canonical": "عاصم عمر",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "عبد الآخر حماد الغنيمي",
+      "canonical": "عبد الآخر حماد الغنيمي",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "عبد الرحمن رأفت الباشا",
+      "canonical": "عبد الرحمن رأفت الباشا",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": 1406,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [
+        {
+          "url": "https://shamela.ws/author/2728",
+          "accessedAt": "2026-08-08"
+        }
+      ],
+      "confidence": "high",
+      "disposition": "existing",
+      "matchMethod": "exact-name-or-alias",
+      "existingId": "shamela-2728"
+    },
+    {
+      "input": "عبد العزيز الطريفي",
+      "canonical": "عبد العزيز الطريفي",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [
+        {
+          "url": "https://shamela.ws/author/494",
+          "accessedAt": "2026-08-08"
+        }
+      ],
+      "confidence": "high",
+      "disposition": "existing",
+      "matchMethod": "exact-name-or-alias",
+      "existingId": "shamela-494"
+    },
+    {
+      "input": "عبد العزيز الطويلعي (عبد الله بن ناصر الرشيد، أخو من طاع الله)",
+      "canonical": "عبد العزيز الطويلعي",
+      "aliases": [
+        "عبد الله بن ناصر الرشيد",
+        "أخو من طاع الله"
+      ],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "عبد العزيز بن شاكر الرافعي",
+      "canonical": "عبد العزيز بن شاكر الرافعي",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "عبد العزيز بن صالح الجربوع",
+      "canonical": "عبد العزيز بن صالح الجربوع",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "عبد العزيز بن عيسى المقرن (أبو هاجر)",
+      "canonical": "عبد العزيز بن عيسى المقرن",
+      "aliases": [
+        "أبو هاجر"
+      ],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "عبد العزيز بن محمد بن علي آل عبد اللطيف",
+      "canonical": "عبد العزيز بن محمد آل عبد اللطيف",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [
+        {
+          "url": "https://shamela.ws/author/149",
+          "accessedAt": "2026-08-08"
+        }
+      ],
+      "confidence": "high",
+      "disposition": "existing",
+      "matchMethod": "unique-ordered-token-alias",
+      "existingId": "shamela-149"
+    },
+    {
+      "input": "عبد العزيز بن ناصر الجليل",
+      "canonical": "عبد العزيز بن ناصر الجليل",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "سيد إمام (عبد القادر بن عبد العزيز)",
+      "canonical": "سيد إمام",
+      "aliases": [
+        "عبد القادر بن عبد العزيز"
+      ],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "عبد الكريم بن صالح الحميد",
+      "canonical": "عبد الكريم بن صالح الحميد",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": 1445,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [
+        {
+          "url": "https://shamela.ws/author/2377",
+          "accessedAt": "2026-08-08"
+        }
+      ],
+      "confidence": "high",
+      "disposition": "existing",
+      "matchMethod": "exact-name-or-alias",
+      "existingId": "shamela-2377"
+    },
+    {
+      "input": "عبد الله المحيسني",
+      "canonical": "عبد الله المحيسني",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "عبد الله النفيسي",
+      "canonical": "عبد الله النفيسي",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "عبد الله بن أحمد البن الحسيني",
+      "canonical": "عبد الله بن أحمد البن الحسيني",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "عبد الله بن عبد الرحمن السعد",
+      "canonical": "عبد الله السعد",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [
+        {
+          "url": "https://shamela.ws/author/2322",
+          "accessedAt": "2026-08-08"
+        }
+      ],
+      "confidence": "high",
+      "disposition": "existing",
+      "matchMethod": "unique-ordered-token-alias",
+      "existingId": "shamela-2322"
+    },
+    {
+      "input": "عبد الله بن عبد الرحمن الشنقيطي",
+      "canonical": "عبد الله بن عبد الرحمن الشنقيطي",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "عبد الله بن محمد بن راشد الرشود",
+      "canonical": "عبد الله بن محمد بن راشد الرشود",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "عبد الله (ذو البجادين)",
+      "canonical": "عبد الله",
+      "aliases": [
+        "ذو البجادين"
+      ],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "review",
+      "reason": "ambiguous-token-match",
+      "possibleExistingIds": [
+        "shamela-937",
+        "shamela-2869",
+        "shamela-2996"
+      ]
+    },
+    {
+      "input": "عبد الله عزام",
+      "canonical": "عبد الله يوسف عزام",
+      "aliases": [
+        "عبد الله عزام"
+      ],
+      "birthYearHijri": 1360,
+      "deathYearHijri": 1410,
+      "contemporary": false,
+      "briefBiography": "كاتب ومدرس فلسطيني في الدراسات الإسلامية، عمل في التدريس الجامعي ونشط في دعم الأفغان خلال الحرب السوفيتية الأفغانية. توفي في بيشاور سنة 1989م.",
+      "sources": [
+        {
+          "url": "https://www.marefa.org/عبدالله_يوسف_عزام",
+          "accessedAt": "2026-08-08"
+        }
+      ],
+      "confidence": "high",
+      "disposition": "add",
+      "supplementId": "supplement-abdullah-azzam"
+    },
+    {
+      "input": "عبد المجيد المنيع",
+      "canonical": "عبد المجيد المنيع",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "عبد المجيد عبد الماجد",
+      "canonical": "عبد المجيد عبد الماجد",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "عطا نجد الراوي",
+      "canonical": "عطا نجد الراوي",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "عطية الله الليبي (أبو عبد الرحمن)",
+      "canonical": "عطية الله الليبي",
+      "aliases": [
+        "أبو عبد الرحمن"
+      ],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "علي بن حاج (أبو عبد الفتاح)",
+      "canonical": "علي بن حاج",
+      "aliases": [
+        "أبو عبد الفتاح"
+      ],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "علي بن خضير الخضير",
+      "canonical": "علي بن خضير الخضير",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "علي بن نايف الشحود (الشهاب الثاقب)",
+      "canonical": "علي بن نايف الشحود",
+      "aliases": [
+        "الشهاب الثاقب"
+      ],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "علي عزت بيجوفتش",
+      "canonical": "علي عزت بيغوفيتش",
+      "aliases": [
+        "علي عزت بيجوفتش"
+      ],
+      "birthYearHijri": 1344,
+      "deathYearHijri": 1424,
+      "contemporary": false,
+      "briefBiography": "سياسي وكاتب بوسني، تولى رئاسة جمهورية البوسنة والهرسك، وله مؤلفات في الفكر والسياسة من أشهرها «الإسلام بين الشرق والغرب». توفي في سراييفو سنة 2003م.",
+      "sources": [
+        {
+          "url": "https://www.alijaizetbegovic.org/ar/السيرة-الذاتية/",
+          "accessedAt": "2026-08-08"
+        },
+        {
+          "url": "https://ar.wikiquote.org/wiki/علي_عزت_بيغوفتش",
+          "accessedAt": "2026-08-08"
+        }
+      ],
+      "confidence": "high",
+      "disposition": "add",
+      "supplementId": "supplement-alija-izetbegovic"
+    },
+    {
+      "input": "عمر بن مسعود الحدوشي (أبو الفضل)",
+      "canonical": "عمر بن مسعود الحدوشي",
+      "aliases": [
+        "أبو الفضل"
+      ],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "عمر عبد الرحمن",
+      "canonical": "عمر عبد الرحمن",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "عوض بن محمد بانجار",
+      "canonical": "عوض بن محمد بانجار",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "عيسى بن سعد آل عوشن",
+      "canonical": "عيسى بن سعد آل عوشن",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "غازي التوبة",
+      "canonical": "غازي التوبة",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "فهد الفراج",
+      "canonical": "فهد الفراج",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "ماجد الماجد",
+      "canonical": "ماجد الماجد",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "محمد أمين المصري",
+      "canonical": "محمد أمين المصري",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "محمد إلهامي",
+      "canonical": "محمد إلهامي",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "محمد الحصم",
+      "canonical": "محمد الحصم",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "محمد الظواهري (أبو أيمن المصري)",
+      "canonical": "محمد الظواهري",
+      "aliases": [
+        "أبو أيمن المصري"
+      ],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "محمد بسام يوسف",
+      "canonical": "محمد بسام يوسف",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "محمد بن إبراهيم آل الشيخ",
+      "canonical": "محمد بن إبراهيم آل الشيخ",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": 1389,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [
+        {
+          "url": "https://shamela.ws/author/591",
+          "accessedAt": "2026-08-08"
+        }
+      ],
+      "confidence": "high",
+      "disposition": "existing",
+      "matchMethod": "exact-name-or-alias",
+      "existingId": "shamela-591"
+    },
+    {
+      "input": "محمد بن شاكر الشريف",
+      "canonical": "محمد بن شاكر الشريف",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "محمد بن صالح المهاجر",
+      "canonical": "محمد بن صالح المهاجر",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "محمد بن محمد الأسطل",
+      "canonical": "محمد بن محمد الأسطل",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "محمد بن محمد الفزازي",
+      "canonical": "محمد بن محمد الفزازي",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "محمد بو خبزة الحسني (أبو أويس)",
+      "canonical": "محمد بو خبزة الحسني",
+      "aliases": [
+        "أبو أويس"
+      ],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "محمد سالم بن محمد الأمين المجلسي",
+      "canonical": "محمد سالم بن محمد الأمين المجلسي",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "محمد عبد الهادي المصري",
+      "canonical": "محمد عبد الهادي المصري",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "محمد قطب",
+      "canonical": "محمد قطب",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "محمد مختار مصطفى المقرئ (أبو إيثار)",
+      "canonical": "محمد مختار مصطفى المقرئ",
+      "aliases": [
+        "أبو إيثار"
+      ],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "محمد موسى الشريف",
+      "canonical": "محمد بن موسى الشريف",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [
+        {
+          "url": "https://shamela.ws/author/1531",
+          "accessedAt": "2026-08-08"
+        }
+      ],
+      "confidence": "high",
+      "disposition": "existing",
+      "matchMethod": "unique-ordered-token-alias",
+      "existingId": "shamela-1531"
+    },
+    {
+      "input": "محمود شيت خطاب",
+      "canonical": "محمود شيت خطاب",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [
+        {
+          "url": "https://shamela.ws/author/1375",
+          "accessedAt": "2026-08-08"
+        }
+      ],
+      "confidence": "high",
+      "disposition": "existing",
+      "matchMethod": "exact-name-or-alias",
+      "existingId": "shamela-1375"
+    },
+    {
+      "input": "مدحت بن الحسن آل فراج (أبو يوسف)",
+      "canonical": "مدحت آل فراج",
+      "aliases": [
+        "أبو يوسف"
+      ],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [
+        {
+          "url": "https://shamela.ws/author/2716",
+          "accessedAt": "2026-08-08"
+        }
+      ],
+      "confidence": "high",
+      "disposition": "existing",
+      "matchMethod": "unique-ordered-token-alias",
+      "existingId": "shamela-2716"
+    },
+    {
+      "input": "مرجان سالم (أبو عمرو عبد الحكيم حسان)",
+      "canonical": "مرجان سالم",
+      "aliases": [
+        "أبو عمرو عبد الحكيم حسان"
+      ],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "مصطفى (أبو اليزيد)",
+      "canonical": "مصطفى (أبو اليزيد)",
+      "aliases": [
+        "أبو اليزيد"
+      ],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "review",
+      "reason": "general-or-kunya-only-identity"
+    },
+    {
+      "input": "مصطفى حامد (أبو الوليد المصري)",
+      "canonical": "مصطفى حامد",
+      "aliases": [
+        "أبو الوليد المصري"
+      ],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "مظهر لويس",
+      "canonical": "مظهر لويس",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "معجب الدوسري (أبو سعد الأزدي الأثري)",
+      "canonical": "معجب الدوسري",
+      "aliases": [
+        "أبو سعد الأزدي الأثري"
+      ],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "منصور الشامي",
+      "canonical": "منصور الشامي",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "محمد وائل حلواني (ميسرة الغريب)",
+      "canonical": "محمد وائل حلواني",
+      "aliases": [
+        "ميسرة الغريب"
+      ],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "نائل مصران",
+      "canonical": "نائل مصران",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "ناصر بن حمد الفهد",
+      "canonical": "ناصر بن حمد الفهد",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "نصر بن علي الآنسي",
+      "canonical": "نصر بن علي الآنسي",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "هاني السباعي",
+      "canonical": "هاني السباعي",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "هشام عشماوي (أبو عمر المصري)",
+      "canonical": "هشام عشماوي",
+      "aliases": [
+        "أبو عمر المصري"
+      ],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "وسيم فتح الله",
+      "canonical": "وسيم فتح الله",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [
+        {
+          "url": "https://shamela.ws/author/945",
+          "accessedAt": "2026-08-08"
+        }
+      ],
+      "confidence": "high",
+      "disposition": "existing",
+      "matchMethod": "exact-name-or-alias",
+      "existingId": "shamela-945"
+    },
+    {
+      "input": "ياسر بن مسعود (أبو عمار الحضرمي)",
+      "canonical": "ياسر بن مسعود",
+      "aliases": [
+        "أبو عمار الحضرمي"
+      ],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "يسري آل صالح (أبو هاجر الفلسطيني)",
+      "canonical": "يسري آل صالح",
+      "aliases": [
+        "أبو هاجر الفلسطيني"
+      ],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "يوسف بن صالح العييري",
+      "canonical": "يوسف بن صالح العييري",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "قتيبة (أبو النعمان الشنقيطي)",
+      "canonical": "قتيبة",
+      "aliases": [
+        "أبو النعمان الشنقيطي"
+      ],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "review",
+      "reason": "general-or-kunya-only-identity"
+    },
+    {
+      "input": "أبو ياسر الجزائري",
+      "canonical": "أبو ياسر الجزائري",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "محمد خليل الحكايمة (أبو جهاد، أبو بكر ناجي)",
+      "canonical": "محمد خليل الحكايمة",
+      "aliases": [
+        "أبو جهاد",
+        "أبو بكر ناجي"
+      ],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "مأمون عبد الحميد حاتم",
+      "canonical": "مأمون عبد الحميد حاتم",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "سعيد حوى",
+      "canonical": "سعيد حوى",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": 1409,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [
+        {
+          "url": "https://shamela.ws/author/2835",
+          "accessedAt": "2026-08-08"
+        }
+      ],
+      "confidence": "high",
+      "disposition": "existing",
+      "matchMethod": "exact-name-or-alias",
+      "existingId": "shamela-2835"
+    },
+    {
+      "input": "زيد بلال",
+      "canonical": "زيد بلال",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "ولد الحاج محمد الإفريقي",
+      "canonical": "ولد الحاج محمد الإفريقي",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "حامد بن عبد الله العلي",
+      "canonical": "حامد بن عبد الله العلي",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "مصطفى السباعي",
+      "canonical": "مصطفى السباعي",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [
+        {
+          "url": "https://shamela.ws/author/2375",
+          "accessedAt": "2026-08-08"
+        }
+      ],
+      "confidence": "high",
+      "disposition": "existing",
+      "matchMethod": "exact-name-or-alias",
+      "existingId": "shamela-2375"
+    },
+    {
+      "input": "محمد أحمد الراشد",
+      "canonical": "محمد أحمد الراشد",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "أحمد الصويان",
+      "canonical": "أحمد الصويان",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "نزار عبد القادر ريان",
+      "canonical": "نزار ريان",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": 1430,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [
+        {
+          "url": "https://shamela.ws/author/2759",
+          "accessedAt": "2026-08-08"
+        }
+      ],
+      "confidence": "high",
+      "disposition": "existing",
+      "matchMethod": "unique-ordered-token-alias",
+      "existingId": "shamela-2759"
+    },
+    {
+      "input": "عمر الأشقر",
+      "canonical": "عمر سليمان الأشقر",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [
+        {
+          "url": "https://shamela.ws/author/1203",
+          "accessedAt": "2026-08-08"
+        }
+      ],
+      "confidence": "high",
+      "disposition": "existing",
+      "matchMethod": "unique-ordered-token-alias",
+      "existingId": "shamela-1203"
+    },
+    {
+      "input": "صلاح الصاوي",
+      "canonical": "صلاح الصاوي",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "عبد الحكيم حقاني",
+      "canonical": "عبد الحكيم حقاني",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "محمد غياث استانبولي (أبو الوليد الحنفي)",
+      "canonical": "محمد غياث استانبولي",
+      "aliases": [
+        "أبو الوليد الحنفي"
+      ],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "سندر الغافقي",
+      "canonical": "سندر الغافقي",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "محمد نعيم ياسين",
+      "canonical": "محمد نعيم ياسين",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "عبد الله غالب البرغوثي",
+      "canonical": "عبد الله غالب البرغوثي",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "رامي الدالي",
+      "canonical": "رامي الدالي",
+      "aliases": [],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    },
+    {
+      "input": "إبراهيم البنا (أبو الحسن الهاشمي)",
+      "canonical": "إبراهيم البنا",
+      "aliases": [
+        "أبو الحسن الهاشمي"
+      ],
+      "birthYearHijri": null,
+      "deathYearHijri": null,
+      "contemporary": null,
+      "briefBiography": null,
+      "sources": [],
+      "confidence": "low",
+      "disposition": "unresolved",
+      "reason": "no-authoritative-source-confirmed"
+    }
+  ]
+}

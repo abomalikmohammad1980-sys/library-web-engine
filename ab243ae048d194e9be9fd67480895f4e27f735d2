@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "purpose": "Word authoritative pagination and high-risk visual acceptance corpus",
+  "samples": [
+    {
+      "id": "tayeb-almaqal",
+      "fileName": "طيب المقال في حديث الاستعجال.. ولكنكم تستعجلون.docx",
+      "sourceHint": "كتب للاختبار",
+      "features": ["paragraphs", "page-boundaries", "toc"],
+      "baseline": {
+        "physicalPages": 19,
+        "pageAuditRows": 19,
+        "paragraphs": 133,
+        "pageStarts": 19,
+        "pdfSignature": "%PDF-"
+      }
+    },
+    {
+      "id": "homoom-wa-alam",
+      "fileName": "همومٌ وآلام.. ديوان شعري.docx",
+      "referencePdfFileName": "همومٌ وآلام.. ديوان شعري.pdf",
+      "sourceHint": "الكتب والمقالات/أبو حمزة المهاجر.. عبد المنعم بن عز الدين البدوي",
+      "features": ["cover", "poetry", "tables", "footnotes", "decorative-images", "fonts", "floating-layout"],
+      "baseline": {
+        "physicalPages": 64,
+        "referencePdfPages": 64,
+        "pageAuditRows": 64,
+        "paragraphs": 847,
+        "pageStarts": 64,
+        "pdfSignature": "%PDF-"
+      }
+    }
+  ]
+}

@@ -1,0 +1,1 @@
+{"name":"@library/word-cover","version":"0.0.0","private":true,"type":"module","main":"dist/index.js","types":"dist/index.d.ts","scripts":{"build":"tsc -b","test":"vitest run --root ../.. packages/word-cover/src"},"dependencies":{"fflate":"^0.8.2"},"devDependencies":{"typescript":"^5.6.0"}}

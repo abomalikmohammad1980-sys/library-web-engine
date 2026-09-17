@@ -1,0 +1,2 @@
+CREATE TABLE maintenance_checkpoints (task_name TEXT PRIMARY KEY,cursor TEXT,record_version INTEGER NOT NULL DEFAULT 0,updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP);
+CREATE TABLE maintenance_runs (id INTEGER PRIMARY KEY AUTOINCREMENT,started_at TEXT NOT NULL,finished_at TEXT NOT NULL,released_reservations INTEGER NOT NULL,deleted_staging INTEGER NOT NULL,requeued_build_jobs INTEGER NOT NULL,errors INTEGER NOT NULL);

@@ -1,0 +1,30 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "forceConsistentCasingInFileNames": true,
+    "declaration": true,
+    "composite": true,
+    "skipLibCheck": true,
+    "baseUrl": ".",
+    "paths": {
+      "@engine/bidi": ["packages/bidi/src/index.ts"],
+      "@engine/font-system": ["packages/font-system/src/index.ts"],
+      "@engine/interact": ["packages/interact/src/index.ts"],
+      "@engine/layout": ["packages/layout/src/index.ts"],
+      "@engine/ooxml-model": ["packages/ooxml-model/src/index.ts"],
+      "@engine/ooxml-dom": ["packages/ooxml-dom/src/index.ts"],
+      "@engine/shaper": ["packages/shaper/src/index.ts"],
+      "@engine/scene": ["packages/scene/src/index.ts"],
+      "@engine/paint": ["packages/paint/src/index.ts"],
+      "@library/source-sync": ["packages/source-sync/src/index.ts"],
+      "@library/source-sync-server": ["packages/source-sync-server/src/index.ts"],
+      "@library/source-sync-cloudflare": ["packages/source-sync-cloudflare/src/index.ts"]
+      ,"@library/word-cover": ["packages/word-cover/src/index.ts"]
+    }
+  }
+}

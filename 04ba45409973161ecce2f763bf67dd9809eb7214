@@ -1,0 +1,23 @@
+{
+  "name": "@library/source-sync-node",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": ["dist", "SPEC.md"],
+  "bin": {
+    "khizana-source-sync": "dist/cli-main.js",
+    "khizana-word-map": "dist/word-page-map-main.js"
+  },
+  "scripts": {
+    "build": "tsc -b && esbuild src/cli-main.ts --bundle --platform=node --format=esm --outfile=dist/cli-main.js && esbuild src/word-page-map-main.ts --bundle --platform=node --format=esm --outfile=dist/word-page-map-main.js && esbuild src/index.ts --bundle --platform=node --format=esm --outfile=dist/index.js",
+    "test": "vitest run --root ../.. packages/source-sync-node/src",
+    "verify:installability": "node scripts/verify-installability.mjs"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.1",
+    "esbuild": "^0.28.1",
+    "typescript": "^5.6.0"
+  }
+}

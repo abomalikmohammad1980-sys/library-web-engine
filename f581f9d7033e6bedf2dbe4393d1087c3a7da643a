@@ -1,0 +1,62 @@
+{
+  "schemaVersion": 1,
+  "auditedAt": "2026-08-09",
+  "policy": "No text is installable unless a local source payload, exact ayah mapping, checksum, provenance URL, attribution, and permission basis are all present.",
+  "available": [
+    {
+      "resourceId": "2",
+      "kind": "tafsir",
+      "title": "تفسير البغوي",
+      "endpointTemplate": "https://api.quranpedia.net/books-contents/{resourceId}",
+      "localSource": "../../../../generated/tafsir-source/book-2.json",
+      "generatedManifest": "../../app/public/quran/tafsir/manifest.json",
+      "mapping": { "content": "contents[].text", "ayahRange": "contents[].related_ayahs" },
+      "status": "locally-documented-exact-linkage"
+    },
+    {
+      "resourceId": "3",
+      "kind": "tafsir",
+      "title": "تفسير السعدي",
+      "endpointTemplate": "https://api.quranpedia.net/books-contents/{resourceId}",
+      "localSource": "../../../../generated/tafsir-source/book-3.json",
+      "generatedManifest": "../../app/public/quran/tafsir/manifest.json",
+      "mapping": { "content": "contents[].text", "ayahRange": "contents[].related_ayahs" },
+      "status": "locally-documented-exact-linkage"
+    },
+    {
+      "resourceId": "4",
+      "kind": "tafsir",
+      "title": "تفسير الطبري",
+      "endpointTemplate": "https://api.quranpedia.net/books-contents/{resourceId}",
+      "localSource": "../../../../generated/tafsir-source/book-4.json",
+      "generatedManifest": "../../app/public/quran/tafsir/manifest.json",
+      "mapping": { "content": "contents[].text", "ayahRange": "contents[].related_ayahs" },
+      "status": "locally-documented-exact-linkage"
+    },
+    {
+      "resourceId": "2003", "kind": "tafsir", "title": "المختصر في تفسير القرآن الكريم",
+      "endpointTemplate": "https://quranpedia.net/surah/1/{surah}/book/2003",
+      "generatedManifest": "../../app/public/quran/resources/packs/mokhtasar-tafsir/manifest.json",
+      "mapping": { "content": "article.verse-block .tafsir-content .prose", "ayahRange": "a.ayah[ayah][surah]" },
+      "status": "installed-exact-complete-6236"
+    },
+    {
+      "resourceId": "341", "kind": "gharib", "title": "غريب القرآن لابن قتيبة",
+      "endpointTemplate": "https://quranpedia.net/surah/1/{surah}/book/341",
+      "generatedManifest": "../../app/public/quran/resources/packs/gharib-ibn-qutaybah/manifest.json",
+      "mapping": { "content": "article.verse-block .tafsir-content .prose", "ayahRange": "a.ayah[ayah][surah]" },
+      "status": "installed-exact-sparse-386"
+    },
+    {
+      "resourceId": "64", "kind": "irab", "title": "إعراب القرآن وبيانه للدرويش",
+      "endpointTemplate": "https://quranpedia.net/surah/1/{surah}/book/64",
+      "generatedManifest": "../../app/public/quran/resources/packs/irab-darwish/manifest.json",
+      "mapping": { "content": "article.verse-block .tafsir-content .prose", "ayahRange": "a.ayah[ayah][surah]" },
+      "status": "installed-exact-sparse-1377"
+    }
+  ],
+  "requestedButUnavailable": [
+    { "title": "في ظلال القرآن", "kind": "tafsir", "status": "no-local-consumable-text", "action": "supply-documented-endpoint-or-source-payload" },
+    { "title": "القراءات", "kind": "qiraat", "status": "metadata-options-only-no-local-text", "action": "supply-documented-endpoint-or-source-payload" }
+  ]
+}

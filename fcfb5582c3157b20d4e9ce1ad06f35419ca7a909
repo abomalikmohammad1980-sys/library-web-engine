@@ -1,0 +1,57 @@
+/*
+ * جسرُ العرض — المرحلة 1 (عقد SPEC): يربط قشرة app بمحرّك ooxml-model.
+ *
+ * الاتجاه: app ⟵ ooxml-model فقط (لا العكس). مسؤولياته:
+ *  1) فتح ملف docx (بايت) ← DocumentModelV0 عبر extractFromDocx
+ *  2) تقسيم فقرات المتن إلى صفحات (pageBreakBefore + حدود الفقرات)
+ *
+ * هذا الجزء نقّيٌ (لا DOM) — يُختبر في node مباشرةً. تحويل الفقرة إلى DOM
+ *  في `render.ts` (يتطلب متصفّحًا).
+ *
+ * وحدات القياس: النموذج يعمل بالـ twips (شبكة Word)؛ التحويل إلى px عند
+ *  الرسم فقط بمقياس 96dpi: بكسل = twip × 20/96.
+ */
+
+import { extractFromDocx, type BodyParagraph, type DocumentModelV0 } from '@engine/ooxml-model'
+
+/** فقرةٌ مُقسَّمة — الصفحةُ مجموعةُ فقرات تبدأ بعد علامةِ كسر. */
+export interface BookPage {
+  paragraphs: BodyParagraph[]
+}
+
+export interface LoadedBook {
+  model: DocumentModelV0
+  pages: BookPage[]
+}
+
+/** يجلب ملف docx عامّ ويحلّله بالنموذج. المسارُ نسبيٌّ إلى جذر public. */
+export async function loadBook(url: string): Promise<LoadedBook> {
+  const res = await fetch(url)
+  if (!res.ok) throw new Error(`تعذّر جلب الكتاب: ${res.status}`)
+  const buf = await res.arrayBuffer()
+  return loadBookFromBuffer(new Uint8Array(buf))
+}
+
+/** يحلّل بايتات docx إلى نموذج + صفحات (بدون جلب URL). */
+export function loadBookFromBuffer(buf: Uint8Array): LoadedBook {
+  const model = extractFromDocx(buf)
+  return { model, pages: splitPages(model) }
+}
+
+/** تقسيم الفقرات: كلُّ فقرةٍ بـpageBreakBefore تفتح صفحةً جديدة.
+ *  فقراتُ المتن فقط (غيرُ مستثناة، بلا حدودُ جدولٍ) — الجداولُ خارج نطاق المرحلة 1. */
+export function splitPages(model: DocumentModelV0): BookPage[] {
+  const pages: BookPage[] = []
+  let current: BodyParagraph[] = []
+  for (const p of model.paragraphs) {
+    if (p.excluded || p.tableCell) continue
+    if (p.pageBreakBefore && current.length > 0) {
+      pages.push({ paragraphs: current })
+      current = []
+    }
+    if (!p.text.trim()) continue
+    current.push(p)
+  }
+  if (current.length > 0) pages.push({ paragraphs: current })
+  return pages
+}
