@@ -17,6 +17,19 @@ HTMLRewriter integration suites passed including public/private routes, legacy
 redirects, missing IDs, sitemap totals, and pending/public upload compatibility.
 No production deployment of these new edits.
 
+Partial preview: https://seo-indexing-preview.khezana.pages.dev
+(immutable https://c4ed0cb1.khezana.pages.dev). Build36 passed with19996assets.
+Initial Functions compile found two missing transitive helpers; dependency
+completion fixed them before successful upload. Final functions fingerprint:
+135f3f1ed10678807a735282ae2753b11579e0fb3afee17ba2e4d5d856d28da9.
+All11 remote checks in check-seo-stage-a-preview.mjs passed: publicbook/author,
+Quran H1, unknown/missing404, settings, four301s withquery, sitemap200;
+preview noindex throughout. Source8eb2d5f/e31ac91 pushed to neworigin.
+Partialstage only: preview omits productionDB/AI/Access and disables heading
+experiment. No account or synthetic write tests onproduction.
+Identity-pack helper separately passed11,768roundtrips (max7282-byte index read,
+3480-byte record). Not integrated/uploaded: see SEO_IDENTITY_PACKS_20260917.md.
+
 In progress, not complete:
 - A1 internal versioned cache helper; outward cache headers must not permit
   withdrawn/private books to remain public. Fresh visibility check beforecachehit.

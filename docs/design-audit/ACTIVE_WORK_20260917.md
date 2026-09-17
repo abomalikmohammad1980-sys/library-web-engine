@@ -7,8 +7,10 @@ This is a work ledger, not a completion or deployment receipt.
 User asked to publish first (done batch34), then start the attachment at
 `C:/Users/Windows_OS/.codex/attachments/683466eb-d09c-4bf4-acac-057a1b28f4b5/pasted-text.txt`.
 Stage A2/A3/A4/A6 source changes now integrated into middleware with19 unit
-tests,2 HTMLRewriter suites and app typecheck passing. Partial local build36
-session6673 uses publishedbatch34; no new live publication authorized/attempted.
+tests,2 HTMLRewriter suites and app typecheck passing. Partial build36 passed.
+Preview c4ed0cb1 at seo-indexing-preview.khezana.pages.dev passed11 HTTP checks.
+No new live publication. Identitypackhelper passed11768roundtrips but not yet
+integrated/uploaded; see SEO_IDENTITY_PACKS_20260917.md.
 A1 edge cache and A5 bounded listing helpers have12 additional passing tests,
 but are NOT integrated or deployed. Read SEO_STAGE_A_PROGRESS_20260917.md,
 SEO_EDGE_CACHE_A1_20260917.md and SEO_LISTING_PAGINATION_PROPOSAL_20260917.md.
