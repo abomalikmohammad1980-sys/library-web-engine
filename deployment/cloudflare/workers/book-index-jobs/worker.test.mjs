@@ -59,6 +59,24 @@ test('trusted service adapter must activate matching job and FTS receipts; dupli
   assert.equal(f.sql.prepare('SELECT status FROM books_index_state').get().status,'queued')
  }finally{f.sql.close()}
 })
+test('pre-Stage-B ready jobs with valid FTS but no activation timestamp are rebuilt, not timestamped',async()=>{
+ for(const missing of ['row','timestamp']){
+  const f=fixture();try{
+   const sha='a'.repeat(64)
+   f.sql.prepare("UPDATE public_book_index_jobs SET state='ready',manifest_sha256=?1,source_sha256=?1,artifact_key='fixture',parser_version='fixture',coverage_mode='text-and-headings' WHERE book_id='book'").run(sha)
+   f.sql.prepare("INSERT INTO public_book_search_receipts VALUES('book',1,?,1)").run(sha)
+   if(missing==='row')f.sql.exec("DELETE FROM public_book_index_facts WHERE book_id='book'")
+   else f.sql.exec("UPDATE public_book_index_facts SET indexed_at=NULL WHERE book_id='book'")
+   await reconcileEvents(f.env)
+   assert.equal(f.sql.prepare('SELECT generation FROM public_book_index_jobs').get().generation,2)
+   assert.equal(f.sql.prepare('SELECT state FROM public_book_index_jobs').get().state,'queued')
+   assert.equal(f.sql.prepare('SELECT indexed_at FROM books_index_state').get().indexed_at,null)
+   await reconcileEvents(f.env)
+   assert.equal(f.sql.prepare('SELECT generation FROM public_book_index_jobs').get().generation,2,'queued recovery must not churn revisions')
+  }finally{f.sql.close()}
+ }
+})
+
 test('HTTP200 alone never becomes ready; pending continuation does not consume failure budget',async()=>{
  const f=fixture();try{
   f.env.EXTRACTOR={fetch:async()=>new Response('not a receipt')};await consumeMessage(f.msg(),f.env)

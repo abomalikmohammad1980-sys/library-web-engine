@@ -29,11 +29,13 @@ export async function reconcileEvents(env,{limit=500,start=true,now=Math.floor(D
  )`).bind(ids).run()
  await db.prepare(`UPDATE public_book_event_state SET visibility='removed',content_version=content_version+1,updated_at=?2 WHERE book_id ${inPage} AND visibility='public' AND NOT EXISTS(SELECT 1 FROM user_books b WHERE b.id=public_book_event_state.book_id)`).bind(ids,now).run()
  await db.prepare(`UPDATE public_book_index_jobs SET state='queued',lease_token=NULL,lease_until=0,retry_at=0,error_code='stale_work_requeued' WHERE book_id ${inPage} AND state='running' AND lease_until<=?2 AND EXISTS(SELECT 1 FROM public_book_index_facts f WHERE f.book_id=public_book_index_jobs.book_id AND f.updated_at<=?2-7200)`).bind(ids,now).run()
- // Rebuild a once-ready generation whose derived FTS proof was lost. Never let
- // a terminal delivery receipt permanently suppress this recovery.
+ // Rebuild when FTS proof or genuine activation facts are missing (including
+ // pre-Stage-B ready jobs). Never invent indexed_at or let a terminal delivery
+ // receipt permanently suppress recovery into the ready-only sitemap.
  await db.prepare(`UPDATE public_book_index_revisions SET generation=generation+1 WHERE book_id ${inPage}
  AND EXISTS(SELECT 1 FROM public_book_index_jobs j JOIN public_book_index_eligible e ON e.id=j.book_id AND e.generation=j.generation WHERE j.book_id=public_book_index_revisions.book_id AND j.state='ready'
- AND NOT EXISTS(SELECT 1 FROM public_book_search_receipts r WHERE r.book_id=j.book_id AND r.generation=j.generation AND r.manifest_sha256=j.manifest_sha256))`).bind(ids).run()
+ AND (NOT EXISTS(SELECT 1 FROM public_book_search_receipts r WHERE r.book_id=j.book_id AND r.generation=j.generation AND r.manifest_sha256=j.manifest_sha256)
+ OR NOT EXISTS(SELECT 1 FROM public_book_index_facts f WHERE f.book_id=j.book_id AND f.generation=j.generation AND f.indexed_at IS NOT NULL AND f.indexed_at>0)))`).bind(ids).run()
  await db.prepare(`INSERT INTO public_book_index_outbox(book_id,content_version,action) SELECT book_id,content_version,CASE visibility WHEN 'public' THEN 'upsert' ELSE 'remove' END FROM public_book_event_state WHERE book_id ${inPage} ON CONFLICT(book_id,content_version) DO NOTHING`).bind(ids).run()
  const changed=await db.prepare(`UPDATE public_book_index_outbox SET state='queued',retry_at=0,attempts=0,lease_token=NULL,lease_until=0 WHERE book_id ${inPage} AND state='delivered'
  AND EXISTS(SELECT 1 FROM public_book_event_state s WHERE s.book_id=public_book_index_outbox.book_id AND s.content_version=public_book_index_outbox.content_version)
