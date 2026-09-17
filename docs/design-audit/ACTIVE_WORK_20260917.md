@@ -2,6 +2,21 @@
 
 This is a work ledger, not a completion or deployment receipt.
 
+## Latest priority: attached SEO specification
+
+User asked to publish first (done batch34), then start the attachment at
+`C:/Users/Windows_OS/.codex/attachments/683466eb-d09c-4bf4-acac-057a1b28f4b5/pasted-text.txt`.
+Stage A2/A3/A4/A6 source changes now integrated into middleware with19 unit
+tests,2 HTMLRewriter suites and app typecheck passing. Partial local build36
+session6673 uses publishedbatch34; no new live publication authorized/attempted.
+A1 edge cache and A5 bounded listing helpers have12 additional passing tests,
+but are NOT integrated or deployed. Read SEO_STAGE_A_PROGRESS_20260917.md,
+SEO_EDGE_CACHE_A1_20260917.md and SEO_LISTING_PAGINATION_PROPOSAL_20260917.md.
+Continue helper integration, fresh uploaded-record visibility before cache,
+categories routes/sitemap/listing data, then fullstageA preview and30URL p95.
+Do not confuse local helpers with completed stageA or stageB. New attachment's
+OCR requirement is not implemented by old PDF-bookmarks-only adapter.
+
 ## Production and source control
 
 - Production is now batch34, deployment `214d9565-f244-41d5-af51-e86309c463ce`.

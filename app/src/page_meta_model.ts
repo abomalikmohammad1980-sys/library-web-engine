@@ -19,13 +19,36 @@ export function loadedReaderPageMeta(path:string,title:string,author:string):Pag
  return pageMetaFor(path,{id:pathname.split('/').at(-1)!,title,author})
 }
 export const plainSeoText=(value:string)=>value.replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').trim()
+/** Keep complete words; never splice an Arabic word to satisfy the snippet budget. */
+export function truncateSeoDescription(value:string,maxLength=155):string{
+ const text=plainSeoText(value)
+ if(text.length<=maxLength)return text
+ const boundary=text.lastIndexOf(' ',maxLength)
+ return boundary<0?'':text.slice(0,boundary).trimEnd()
+}
+export function buildBookDescription(record:PublicSeoRecord):string{
+ const title=plainSeoText(record.title??'')
+ const author=plainSeoText(record.author??'')
+ const category=plainSeoText(record.category??'')
+ const year=record.deathYearHijri
+ const death=typeof year==='number'&&Number.isInteger(year)&&year>0?` (ت ${year} هـ)`:''
+ return truncateSeoDescription(`${title} — المؤلف: ${author}${death}.${category?` القسم: ${category}.`:''} اقرأ الكتاب كاملًا وتصفح فهرس محتوياته في الخِزانة.`)
+}
+const PUBLIC_PAGE_HEADINGS:Readonly<Record<string,string>>={
+ '/':'الخزانة', '/features':'ميزات الخِزانة', '/quran':'القرآن الكريم',
+ '/sunnah':'السنة النبوية', '/authors':'المؤلفون', '/browse':'تصفح الكتب', '/new-books':'جديد الكتب',
+}
+/** Static headings are independent of the longer search-result title. */
+export function publicPageHeading(path:string):string|undefined{
+ return PUBLIC_PAGE_HEADINGS[path.split(/[?#]/)[0]||'/']
+}
 export function pageMetaFor(path:string,record?:PublicSeoRecord):PageMeta{
  const canonicalPath=path.split(/[?#]/)[0]||'/'
  if(new URLSearchParams(path.split('?')[1]??'').has('create'))return{title:'إضافة مؤلف | الخِزانة',description:'إدارة بيانات مؤلف في الخِزانة.',robots:'noindex, follow'}
  const fixed=PUBLIC_PAGE_META[canonicalPath]
  if(fixed)return{title:fixed[0],description:fixed[1],canonicalPath,robots:'index, follow'}
  if(record?.name&&/^\/authors\//.test(canonicalPath))return{title:`${record.name}: سيرته وكتبه | الخِزانة`,description:plainSeoText(record.biography||`${record.name}${record.deathYearHijri?` (ت ${record.deathYearHijri} هـ)`:''}؛ سيرته وكتبه المتاحة في مكتبة الخِزانة.`).slice(0,220),canonicalPath,robots:'index, follow'}
- if(record?.title&&record.author&&/^\/books\//.test(canonicalPath))return{title:`${record.title} — ${record.author} | الخِزانة`,description:plainSeoText(`${record.title}، تأليف ${record.author}${record.deathYearHijri?` (ت ${record.deathYearHijri} هـ)`:''}${record.category?`، من كتب ${record.category}`:''}. اقرأ الكتاب وفهرس محتوياته في الخِزانة.`).slice(0,240),canonicalPath,robots:'index, follow'}
+ if(record?.title&&record.author&&/^\/books\//.test(canonicalPath))return{title:`${record.title} — ${record.author} | الخِزانة`,description:buildBookDescription(record),canonicalPath,robots:'index, follow'}
  return{title:'الخِزانة',description:'مكتبة الخِزانة للبحث والقراءة.',robots:'noindex, follow'}
 }
 export function seoShard(id:string):string{

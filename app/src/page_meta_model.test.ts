@@ -1,5 +1,47 @@
 import {expect,it} from 'vitest'
-import {pageMetaFor,seoShard,PUBLIC_PAGE_META} from './page_meta_model'
+import {readFileSync} from 'node:fs'
+import {pageMetaFor,seoShard,PUBLIC_PAGE_META,buildBookDescription,truncateSeoDescription,publicPageHeading} from './page_meta_model'
+it('uses safe labelled Arabic descriptions without case inflection or repeated section prefixes',()=>{
+ const description=buildBookDescription({id:'1',title:'كتاب السنة',author:'أبو موسى',deathYearHijri:581,category:'كتب السنة'})
+ expect(description).toBe('كتاب السنة — المؤلف: أبو موسى (ت 581 هـ). القسم: كتب السنة. اقرأ الكتاب كاملًا وتصفح فهرس محتوياته في الخِزانة.')
+ expect(buildBookDescription({id:'1',title:'<b>كتاب</b>',author:'أبي موسى'})).toBe('كتاب — المؤلف: أبي موسى. اقرأ الكتاب كاملًا وتصفح فهرس محتوياته في الخِزانة.')
+ expect(description).not.toMatch(/كتب كتب|تأليف أب[وي]/)
+})
+it('truncates at a complete word, including the exact 155-character boundary',()=>{
+ const prefix='أ'.repeat(150)
+ expect(truncateSeoDescription(`${prefix} كلمة المزيد`)).toBe(`${prefix} كلمة`)
+ expect(truncateSeoDescription(`${prefix} كلمات المزيد`)).toBe(prefix)
+ expect(truncateSeoDescription('أ'.repeat(156))).toBe('')
+ expect(truncateSeoDescription('سطر\n آخر')).toBe('سطر آخر')
+})
+it('keeps short static H1 headings separate from unchanged page titles',()=>{
+ const expected={'/':'الخزانة','/features':'ميزات الخِزانة','/quran':'القرآن الكريم','/sunnah':'السنة النبوية','/authors':'المؤلفون','/browse':'تصفح الكتب','/new-books':'جديد الكتب'}
+ for(const [path,heading] of Object.entries(expected)){
+  expect(publicPageHeading(path+'?page=2')).toBe(heading)
+  expect(pageMetaFor(path).title).toBe(PUBLIC_PAGE_META[path][0])
+ }
+ expect(publicPageHeading('/books/21633')).toBeUndefined()
+ expect(publicPageHeading('/unknown')).toBeUndefined()
+})
+it('all catalog book descriptions avoid repeated categories and inflected author templates',()=>{
+ const index=JSON.parse(readFileSync(new URL('../public/data/shamela-author-index.json',import.meta.url),'utf8'))
+ const catalog=JSON.parse(readFileSync(new URL('../public/data/shamela-catalog.snapshot.json',import.meta.url),'utf8'))
+ const authors=new Map<string,{name:string;deathYearHijri?:number}>()
+ for(const author of index.authors)for(const book of author.books)authors.set(String(book.sourceBookId),author)
+ let checked=0
+ for(const batch of catalog.batches)for(const book of batch.books){
+  const author=authors.get(String(book.bookId))
+  const record={id:String(book.bookId),title:book.catalog.title,author:author?.name??book.catalog.author,category:book.catalog.category,deathYearHijri:author?.deathYearHijri}
+  const description=pageMetaFor('/books/'+record.id,record).description
+  expect(description,record.id).not.toMatch(/كتب\s+كتب|تأليف\s+أب[وي]/)
+  expect(description.length,record.id).toBeLessThanOrEqual(155)
+  expect(description.length,record.id).toBeGreaterThan(0)
+  expect(description,record.id).toBe(description.trim())
+  checked++
+ }
+ expect(checked).toBe(catalog.bookCount)
+ expect(checked).toBeGreaterThan(0)
+})
 it('keeps the homepage brand consistent with its main heading',()=>{
  expect(pageMetaFor('/').title).toBe('الخزانة: المكتبة الإسلامية الذكية')
  expect(pageMetaFor('/').description).toContain('فهارس المحتويات')

@@ -50,6 +50,7 @@ test('real HTMLRewriter: public identity, canonical, private and missing routes,
   mf=new Miniflare({modules:true,script:compiled.outputFiles[0].text,compatibilityDate:'2026-05-22',serviceBindings:{ASSETS:async request=>{
    const path=new URL(request.url).pathname
    if(path==='/index.html')return new Response(shell, {headers:{'content-type':'text/html'}})
+   if(path==='/404.html')return new Response('<html><head><meta name="robots" content="noindex, follow"></head><body><h1>الصفحة غير موجودة</h1></body></html>',{headers:{'content-type':'text/html'}})
    if(/^\/data\/seo\/toc-\d{3}\.bin$/.test(path)){
     const data=await readFile(resolve(output,'.'+path)),range=/^bytes=(\d+)-(\d+)$/.exec(request.headers.get('range')??'');assert(range)
     const start=Number(range[1]),end=Number(range[2]);return new Response(data.subarray(start,end+1),{status:206,headers:{'content-range':`bytes ${start}-${end}/${data.length}`}})
@@ -69,7 +70,7 @@ test('real HTMLRewriter: public identity, canonical, private and missing routes,
    assert.match(html,/class="seo-page/)
    if(path==='/'){
     assert.equal(title,'الخزانة: المكتبة الإسلامية الذكية')
-    assert.match(html,/<h1>الخزانة: المكتبة الإسلامية الذكية<\/h1>/)
+    assert.match(html,/<h1>الخزانة<\/h1>/)
     assert.match(html,/"@type":"WebSite","name":"الخزانة"/)
     assert.doesNotMatch(html,/مرحبًا بك/)
     // Only the JavaScript-added, bounded boot state may hide SSR content.
@@ -88,7 +89,7 @@ test('real HTMLRewriter: public identity, canonical, private and missing routes,
    if(path==='/books/21633'&&process.env.SEO_TOC_DIR){assert.match(html,/فهرس المحتويات/);assert.match(html,/pageIndex=\d+/)}
   }
   assert.equal(titles.size,5)
-  for(const [path,status] of [['/books/999999999',404],['/settings',200],['/search?q=x',200]]){
+  for(const [path,status] of [['/books/999999999',404],['/authors/999999',404],['/this-does-not-exist-xyz',404],['/settings',200],['/me',200],['/library',200],['/shelves',200],['/notes',200],['/account/sign-in',200],['/search?q=x',200]]){
    const response=await mf.dispatchFetch('https://khzanah.com'+path),html=await response.text()
    assert.equal(response.status,status);assert.match(html,/noindex, follow/);assert.doesNotMatch(html,/rel="canonical"/)
   }
@@ -96,7 +97,7 @@ test('real HTMLRewriter: public identity, canonical, private and missing routes,
   assert.equal(preview.status,200);assert.match(preview.headers.get('x-robots-tag'),/noindex/);assert.equal(await preview.text(),'')
   const redirect=await mf.dispatchFetch('https://www.khzanah.com/books/21633?q=x',{redirect:'manual'})
   assert.equal(redirect.status,301);assert.equal(redirect.headers.get('location'),'https://khzanah.com/books/21633?q=x')
-  for(const [old,next] of [['/authors/20','/authors/000020'],['/books/410021633','/books/21633'],['/books/21633/','/books/21633']]){
+  for(const [old,next] of [['/authors/20','/authors/000020'],['/books/410021633','/books/21633'],['/books/21633/','/books/21633'],['/books/shamela-21633','/books/21633'],['/reader/410021633','/books/21633'],['/people/000020','/authors/000020'],['/author/20','/authors/000020']]){
    const response=await mf.dispatchFetch('https://khzanah.com'+old+'?pageIndex=4',{redirect:'manual'})
    assert.equal(response.status,301,old);assert.equal(response.headers.get('location'),'https://khzanah.com'+next+'?pageIndex=4')
   }

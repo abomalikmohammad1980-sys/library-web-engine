@@ -1,4 +1,5 @@
-import {PUBLIC_PAGE_META,pageMetaFor,seoShard,SEO_ORIGIN} from '../../app/src/page_meta_model.ts'
+import {PUBLIC_PAGE_META,pageMetaFor,publicPageHeading,seoShard,SEO_ORIGIN} from '../../app/src/page_meta_model.ts'
+import {httpRoutePolicy} from '../../app/src/http_route_policy.ts'
 import {canonicalizePath} from '../../app/src/path_location.ts'
 import {readSeoToc} from './_seo-toc.js'
 import {readPublicSeoToc} from './_seo-public-toc.js'
@@ -36,6 +37,17 @@ export async function onRequest(context){
   const headers=new Headers(response.headers);headers.set('X-Robots-Tag','noindex')
   return new Response(response.body,{status:response.status,statusText:response.statusText,headers})
  }
+ const route=httpRoutePolicy(path,url.search)
+ if(route.kind==='redirect'){
+  const target=new URL(route.path,url),headers=new Headers({location:target.href})
+  if(preview)headers.set('X-Robots-Tag','noindex')
+  return new Response(null,{status:301,headers})
+ }
+ if(route.kind==='not-found'){
+  const page=await env.ASSETS.fetch(new URL('/404.html',url)),headers=new Headers(page.headers)
+  headers.set('X-Robots-Tag','noindex, follow');headers.set('cache-control','no-store')
+  return new Response(request.method==='HEAD'?null:page.body,{status:404,headers})
+ }
  let record,status=200
  const canonicalPath=canonicalizePath(path)
  const match=/^\/(authors|books)\/(\d{1,12})$/.exec(canonicalPath)
@@ -47,7 +59,8 @@ export async function onRequest(context){
   const meta=status===404?{title:'الصفحة غير موجودة | الخِزانة',description:'لم يُعثر على الكتاب أو المؤلف المطلوب.',robots:'noindex, follow'}:pageMetaFor(path+url.search,record)
   const schema=[{'@context':'https://schema.org','@type':'BreadcrumbList',itemListElement:[{'@type':'ListItem',position:1,name:'الخِزانة',item:SEO_ORIGIN+'/'},...(path==='/'?[]:[{'@type':'ListItem',position:2,name:record?.title??record?.name??meta.title,item:SEO_ORIGIN+path}])]}]
   if(path==='/')schema.push({'@context':'https://schema.org','@type':'WebSite',name:'الخزانة',alternateName:'الخزانة: المكتبة الإسلامية الذكية',url:SEO_ORIGIN+'/',inLanguage:'ar'})
-  let body=`<main id="main-content" class="seo-page${path==='/'?' seo-page--home':''}"><h1>${escape(record?.title??record?.name??meta.title)}</h1><p>${escape(meta.description)}</p>`
+  const heading=status===404?meta.title:record?.title??record?.name??publicPageHeading(path)??meta.title
+  let body=`<main id="main-content" class="seo-page${path==='/'?' seo-page--home':''}"><h1>${escape(heading)}</h1><p>${escape(meta.description)}</p>`
   if(record?.title){
    body+=`<p>${record.authorId?`<a href="/authors/${escape(record.authorId)}">${escape(record.author)}</a>`:escape(record.author)}${record.deathYearHijri?` (ت ${record.deathYearHijri} هـ)`:''}</p><p>${escape(record.category)}</p><a href="/browse">تصفح الأقسام</a>`
    schema.push({'@context':'https://schema.org','@type':'Book',name:record.title,url:SEO_ORIGIN+path,author:{'@type':'Person',name:record.author,...(record.authorId?{url:SEO_ORIGIN+'/authors/'+record.authorId}:{})},genre:record.category,inLanguage:'ar'})

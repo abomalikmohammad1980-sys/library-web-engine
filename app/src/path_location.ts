@@ -2,6 +2,12 @@
 export function canonicalizePath(value:string):string{
  const [path,query]=value.split(/\?(.*)/s)
  let clean=path||'/'
+ const oldPerson=/^\/(?:people|author)\/(\d{1,6})\/?$/.exec(clean)
+ if(oldPerson)clean='/authors/'+oldPerson[1]!.padStart(6,'0')
+ const oldShamela=/^\/books\/shamela-(\d{1,12})\/?$/.exec(clean)
+ if(oldShamela)clean='/books/'+oldShamela[1]
+ const oldReader=/^\/reader\/(\d{9})\/?$/.exec(clean)
+ if(oldReader&&Number(oldReader[1])>410000000&&Number(oldReader[1])<411000000)clean='/books/'+String(Number(oldReader[1])-410000000)
  const legacyAuthor=/^\/authors\/(?:local(?::|%3a))?shamela-author-(\d{1,6})\/?$/i.exec(clean)
  if(legacyAuthor&&Number(legacyAuthor[1])>0)clean='/authors/'+legacyAuthor[1]!.padStart(6,'0')
  const author=/^\/authors\/(\d{1,6})\/?$/.exec(clean)
