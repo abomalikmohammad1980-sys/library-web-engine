@@ -26,6 +26,13 @@ Next continuation completedcategoriesSPA/server/sitemap andbookauthor edgecache;
 batch37is finalized localpreviewcandidate19999assets, notdeployed. SEO R2upload
 session50970 mustfinish then freshverify515objects beforepreviewdeployment.
 Previouscommit1348c20 nowpushed. No productionchange;30URLp95 notyetmeasured.
+Latest: batch37 actuallypreviewdeployed45c07822, full515objectreadback and18HTTP
+checks pass. Browsercategorynext/backverified. Actual30URLp95 FIRST2941.34ms,
+REPEAT1451.93ms:targetNOTmet. See SEO_BATCH37_PREVIEW_20260917.md, superseding
+above local-only/unmeasured notes. b70e927pushed. Productionstillbatch34.
+Next reduce sequentialvisibilityqueries andrequestlocal immutableR2rereads;
+do not weakenprivacyfences. IsolatedD1missingauthorreadtable/category/revision
+columns were completed; no productionmigration.
 Do not confuse local helpers with completed stageA or stageB. New attachment's
 OCR requirement is not implemented by old PDF-bookmarks-only adapter.
 
