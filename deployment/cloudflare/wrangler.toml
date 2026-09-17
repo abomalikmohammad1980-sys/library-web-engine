@@ -1,0 +1,37 @@
+name = "khezana"
+pages_build_output_dir = "./pages-dist"
+compatibility_date = "2026-08-09"
+
+[vars]
+ACCOUNT_ACCESS_DOMAIN = "https://divine-sunset-07f6.cloudflareaccess.com"
+ACCOUNT_ACCESS_AUD = "3fb803a3e316d831e3e0c900141ac05d043aab7fed52515458910231ccf53d03"
+HEADING_RELEASE_SHA256 = "cabacd972e590545e4450be4b364bc049a3da9f30ec2ff3d41dc70ef5d17332f"
+HEADING_DICTIONARY_GZIP_SHA256 = "56c0d0f86cf8697df85b745af45f78ca5c508251ee35f8151072edac2a87ffc0"
+HEADING_DICTIONARY_GZIP_BYTES = "3772850"
+
+[[r2_buckets]]
+binding = "LIBRARY_R2"
+bucket_name = "khzanah-library"
+
+[ai]
+binding = "AI"
+
+[[d1_databases]]
+binding = "VISITORS_DB"
+database_name = "khezana-visitors"
+database_id = "aeb2bf7d-bfc5-4ec1-9ef5-a81371efe800"
+migrations_dir = "./migrations"
+
+# Isolated, read-only heading-query experiment; production remains disabled.
+[env.preview]
+d1_databases = []
+
+[env.preview.vars]
+HEADING_RELEASE_SHA256 = "cabacd972e590545e4450be4b364bc049a3da9f30ec2ff3d41dc70ef5d17332f"
+HEADING_DICTIONARY_GZIP_SHA256 = "56c0d0f86cf8697df85b745af45f78ca5c508251ee35f8151072edac2a87ffc0"
+HEADING_DICTIONARY_GZIP_BYTES = "3772850"
+HEADING_QUERY_ENABLED = "1"
+
+[[env.preview.r2_buckets]]
+binding = "LIBRARY_R2"
+bucket_name = "khzanah-library"

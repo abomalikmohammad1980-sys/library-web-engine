@@ -172,11 +172,6 @@ export function textReflectionCss(run: EffectiveRun): string | null {
     "white-space:pre", "z-index:0"]);
 }
 
-function visibleRunText(run: EffectiveRun, text: string): string {
-  if (run.direction !== "rtl" || !/[{}]/.test(text)) return text;
-  return [...text].map(char => char === "{" ? "}" : char === "}" ? "{" : char).join("");
-}
-
 /** يحوّل الرن إلى Node (span أو a لرابطٍ تشعبي) — أو null للرنّ المخفي.
  *  الحواشي: رقم المرجع يُرفَع ويُربَط بموضع الحاشية. */
 export function runToNode(run: EffectiveRun): Node | null {
@@ -191,21 +186,23 @@ export function runToNode(run: EffectiveRun): Node | null {
     math.setAttribute("aria-label", text);
     inner.push(math);
   } else if (run.noteRef) {
-    inner.push(el("sup", {
+    const noteNumber = run.noteRef.custom
+      ? (run.noteRef.customMark ?? text)
+      : formatNumber(run.noteRef.fmt === "decimal" && run.direction === "rtl"
+        ? "hindiNumbers" : (run.noteRef.fmt ?? "decimal"), run.noteRef.num);
+    inner.push(el("span", {
       class: "note-ref",
-      // الهامش بصري فقط؛ إدخال محرف مسافة في النص كان يربك bidi ويلتصق
-      // بالأقواس العربية أو يغيّر النص المنسوخ.
-      style: css(["display:inline-block", "font-size:0.58em", "line-height:0", "margin-inline:0.12em", "direction:rtl", "unicode-bidi:isolate"]),
+      // الخط والحجم والرفع/الموضع موروثة من runCss على الأب. لا نضيف رفعًا
+      // ثانيًا إلى الرقم وحده فينفصل عن قوسي rStyle المؤلفين معه.
+      style: css(["display:inline", "margin:0", "padding:0", "direction:rtl", "unicode-bidi:isolate"]),
       "data-note": run.noteRef.kind === "endnote" ? "endnote" : "footnote",
       "data-note-id": run.noteRef.id ?? "",
-    }, run.noteRef.custom
-      ? (run.noteRef.customMark ?? text)
-      : formatNumber(run.noteRef.fmt ?? "decimal", run.noteRef.num)));
+    }, noteNumber));
   } else if (text) {
-    // Word يعرض الأقواس المعقوفة في القصة العربية بحسب جهة فتحها، بينما بعض
-    // المتصفحات لا تعكسها مع الخطوط العربية القديمة. نبدّل الرسم المرئي فقط؛
-    // النص الأصلي في النموذج والفهرس يبقى بلا تغيير.
-    inner.push(visibleRunText(run, text));
+    // Keep logical OOXML text intact. The browser's bidi algorithm mirrors
+    // bracket glyphs; swapping code points here mirrors them a second time
+    // and corrupts copied text, including braces split across Word runs.
+    inner.push(text);
   }
 
   if (inner.length === 0) return null;
@@ -217,7 +214,7 @@ export function runToNode(run: EffectiveRun): Node | null {
     ensureTextReflectionStyle();
     inner.push(el("span", {
       class: "run-reflection", style: reflectionStyle, "aria-hidden": "true",
-      "data-reflection-text": visibleRunText(run, text),
+      "data-reflection-text": text,
     }));
   }
   const span = el("span", { class: "run", style: css([cssText,

@@ -11,7 +11,7 @@ export function renderMarkdownPages(markdown: string, assets: MarkdownAsset[] = 
   const clean = DOMPurify.sanitize(String(rendered), {
     USE_PROFILES: { html: true },
     FORBID_TAGS: ['style', 'script', 'iframe', 'object', 'embed', 'form'],
-    FORBID_ATTR: ['style', 'srcdoc'],
+    FORBID_ATTR: ['style', 'srcdoc', 'srcset', 'sizes', 'ping', 'autofocus', 'formaction'],
   })
   const source = document.createElement('div')
   source.className = 'reader__markdown-document'
@@ -22,7 +22,7 @@ export function renderMarkdownPages(markdown: string, assets: MarkdownAsset[] = 
   const byPath = new Map(assets.map(asset => [normalizeAssetPath(asset.path), asset]))
   for (const image of source.querySelectorAll<HTMLImageElement>('img[src]')) {
     const src = image.getAttribute('src') ?? ''
-    if (!src || /^(?:[a-z]+:|\/|#)/i.test(src)) continue
+    if (!src || /^(?:[a-z]+:|\/|#)/i.test(src)) { image.removeAttribute('src'); continue }
     const asset = byPath.get(normalizeAssetPath(safeDecodeUri(src).split(/[?#]/, 1)[0] ?? ''))
     if (!asset) { image.classList.add('markdown-image--missing'); image.alt ||= 'صورة محلية غير مرفقة'; continue }
     const url = URL.createObjectURL(new Blob([new Uint8Array(asset.data).buffer], { type: asset.mimeType }))
@@ -77,7 +77,7 @@ function decorateTafsirAnchors(source: HTMLElement): void {
   }
 }
 
-function expandFootnotes(markdown: string): string {
+export function expandFootnotes(markdown: string): string {
   const notes = new Map<string, { number: number; body: string }>()
   const withoutDefinitions = markdown.replace(/^\[\^([^\]]+)\]:\s*(.+)$/gmu, (_whole, id: string, body: string) => {
     if (!notes.has(id)) notes.set(id, { number: notes.size + 1, body })
@@ -88,7 +88,7 @@ function expandFootnotes(markdown: string): string {
     return `<sup class="markdown-footnote-ref" id="md-footnote-ref-${safeId(id)}"><a href="#md-footnote-${safeId(id)}" aria-label="الحاشية ${note.number}">${note.number}</a></sup>`
   })
   if (!notes.size) return withReferences
-  const items = [...notes.entries()].map(([id, note]) => `<li id="md-footnote-${safeId(id)}">${note.body} <a class="markdown-footnote-back" href="#md-footnote-ref-${safeId(id)}" aria-label="العودة من الحاشية ${note.number}">↩</a></li>`).join('\n')
+  const items = [...notes.entries()].map(([id, note]) => `<li id="md-footnote-${safeId(id)}"><span class="markdown-footnote-number">(${note.number}) </span>${note.body} <a class="markdown-footnote-back" href="#md-footnote-ref-${safeId(id)}" aria-label="العودة من الحاشية ${note.number}">↩</a></li>`).join('\n')
   return `${withReferences}\n\n<section class="markdown-footnotes" aria-label="الحواشي"><hr><ol>${items}</ol></section>`
 }
 

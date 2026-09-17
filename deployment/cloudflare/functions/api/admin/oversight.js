@@ -1,0 +1,37 @@
+import {json,isSuperAdmin,trustedAccount,trustedMutation} from '../_account-contract.js'
+import {RESOURCES,snapshotSql,ownerSql,pagination,undoState,labels,activeAuthorBookSql} from '../_oversight.js'
+import {roleUndo} from '../_oversight-role.js'
+import {listUndoStates,eventSummary} from '../_oversight-list.js'
+export async function onRequestGet(context){
+ const actor=await trustedAccount(context);if(!isSuperAdmin(actor))return json({error:'super_admin_required'},403)
+ try{const url=new URL(context.request.url);if(!url.searchParams.has('limit'))url.searchParams.set('limit','30');const {page,limit,actor:filter}=pagination(url),db=context.env.VISITORS_DB;if(limit>30)return json({error:'invalid_oversight_page'},400)
+  const result=await db.prepare("SELECT e.*,COALESCE(a.display_name,'مشرف') AS actor_name,EXISTS(SELECT 1 FROM oversight_undos u WHERE u.event_id=e.id) AS undone,EXISTS(SELECT 1 FROM oversight_undos u WHERE u.undo_event_id=e.id) AS rollback FROM oversight_events e JOIN accounts a ON a.subject=e.actor_subject WHERE a.subject<>?4 AND (?1='' OR e.actor_subject=?1) ORDER BY e.id DESC LIMIT ?2 OFFSET ?3").bind(filter,limit+1,page*limit,actor.subject).all()
+  const rows=result.results??[],events=[],states=await listUndoStates(db,rows.slice(0,limit));for(const e of rows.slice(0,limit)){const state=states.get(e.id)??{reason:'verification_unavailable'};events.push({id:e.id,actorName:e.actor_name,actorSubject:e.actor_subject,entityType:e.entity_type,entityId:e.entity_id,action:e.rollback?'undo':e.action,createdAt:e.created_at,revision:e.revision,canUndo:!state.reason,undone:Boolean(e.undone),summary:eventSummary(e),before:e.before_json?JSON.parse(e.before_json):null,after:JSON.parse(e.after_json),...(state.reason?{unsupportedReason:state.reason}:{})})}
+  const counted=await db.prepare("SELECT COUNT(*) AS total FROM oversight_events e JOIN accounts a ON a.subject=e.actor_subject WHERE a.subject<>?2 AND (?1='' OR e.actor_subject=?1)").bind(filter,actor.subject).first()
+  return json({events,page,total:counted.total,hasMore:rows.length>limit,legacyReadOnly:true,unsupportedResources:[]})
+ }catch{return json({error:'oversight_unavailable'},503)}
+}
+async function body(request){if(!request.headers.get('content-type')?.includes('application/json')||!request.body)throw Error('body');const reader=request.body.getReader();let total=0;const chunks=[];try{for(;;){const {done,value}=await reader.read();if(done)break;total+=value.byteLength;if(total>4096)throw Error('body');chunks.push(value)}}catch(e){await reader.cancel();throw e}finally{reader.releaseLock()}const bytes=new Uint8Array(total);let offset=0;for(const chunk of chunks){bytes.set(chunk,offset);offset+=chunk.byteLength}return JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(bytes))}
+export async function onRequestPost(context){
+ if(!trustedMutation(context.request))return json({error:'cross_site_request_rejected'},403)
+ const actor=await trustedAccount(context);if(!isSuperAdmin(actor))return json({error:'super_admin_required'},403)
+ let input;try{input=await body(context.request)}catch{return json({error:'invalid_undo'},400)}
+ if(!input||Array.isArray(input)||Object.keys(input).some(k=>!['eventId','reason','expectedVersion'].includes(k))||!Number.isSafeInteger(input.eventId)||input.eventId<1||!Number.isSafeInteger(input.expectedVersion)||input.expectedVersion<1||input.expectedVersion>=2147483647||typeof input.reason!=='string'||!input.reason.trim()||input.reason.length>1000||/[\u0000-\u001f\u007f]/.test(input.reason))return json({error:'invalid_undo'},400)
+ const db=context.env.VISITORS_DB
+ try{const e=await db.prepare('SELECT * FROM oversight_events WHERE id=?').bind(input.eventId).first();if(!e)return json({error:'event_not_found'},404)
+  if(e.revision!==input.expectedVersion||await db.prepare('SELECT event_id FROM oversight_undos WHERE undo_event_id=?').bind(e.id).first())return json({error:'undo_conflict'},409)
+  const state=await undoState(db,e);if(state.reason)return json({error:'undo_conflict',reason:state.reason},409)
+  const d=state.d,before=e.before_json?JSON.parse(e.before_json):null,after=JSON.parse(e.after_json),next=e.revision+1
+  let target=before
+  if(!target){target={...after};if(e.entity_type==='central-author')target.hidden_at=new Date().toISOString();else if(e.entity_type==='author-override')target.disabled=1;else if(e.entity_type==='book-review'){target.visibility='private';target.review_status='approved';target.review_note='أُلغي النشر بقرار المالك'}else if(e.entity_type==='central-book'){target={title:null,author:null,category:null,visibility:'public',logically_deleted_at:null}}else return json({error:'undo_unsupported'},409)}
+  const whereExtra=e.entity_type==='book-review'&&e.action==='create'?' AND NOT EXISTS(SELECT 1 FROM central_book_overrides WHERE book_id=?)':e.entity_type==='central-author'&&e.action==='create'?' AND NOT '+activeAuthorBookSql:e.entity_type==='account-block'?" AND subject<>? AND EXISTS(SELECT 1 FROM accounts WHERE accounts.subject=account_blocks.subject AND role='user')":''
+  const plan=d.special?roleUndo(db,e,actor.subject,input.reason.trim()):{statements:[db.prepare('UPDATE '+d.table+' SET '+d.fields.map(f=>f+'=?').join(',')+','+d.rev+'=?,'+d.actor+'=?,updated_at=CURRENT_TIMESTAMP WHERE '+d.key+'=? AND '+d.rev+'=? AND '+snapshotSql(d)+'=? AND '+ownerSql+whereExtra+' AND NOT EXISTS(SELECT 1 FROM oversight_undos WHERE event_id=?)').bind(...d.fields.map(f=>target[f]??null),next,actor.subject,e.entity_id,e.revision,e.after_json,actor.subject,actor.subject,actor.subject,...(whereExtra?[e.entity_type==='account-block'?actor.subject:e.entity_id]:[]),e.id)],recordGuard:'changes()=1'}
+  const record=db.prepare('INSERT INTO oversight_undos(event_id,undo_event_id,actor_subject,reason) SELECT ?1,id,?2,?3 FROM oversight_events WHERE entity_type=?4 AND entity_id=?5 AND revision=?6 AND actor_subject=?2 AND '+plan.recordGuard).bind(e.id,actor.subject,input.reason.trim(),e.entity_type,e.entity_id,next)
+  const notify=db.prepare('INSERT INTO oversight_notifications(recipient_subject,undo_event_id,message,reason) SELECT ?1,undo_event_id,?2,reason FROM oversight_undos WHERE event_id=?3 AND actor_subject=?4').bind(e.actor_subject,'تراجع المالك عن عملية: '+(labels[e.entity_type]??'إدارية'),e.id,actor.subject)
+  const revoke=e.entity_type==='account-block'&&target.blocked===1?['account_sessions','account_access_sessions'].map(table=>db.prepare('DELETE FROM '+table+' WHERE subject=? AND EXISTS(SELECT 1 FROM oversight_undos WHERE event_id=?)').bind(e.entity_id,e.id)):[]
+  const receipt=db.prepare('INSERT INTO oversight_undo_receipts(event_id,complete) SELECT ?1,CASE WHEN EXISTS(SELECT 1 FROM oversight_undos u JOIN oversight_events e ON e.id=u.undo_event_id JOIN oversight_notifications n ON n.undo_event_id=e.id WHERE u.event_id=?1 AND u.actor_subject=?2 AND e.actor_subject=?2 AND e.entity_type=?3 AND e.entity_id=?4 AND e.revision=?5 AND n.recipient_subject=?6) THEN 1 ELSE 0 END').bind(e.id,actor.subject,e.entity_type,e.entity_id,next,e.actor_subject)
+  const results=await db.batch([...plan.statements,record,notify,...revoke,receipt]);if(Number(results[0]?.meta?.changes)!==1)return json({error:'undo_conflict'},409)
+  return json({ok:true,revision:next})
+ }catch{return json({error:'undo_conflict'},409)}
+}
+export const onRequest=()=>json({error:'method_not_allowed'},405,{allow:'GET, POST'})

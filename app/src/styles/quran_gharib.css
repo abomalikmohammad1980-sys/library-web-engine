@@ -1,0 +1,22 @@
+/* Use one locally bundled prose family for both the lemma and explanation.
+   Thmanyah lacks Quranic marks and splits a lemma across fallback families. */
+@font-face {
+  font-family: 'Khizana Gharib Prose';
+  src: url('/fonts/majalla.ttf') format('truetype');
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Khizana Gharib Prose';
+  src: url('/fonts/majallab.ttf') format('truetype');
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+}
+.quran-word-service-status .quran-gharib-entry {
+  font-family: 'Khizana Gharib Prose', serif;
+  font-size: 1.25rem;
+  font-weight: 400;
+  line-height: 1.65;
+}

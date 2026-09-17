@@ -1,0 +1,19 @@
+.published-manager { display: grid; gap: 1rem; }
+.published-manager h2 { display: flex; align-items: center; gap: .65rem; color: var(--brand-primary); }
+.published-manager__search { display: flex; align-items: center; gap: .65rem; padding: .5rem 1rem; border: 1px solid var(--border-default); border-radius: 1rem; background: var(--surface-card); }
+.published-manager__search input { inline-size: 100%; min-inline-size: 0; border: 0; background: transparent; color: inherit; padding: .65rem; font: inherit; }
+.published-manager__search:focus-within { outline: 2px solid var(--brand-primary); outline-offset: 2px; }
+.published-manager__toolbar, .published-manager nav { display: flex; flex-wrap: wrap; gap: .5rem; }
+.published-manager__toolbar .btn { display: inline-flex; align-items: center; gap: .5rem; }
+.published-manager__list { display: grid; gap: .65rem; }
+.published-manager__row { display: flex; flex-wrap: wrap; align-items: center; gap: .8rem; border: 1px solid var(--border-default); border-radius: 1rem; padding: 1rem; }
+.published-manager__row > input { inline-size: 1.2rem; block-size: 1.2rem; accent-color: var(--brand-primary); }
+.published-manager__identity { display: grid; gap: .2rem; flex: 1; min-inline-size: 9rem; overflow-wrap: anywhere; }
+.published-manager__identity small { color: var(--text-muted); }
+.published-manager .book-profile__admin-actions { display: flex; gap: .3rem; }
+.published-manager__icon { display: inline-flex; align-items: center; justify-content: center; inline-size: 44px; block-size: 44px; border: 1px solid var(--border-default); border-radius: .8rem; background: transparent; color: var(--text-body); cursor: pointer; transition: color .15s, background-color .15s; }
+.published-manager__icon:hover, .published-manager__icon:focus-visible { color: var(--brand-primary); background: color-mix(in srgb, var(--brand-primary) 10%, transparent); }
+.published-manager__icon--danger:hover, .published-manager__icon--danger:focus-visible { color: #b42318; background: color-mix(in srgb, #b42318 10%, transparent); }
+.published-manager__icon:disabled { opacity: .5; cursor: wait; }
+.published-manager__editor { flex-basis: 100%; min-inline-size: 0; }
+.published-manager [hidden] { display: none !important; }

@@ -6,7 +6,7 @@
  */
 @font-face {
   font-family: 'Thmanyah Sans';
-  src: url('/fonts/thmanyah/thmanyahsans-Light.otf') format('opentype');
+  src: url('/fonts/thmanyah/thmanyahsans-Light.woff2') format('woff2'), url('/fonts/thmanyah/thmanyahsans-Light.otf') format('opentype');
   font-weight: 300;
   font-style: normal;
   font-display: swap;
@@ -57,7 +57,7 @@
 
 @font-face {
   font-family: 'Thmanyah Sans';
-  src: url('/fonts/thmanyah/thmanyahsans-Regular.otf') format('opentype');
+  src: url('/fonts/thmanyah/thmanyahsans-Regular.woff2') format('woff2'), url('/fonts/thmanyah/thmanyahsans-Regular.otf') format('opentype');
   font-weight: 400;
   font-style: normal;
   font-display: swap;
@@ -65,7 +65,7 @@
 
 @font-face {
   font-family: 'Thmanyah Sans';
-  src: url('/fonts/thmanyah/thmanyahsans-Medium.otf') format('opentype');
+  src: url('/fonts/thmanyah/thmanyahsans-Medium.woff2') format('woff2'), url('/fonts/thmanyah/thmanyahsans-Medium.otf') format('opentype');
   font-weight: 500;
   font-style: normal;
   font-display: swap;
@@ -73,7 +73,7 @@
 
 @font-face {
   font-family: 'Thmanyah Sans';
-  src: url('/fonts/thmanyah/thmanyahsans-Bold.otf') format('opentype');
+  src: url('/fonts/thmanyah/thmanyahsans-Bold.woff2') format('woff2'), url('/fonts/thmanyah/thmanyahsans-Bold.otf') format('opentype');
   font-weight: 700;
   font-style: normal;
   font-display: swap;
@@ -81,7 +81,7 @@
 
 @font-face {
   font-family: 'Thmanyah Sans';
-  src: url('/fonts/thmanyah/thmanyahsans-Black.otf') format('opentype');
+  src: url('/fonts/thmanyah/thmanyahsans-Black.woff2') format('woff2'), url('/fonts/thmanyah/thmanyahsans-Black.otf') format('opentype');
   font-weight: 900;
   font-style: normal;
   font-display: swap;
@@ -89,7 +89,7 @@
 
 @font-face {
   font-family: 'Thmanyah Serif Display';
-  src: url('/fonts/thmanyah/thmanyahserifdisplay-Light.otf') format('opentype');
+  src: url('/fonts/thmanyah/thmanyahserifdisplay-Light.woff2') format('woff2'), url('/fonts/thmanyah/thmanyahserifdisplay-Light.otf') format('opentype');
   font-weight: 300;
   font-style: normal;
   font-display: swap;
@@ -97,7 +97,7 @@
 
 @font-face {
   font-family: 'Thmanyah Serif Display';
-  src: url('/fonts/thmanyah/thmanyahserifdisplay-Regular.otf') format('opentype');
+  src: url('/fonts/thmanyah/thmanyahserifdisplay-Regular.woff2') format('woff2'), url('/fonts/thmanyah/thmanyahserifdisplay-Regular.otf') format('opentype');
   font-weight: 400;
   font-style: normal;
   font-display: swap;
@@ -105,7 +105,7 @@
 
 @font-face {
   font-family: 'Thmanyah Serif Display';
-  src: url('/fonts/thmanyah/thmanyahserifdisplay-Medium.otf') format('opentype');
+  src: url('/fonts/thmanyah/thmanyahserifdisplay-Medium.woff2') format('woff2'), url('/fonts/thmanyah/thmanyahserifdisplay-Medium.otf') format('opentype');
   font-weight: 500;
   font-style: normal;
   font-display: swap;
@@ -113,7 +113,7 @@
 
 @font-face {
   font-family: 'Thmanyah Serif Display';
-  src: url('/fonts/thmanyah/thmanyahserifdisplay-Bold.otf') format('opentype');
+  src: url('/fonts/thmanyah/thmanyahserifdisplay-Bold.woff2') format('woff2'), url('/fonts/thmanyah/thmanyahserifdisplay-Bold.otf') format('opentype');
   font-weight: 700;
   font-style: normal;
   font-display: swap;
@@ -121,7 +121,7 @@
 
 @font-face {
   font-family: 'Thmanyah Serif Display';
-  src: url('/fonts/thmanyah/thmanyahserifdisplay-Black.otf') format('opentype');
+  src: url('/fonts/thmanyah/thmanyahserifdisplay-Black.woff2') format('woff2'), url('/fonts/thmanyah/thmanyahserifdisplay-Black.otf') format('opentype');
   font-weight: 900;
   font-style: normal;
   font-display: swap;
@@ -129,7 +129,7 @@
 
 @font-face {
   font-family: 'Thmanyah Serif Text';
-  src: url('/fonts/thmanyah/thmanyahseriftext-Light.otf') format('opentype');
+  src: url('/fonts/thmanyah/thmanyahseriftext-Light.woff2') format('woff2'), url('/fonts/thmanyah/thmanyahseriftext-Light.otf') format('opentype');
   font-weight: 300;
   font-style: normal;
   font-display: swap;
@@ -138,9 +138,7 @@
 /* متن الكتب النصية المستوردة (BOK/EPUB/TXT) فقط. */
 @font-face {
   font-family: 'Adwa Assalaf';
-  src:
-    url('/khizana/fonts/adwa-assalaf.ttf') format('truetype'),
-    url('/fonts/adwa-assalaf.ttf') format('truetype');
+  src: url('/fonts/adwa-assalaf.ttf') format('truetype');
   font-weight: 400;
   font-style: normal;
   font-display: swap;
@@ -148,7 +146,7 @@
 
 @font-face {
   font-family: 'Thmanyah Serif Text';
-  src: url('/fonts/thmanyah/thmanyahseriftext-Regular.otf') format('opentype');
+  src: url('/fonts/thmanyah/thmanyahseriftext-Regular.woff2') format('woff2'), url('/fonts/thmanyah/thmanyahseriftext-Regular.otf') format('opentype');
   font-weight: 400;
   font-style: normal;
   font-display: swap;
@@ -156,7 +154,7 @@
 
 @font-face {
   font-family: 'Thmanyah Serif Text';
-  src: url('/fonts/thmanyah/thmanyahseriftext-Medium.otf') format('opentype');
+  src: url('/fonts/thmanyah/thmanyahseriftext-Medium.woff2') format('woff2'), url('/fonts/thmanyah/thmanyahseriftext-Medium.otf') format('opentype');
   font-weight: 500;
   font-style: normal;
   font-display: swap;
@@ -164,7 +162,7 @@
 
 @font-face {
   font-family: 'Thmanyah Serif Text';
-  src: url('/fonts/thmanyah/thmanyahseriftext-Bold.otf') format('opentype');
+  src: url('/fonts/thmanyah/thmanyahseriftext-Bold.woff2') format('woff2'), url('/fonts/thmanyah/thmanyahseriftext-Bold.otf') format('opentype');
   font-weight: 700;
   font-style: normal;
   font-display: swap;
@@ -172,7 +170,7 @@
 
 @font-face {
   font-family: 'Thmanyah Serif Text';
-  src: url('/fonts/thmanyah/thmanyahseriftext-Black.otf') format('opentype');
+  src: url('/fonts/thmanyah/thmanyahseriftext-Black.woff2') format('woff2'), url('/fonts/thmanyah/thmanyahseriftext-Black.otf') format('opentype');
   font-weight: 900;
   font-style: normal;
   font-display: swap;
@@ -328,7 +326,8 @@
   --page-pad: clamp(16px, 4vw, 40px);
 }
 
-/* Reading theme — sepiya (معتمد — الجلسة 1) */
+/* Reading theme — sepia.  Keep the legacy selector during stored-value migration. */
+[data-reading-theme='sepia'],
 [data-reading-theme='sepiya'] {
   --read-bg: #F3E8D3;
   --read-surface: #F9F0DE;
@@ -362,14 +361,14 @@
  * الكتابة عليها. لا تشمل هذه القواعد ألوان صفحات Word/PDF نفسها. */
 [data-app-theme='light'] {
   --paper-bg: #f7f8f7; --paper-surface: #fff; --paper-surface-alt: #f3f5f4; --paper-surface-sunken: #edf1ef; --paper-chip: #e7ece9; --paper-segment: #dfe7e2; --paper-header-blur: rgba(255,255,255,.94);
-  --border-default: #d7ded9; --border-strong: #aebcb3; --border-faint: #e7ebe8; --ink-strong: #111612; --ink-default: #18201b; --ink-secondary: #303a33; --ink-body-2: #4b584f; --ink-muted: #58665d; --ink-faint: #657169; --ink-hint: #6d7971; --ink-placeholder: #768179; --text-body: var(--ink-default); --text-secondary: var(--ink-secondary); --text-muted: var(--ink-muted); --surface-page: var(--paper-bg); --surface-card: var(--paper-surface); --surface-card-alt: var(--paper-surface-alt);
+  --border-default: #d7ded9; --border-strong: #aebcb3; --border-faint: #e7ebe8; --ink-strong: #111612; --ink-default: #18201b; --ink-secondary: #303a33; --ink-body-2: #4b584f; --ink-muted: #58665d; --ink-faint: #657169; --ink-hint: #6d7971; --ink-placeholder: #768179; --text-body: var(--ink-default); --text-secondary: var(--ink-secondary); --text-muted: var(--ink-muted); --surface-page: var(--paper-bg); --surface-card: var(--paper-surface); --surface-card-alt: var(--paper-surface-alt); --read-bg: #f7f8f7; --read-surface: #fff; --read-ink: #18201b; --read-muted: #58665d; --read-border: #d7ded9; --read-accent: #2f6f54; --read-accent-soft: #e7f1eb;
 }
 [data-app-theme='dark'] {
   --brand-primary: #79cda5; --brand-primary-dark: #a9e6c8; --brand-primary-soft: #1d3a2d; --brand-selection: #315f4a;
   --paper-bg: #0d0f0d; --paper-surface: #171a17; --paper-surface-alt: #202420; --paper-surface-sunken: #121512; --paper-chip: #282e28; --paper-segment: #303730; --paper-header-blur: rgba(15,18,15,.96);
   --border-default: #3e473f; --border-strong: #667267; --border-faint: #2d332d; --ink-strong: #fafbf7; --ink-default: #edf0e9; --ink-secondary: #d8ded5; --ink-body-2: #c3cbc0; --ink-muted: #b2bcae; --ink-faint: #a5afa2; --ink-hint: #9da79a; --ink-placeholder: #929c90; --ink-disabled: #737d72;
-  --inverse-bg: #f1f4ee; --inverse-fg: #121512; --overlay-backdrop: rgba(0,0,0,.76); --text-body: var(--ink-default); --text-secondary: var(--ink-secondary); --text-muted: var(--ink-muted); --surface-page: var(--paper-bg); --surface-card: var(--paper-surface); --surface-card-alt: var(--paper-surface-alt); --accent: var(--brand-primary); --accent-soft: var(--brand-primary-soft); --shadow-soft: 0 6px 20px rgba(0,0,0,.28); --shadow-card: 0 8px 22px rgba(0,0,0,.42); --shadow-float: 0 12px 36px rgba(0,0,0,.38);
+  --inverse-bg: #f1f4ee; --inverse-fg: #121512; --overlay-backdrop: rgba(0,0,0,.76); --text-body: var(--ink-default); --text-secondary: var(--ink-secondary); --text-muted: var(--ink-muted); --surface-page: var(--paper-bg); --surface-card: var(--paper-surface); --surface-card-alt: var(--paper-surface-alt); --accent: var(--brand-primary); --accent-soft: var(--brand-primary-soft); --shadow-soft: 0 6px 20px rgba(0,0,0,.28); --shadow-card: 0 8px 22px rgba(0,0,0,.42); --shadow-float: 0 12px 36px rgba(0,0,0,.38); --read-bg: #0d0f0d; --read-surface: #171a17; --read-ink: #edf0e9; --read-muted: #b2bcae; --read-border: #3e473f; --read-accent: #79cda5; --read-accent-soft: #1d3a2d;
 }
 [data-app-theme='sepia'] {
-  --brand-primary: #76522c; --brand-primary-dark: #4f351d; --brand-primary-soft: #ead7b5; --brand-selection: #d9bd8c; --paper-bg: #e5d2b0; --paper-surface: #f5e7cf; --paper-surface-alt: #eeddbf; --paper-surface-sunken: #dfc7a0; --paper-chip: #d9bf93; --paper-segment: #ceb181; --paper-header-blur: rgba(241,224,193,.95); --border-default: #c8aa78; --border-strong: #a98450; --border-faint: #d9c099; --ink-strong: #2d2115; --ink-default: #3a2b1c; --ink-secondary: #503c28; --ink-body-2: #654d34; --ink-muted: #70583d; --ink-faint: #786149; --ink-hint: #7e674f; --ink-placeholder: #846e57; --text-body: var(--ink-default); --text-secondary: var(--ink-secondary); --text-muted: var(--ink-muted); --surface-page: var(--paper-bg); --surface-card: var(--paper-surface); --surface-card-alt: var(--paper-surface-alt); --accent: var(--brand-primary); --accent-soft: var(--brand-primary-soft);
+  --brand-primary: #76522c; --brand-primary-dark: #4f351d; --brand-primary-soft: #ead7b5; --brand-selection: #d9bd8c; --paper-bg: #e5d2b0; --paper-surface: #f5e7cf; --paper-surface-alt: #eeddbf; --paper-surface-sunken: #dfc7a0; --paper-chip: #d9bf93; --paper-segment: #ceb181; --paper-header-blur: rgba(241,224,193,.95); --border-default: #c8aa78; --border-strong: #a98450; --border-faint: #d9c099; --ink-strong: #2d2115; --ink-default: #3a2b1c; --ink-secondary: #503c28; --ink-body-2: #654d34; --ink-muted: #70583d; --ink-faint: #786149; --ink-hint: #7e674f; --ink-placeholder: #846e57; --text-body: var(--ink-default); --text-secondary: var(--ink-secondary); --text-muted: var(--ink-muted); --surface-page: var(--paper-bg); --surface-card: var(--paper-surface); --surface-card-alt: var(--paper-surface-alt); --accent: var(--brand-primary); --accent-soft: var(--brand-primary-soft); --read-bg: #e5d2b0; --read-surface: #f5e7cf; --read-ink: #3a2b1c; --read-muted: #70583d; --read-border: #c8aa78; --read-accent: #76522c; --read-accent-soft: #ead7b5;
 }

@@ -1,4 +1,5 @@
-import { deleteHighlight, deleteNote, getAnnotations, toggleBookmark, type HighlightColor } from '../annotation_store'
+import { type HighlightColor } from '../annotation_store'
+import {annotationEditorBoundary} from '../annotation_editor_boundary'
 import { pageContent } from '../components'
 import { listBooks } from '../engine/library_store'
 import { icon } from '../icons'
@@ -7,33 +8,40 @@ import { mountStateView, stateView } from '../state_view'
 import { quoteCardDataUrl } from '../quote_card'
 import { annotationsMarkdown } from '../annotations_markdown'
 import { downloadArtifact } from '../artifact_download'
-import { annotationActionLabel, annotationDeletePrompt, annotationTitleId } from '../annotation_accessibility'
+import { annotationActionLabel, annotationDeletePrompt, annotationTitleId, bindAnnotationAction } from '../annotation_accessibility'
+import { uiTemplateAttribute } from '../ui_template_binding'
 import { buildRichClipboard, writeRichClipboard } from '../rich_clipboard'
-import { dueAnnotationIds, makeReviewDueNow, nextReviewAt, recordReview, reviewTiming } from '../spaced_review'
 import { currentHashQuery, replaceHashQuery } from '../hash_query_state'
+import { silentSkeleton } from '../silent_skeleton'
+import { publicPageHero } from '../public_page_hero'
+import { bookOrdinal, compareBooksByAuthorDeath, type OrderableBook } from '../book_ordering'
+import { authorLink, categoryLink, effectiveBookCategory } from '../taxonomy_links'
 
 type Kind = 'all' | 'note' | 'highlight' | 'bookmark' | 'review' | 'scheduled'
 type ItemKind = 'note' | 'highlight' | 'bookmark'
-type NoteItem = { id: string; kind: ItemKind; bookId: string; pageIndex: number; text: string; createdAt: number; color?: HighlightColor }
+type NoteItem = { id: string; kind: ItemKind; bookId: string; pageIndex: number; text: string; createdAt: number; color?: HighlightColor; comment?:string }
 
 export function notesScreen(): HTMLElement {
-  const root = pageContent(h('section', { class: 'notes-hero', 'aria-labelledby': 'notes-title' }, h('p', { class: 'page-eyebrow' }, 'ذاكرة القراءة'), h('h1', { class: 'page-title', id: 'notes-title' }, 'علاماتك وملاحظاتك'), h('p', { class: 'page-sub' }, 'كل ما حفظته أثناء القراءة، مرتب وقابل للبحث والعودة إلى موضعه.')))
-  const mount = stateView({ kind: 'loading', icon: 'bookmark', title: 'جارٍ جمع ذاكرة القراءة' })
+  const root = pageContent(publicPageHero({ eyebrow: 'ذاكرة القراءة', title: 'علاماتك وملاحظاتك', titleId: 'notes-title', description: 'كل ما حفظته أثناء القراءة، مرتب وقابل للبحث والعودة إلى موضعه.', className: 'notes-hero' }))
+  const mount = h('section', { 'aria-busy': 'true' }, silentSkeleton('cards'))
   root.appendChild(mount); void hydrate(mount)
   return root
 }
 
 async function hydrate(root: HTMLElement): Promise<void> {
+  const editor=annotationEditorBoundary(root,()=>void hydrate(root))
+  const {deleteHighlight,deleteNote,getAnnotations,toggleBookmark,dueAnnotationIds,makeReviewDueNow,nextReviewAt,recordReview,reviewTiming}=editor
   try {
   const books = await listBooks()
-  const titles = new Map(books.map(book => [book.id, { title: book.title, author: book.author }]))
+  if(!editor.isCurrent())return
+  const titles = new Map(books.map(book => [book.id, book]))
   const search = h('input', { type: 'search', placeholder: 'ابحث في الملاحظات والنصوص والكتب…', 'aria-label': 'البحث في ذاكرة القراءة' }) as HTMLInputElement
   const tabs = h('div', { class: 'notes-tabs', role: 'group', 'aria-label': 'نوع المحفوظات' })
   const list = h('section', { class: 'notes-list', 'aria-live': 'polite' })
   const summary = h('strong', { class: 'notes-summary' })
   const clearSearch = h('button', { type: 'button', class: 'btn btn--ghost', hidden: true }, 'مسح البحث') as HTMLButtonElement
   const exportButton = h('button', { type: 'button', class: 'btn btn--secondary' }, icon('download', 16), 'تصدير Markdown') as HTMLButtonElement
-  exportButton.addEventListener('click', () => {
+  exportButton.addEventListener('click', () => { if(!editor.isCurrent())return;
     const state = getAnnotations()
     const count = state.notes.length + state.highlights.length + Object.values(state.bookmarks).reduce((sum, pages) => sum + pages.length, 0)
     if (!count) { toast('لا توجد محفوظات لتصديرها'); return }
@@ -44,45 +52,64 @@ async function hydrate(root: HTMLElement): Promise<void> {
   let active: Kind = requestedKind && ['all', 'review', 'scheduled', 'note', 'highlight', 'bookmark'].includes(requestedKind) ? requestedKind : 'all'
   search.value = currentHashQuery().get('q') ?? ''
   const render = (): void => {
+    if(!editor.isCurrent())return
     const state = getAnnotations()
     const items: NoteItem[] = [
       ...state.notes.map(note => ({ ...note, kind: 'note' as const })),
       ...state.highlights.map(highlight => ({ ...highlight, kind: 'highlight' as const })),
       ...Object.entries(state.bookmarks).flatMap(([bookId, pages]) => pages.map(pageIndex => ({ id: `${bookId}:${pageIndex}`, kind: 'bookmark' as const, bookId, pageIndex, text: `علامة الصفحة ${arabicNum(pageIndex + 1)}`, createdAt: 0 }))),
-    ].sort((a, b) => b.createdAt - a.createdAt)
+    ].sort((a, b) => b.createdAt - a.createdAt || compareBooksByAuthorDeath(
+      titles.get(a.bookId) ?? { id: a.bookId, title: a.text, author: '' } satisfies OrderableBook,
+      titles.get(b.bookId) ?? { id: b.bookId, title: b.text, author: '' } satisfies OrderableBook,
+    ))
     const query = search.value.trim().toLocaleLowerCase('ar')
     clearSearch.hidden = !query
     const due = dueAnnotationIds(items.filter(item => item.kind !== 'bookmark').map(item => item.id))
     const matchesKind = (item: NoteItem): boolean => active === 'all' || active === 'review' ? active !== 'review' || (item.kind !== 'bookmark' && due.has(item.id)) : active === 'scheduled' ? item.kind !== 'bookmark' && reviewTiming(item.id) === 'scheduled' : item.kind === active
-    const shown = items.filter(item => matchesKind(item) && (!query || `${item.text} ${titles.get(item.bookId)?.title ?? ''} ${titles.get(item.bookId)?.author ?? ''}`.toLocaleLowerCase('ar').includes(query)))
+    const shown = items.filter(item => matchesKind(item) && (!query || `${item.text} ${item.comment??''} ${titles.get(item.bookId)?.title ?? ''} ${titles.get(item.bookId)?.author ?? ''}`.toLocaleLowerCase('ar').includes(query)))
     summary.textContent = `${arabicNum(shown.length)} عنصرًا`
     list.replaceChildren()
     if (!shown.length) {
       const emptyTitle = active === 'review' ? 'لا توجد مراجعات مستحقة اليوم' : active === 'scheduled' ? 'لا توجد مراجعات قادمة مجدولة' : 'لم تحفظ شيئًا من هذا النوع بعد'
       list.appendChild(stateView({ kind: query ? 'no-results' : 'empty', icon: 'bookmark', title: query ? 'لا نتائج مطابقة' : emptyTitle, description: query ? 'جرّب عبارة أقصر أو غيّر نوع المحفوظات.' : active === 'review' || active === 'scheduled' ? 'راجع محفوظاتك، وستظهر المواعيد هنا بعد جدولة أول مراجعة.' : 'حدّد نصًا في القارئ أو أضف علامة، وسيظهر هنا.', compact: true })); return
     }
-    for (const item of shown) {
+    for (const [index, item] of shown.entries()) {
       const meta = titles.get(item.bookId)
+      const ordinal = bookOrdinal(index)
       const bookTitle = meta?.title ?? 'كتاب محفوظ'
       const label = kindLabel(item.kind)
       const titleId = annotationTitleId(item.id)
-      const open = h('a', { class: 'notes-card__open', href: `#/reader/${item.bookId}?pageIndex=${item.pageIndex}` }, h('span', null, meta?.title ?? 'كتاب محفوظ'), icon('arrow-back', 17))
+      const readerHref = `#/reader/${item.bookId}?pageIndex=${item.pageIndex}`
+      const open = h('a', { class: 'notes-card__open', href: readerHref }, h('span', meta?.title ? { dataset: { noTranslate: '' } } : null, meta?.title ?? 'كتاب محفوظ'), icon('arrow-back', 17))
       const remove = h('button', { class: 'notes-card__delete', type: 'button', 'aria-label': annotationActionLabel('delete', label, bookTitle, item.pageIndex + 1) }, icon('close', 16))
       const share = h('a', { class: 'notes-card__share', href: quoteCardDataUrl({ quote: item.text, book: bookTitle, ...(meta?.author ? { author: meta.author } : {}), page: item.pageIndex + 1 }), 'aria-label': annotationActionLabel('download', label, bookTitle, item.pageIndex + 1), title: 'بطاقة اقتباس' }, icon('download', 16)) as HTMLAnchorElement
       share.download = `alkhizana-quote-${item.pageIndex + 1}.svg`
       const copy = h('button', { class: 'notes-card__share', type: 'button', 'aria-label': annotationActionLabel('copy', label, bookTitle, item.pageIndex + 1), title: 'نسخ موثّق' }, icon('copy', 16))
-      copy.addEventListener('click', () => {
+      bindAnnotationAction(remove, 'delete', label, bookTitle, item.pageIndex + 1)
+      bindAnnotationAction(share, 'download', label, bookTitle, item.pageIndex + 1)
+      bindAnnotationAction(copy, 'copy', label, bookTitle, item.pageIndex + 1)
+      copy.addEventListener('click', () => { if(!editor.isCurrent())return;
         const source = [`${bookTitle} (الورقة ${item.pageIndex + 1})`, meta?.author].filter(Boolean).join(' — ')
         void writeRichClipboard(buildRichClipboard(item.text, source)).then(() => toast('نُسخت الإحالة الموثقة')).catch(() => toast('تعذّر النسخ إلى الحافظة'))
       })
-      remove.addEventListener('click', () => {
-        if (!confirm(annotationDeletePrompt(label, item.pageIndex + 1, bookTitle))) return
+      remove.addEventListener('click', () => { if(!editor.isCurrent())return;
+        if (!confirm(annotationDeletePrompt(label, item.pageIndex + 1, bookTitle, document.documentElement.lang)) || !editor.isCurrent()) return
         if (item.kind === 'note') deleteNote(item.id)
         else if (item.kind === 'highlight') deleteHighlight(item.id)
         else toggleBookmark(item.bookId, item.pageIndex)
         toast('حُذف العنصر'); render()
       })
-      const card = h('article', { class: 'notes-card', 'aria-labelledby': titleId }, h('div', { class: 'notes-card__head' }, h('span', { class: `notes-kind notes-kind--${item.kind}` }, label), h('span', null, `صفحة ${arabicNum(item.pageIndex + 1)}`)), h('p', { class: 'notes-card__text', id: titleId }, item.text), h('div', { class: 'notes-card__foot' }, h('span', null, meta?.author ?? ''), open, item.kind === 'bookmark' ? null : copy, item.kind === 'bookmark' ? null : share, remove))
+      const card = h('article', { class: 'notes-card', style: 'position:relative', 'aria-labelledby': titleId, 'aria-label': `${ordinal.label}: ${bookTitle}` },
+        h('a', { class: 'notes-card__surface', href: readerHref, style: 'position:absolute;inset:0;z-index:1', 'aria-label': `افتح ${bookTitle}` }),
+        h('div', { class: 'notes-card__head', style: 'position:relative;z-index:2;pointer-events:none' }, h('span', { class: 'book-card__ordinal', 'aria-hidden': 'true' }, arabicNum(ordinal.number)), h('span', { class: `notes-kind notes-kind--${item.kind}` }, label), h('span', null, `صفحة ${arabicNum(item.pageIndex + 1)}`)),
+        h('p', { class: 'notes-card__text', id: titleId, dataset: { noTranslate: '' }, style: 'position:relative;z-index:2;pointer-events:none' }, item.text),
+        ...(item.comment?[h('p',{class:'notes-card__comment',dataset:{noTranslate:''}},item.comment)]:[]),
+        h('div', { class: 'notes-card__foot', style: 'position:relative;z-index:2' },
+          meta ? authorLink(meta.author, 'notes-card__author', meta.authorId) : null,
+          meta ? h('span', { dataset: { noTranslate: '' } }, categoryLink(effectiveBookCategory(meta), 'notes-card__category')) : null,
+          open, item.kind === 'bookmark' ? null : copy, item.kind === 'bookmark' ? null : share, remove))
+      uiTemplateAttribute(card, 'aria-label', 'afecb05314ef7e20', {p1:ordinal.number,p2:bookTitle})
+      uiTemplateAttribute(card.querySelector('.notes-card__surface')!, 'aria-label', '8353b16eaeab196c', {p1:bookTitle})
       const nextDue = item.kind === 'bookmark' ? null : nextReviewAt(item.id)
       if (nextDue !== null && active !== 'review') {
         const status = reviewTiming(item.id) === 'due' ? 'المراجعة مستحقة الآن' : `المراجعة القادمة: ${new Intl.DateTimeFormat('ar', { dateStyle: 'medium' }).format(nextDue)}`
@@ -91,13 +118,16 @@ async function hydrate(root: HTMLElement): Promise<void> {
       if (active === 'review' && item.kind !== 'bookmark') {
         const remembered = h('button', { type: 'button', class: 'btn btn--primary', 'aria-label': annotationActionLabel('remembered', label, bookTitle, item.pageIndex + 1) }, 'تذكرت')
         const again = h('button', { type: 'button', class: 'btn btn--secondary', 'aria-label': annotationActionLabel('again', label, bookTitle, item.pageIndex + 1) }, 'راجع قريبًا')
-        remembered.addEventListener('click', () => { recordReview(item.id, 'remembered'); toast('حُددت المراجعة التالية'); render() })
-        again.addEventListener('click', () => { recordReview(item.id, 'again'); toast('ستعود الفائدة غدًا'); render() })
+        bindAnnotationAction(remembered, 'remembered', label, bookTitle, item.pageIndex + 1)
+        bindAnnotationAction(again, 'again', label, bookTitle, item.pageIndex + 1)
+        remembered.addEventListener('click', () => { if(!editor.isCurrent())return; recordReview(item.id, 'remembered'); toast('حُددت المراجعة التالية'); render() })
+        again.addEventListener('click', () => { if(!editor.isCurrent())return; recordReview(item.id, 'again'); toast('ستعود الفائدة غدًا'); render() })
         card.appendChild(h('div', { class: 'notes-card__review-actions' }, remembered, again))
       }
       if (active === 'scheduled' && item.kind !== 'bookmark') {
         const dueToday = h('button', { type: 'button', class: 'btn btn--secondary', 'aria-label': annotationActionLabel('dueNow', label, bookTitle, item.pageIndex + 1) }, 'راجع اليوم')
-        dueToday.addEventListener('click', () => { if (makeReviewDueNow(item.id)) { toast('نُقلت الفائدة إلى مراجعة اليوم'); render() } })
+        bindAnnotationAction(dueToday, 'dueNow', label, bookTitle, item.pageIndex + 1)
+        dueToday.addEventListener('click', () => { if(!editor.isCurrent())return; if (makeReviewDueNow(item.id)) { toast('نُقلت الفائدة إلى مراجعة اليوم'); render() } })
         card.appendChild(h('div', { class: 'notes-card__review-actions' }, dueToday))
       }
       if (item.color) card.dataset.highlightColor = item.color
@@ -107,15 +137,17 @@ async function hydrate(root: HTMLElement): Promise<void> {
   for (const [id, label] of [['all', 'الكل'], ['review', 'مراجعة اليوم'], ['scheduled', 'مراجعات قادمة'], ['note', 'ملاحظات'], ['highlight', 'تظليلات'], ['bookmark', 'علامات']] as const) {
     const button = h('button', { type: 'button' }, label)
     button.setAttribute('aria-pressed', String(id === active))
-    button.addEventListener('click', () => { active = id; replaceHashQuery({ kind: id === 'all' ? null : id }); tabs.querySelectorAll('button').forEach(node => node.setAttribute('aria-pressed', String(node === button))); render() })
+    button.addEventListener('click', () => { if(!editor.isCurrent())return; active = id; replaceHashQuery({ kind: id === 'all' ? null : id }); tabs.querySelectorAll('button').forEach(node => node.setAttribute('aria-pressed', String(node === button))); render() })
     tabs.appendChild(button)
   }
-  search.addEventListener('input', () => { replaceHashQuery({ q: search.value.trim() || null }); render() })
-  clearSearch.addEventListener('click', () => { search.value = ''; replaceHashQuery({ q: null }); render(); search.focus() })
-  root.className = 'notes-workspace'; root.removeAttribute('role')
+  search.addEventListener('input', () => { if(!editor.isCurrent())return; replaceHashQuery({ q: search.value.trim() || null }); render() })
+  clearSearch.addEventListener('click', () => { if(!editor.isCurrent())return; search.value = ''; replaceHashQuery({ q: null }); render(); search.focus() })
+  root.className = 'notes-workspace'; root.removeAttribute('role'); root.removeAttribute('aria-busy')
   root.replaceChildren(h('div', { class: 'notes-controls' }, h('div', { class: 'notes-search' }, icon('search', 18), search), tabs, summary, clearSearch, exportButton), list)
   render()
   } catch {
+    if(!editor.isCurrent())return
+    root.removeAttribute('aria-busy')
     mountStateView(root, { kind: 'error', title: 'تعذّر جمع ذاكرة القراءة', description: 'محفوظاتك لم تتغير. أعد المحاولة.', actionLabel: 'إعادة المحاولة', onAction: () => void hydrate(root) })
   }
 }

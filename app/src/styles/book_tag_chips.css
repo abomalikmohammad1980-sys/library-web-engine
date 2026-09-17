@@ -1,0 +1,6 @@
+.book-tag-chips{display:grid;gap:.55rem;min-width:0}
+.book-tag-chips__list{display:flex;flex-wrap:wrap;gap:.4rem}
+.book-tag-chips__tag{display:inline-flex;align-items:center;gap:.35rem;max-width:100%;border:1px solid var(--border,#d8cfbb);border-radius:1rem;padding:.2rem .65rem;background:var(--surface,#f8f6ef);color:var(--ink,#244f43)}
+.book-tag-chips__tag>span{overflow-wrap:anywhere}
+.book-tag-chips__tag button{border:0;background:transparent;color:inherit;font-size:1.25rem;min-width:1.7rem;cursor:pointer}
+.book-tag-chips__tag button:focus-visible{outline:2px solid currentColor;border-radius:.3rem}

@@ -1,8 +1,27 @@
-export interface EditionBook { id: string; title: string; author: string; publisher?: string; edition?: string; investigator?: string; publicationYearHijri?: number }
-export interface EditionGroup { workTitle: string; books: EditionBook[] }
-export function normalizeWorkTitle(title: string): string { return title.normalize('NFKC').replace(/[\u064B-\u065F\u0670ـ]/g, '').replace(/[()[\]{}«»"'،,:؛.!؟/_-]+/g, ' ').replace(/\s+/g, ' ').trim().toLocaleLowerCase('ar') }
-export function groupBookEditions(books: readonly EditionBook[]): EditionGroup[] {
-  const groups = new Map<string, EditionBook[]>()
-  for (const book of books) { const key = normalizeWorkTitle(book.title); if (!key) continue; groups.set(key, [...(groups.get(key) ?? []), book]) }
-  return [...groups.values()].filter(group => group.length > 1).map(group => ({ workTitle: group[0]!.title, books: [...group].sort((a, b) => (b.publicationYearHijri ?? 0) - (a.publicationYearHijri ?? 0) || a.title.localeCompare(b.title, 'ar')) })).sort((a, b) => a.workTitle.localeCompare(b.workTitle, 'ar'))
-}
+import { compareBooksByAuthorDeath, type OrderableBook } from './book_ordering'
+import type { StoredBook } from './engine/library_store'
+
+export interface EditionBook extends OrderableBook { authorId?:string; category?:string; categoryOverride?:StoredBook['categoryOverride']; publisher?:string; edition?:string; investigator?:string; publicationYearHijri?:number; printSource?:string; sourceCitation?:string; volumeCount?:number; physicalPageCount?:number; readerPageCount?:number; sourceFormat?:string; mimeType?:string; pdfData?:Uint8Array; extractedText?:string; editionMetadataEvidence?:ReadonlyArray<{field:string}> }
+export interface EditionGroup { workTitle:string; author:string; books:EditionBook[] }
+export interface EditionDifference { key:string; label:string; values:[string,string]; different:boolean; missing?:[boolean,boolean] }
+export interface TextComparison { available:boolean; reason?:string; identical?:boolean; left?:{snippet:string;offset:number}; right?:{snippet:string;offset:number} }
+const marks=/[\u064B-\u065F\u0670ـ]/gu
+const normalize=(value:unknown)=>String(value??'').normalize('NFKC').replace(marks,'').replace(/[()[\]{}«»"'،,:؛.!؟/_-]+/gu,' ').replace(/\s+/gu,' ').trim().toLocaleLowerCase('ar')
+export const normalizeWorkTitle=normalize
+export function baseWorkTitle(title:string):string{const normalized=title.normalize('NFKC').trim(),match=/^(.*?)\s+[\-–—]\s+(?:(?:ط|ت)(?=\s|$)|طبعة(?=\s|$)|تحقيق(?=\s|$)).+$/u.exec(normalized);return(match?.[1]??normalized).trim()}
+export const normalizeAuthorName=normalize
+const unknownAuthor=(value:unknown)=>!value||/^(?:غير معروف|مجهول|بلا مؤلف|دون مؤلف)$/u.test(normalize(value))
+const authorKey=(book:EditionBook)=>book.authorId?.trim()?`id:${book.authorId.trim()}`:unknownAuthor(book.author)?'':`name:${normalizeAuthorName(book.author)}`
+// A year alone is not edition evidence: some imported catalogues use this field
+// for an author's death year. Require an explicit print/edition attribute and
+// use the year only to distinguish otherwise evidenced editions.
+const evidence=(book:EditionBook)=>{const field=(name:string,value:unknown)=>{const normalized=normalize(value);return normalized?`${name}:${normalized}`:''},strong=[field('edition',book.edition),field('publisher',book.publisher),field('investigator',book.investigator),field('printSource',book.printSource)].filter(Boolean);const volumes=Number.isFinite(book.volumeCount)&&Number(book.volumeCount)>0?'volumes:'+Number(book.volumeCount):'';const pages=Number.isFinite(book.physicalPageCount)&&Number(book.physicalPageCount)>0?'pages:'+Number(book.physicalPageCount):'';const explicitYear=book.editionMetadataEvidence?.some(item=>item.field==='publicationYearHijri')?field('year',book.publicationYearHijri):'';return strong.length||volumes||pages?[...strong,volumes,pages,explicitYear].filter(Boolean):[]}
+export const editionSignature=(book:EditionBook)=>evidence(book).join('\0')
+
+export function groupBookEditions(books:readonly EditionBook[]):EditionGroup[]{const works=new Map<string,EditionBook[]>();for(const book of books){const title=normalizeWorkTitle(baseWorkTitle(book.title)),author=authorKey(book);if(!title||!author||!evidence(book).length)continue;const key=`${title}\0${author}`,items=works.get(key)??[];items.push(book);works.set(key,items)}const groups:EditionGroup[]=[];for(const items of works.values()){const candidates=[...new Map(items.map(book=>[editionSignature(book),book])).values()].sort((a,b)=>evidence(b).length-evidence(a).length);const unique:EditionBook[]=[];for(const book of candidates){const tokens=evidence(book);if(unique.some(existing=>{const known=new Set(evidence(existing));return tokens.every(token=>known.has(token))}))continue;unique.push(book)}if(unique.length<2)continue;unique.sort((a,b)=>(b.publicationYearHijri??0)-(a.publicationYearHijri??0)||a.title.localeCompare(b.title,'ar'));groups.push({workTitle:baseWorkTitle(unique[0]!.title),author:unique[0]!.author,books:unique})}return groups.sort((a,b)=>compareBooksByAuthorDeath(a.books[0]!,b.books[0]!))}
+
+const shown=(value:unknown)=>value==null||value===''?'غير متاح':String(value)
+export function editionDifferences(left:EditionBook,right:EditionBook):EditionDifference[]{const pageCount=(book:EditionBook)=>book.physicalPageCount??book.readerPageCount,format=(book:EditionBook)=>book.sourceFormat??book.mimeType,rows:Array<[string,string,unknown,unknown]>=[['publisher','الناشر',left.publisher,right.publisher],['investigator','المحقق',left.investigator,right.investigator],['edition','الطبعة',left.edition,right.edition],['year','السنة',left.publicationYearHijri,right.publicationYearHijri],['volumes','الأجزاء',left.volumeCount,right.volumeCount],['pages','الصفحات',pageCount(left),pageCount(right)],['format','نوع الأصل',format(left),format(right)],['pdf','توفر PDF',Boolean(left.pdfData)||left.sourceFormat==='pdf'?'متوفر':'غير متوفر',Boolean(right.pdfData)||right.sourceFormat==='pdf'?'متوفر':'غير متوفر'],['quality','جودة المصدر',left.printSource??left.sourceCitation??'غير موثقة',right.printSource??right.sourceCitation??'غير موثقة']];return rows.map(([key,label,a,b])=>({key,label,values:[shown(a),shown(b)],different:normalize(shown(a))!==normalize(shown(b)),missing:[a==null||a==='',b==null||b==='']}))}
+export function compareEditionTexts(left:EditionBook,right:EditionBook):TextComparison{const a=left.extractedText?.trim(),b=right.extractedText?.trim();if(!a||!b)return{available:false,reason:!a&&!b?'لا يتوفر نص مستخرج في الطبعتين.':!a?'لا يتوفر نص مستخرج في الطبعة الأولى.':'لا يتوفر نص مستخرج في الطبعة الثانية.'};let offset=0;while(offset<a.length&&offset<b.length&&a[offset]===b[offset])offset++;if(offset===a.length&&offset===b.length)return{available:true,identical:true,left:{snippet:'النصان المستخرجان متطابقان.',offset},right:{snippet:'النصان المستخرجان متطابقان.',offset}};const start=Math.max(0,offset-70),endA=Math.min(a.length,offset+150),endB=Math.min(b.length,offset+150);return{available:true,left:{snippet:a.slice(start,endA),offset},right:{snippet:b.slice(start,endB),offset}}}
+
+

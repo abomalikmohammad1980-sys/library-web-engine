@@ -16,7 +16,20 @@ html {
   -webkit-text-size-adjust: 100%;
 }
 
-.a11y-reduce-motion *, .a11y-reduce-motion *::before, .a11y-reduce-motion *::after { scroll-behavior: auto !important; animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; }
+.a11y-reduce-motion *, .a11y-reduce-motion *::before, .a11y-reduce-motion *::after {
+  scroll-behavior: auto !important;
+  animation: none !important;
+  transition: none !important;
+}
+
+/* Respect the operating-system preference even before settings hydrate. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    animation: none !important;
+    transition: none !important;
+  }
+}
 .a11y-high-contrast { --border-default: #534a3d; --ink-muted: #463f35; --read-border: #51483a; --brand-primary: #075b45; --brand-primary-dark: #003f30; }
 [data-app-theme='dark'].a11y-high-contrast { --border-default: #aeb9af; --ink-muted: #e1e7de; --read-border: #aeb9af; --brand-primary: #9be5bf; --brand-primary-dark: #d2f6e3; }
 [data-app-theme='light'].a11y-high-contrast { --border-default: #303833; --ink-muted: #29322c; --read-border: #303833; --brand-primary: #004f3b; --brand-primary-dark: #003528; }
@@ -38,6 +51,16 @@ body {
   background-attachment: fixed;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+}
+
+html[data-site-language='ckb'] {
+  --font-ui: 'Noto Sans Arabic', 'Segoe UI', Tahoma, Arial, sans-serif;
+  --font-serif-display: 'Noto Sans Arabic', 'Segoe UI', Tahoma, Arial, sans-serif;
+}
+
+html[data-site-language='ku'] {
+  --font-ui: 'Noto Sans', 'Segoe UI', Arial, sans-serif;
+  --font-serif-display: 'Noto Sans', 'Segoe UI', Arial, sans-serif;
 }
 
 [data-app-theme='light'] body { background: var(--paper-bg); }

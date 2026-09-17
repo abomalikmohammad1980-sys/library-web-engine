@@ -27,17 +27,19 @@ function randomSessionId(): string {
 
 /** يعيد ضيف الجلسة الحالي. حقن Storage يجعل العقد قابلًا للاختبار والعمل في SSR. */
 export function guestSessionIdentity(
-  storage: Pick<Storage, 'getItem' | 'setItem'> | null = typeof sessionStorage === 'undefined' ? null : sessionStorage,
+  storage: Pick<Storage, 'getItem' | 'setItem'> | null = safeSessionStorage(),
   createId: () => string = randomSessionId,
 ): SessionIdentity {
-  const stored = storage?.getItem(GUEST_SESSION_KEY)
+  let stored:string|null|undefined
+  try{stored=storage?.getItem(GUEST_SESSION_KEY)}catch{storage=null}
   if (stored) return { kind: 'guest', sessionId: stored }
   if (!storage && memoryGuestId) return { kind: 'guest', sessionId: memoryGuestId }
-  const sessionId = createId()
-  if (storage) storage.setItem(GUEST_SESSION_KEY, sessionId)
+  const sessionId = memoryGuestId ?? createId()
+  if (storage) {try{storage.setItem(GUEST_SESSION_KEY, sessionId)}catch{memoryGuestId=sessionId}}
   else memoryGuestId = sessionId
   return { kind: 'guest', sessionId }
 }
+function safeSessionStorage():Storage|null{try{return typeof sessionStorage==='undefined'?null:sessionStorage}catch{return null}}
 
 /** مفتاح نطاقٍ للبيانات المؤقتة في العميل؛ ليس تفويضًا ولا بديلًا لفحص الخادم. */
 export function identityScope(identity: SessionIdentity): string {

@@ -36,6 +36,16 @@ export interface BuildContext {
   compatibilityMode: number;
   numberingState: Map<string, number>;
   numbering: DocumentModelV0["numbering"];
+  cooperate: (force?: boolean) => Promise<void>;
+}
+
+export class SceneBuildLimitError extends Error {
+  readonly code: "aborted" | "timeout";
+  constructor(code: "aborted" | "timeout") {
+    super(code === "aborted" ? "scene_build_aborted" : "scene_build_timeout");
+    this.name = "SceneBuildLimitError";
+    this.code = code;
+  }
 }
 
 interface ParagraphPageOwner { pageIndex: number; yTwips: number }
@@ -95,6 +105,22 @@ export async function buildScene(
   provider: FontProvider,
   opts: BuildOptions = {},
 ): Promise<SceneDocument> {
+  const startedAt = performance.now();
+  const budgetMs = Math.max(1, opts.cooperativeBudgetMs ?? 16);
+  const maxElapsedMs = opts.maxElapsedMs == null
+    ? Number.POSITIVE_INFINITY : Math.max(1, opts.maxElapsedMs);
+  const yieldControl = opts.yieldControl ?? (() => new Promise<void>(resolve => setTimeout(resolve, 0)));
+  let lastYieldAt = startedAt;
+  const cooperate = async (force = false): Promise<void> => {
+    if (opts.signal?.aborted) throw new SceneBuildLimitError("aborted");
+    const now = performance.now();
+    if (now - startedAt > maxElapsedMs) throw new SceneBuildLimitError("timeout");
+    if (!force && now - lastYieldAt < budgetMs) return;
+    await yieldControl();
+    lastYieldAt = performance.now();
+    if (opts.signal?.aborted) throw new SceneBuildLimitError("aborted");
+    if (lastYieldAt - startedAt > maxElapsedMs) throw new SceneBuildLimitError("timeout");
+  };
   const ctx: BuildContext = {
     shaper: new Shaper(),
     provider,
@@ -106,6 +132,7 @@ export async function buildScene(
     compatibilityMode: model.compatibilityMode,
     numberingState: new Map(),
     numbering: model.numbering ?? new Map(),
+    cooperate,
   };
   const maxPages = Math.max(1, Math.floor(opts.maxPages ?? 2000));
 
@@ -182,7 +209,7 @@ export async function buildScene(
     prevContextualSpacing = false;
     // عرض كل صفحة حال اكتمالها + سماح للمتصفح بالرسم
     opts.onPage?.(pg, { pages: [pg], fonts: ctx.fonts });
-    await new Promise((r) => setTimeout(r, 0));
+    await cooperate(true);
     return pg;
   };
 
@@ -201,6 +228,7 @@ export async function buildScene(
   const pageWraps = new Map<number, SquareWrapExclusion[]>();
   const nextFlowParagraph = nextRenderableParagraphIndexes(model.paragraphs);
   pagination: for (let paragraphIndex = 0; paragraphIndex < model.paragraphs.length; paragraphIndex++) {
+    await cooperate();
     const p = model.paragraphs[paragraphIndex]!;
     const section = model.sections[p.sectionIndex] ?? model.section;
     const explicitBoundaries = p.pageBreaksBefore ?? (p.pageBreakBefore ? 1 : 0);
@@ -1152,6 +1180,7 @@ function isRenderableParagraph(paragraph: BodyParagraph): boolean {
 async function buildParagraph(
   p: BodyParagraph, section: SectionGeometry, ctx: BuildContext,
 ): Promise<BuiltParagraph | null> {
+  await ctx.cooperate();
   const columnTwips = section.colWidthTwips || (section.pageWTwips - section.marLeftTwips - section.marRightTwips);
   const widthTwips = columnTwips - p.indLeft - p.indRight;
   if (widthTwips <= 0) return null;
@@ -1166,6 +1195,7 @@ async function buildParagraph(
   let pendingTab = false;
   let naturalFlowTwips = 0;
   for (const run of p.runs) {
+    await ctx.cooperate();
     if (run.hidden || !run.text) continue;
     const family = run.family ?? null;
     const fi = await resolveFont(ctx, family, run.bold, run.italic);

@@ -1,0 +1,7 @@
+CREATE TABLE IF NOT EXISTS account_profiles (
+ subject TEXT PRIMARY KEY NOT NULL REFERENCES accounts(subject) ON DELETE CASCADE,
+ username TEXT UNIQUE COLLATE NOCASE,
+ display_name_custom INTEGER NOT NULL DEFAULT 0 CHECK(display_name_custom IN (0,1)),
+ revision INTEGER NOT NULL DEFAULT 0 CHECK(revision>=0),
+ updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);

@@ -1,0 +1,1 @@
+export const onRequest=()=>new Response(JSON.stringify({error:'not_found',message:'المسار المطلوب غير موجود.'}),{status:404,headers:{'content-type':'application/json; charset=utf-8','cache-control':'no-store','x-content-type-options':'nosniff'}})

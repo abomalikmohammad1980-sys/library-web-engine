@@ -84,7 +84,12 @@ const hasText = (value: unknown): value is string => typeof value === 'string' &
 export function validSunnahProvenance(value: SunnahProvenance): boolean {
   return hasText(value.provider) && hasText(value.sourceUrl) && hasText(value.version)
     && hasText(value.licenseOrTermsUrl) && hasText(value.access)
-    && (!value.checksumSha256 || /^[a-f\d]{64}$/i.test(value.checksumSha256))
+    && hasText(value.checksumSha256) && /^[a-f\d]{64}$/i.test(value.checksumSha256)
+}
+
+export function validHadithBookRef(value: HadithBookRef): boolean {
+  return hasText(value.bookId) && hasText(value.title) && hasText(value.volume)
+    && hasText(value.page) && hasText(value.hadithNumber)
 }
 
 export function validateHadithUnit(value: HadithUnit): string[] {
@@ -94,14 +99,25 @@ export function validateHadithUnit(value: HadithUnit): string[] {
   if (!value.witnesses.length) errors.push('witness-required')
   for (const witness of value.witnesses) {
     if (witness.hadithId !== value.hadithId) errors.push(`witness-hadith-mismatch:${witness.witnessId}`)
-    if (!hasText(witness.text) || !hasText(witness.source.bookId) || !validSunnahProvenance(witness.provenance)) errors.push(`witness-source-invalid:${witness.witnessId}`)
+    if (!hasText(witness.text) || !validHadithBookRef(witness.source) || !validSunnahProvenance(witness.provenance)) errors.push(`witness-source-invalid:${witness.witnessId}`)
     const positions = witness.narrators?.map(item => item.position) ?? []
     if (new Set(positions).size !== positions.length || positions.some(position => !Number.isInteger(position) || position < 0)) errors.push(`isnad-order-invalid:${witness.witnessId}`)
   }
   for (const verdict of value.verdicts) {
-    if (verdict.hadithId !== value.hadithId || !hasText(verdict.scholarName) || !hasText(verdict.wording) || !validSunnahProvenance(verdict.provenance)) errors.push(`verdict-attribution-invalid:${verdict.verdictId}`)
+    if (verdict.hadithId !== value.hadithId || !hasText(verdict.scholarName) || !hasText(verdict.wording) || !validHadithBookRef(verdict.source) || !validSunnahProvenance(verdict.provenance)) errors.push(`verdict-attribution-invalid:${verdict.verdictId}`)
   }
-  for (const item of [...value.explanations, ...value.translations]) if (!validSunnahProvenance(item.provenance)) errors.push(`derived-source-invalid:${'explanationId' in item ? item.explanationId : item.translationId}`)
+  for (const explanation of value.explanations) {
+    if (explanation.hadithId !== value.hadithId || !hasText(explanation.text)
+      || !validHadithBookRef(explanation.source) || !validSunnahProvenance(explanation.provenance)) {
+      errors.push(`derived-source-invalid:${explanation.explanationId}`)
+    }
+  }
+  for (const translation of value.translations) {
+    if (translation.hadithId !== value.hadithId || !hasText(translation.language)
+      || !hasText(translation.text) || !validSunnahProvenance(translation.provenance)) {
+      errors.push(`derived-source-invalid:${translation.translationId}`)
+    }
+  }
   return errors
 }
 

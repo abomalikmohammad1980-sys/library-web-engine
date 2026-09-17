@@ -56,12 +56,35 @@ export function normalizeSupplementAuthor(author: AuthorSupplementPayload['autho
   return author
 }
 
-function normalizeCatalogAuthor(author: AuthorCatalogRecord): AuthorCatalogRecord {
-  if (!author.biography) return author
-  const digits = author.biography.replace(/[٠-٩]/g, digit => String('٠١٢٣٤٥٦٧٨٩'.indexOf(digit)))
+const BIOGRAPHY_CONTAMINATION_MARKERS = [
+  '&times;', '×', 'البحث في:', 'البحث في :', 'بحث في محتوى الكتب:', 'تنبيهات هامة:',
+  'تنزيل المكتبة الشاملة', 'للحاسوب للأندرويد للآيفون',
+] as const
+
+/**
+ * يحتفظ بالنص العلمي السابق لأول حد واجهة معروف، ثم يرفض أي بقايا HTML أو
+ * تعليمات بحث أو روابط. لا نحاول إصلاح نص ملوث بالتخمين.
+ */
+export function sanitizeVerifiedBiography(value: string | undefined, sourceUrl?: string): string | undefined {
+  if (!value?.trim() || !sourceUrl || !/^https:\/\/shamela\.ws\/author\/\d+\/?$/u.test(sourceUrl)) return undefined
+  const controlsRemoved = value.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, ' ')
+  const boundaries = BIOGRAPHY_CONTAMINATION_MARKERS.map(marker => controlsRemoved.indexOf(marker)).filter(index => index >= 0)
+  const candidate = controlsRemoved.slice(0, boundaries.length ? Math.min(...boundaries) : controlsRemoved.length)
+    .replace(/\s+/gu, ' ').replace(/\s+([،؛:.!?])/gu, '$1').trim()
+  if (candidate.length < 12
+    || /<\/?[a-z][^>]*>|&(?:#\d+|#x[\da-f]+|[a-z]+);|https?:\/\/|www\.|(?:استخدام علامة|افتراضيا يتم البحث|جميع الأقسام|بحث في نطاق)/iu.test(candidate)) return undefined
+  return candidate
+}
+
+export function normalizeCatalogAuthor(author: AuthorCatalogRecord): AuthorCatalogRecord {
+  const biography = sanitizeVerifiedBiography(author.biography, author.sourceUrl)
+  const normalized = { ...author, ...(biography ? { biography } : {}) }
+  if (!biography) delete normalized.biography
+  if (!biography) return normalized
+  const digits = biography.replace(/[٠-٩]/g, digit => String('٠١٢٣٤٥٦٧٨٩'.indexOf(digit)))
   const opening = digits.slice(0, 360)
   const range = opening.match(/\b\d{2,4}\s*[-–—]\s*(\d{2,4})\s*هـ/)
   const explicit = opening.match(/(?:ت\s*|وفاة[^\d]{0,12})(\d{2,4})\s*هـ/)
-  const deathYearHijri = Number(range?.[1] ?? explicit?.[1] ?? author.deathYearHijri ?? 0)
-  return deathYearHijri > 0 && deathYearHijri < 2000 ? { ...author, deathYearHijri } : author
+  const deathYearHijri = Number(range?.[1] ?? explicit?.[1] ?? normalized.deathYearHijri ?? 0)
+  return deathYearHijri > 0 && deathYearHijri < 2000 ? { ...normalized, deathYearHijri } : normalized
 }

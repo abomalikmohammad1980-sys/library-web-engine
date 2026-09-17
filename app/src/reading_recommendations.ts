@@ -1,5 +1,5 @@
 export interface RecommendationBook { id: string; title: string; author: string; category?: string; addedAt: number }
-export interface ReadingRecommendation<T extends RecommendationBook = RecommendationBook> { book: T; reason: string; score: number }
+export interface ReadingRecommendation<T extends RecommendationBook = RecommendationBook> { book: T; reason: string; score: number; reasonBinding?: {id:string;parameters:{p1:string}} | undefined }
 
 const UNKNOWN_AUTHORS = new Set(['غير معروف', 'مؤلف غير معروف', 'مجهول', 'غير محدد', 'unknown', 'unknown author'])
 export function meaningfulRecommendationAuthor(author?: string): string | undefined {
@@ -22,6 +22,7 @@ export function recommendUnreadBooks<T extends RecommendationBook>(books: readon
     const category = book.category ? categories.get(book.category) ?? 0 : 0
     const authorName = meaningfulRecommendationAuthor(book.author)
     const author = authorName ? authors.get(authorName) ?? 0 : 0
-    return { book, score: category * 3 + author * 2, reason: author ? `لأنك قرأت للمؤلف ${authorName}` : category ? `لأنك تقرأ في ${book.category}` : 'من أحدث كتب خزانتك' }
+    const reasonBinding=author?{id:'dbfeb27c6ff1558e',parameters:{p1:authorName!}}:category?{id:'58616bdd7589671a',parameters:{p1:book.category!}}:undefined
+    return { book, score: category * 3 + author * 2, reason: author ? `لأنك قرأت للمؤلف ${authorName}` : category ? `لأنك تقرأ في ${book.category}` : 'من أحدث كتب خزانتك',reasonBinding }
   }).sort((a, b) => b.score - a.score || b.book.addedAt - a.book.addedAt || a.book.title.localeCompare(b.book.title, 'ar')).slice(0, Math.max(0, limit))
 }

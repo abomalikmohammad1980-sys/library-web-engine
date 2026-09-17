@@ -1,0 +1,17 @@
+const make = (values: string[]) => Object.fromEntries([
+  'نسخة الكتاب المركزي غير صالحة؛ حدّث القائمة.',
+  'غيّر مدير آخر هذا الكتاب؛ بقيت تعديلاتك في الحقول. راجع النسخة الأحدث ثم أعد المحاولة.',
+  'الكتاب منشور للعامة؛ اسحب نشره إداريًا قبل حذفه من الحساب.',
+  'أُخفي الكتاب من حسابك، وتعذر تنظيف ملفه الآن. أعد الحذف لاحقًا لإكمال التنظيف.',
+  'إخفاء منطقي', 'استعادة', 'حُفظ التعديل الإداري مركزيًا', 'أُخفي الكتاب منطقيًا',
+  'أُعيد الكتاب إلى الظهور', 'تعذّر تنفيذ الإجراء.',
+].map((key, index) => [key, values[index]!]))
+
+/** حالات التعارض والإخفاء والاستعادة المركزية؛ لا تحتوي هوية كتاب أو بيانات محرر. */
+export const REVIEWED_ADMIN_CENTRAL_MUTATIONS_UI: Readonly<Record<string, Readonly<Record<string, string>>>> = {
+  ckb: make(['وەشانی کتێبی ناوەندی دروست نییە؛ لیستەکە نوێ بکەرەوە.','بەڕێوەبەرێکی تر ئەم کتێبەی گۆڕیوە؛ دەستکارییەکانت لە خانەکاندا ماونەتەوە. وەشانی نوێترین بپشکنە و دووبارە هەوڵ بدەرەوە.','کتێبەکە بۆ گشت بڵاوکراوەتەوە؛ پێش سڕینەوەی لە هەژمار بەڕێوەبەرانە بڵاوکردنەوەکەی ڕابگرە.','کتێبەکە لە هەژمارەکەت شاردرایەوە، بەڵام پاککردنەوەی پەڕگەکە ئێستا سەرکەوتوو نەبوو. دواتر دووبارە بیسڕەوە بۆ تەواوکردنی پاککردنەوە.','شاردنەوەی لۆژیکی','گەڕاندنەوە','دەستکارییە بەڕێوەبردنییە ناوەندییەکە پاشەکەوت کرا','کتێبەکە بە لۆژیکی شاردرایەوە','کتێبەکە دووبارە دیارکرایەوە','جێبەجێکردنی کردارەکە سەرکەوتوو نەبوو.']),
+  ku: make(['Guhertoya pirtûka navendî ne derbasdar e; lîsteyê nû bike.','Rêveberekî din vê pirtûkê guherand; guherînên te di qadan de man. Guhertoya herî nû kontrol bike û dîsa biceribîne.','Pirtûk ji bo giştî hatiye weşandin; berî jêbirina ji hesabê, weşanê bi rê ve bikişîne.','Pirtûk ji hesabê te hat veşartin, lê pel niha nehat paqijkirin. Paşê dîsa jê bibe da paqijkirin temam bibe.','Veşartina mentiqî','Vegerandin','Guherîna rêveberiya navendî hate tomarkirin','Pirtûk bi awayekî mentiqî hat veşartin','Pirtûk dîsa hate nîşandan','Çalakî nehat kirin.']),
+  tr: make(['Merkezî kitap sürümü geçersiz; listeyi yenileyin.','Başka bir yönetici bu kitabı değiştirdi; alanlardaki değişiklikleriniz korundu. En yeni sürümü inceleyip yeniden deneyin.','Kitap herkese yayımlanmış; hesaptan silmeden önce yönetici olarak yayından kaldırın.','Kitap hesabınızdan gizlendi ancak dosyası şimdi temizlenemedi. Temizliği tamamlamak için daha sonra yeniden silin.','Mantıksal olarak gizle','Geri yükle','Merkezî yönetim değişikliği kaydedildi','Kitap mantıksal olarak gizlendi','Kitap yeniden görünür yapıldı','İşlem gerçekleştirilemedi.']),
+  ur: make(['مرکزی کتاب کا نسخہ درست نہیں؛ فہرست تازہ کریں۔','کسی دوسرے منتظم نے یہ کتاب بدل دی؛ خانوں میں آپ کی تبدیلیاں محفوظ ہیں۔ تازہ نسخہ دیکھ کر دوبارہ کوشش کریں۔','کتاب عوام کے لیے شائع ہے؛ اکاؤنٹ سے حذف کرنے سے پہلے انتظامی طور پر اشاعت واپس لیں۔','کتاب آپ کے اکاؤنٹ سے چھپا دی گئی، مگر فائل ابھی صاف نہ ہو سکی۔ صفائی مکمل کرنے کے لیے بعد میں دوبارہ حذف کریں۔','منطقی طور پر چھپائیں','بحال کریں','مرکزی انتظامی ترمیم محفوظ ہوگئی','کتاب منطقی طور پر چھپا دی گئی','کتاب دوبارہ ظاہر کردی گئی','کارروائی نہ ہو سکی۔']),
+  fa: make(['نسخهٔ کتاب مرکزی معتبر نیست؛ فهرست را تازه کنید.','مدیر دیگری این کتاب را تغییر داده است؛ ویرایش‌های شما در فیلدها باقی مانده‌اند. تازه‌ترین نسخه را بررسی و دوباره تلاش کنید.','کتاب برای عموم منتشر شده است؛ پیش از حذف از حساب، انتشارش را از بخش مدیریت لغو کنید.','کتاب از حساب شما پنهان شد، اما پاک‌سازی پرونده اکنون ممکن نشد. برای تکمیل پاک‌سازی بعداً دوباره حذف کنید.','پنهان‌سازی منطقی','بازیابی','ویرایش مدیریتی مرکزی ذخیره شد','کتاب به‌طور منطقی پنهان شد','کتاب دوباره نمایان شد','انجام عملیات ممکن نشد.']),
+}

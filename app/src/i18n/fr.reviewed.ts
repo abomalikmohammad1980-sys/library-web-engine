@@ -20,7 +20,7 @@ export const REVIEWED_FR_UI: Record<string, string> = {
   'مسح المرشحات': 'Effacer les filtres', 'لم تحدد كتبًا': 'Aucun livre sélectionné', 'العنوان': 'Titre', 'المؤلف': 'Auteur', 'المؤلفون المشاركون': 'Coauteurs',
   'التصنيف': 'Catégorie', 'الوسوم': 'Mots-clés', 'الناشر': 'Éditeur', 'الطبعة': 'Édition', 'التحقيق': 'Édition critique', 'المحقق': 'Éditeur scientifique',
   'سنة الوفاة': 'Année du décès', 'سنة النشر': 'Année de publication', 'المتن': 'Corps du texte', 'شجرة العناوين': 'Arborescence des titres',
-  'بطاقات الكتب': 'Notices des livres', 'نمط المطابقة': 'Mode de correspondance', 'مطابقة العبارة': 'Expression exacte', 'توسيع صرفي تجريبي': 'Extension morphologique expérimentale',
+  'بطاقات الكتب': 'Notices des livres', 'نمط المطابقة': 'Mode de correspondance', 'مطابقة العبارة': 'Expression exacte', 'البحث الصرفي': 'Recherche morphologique', 'البحث بالجذر': 'Recherche par racine',
   'جذر تقريبي': 'Recherche approximative par racine', 'من سنة هـ': 'Depuis l’année H.', 'إلى سنة هـ': 'Jusqu’à l’année H.', 'قبل الهجرة': 'Avant l’Hégire',
   'القرن الهجري': 'Siècle hégirien', 'صلة': 'Pertinence', 'الأقدم وفاة': 'Décès les plus anciens', 'الأحدث وفاة': 'Décès les plus récents',
   'لا توجد نتائج': 'Aucun résultat', 'جارٍ البحث…': 'Recherche en cours…', 'نتيجة': 'résultat', 'نتائج': 'résultats', 'عرض المزيد': 'Afficher davantage',

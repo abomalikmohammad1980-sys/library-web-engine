@@ -11,6 +11,11 @@ export interface SearchHit {
   paragraphIndex: number
   text: string
   matchOffset: number
+  author?: string
+  deathYearHijri?: number
+  pageLabel?: string
+  partLabel?: string
+  sectionHeading?: string
 }
 
 export interface SearchPage {
@@ -18,6 +23,39 @@ export interface SearchPage {
   offset: number
   limit: number
   hits: SearchHit[]
+}
+
+export interface AdvancedSearchQuery { query:string; excluded:string[] }
+
+/** محلل خطّي لعبارات الاقتباس والكلمات المسبوقة بشرطة للاستبعاد. */
+export function parseAdvancedSearchQuery(raw:string):AdvancedSearchQuery{
+  const input=raw.slice(0,1024),included:string[]=[],excluded:string[]=[]
+  let index=0
+  while(index<input.length){
+    while(index<input.length&&/\s/u.test(input[index]!))index++
+    if(index>=input.length)break
+    let omit=false
+    if(input[index]==='-'&&index+1<input.length&&!/\s/u.test(input[index+1]!)){omit=true;index++}
+    const quoted=input[index]==='"';if(quoted)index++
+    let token=''
+    while(index<input.length){
+      const char=input[index]!
+      if(char==='\\'&&index+1<input.length&&(input[index+1]==='"'||input[index+1]==='\\')){token+=input[index+1];index+=2;continue}
+      if(quoted&&char==='"'){index++;break}
+      if(!quoted&&/\s/u.test(char))break
+      token+=char;index++
+    }
+    token=token.trim()
+    if(token)(omit?excluded:included).push(token)
+  }
+  const uniqueExcluded=[...new Map(excluded.map(value=>[normalizeArabicSearch(value),value] as const)).values()]
+  return{query:included.join(' ').replace(/\s+/gu,' ').trim(),excluded:uniqueExcluded}
+}
+
+export function matchesSearchExclusions(text:string,excluded:readonly string[]):boolean{
+  if(!excluded.length)return false
+  const normalized=normalizeArabicSearch(text)
+  return excluded.some(value=>{const wanted=normalizeArabicSearch(value);return Boolean(wanted)&&normalized.includes(wanted)})
 }
 
 export interface SerializedSearchShard {
@@ -80,7 +118,8 @@ export class ArabicSearchShard {
       if (matchOffset < 0) continue
       if (total >= safeOffset && hits.length < safeLimit) {
         const document = this.documents[ordinal]!
-        hits.push({ ...document, matchOffset })
+        const mapped=normalizeArabicSearchWithMap(document.text)
+        hits.push({ ...document, matchOffset:mapped.originalOffsets[matchOffset]??0 })
       }
       total += 1
     }
@@ -89,12 +128,36 @@ export class ArabicSearchShard {
 }
 
 export function normalizeArabicSearch(value: string): string {
-  return value.toLocaleLowerCase('ar')
-    .replace(/[\u0610-\u061A\u064B-\u065F\u0670\u06D6-\u06ED]/g, '')
-    .replace(/\u0640/g, '')
-    .replace(/[أإآٱ]/g, 'ا')
-    .replace(/ى/g, 'ي')
-    .replace(/\s+/gu, ' ')
+  // No offset array is needed while verifying candidate pages. Keep casing
+  // point-wise (not whole-string casing, which changes Greek final sigma).
+  // Casing runs after separators so expansions such as İ -> i + dot survive.
+  return value
+    .replace(/[\(\[\{﴿（]\s*[0-9٠-٩۰-۹]+\s*[\)\]\}﴾）]/gu,' ')
+    .replace(/[\u0610-\u061A\u064B-\u065F\u0670\u06D6-\u06ED\u0640]/gu,'')
+    .replace(/[^\p{L}\p{N}]+/gu,' ').trim()
+    .replace(/\p{Changes_When_Lowercased}/gu,point=>point.toLocaleLowerCase('ar'))
+    .replace(/[أإآٱ]/gu,'ا').replace(/ى/gu,'ي')
+}
+
+export interface NormalizedArabicSearch { text:string; originalOffsets:number[] }
+/** تطبيع بحث مع خريطة تعيد كل محرف مطبّع إلى موضعه في النص الأصلي للإبراز. */
+export function normalizeArabicSearchWithMap(value:string):NormalizedArabicSearch{
+  return foldArabicSearch(value,true)
+}
+// Bound the cache: arbitrary imported Unicode must not grow it indefinitely.
+const searchCharacterFolds=new Map<string,string>()
+function foldArabicSearch(value:string,withOffsets:boolean):NormalizedArabicSearch{
+  const ignoredNotes=/^[\(\[\{﴿（]\s*[0-9٠-٩۰-۹]+\s*[\)\]\}﴾）]/u
+  let text='',separator=false;const originalOffsets:number[]=[]
+  for(let index=0;index<value.length;){const note='([{﴿（'.includes(value[index]!)?ignoredNotes.exec(value.slice(index)):null;if(note){separator=Boolean(text);index+=note[0].length;continue}const point=value.codePointAt(index)!,raw=String.fromCodePoint(point),width=raw.length;index+=width
+    if(/[\u0610-\u061A\u064B-\u065F\u0670\u06D6-\u06ED\u0640]/u.test(raw))continue
+    let folded=searchCharacterFolds.get(raw)
+    if(folded===undefined){folded=raw.toLocaleLowerCase('ar').replace(/[أإآٱ]/u,'ا').replace(/ى/u,'ي');if(searchCharacterFolds.size<4096)searchCharacterFolds.set(raw,folded)}
+    if(!/[\p{L}\p{N}]/u.test(folded)){separator=Boolean(text);continue}
+    if(separator&&text&&!text.endsWith(' ')){text+=' ';if(withOffsets)originalOffsets.push(index-width)}separator=false
+    text+=folded;if(withOffsets)for(let i=0;i<folded.length;i++)originalOffsets.push(index-width)
+  }
+  return{text,originalOffsets}
 }
 
 function uniqueQueryGrams(value: string): string[] {

@@ -25,6 +25,31 @@ export interface SunnahProvenance {
   recordChecksumSha256: string
 }
 
+/** إحالة إلى كتاب حديث أصلي؛ منفصلة عن مزود corpus الذي نقل النص والشرح. */
+export interface SunnahPrimarySource {
+  book: string
+  bookId: number
+  publicId: string
+  hadithNumber: string
+  volume: string
+  page: string
+  sequence: number
+  provenance: {
+    batchId: string
+    bookPath: string
+    bookSha256: string
+    sourceRowId: string
+    matchedExcerpt: string
+    matchMethod: 'exact-number-and-normalized-text'
+  }
+}
+
+export interface SunnahTakhrijAttribution {
+  provider: string
+  sourceUrl: string
+  statement: string
+}
+
 export interface SunnahGoldenRecord {
   id: string
   title: string
@@ -36,6 +61,8 @@ export interface SunnahGoldenRecord {
   takhrij: string
   link: string
   provenance: SunnahProvenance
+  primarySources?: SunnahPrimarySource[]
+  takhrijAttribution?: SunnahTakhrijAttribution
 }
 
 export interface SunnahCorpusManifest {
@@ -135,7 +162,30 @@ export function validateSunnahGoldenRecord(
   if (!record.title.trim() || !record.hadithText.trim()) errors.push('عنوان الشاهد ومتنه مطلوبان')
   const expectedLink = `https://hadeethenc.com/ar/browse/hadith/${encodeURIComponent(record.id)}`
   if (record.link !== expectedLink) errors.push('رابط الشاهد لا يطابق معرفه في المصدر')
+  const primarySources = verifiedPrimarySources(record)
+  if ((record.primarySources?.length || record.takhrijAttribution) && !primarySources.length)
+    errors.push('إحالات المصادر الأصلية ناقصة التوثيق')
   return errors
+}
+
+/** fail-closed: لا ترجع إحالة واحدة ما لم يكتمل عزو المجموعة كلها. */
+export function verifiedPrimarySources(record: Pick<SunnahGoldenRecord, 'primarySources' | 'takhrijAttribution'>): SunnahPrimarySource[] {
+  const sources = record.primarySources
+  const attribution = record.takhrijAttribution
+  if (!sources?.length || !attribution?.provider.trim() || !attribution.statement.trim() || !validHttpsUrl(attribution.sourceUrl)) return []
+  if (sources.some(source => !source.book.trim()
+    || !Number.isSafeInteger(source.bookId) || source.bookId < 1
+    || source.publicId !== String(410000000 + source.bookId)
+    || !/^\d+(?:\s*[-–]\s*\d+)?$/u.test(source.hadithNumber.trim())
+    || !source.volume.trim() || !source.page.trim()
+    || !Number.isSafeInteger(source.sequence) || source.sequence < 0
+    || !/^batch-\d{4}$/u.test(source.provenance.batchId)
+    || source.provenance.bookPath !== `${source.provenance.batchId}/books/${source.bookId}.json`
+    || !SHA256_PATTERN.test(source.provenance.bookSha256)
+    || !source.provenance.sourceRowId.trim()
+    || source.provenance.matchedExcerpt.trim().length < 20
+    || source.provenance.matchMethod !== 'exact-number-and-normalized-text')) return []
+  return sources
 }
 
 export function validateSunnahCorpusManifest(
@@ -166,21 +216,20 @@ async function sha256Hex(text: string): Promise<string> {
   return [...new Uint8Array(digest)].map(byte => byte.toString(16).padStart(2, '0')).join('')
 }
 
-export async function loadVerifiedSunnahCorpus(
-  source: SunnahSourceRecord = HADEETHENC_AR_SOURCE,
-  fetcher: typeof fetch = fetch,
-): Promise<{ manifest: SunnahCorpusManifest; records: SunnahGoldenRecord[] }> {
-  const sourceErrors = validateSunnahSource(source)
-  if (sourceErrors.length || !source.release) throw new Error(sourceErrors.join('، ') || 'إصدار المصدر مفقود')
-  const manifestResponse = await fetcher(source.release.manifestPath, { cache: 'no-store' })
-  if (!manifestResponse.ok) throw new Error('تعذّر تحميل manifest المصدر')
-  const manifest = await manifestResponse.json() as SunnahCorpusManifest
+export type VerifiedSunnahCorpus = { manifest: SunnahCorpusManifest; records: SunnahGoldenRecord[] }
+type CachedVerifiedSunnahCorpus = VerifiedSunnahCorpus & { rawRecordsText?: string }
+
+const sunnahCorpusMemory = new Map<string, VerifiedSunnahCorpus>()
+const sunnahCorpusInflight = new Map<string, Promise<VerifiedSunnahCorpus>>()
+const SUNNAH_CORPUS_CACHE = 'alkhizana-sunnah-corpus-v1'
+
+function corpusCacheKey(source: SunnahSourceRecord): string {
+  return `${source.id}:${source.release?.version ?? 'missing'}`
+}
+
+async function validateCorpusPayload(source: SunnahSourceRecord, manifest: SunnahCorpusManifest, recordsText: string): Promise<VerifiedSunnahCorpus> {
   const manifestErrors = validateSunnahCorpusManifest(manifest, source)
   if (manifestErrors.length) throw new Error(manifestErrors.join('، '))
-  const recordsUrl = new URL(manifest.records.path, new URL(source.release.manifestPath, location.origin))
-  const recordsResponse = await fetcher(recordsUrl, { cache: 'no-store' })
-  if (!recordsResponse.ok) throw new Error('تعذّر تحميل سجلات corpus')
-  const recordsText = await recordsResponse.text()
   if (await sha256Hex(recordsText) !== manifest.records.checksumSha256) throw new Error('بصمة سجلات corpus لا تطابق manifest')
   const records = JSON.parse(recordsText) as SunnahGoldenRecord[]
   if (records.length !== manifest.records.count) throw new Error('عدد السجلات لا يطابق manifest')
@@ -193,3 +242,69 @@ export async function loadVerifiedSunnahCorpus(
   }
   return { manifest, records }
 }
+
+async function fetchVerifiedSunnahCorpus(source: SunnahSourceRecord, fetcher: typeof fetch): Promise<CachedVerifiedSunnahCorpus> {
+  const manifestResponse = await fetcher(source.release!.manifestPath, { cache: 'no-store' })
+  if (!manifestResponse.ok) throw new Error('تعذّر تحميل manifest المصدر')
+  const manifest = await manifestResponse.json() as SunnahCorpusManifest
+  const recordsUrl = new URL(manifest.records.path, new URL(source.release!.manifestPath, location.origin))
+  const recordsResponse = await fetcher(recordsUrl, { cache: 'no-store' })
+  if (!recordsResponse.ok) throw new Error('تعذّر تحميل سجلات corpus')
+  const rawRecordsText = await recordsResponse.text()
+  return { ...await validateCorpusPayload(source, manifest, rawRecordsText), rawRecordsText }
+}
+
+async function readPersistentSunnahCorpus(source: SunnahSourceRecord): Promise<VerifiedSunnahCorpus | undefined> {
+  if (typeof caches === 'undefined' || typeof location === 'undefined') return undefined
+  const response = await (await caches.open(SUNNAH_CORPUS_CACHE)).match(new Request(`${location.origin}/__alkhizana/sunnah/${encodeURIComponent(corpusCacheKey(source))}`))
+  if (!response?.ok) return undefined
+  try {
+    const stored = await response.json() as { manifest: SunnahCorpusManifest; recordsText: string }
+    return await validateCorpusPayload(source, stored.manifest, stored.recordsText)
+  } catch { return undefined }
+}
+
+async function writePersistentSunnahCorpus(source: SunnahSourceRecord, corpus: VerifiedSunnahCorpus): Promise<void> {
+  if (typeof caches === 'undefined' || typeof location === 'undefined') return
+  const recordsText = (corpus as CachedVerifiedSunnahCorpus).rawRecordsText
+  if (!recordsText) return
+  const request = new Request(`${location.origin}/__alkhizana/sunnah/${encodeURIComponent(corpusCacheKey(source))}`)
+  await (await caches.open(SUNNAH_CORPUS_CACHE)).put(request, new Response(JSON.stringify({ manifest: corpus.manifest, recordsText }), { headers: { 'content-type': 'application/json' } }))
+}
+
+function refreshSunnahCorpus(source: SunnahSourceRecord, fetcher: typeof fetch): Promise<VerifiedSunnahCorpus> {
+  const key = corpusCacheKey(source), existing = sunnahCorpusInflight.get(key)
+  if (existing) return existing
+  const task = fetchVerifiedSunnahCorpus(source, fetcher).then(corpus => {
+    sunnahCorpusMemory.set(key, corpus)
+    if (fetcher === globalThis.fetch) void writePersistentSunnahCorpus(source, corpus).catch(() => undefined)
+    return corpus
+  }).finally(() => sunnahCorpusInflight.delete(key))
+  sunnahCorpusInflight.set(key, task)
+  return task
+}
+
+export async function loadVerifiedSunnahCorpus(
+  source: SunnahSourceRecord = HADEETHENC_AR_SOURCE,
+  fetcher: typeof fetch = fetch,
+): Promise<VerifiedSunnahCorpus> {
+  const sourceErrors = validateSunnahSource(source)
+  if (sourceErrors.length || !source.release) throw new Error(sourceErrors.join('، ') || 'إصدار المصدر مفقود')
+  const key = corpusCacheKey(source), memory = sunnahCorpusMemory.get(key)
+  if (memory) { void refreshSunnahCorpus(source, fetcher).catch(() => undefined); return memory }
+  if (fetcher === globalThis.fetch) {
+    const persisted = await readPersistentSunnahCorpus(source)
+    if (persisted) {
+      sunnahCorpusMemory.set(key, persisted)
+      void refreshSunnahCorpus(source, fetcher).catch(() => undefined)
+      return persisted
+    }
+  }
+  return refreshSunnahCorpus(source, fetcher)
+}
+
+export function preloadVerifiedSunnahCorpus(): void {
+  void loadVerifiedSunnahCorpus().catch(() => undefined)
+}
+
+if (typeof window !== 'undefined') queueMicrotask(preloadVerifiedSunnahCorpus)

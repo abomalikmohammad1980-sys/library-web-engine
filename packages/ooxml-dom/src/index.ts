@@ -7,6 +7,8 @@ export { twipsToPx, ptToPx, fmt, HIGHLIGHT_COLORS, ARABIC_FALLBACK, TWIPS_PER_PX
 export { cssFamily, registerEmbeddedFonts, extractFontFamily } from "./fonts.js";
 export { runCss, runToNode } from "./runT.js";
 export { paragraphCss } from "./PPr.js";
+export {readFontLineMetrics,registerFontLineMetrics,clearFontLineMetrics} from './font-line-metrics.js';
+export type {FontLineMetrics} from './font-line-metrics.js';
 export { formatNumber, NumberingState } from "./abstractNum.js";
 export {
   ImageCache, newImageCache, resolveImageBytes, imageUrl, rasterPayload,
@@ -16,6 +18,7 @@ export {
 export { newRenderCtx, paragraphToElement, tocRowElement, hasPositionalTabs, ptabParagraphElement } from "./Paragraph.js";
 export type { RenderCtx } from "./Paragraph.js";
 export { renderPageBlocks, renderTable } from "./ParagraphTable.js";
+export { tocRowWidthTwips } from "./Paragraph.js";
 export { pageCss, headerFooterElement, headerFooterPartName, headerFooterType, partNameFromRid } from "./SectPr.js";
 export { wordBorderStyle, wordBorderData } from "./BorderCss.js";
 export { groupPages, sectionOf, notePositionForPage, buildPageElement, renderDocument, takeRenderedAssetCleanup, footnotesBlock } from "./render.js";

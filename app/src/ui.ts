@@ -15,12 +15,13 @@ export interface Attrs {
   title?: string
   role?: string
   tabindex?: number
-  dir?: 'rtl' | 'ltr'
+  dir?: 'rtl' | 'ltr' | 'auto'
   type?: string
   placeholder?: string
   value?: string
   min?: string
   max?: string
+  maxlength?: number
   step?: string
   selected?: boolean
   readonly?: boolean
@@ -32,7 +33,9 @@ export interface Attrs {
   'aria-hidden'?: 'true' | 'false'
   'aria-live'?: 'polite' | 'assertive' | 'off'
   'aria-atomic'?: 'true' | 'false'
+  'aria-busy'?: 'true' | 'false'
   'aria-modal'?: 'true' | 'false'
+  'data-selection-translation-root'?: string
   'aria-selected'?: 'true' | 'false'
   'aria-current'?: 'true' | 'false' | 'page' | 'step' | 'location' | 'date' | 'time' | undefined
   'aria-expanded'?: 'true' | 'false'
@@ -54,6 +57,7 @@ export function h<K extends keyof HTMLElementTagNameMap>(
     for (const [key, value] of Object.entries(attrs)) {
       if (value === undefined || value === false) continue
       if (key === 'class') el.className = String(value)
+      else if (key === 'href' && String(value).startsWith('#/')) el.setAttribute('href', legacyHashToPath(String(value)))
       else if (key === 'style') el.setAttribute('style', String(value))
       else if (key === 'readonly') el.setAttribute('readonly', '')
       else if (key === 'disabled') {
@@ -95,20 +99,21 @@ export function arabicDecimal(num: number, digits = 1): string {
   return frac ? `${arabicNum(int ?? '0')}٫${arabicNum(frac ?? '0')}` : arabicNum(int ?? '0')
 }
 
-export function navigate(hash: string): void {
-  if (location.hash === hash) {
-    window.dispatchEvent(new HashChangeEvent('hashchange'))
+export function navigate(path: string,options:{replace?:boolean}={}): void {
+  const next=legacyHashToPath(path)
+  if (location.pathname+location.search === next) {
+    window.dispatchEvent(new PopStateEvent('popstate'))
   } else {
-    location.hash = hash
+    navigatePath(next,options.replace)
   }
   window.scrollTo({ top: 0 })
 }
 
 let toastTimer: number | undefined
 
-export function toast(message: string): void {
+export function toast(message: string, options?: {uiText?: boolean}): void {
   document.querySelector('.toast')?.remove()
-  const el = h('div', { class: 'toast', role: 'status' }, message)
+  const el = h('div', { class: 'toast', role: 'status', ...(options?.uiText ? {dataset:{uiText:''}} : {}) }, message)
   document.body.appendChild(el)
   window.clearTimeout(toastTimer)
   toastTimer = window.setTimeout(() => el.remove(), 3200)
@@ -122,3 +127,4 @@ export function skeletonGrid(covers: number): HTMLElement {
   }
   return grid
 }
+import {navigatePath,legacyHashToPath} from "./path_location"

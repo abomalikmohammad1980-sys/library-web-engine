@@ -1,0 +1,80 @@
+import {PUBLIC_PAGE_META,pageMetaFor,seoShard,SEO_ORIGIN} from '../../app/src/page_meta_model.ts'
+import {canonicalizePath} from '../../app/src/path_location.ts'
+import {readSeoToc} from './_seo-toc.js'
+import {refreshPublicSeoRecord} from './_seo-live-record.js'
+import {publicSitemap,publicSitemapPages} from './_seo-public-sitemap.js'
+import {boundedBytes} from './_seo-toc.js'
+import {seoPresentation,seoNavLabels} from './_seo-presentation.js'
+const escape=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))
+async function smallJson(response){
+ if(!response.ok)throw Error('seo_data_unavailable')
+ const reader=response.body.getReader(),chunks=[];let length=0
+ try{while(true){const {done,value}=await reader.read();if(done)break;length+=value.length;if(length>1048576)throw Error('seo_data_too_large');chunks.push(value)}}catch(e){await reader.cancel();throw e}finally{reader.releaseLock()}
+ const bytes=new Uint8Array(length);let at=0;for(const chunk of chunks){bytes.set(chunk,at);at+=chunk.length}return JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(bytes))
+}
+export async function onRequest(context){
+ const {request,env}=context,url=new URL(request.url),path=url.pathname,preview=url.hostname!=='khzanah.com'
+ if(url.hostname==='www.khzanah.com'){url.hostname='khzanah.com';url.protocol='https:';return Response.redirect(url.href,301)}
+ if(['GET','HEAD'].includes(request.method)&&env.VISITORS_DB&&['/sitemap.xml','/sitemap-public.xml'].includes(path)){
+  try{
+   let response
+   if(path==='/sitemap-public.xml')response=await publicSitemap(env.VISITORS_DB,url)
+   else{
+    const source=await env.ASSETS.fetch(new URL('/sitemap.xml',url));if(!source.ok)throw Error('sitemap_unavailable')
+    const content=new TextDecoder().decode(await boundedBytes(source.body,1048576)),pages=await publicSitemapPages(env.VISITORS_DB)
+    const additions=Array.from({length:pages},(_,index)=>`<sitemap><loc>https://khzanah.com/sitemap-public.xml?page=${index+1}</loc></sitemap>`).join('')
+    response=new Response(content.replace('</sitemapindex>',additions+'</sitemapindex>'),{headers:{'content-type':'application/xml; charset=utf-8','cache-control':'no-store',...(preview?{'x-robots-tag':'noindex'}:{})}})
+   }
+   return request.method==='HEAD'?new Response(null,{status:response.status,headers:response.headers}):response
+  }catch{return new Response('sitemap temporarily unavailable',{status:503,headers:{'x-robots-tag':'noindex','cache-control':'no-store'}})}
+ }
+ // /api remains routed to existing Functions; SEO never reads or rewrites it.
+ if(!['GET','HEAD'].includes(request.method)||/^\/(api|assets|data|library|fonts|icons|downloads)\//.test(path)||/\.[a-z0-9]+$/i.test(path)){
+  const response=await context.next()
+  if(!preview)return response
+  const headers=new Headers(response.headers);headers.set('X-Robots-Tag','noindex')
+  return new Response(response.body,{status:response.status,statusText:response.statusText,headers})
+ }
+ let record,status=200
+ const canonicalPath=canonicalizePath(path)
+ const match=/^\/(authors|books)\/(\d{1,12})$/.exec(canonicalPath)
+ try{
+  if(match){const kind=match[1],id=kind==='authors'?match[2].padStart(6,'0'):String(Number(match[2]));const data=await smallJson(await env.ASSETS.fetch(new URL(`/data/seo/${kind}-${seoShard(id)}.json`,url)));record=await refreshPublicSeoRecord(env.VISITORS_DB,kind,id,data.records[id]);if(!record)status=404;else if(path!==`/${kind}/${id}`){url.pathname=`/${kind}/${id}`;return Response.redirect(url.href,301)}}
+  else if(/^\/books\/public\/[A-Za-z0-9_-]{1,200}$/.test(path)){record=await refreshPublicSeoRecord(env.VISITORS_DB,'books',path.split('/')[3]);if(!record)status=404}
+  else if(/^\/authors\//.test(path))status=404
+  // Opaque local/account book identities belong to the private SPA, never public SEO.
+  const meta=status===404?{title:'الصفحة غير موجودة | الخِزانة',description:'لم يُعثر على الكتاب أو المؤلف المطلوب.',robots:'noindex, follow'}:pageMetaFor(path+url.search,record)
+  const schema=[{'@context':'https://schema.org','@type':'BreadcrumbList',itemListElement:[{'@type':'ListItem',position:1,name:'الخِزانة',item:SEO_ORIGIN+'/'},...(path==='/'?[]:[{'@type':'ListItem',position:2,name:record?.title??record?.name??meta.title,item:SEO_ORIGIN+path}])]}]
+  if(path==='/')schema.push({'@context':'https://schema.org','@type':'WebSite',name:'الخزانة',alternateName:'الخزانة: المكتبة الإسلامية الذكية',url:SEO_ORIGIN+'/',inLanguage:'ar'})
+  let body=`<main id="main-content" class="seo-page${path==='/'?' seo-page--home':''}"><h1>${escape(record?.title??record?.name??meta.title)}</h1><p>${escape(meta.description)}</p>`
+  if(record?.title){
+   body+=`<p>${record.authorId?`<a href="/authors/${escape(record.authorId)}">${escape(record.author)}</a>`:escape(record.author)}${record.deathYearHijri?` (ت ${record.deathYearHijri} هـ)`:''}</p><p>${escape(record.category)}</p><a href="/browse">تصفح الأقسام</a>`
+   schema.push({'@context':'https://schema.org','@type':'Book',name:record.title,url:SEO_ORIGIN+path,author:{'@type':'Person',name:record.author,...(record.authorId?{url:SEO_ORIGIN+'/authors/'+record.authorId}:{})},genre:record.category,inLanguage:'ar'})
+   if(record.toc){
+    const rows=await readSeoToc(env.ASSETS,url,record.toc,env.LIBRARY_R2),rawPage=url.searchParams.get('tocPage')??'1'
+    const tocPage=/^[1-9]\d{0,5}$/.test(rawPage)?Number(rawPage):1,start=(tocPage-1)*200
+    body+=`<section aria-label="فهرس محتويات الكتاب"><h2>فهرس المحتويات</h2><ol start="${start+1}">${rows.slice(start,start+200).map(row=>`<li>${row.pageIndex===null?escape(row.title):`<a href="/books/${record.id}?pageIndex=${row.pageIndex}">${escape(row.title)}</a>`}</li>`).join('')}</ol>`
+    if(start>0)body+=`<a href="/books/${record.id}?tocPage=${tocPage-1}">السابق من الفهرس</a>`
+    if(start+200<rows.length)body+=`<a href="/books/${record.id}?tocPage=${tocPage+1}">التالي من الفهرس</a>`
+    body+='</section>'
+   }
+  }else if(record?.name){
+   body+=`<ul>${(record.books??[]).map(b=>`<li><a href="/books/${escape(b.id)}">${escape(b.title)}</a></li>`).join('')}</ul>`
+   schema.push({'@context':'https://schema.org','@type':'Person',name:record.name,url:SEO_ORIGIN+path,description:meta.description})
+  }else if(PUBLIC_PAGE_META[path]){
+   body+=`<nav aria-label="أقسام الخزانة">${Object.keys(PUBLIC_PAGE_META).map(p=>`<a href="${p}">${escape(seoNavLabels[p])}</a>`).join('')}</nav>`
+   const kind=path==='/authors'?'authors':'books',data=await smallJson(await env.ASSETS.fetch(new URL(`/data/seo/${kind}-00.json`,url)))
+   body+=`<ul>${Object.values(data.records).slice(0,40).map(row=>`<li><a href="/${kind}/${escape(row.id)}">${escape(row.title??row.name)}</a></li>`).join('')}</ul>`
+   schema.push({'@context':'https://schema.org','@type':'CollectionPage',name:meta.title,url:SEO_ORIGIN+path,description:meta.description})
+  }
+  body+='</main>'
+  const index=await env.ASSETS.fetch(new URL('/index.html',url));if(!index.ok)throw Error('seo_shell_unavailable')
+  let extra=seoPresentation+`<meta name="description" content="${escape(meta.description)}"><meta name="robots" content="${escape(meta.robots)}">`
+  if(meta.canonicalPath)extra+=`<link rel="canonical" href="${SEO_ORIGIN}${escape(meta.canonicalPath)}">`
+  if(!meta.robots.includes('noindex'))extra+=`<script type="application/ld+json">${JSON.stringify(schema).replace(/</g,'\\u003c')}</script>`
+  const rewritten=new HTMLRewriter().on('title',{element:e=>e.setInnerContent(meta.title)}).on('meta[name="description"], meta[name="robots"], link[rel="canonical"], script[type="application/ld+json"]',{element:e=>e.remove()}).on('head',{element:e=>e.append(extra,{html:true})}).on('#app',{element:e=>e.setInnerContent(body,{html:true})}).transform(index)
+  const headers=new Headers(rewritten.headers);headers.set('content-type','text/html; charset=utf-8');headers.set('cache-control','no-cache');headers.delete('content-length');headers.delete('etag')
+  if(preview||meta.robots.includes('noindex'))headers.set('X-Robots-Tag','noindex, follow');else headers.delete('X-Robots-Tag')
+  return new Response(request.method==='HEAD'?null:rewritten.body,{status,headers})
+ }catch(error){console.error('seo_render_failed',error instanceof Error?error.message:'unknown');return new Response('تعذّر تحميل الصفحة مؤقتًا',{status:503,headers:{'content-type':'text/plain; charset=utf-8','X-Robots-Tag':'noindex','cache-control':'no-store'}})}
+}

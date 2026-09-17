@@ -1,3 +1,5 @@
+import {readingStorageKey} from './reading_identity_scope'
+
 export interface ReadingPlan {
   bookId: string
   totalPages: number
@@ -67,7 +69,7 @@ export function planProgress(plan: ReadingPlan, currentPageIndex: number, now = 
 
 export function listReadingPlans(): ReadingPlan[] {
   try {
-    const parsed = JSON.parse(localStorage.getItem(KEY) ?? '[]') as ReadingPlan[]
+    const parsed = JSON.parse(localStorage.getItem(readingStorageKey(KEY)) ?? '[]') as ReadingPlan[]
     return Array.isArray(parsed) ? parsed.filter(validPlan).map(plan => ({ ...plan, minutesPerDay: Number.isFinite(plan.minutesPerDay) ? plan.minutesPerDay : Math.max(5, plan.pagesPerDay * 2) })) : []
   } catch { return [] }
 }
@@ -78,20 +80,20 @@ export function getReadingPlan(bookId: string): ReadingPlan | undefined {
 
 export function saveReadingPlan(plan: ReadingPlan): void {
   const plans = [plan, ...listReadingPlans().filter(item => item.bookId !== plan.bookId)]
-  localStorage.setItem(KEY, JSON.stringify(plans))
+  localStorage.setItem(readingStorageKey(KEY), JSON.stringify(plans))
 }
 
 export function removeReadingPlan(bookId: string): void {
-  localStorage.setItem(KEY, JSON.stringify(listReadingPlans().filter(plan => plan.bookId !== bookId)))
+  localStorage.setItem(readingStorageKey(KEY), JSON.stringify(listReadingPlans().filter(plan => plan.bookId !== bookId)))
 }
 
 export function readingPosition(bookId: string): number {
-  return Math.max(0, Number(localStorage.getItem(`alkhizana:reading-position:${bookId}`)) || 0)
+  return Math.max(0, Number(localStorage.getItem(readingStorageKey(`alkhizana:reading-position:${bookId}`))) || 0)
 }
 
 export function saveReadingPosition(bookId: string, pageIndex: number): void {
   if (!bookId.trim() || !Number.isFinite(pageIndex)) return
-  localStorage.setItem(`alkhizana:reading-position:${bookId}`, String(Math.max(0, Math.floor(pageIndex))))
+  localStorage.setItem(readingStorageKey(`alkhizana:reading-position:${bookId}`), String(Math.max(0, Math.floor(pageIndex))))
 }
 
 function validPlan(value: ReadingPlan): boolean {

@@ -5,6 +5,7 @@ export interface AuthorFilterEntry<T> {
   name: string
   aliases?: readonly string[]
   bookCount: number
+  hasBooks?: boolean
 }
 
 export function normalizeArabicAuthorName(value: string): string {
@@ -32,9 +33,45 @@ export function authorNameMatches(name: string, aliases: readonly string[] | und
 }
 
 export function filterAuthorEntries<T>(entries: readonly AuthorFilterEntry<T>[], query: string, ownersOnly: boolean): AuthorFilterEntry<T>[] {
-  return entries.filter(entry => (!ownersOnly || entry.bookCount > 0) && authorNameMatches(entry.name, entry.aliases, query))
+  return entries.filter(entry => (!ownersOnly || (entry.hasBooks ?? entry.bookCount > 0)) && authorNameMatches(entry.name, entry.aliases, query))
 }
 
-export function nextAuthorVisibleCount(current: number, total: number, batchSize = 80): number {
+export function nextAuthorVisibleCount(current: number, total: number, batchSize = 100): number {
   return Math.min(total, Math.max(0, current) + Math.max(1, batchSize))
+}
+
+export const UNKNOWN_AUTHOR_DEATH_SENTINEL = 99999
+
+export function isUnknownAuthorDeathYear(value: number | undefined | null): boolean {
+  return value === UNKNOWN_AUTHOR_DEATH_SENTINEL
+}
+
+export function displayableAuthorDeathYear(value: number | undefined | null): number | undefined {
+  return Number.isInteger(value) && value! > 0 && value! <= currentHijriYear() && !isUnknownAuthorDeathYear(value) ? value! : undefined
+}
+let calendarCache:{day:string;year:number}|undefined
+export function currentHijriYear():number {
+  // Calendar-labelled fields only. No inference/conversion from a bare Gregorian number.
+  const now=new Date(),day=now.toISOString().slice(0,10)
+  if(calendarCache?.day!==day)calendarCache={day,year:Number(new Intl.DateTimeFormat('en-u-ca-islamic-nu-latn',{year:'numeric'}).formatToParts(now).find(part=>part.type==='year')?.value)||0}
+  return calendarCache.year
+}
+export type AuthorDirectorySort = 'death-asc' | 'death-desc' | 'name'
+
+/** يرتب تاريخًا موثقًا فقط؛ السجل بلا وفاة يبقى أخيرًا في الاتجاهين. */
+export function sortAuthorDirectoryEntries<T>(entries: readonly T[], mode: AuthorDirectorySort, authorOf: (entry: T) => { name: string; deathYearHijri?: number }): T[] {
+  return [...entries].sort((leftEntry, rightEntry) => {
+    const left = authorOf(leftEntry), right = authorOf(rightEntry)
+    if (mode === 'name') return left.name.localeCompare(right.name, 'ar')
+    const leftDeath = displayableAuthorDeathYear(left.deathYearHijri)
+    const rightDeath = displayableAuthorDeathYear(right.deathYearHijri)
+    const leftKnown = leftDeath != null
+    const rightKnown = rightDeath != null
+    if (leftKnown !== rightKnown) return leftKnown ? -1 : 1
+    if (!leftKnown) return left.name.localeCompare(right.name, 'ar')
+    const chronology = mode === 'death-desc'
+      ? rightDeath! - leftDeath!
+      : leftDeath! - rightDeath!
+    return chronology || left.name.localeCompare(right.name, 'ar')
+  })
 }

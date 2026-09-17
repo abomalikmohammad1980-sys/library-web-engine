@@ -1,6 +1,8 @@
 import DOMPurify from 'dompurify'
+import {safeImportedStyle} from './import_style_security'
 import { strFromU8, unzipSync } from 'fflate'
 import { parseEpub } from './epub_import'
+import { decorateImportedTextualDom } from './shamela_text_presentation'
 
 export interface EpubRendition {
   pages: HTMLElement[]
@@ -33,7 +35,7 @@ function mimeFromPath(path: string): string {
 }
 
 function safeStyle(value: string): string {
-  return value.split(';').map(item => item.trim()).filter(item => item && !/^(?:position\s*:\s*fixed|z-index\s*:|behavior\s*:|content\s*:)/i.test(item) && !/(?:javascript|expression)\s*\(/i.test(item)).join('; ')
+  return safeImportedStyle(value) // javascript|expression and network CSS are not document formatting.
 }
 
 function safeId(chapter: number, value: string): string {
@@ -52,8 +54,9 @@ function scopedCss(css: string, scope: string, basePath: string, assetUrl: (path
     const declarations = safeStyle(body)
     if (!declarations) return ''
     const selector = selectorText.trim()
-    if (/^@(?:font-face|media|supports)/i.test(selector)) return /^@font-face/i.test(selector) ? `${selector}{${declarations}}` : ''
+    if (/^@(?:font-face|media|supports)/i.test(selector)) return ''
     if (selector.startsWith('@')) return ''
+    if (!/^[\w\s.#,>*+\-]+$/.test(selector)) return ''
     const scoped = selector.split(',').map((item: string) => {
       const clean = item.trim().replace(/^(?:html|body)(?=\s|$)/i, '').trim()
       return clean ? `${scope} ${clean}` : scope
@@ -80,14 +83,15 @@ export function renderEpubRendition(data: Uint8Array, fileName: string): EpubRen
     const doc = new DOMParser().parseFromString(markup, 'text/html')
     const fragment = DOMPurify.sanitize(doc.body?.innerHTML ?? markup, {
       RETURN_DOM_FRAGMENT: true,
-      FORBID_TAGS: ['script', 'iframe', 'object', 'embed', 'form', 'input', 'button', 'textarea', 'select', 'option', 'meta', 'base'],
-      FORBID_ATTR: ['srcdoc'],
-      ALLOW_DATA_ATTR: true,
+      FORBID_TAGS: ['script', 'iframe', 'object', 'embed', 'form', 'input', 'button', 'textarea', 'select', 'option', 'meta', 'base', 'style', 'link', 'svg', 'math', 'video', 'audio', 'source'],
+      FORBID_ATTR: ['srcdoc', 'srcset', 'sizes', 'ping', 'autofocus', 'formaction'],
+      ALLOW_DATA_ATTR: false,
     }) as DocumentFragment
     const content = document.createElement('article')
     content.className = 'reader__epub-content'
     content.dir = doc.documentElement.getAttribute('dir') === 'ltr' || doc.body?.getAttribute('dir') === 'ltr' ? 'ltr' : 'rtl'
     content.appendChild(fragment)
+    decorateImportedTextualDom(content)
     for (const element of content.querySelectorAll<HTMLElement>('*')) {
       for (const name of element.getAttributeNames()) if (/^on/i.test(name)) element.removeAttribute(name)
       if (element.hasAttribute('style')) element.setAttribute('style', safeStyle(element.getAttribute('style') ?? ''))

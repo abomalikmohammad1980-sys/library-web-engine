@@ -13,10 +13,9 @@ export function hashWithQuery(hash: string, updates: QueryUpdates): string {
 }
 
 export function replaceHashQuery(updates: QueryUpdates): void {
-  history.replaceState(null, '', hashWithQuery(location.hash, updates))
+  history.replaceState(history.state, '', hashWithQuery(location.pathname+location.search, updates)+location.hash)
 }
 
 export function currentHashQuery(): URLSearchParams {
-  return new URLSearchParams(location.hash.split('?')[1] ?? '')
+  return new URLSearchParams(location.search)
 }
-

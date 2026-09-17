@@ -8,9 +8,10 @@ import { join, resolve } from "node:path";
 export interface WordPageStart { paragraphIndex: number; physicalPage: number; adjustedPage: number }
 export interface WordParagraphAudit { paragraphIndex: number; physicalPage: number; adjustedPage: number; text: string }
 export interface WordPageAudit { physicalPage: number; adjustedPage: number; firstParagraphIndex: number; lastParagraphIndex: number; firstText: string; lastText: string }
+export interface WordParagraphFragment { paragraphIndex:number; physicalPage:number; adjustedPage:number; startOffset:number; endOffset:number; text:string }
 export interface AuthoritativeWordPageMap {
   totalPages: number; paragraphCount: number; starts: WordPageStart[];
-  pages?: WordPageAudit[]; paragraphs?: WordParagraphAudit[];
+  pages?: WordPageAudit[]; paragraphs?: WordParagraphAudit[]; fragments?: WordParagraphFragment[];
 }
 export interface WordMapPartResult { fingerprint: string; bytes: number; map: AuthoritativeWordPageMap }
 export interface WordMapResult {
@@ -61,12 +62,13 @@ function validateMap(value: unknown): AuthoritativeWordPageMap {
       const page = map.pages[index]!;
       const empty = page.firstParagraphIndex === -1 && page.lastParagraphIndex === -1;
       const start = startsByPage.get(page.physicalPage);
+      const fragmentOnPage = map.fragments?.some(fragment => fragment.physicalPage === page.physicalPage) ?? false;
       if (page.physicalPage !== index + 1 || !Number.isInteger(page.adjustedPage)
         || typeof page.firstText !== "string" || typeof page.lastText !== "string"
-        || (empty ? start !== undefined : start === undefined)
+        || (empty ? start !== undefined || fragmentOnPage : start === undefined && !fragmentOnPage)
         || (!empty && (!Number.isInteger(page.firstParagraphIndex) || !Number.isInteger(page.lastParagraphIndex)
           || page.firstParagraphIndex < 0 || page.lastParagraphIndex < page.firstParagraphIndex
-          || page.lastParagraphIndex >= map.paragraphCount! || page.firstParagraphIndex < start!.paragraphIndex))
+          || page.lastParagraphIndex >= map.paragraphCount! || (start !== undefined && !fragmentOnPage && page.firstParagraphIndex < start.paragraphIndex)))
         || (empty && (page.firstText !== "" || page.lastText !== ""))
         || (start !== undefined && start.adjustedPage !== page.adjustedPage))
         throw new WordMapServiceError("conversion_failed", 502);
@@ -81,6 +83,21 @@ function validateMap(value: unknown): AuthoritativeWordPageMap {
         || paragraph.physicalPage < 1 || paragraph.physicalPage > map.totalPages!
         || !Number.isInteger(paragraph.adjustedPage) || typeof paragraph.text !== "string")
         throw new WordMapServiceError("conversion_failed", 502);
+    }
+  }
+  if (map.fragments !== undefined) {
+    if (!Array.isArray(map.fragments)) throw new WordMapServiceError("conversion_failed", 502);
+    const previousEnd = new Map<number, number>();
+    for (const fragment of map.fragments) {
+      const prior = previousEnd.get(fragment.paragraphIndex) ?? 0;
+      if (!Number.isInteger(fragment.paragraphIndex) || fragment.paragraphIndex < 0
+        || fragment.paragraphIndex >= map.paragraphCount! || !Number.isInteger(fragment.physicalPage)
+        || fragment.physicalPage < 1 || fragment.physicalPage > map.totalPages!
+        || !Number.isInteger(fragment.adjustedPage) || !Number.isInteger(fragment.startOffset)
+        || !Number.isInteger(fragment.endOffset) || fragment.startOffset < 0
+        || fragment.endOffset <= fragment.startOffset || fragment.startOffset !== prior
+        || typeof fragment.text !== "string") throw new WordMapServiceError("conversion_failed", 502);
+      previousEnd.set(fragment.paragraphIndex, fragment.endOffset);
     }
   }
   return map as AuthoritativeWordPageMap;

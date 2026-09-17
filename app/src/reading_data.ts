@@ -7,6 +7,7 @@ import { listReadingPlans, readingPosition, saveReadingPlan, saveReadingPosition
 import { dismissedRecommendationIds, saveDismissedRecommendationIds } from './recommendation_preferences'
 import { listSpacedReviews, saveSpacedReviews, type SpacedReviewRecord } from './spaced_review'
 import { listResearchProjects, saveResearchProjects, type ResearchProject } from './research_project'
+import { captureReadingIdentity } from './reading_identity_scope'
 
 export interface ReadingDataSnapshot {
   format: 'alkhizana-reading-data'
@@ -65,8 +66,8 @@ export function normalizeReadingData(value: unknown): ReadingDataSnapshot {
     },
     annotations: { bookmarks: normalizedBookmarks, notes, highlights },
     settings: {
-      interfaceScale: Math.min(130, Math.max(85, finite(settings.interfaceScale, 100))),
-      readerScale: Math.min(140, Math.max(80, finite(settings.readerScale, 100))),
+      interfaceScale: Math.min(200, Math.max(85, finite(settings.interfaceScale, 100))),
+      readerScale: Math.min(200, Math.max(80, finite(settings.readerScale, 100))),
       highContrast: Boolean(settings.highContrast), reduceMotion: Boolean(settings.reduceMotion),
       theme: settings.theme === 'light' || settings.theme === 'dark' || settings.theme === 'sepia' ? settings.theme : 'original',
     }, shelves, quotes, readingPlans, readingPositions, dismissedRecommendationIds: [...new Set(strings(root.dismissedRecommendationIds))], spacedReviews, researchProjects,
@@ -107,6 +108,19 @@ export function mergeReadingData(current: ReadingDataSnapshot, incoming: Reading
   }
 }
 
+/** Capture before file IO; never apply a pending import to a different account. */
+export async function importReadingDataFile(file: Pick<Blob, 'text'>, confirmImport: () => boolean): Promise<ReadingDataSnapshot | undefined> {
+  const identity = captureReadingIdentity()
+  const text = await file.text()
+  const assertCurrent = () => { if (!identity.isCurrent()) throw new Error('تغيّر الحساب أثناء قراءة الملف. أعد الاستيراد ضمن الحساب المطلوب.') }
+  assertCurrent()
+  const parsed: unknown = JSON.parse(text)
+  if (!confirmImport()) return undefined
+  assertCurrent()
+  // No await between this guard and the synchronous import writes.
+  return importReadingData(parsed)
+}
+
 export function importReadingData(value: unknown): ReadingDataSnapshot {
   const merged = mergeReadingData(currentReadingData(), normalizeReadingData(value))
   saveReadingActivity(merged.activity); saveAnnotations(merged.annotations); saveSettings(merged.settings); saveShelves(merged.shelves); saveReaderQuotes(merged.quotes)
@@ -124,7 +138,7 @@ function normalizeNote(value: unknown): ReaderNote | undefined {
 function normalizeHighlight(value: unknown): ReaderHighlight | undefined {
   const item = record(value); const color = item.color
   if (typeof item.id !== 'string' || typeof item.bookId !== 'string' || typeof item.text !== 'string' || !['important', 'evidence', 'review', 'correction'].includes(String(color))) return undefined
-  return { id: item.id, bookId: item.bookId, pageIndex: Math.max(0, finite(item.pageIndex)), text: item.text, color: color as ReaderHighlight['color'], ...(finite(item.occurrence, -1) >= 0 ? { occurrence: finite(item.occurrence) } : {}), createdAt: Math.max(0, finite(item.createdAt)) }
+  return { id: item.id, bookId: item.bookId, pageIndex: Math.max(0, finite(item.pageIndex)), text: item.text, color: color as ReaderHighlight['color'], ...(typeof item.comment==='string'&&item.comment.trim()?{comment:item.comment.trim().slice(0,2000)}:{}), ...(finite(item.occurrence, -1) >= 0 ? { occurrence: finite(item.occurrence) } : {}), createdAt: Math.max(0, finite(item.createdAt)) }
 }
 function normalizeShelf(value: unknown): Shelf | undefined { const item = record(value); return typeof item.id === 'string' && typeof item.name === 'string' ? { id: item.id, name: item.name, bookIds: strings(item.bookIds), createdAt: Math.max(0, finite(item.createdAt)) } : undefined }
 function normalizeQuote(value: unknown): ReaderQuote | undefined { const item = record(value); return typeof item.id === 'string' && typeof item.text === 'string' && typeof item.bookId === 'string' ? { id: item.id, text: item.text, bookId: item.bookId, createdAt: Math.max(0, finite(item.createdAt)) } : undefined }

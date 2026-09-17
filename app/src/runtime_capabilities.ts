@@ -50,7 +50,18 @@ export function getRuntimeCapabilities(): Promise<RuntimeCapabilities> {
 }
 
 export function publicRuntimeNoticeText(): string {
-  return 'نسخة ويب تجريبية: تُحفظ كتبك وملاحظاتك في هذا المتصفح على هذا الجهاز فقط، وقد تُفقد عند مسح بيانات المتصفح. القراءة والاستيراد يعملان هنا، أما إنشاء PDF من Word فيحتاج تشغيل الخِزانة المحلي.'
+  return 'القراءة والاستيراد يعملان هنا، وتبقى كتبك وملاحظاتك في هذا المتصفح على هذا الجهاز فقط. إنشاء PDF من عرض المتصفح متاح دون Microsoft Word، أما النسخة المطابقة الصادرة من Microsoft Word فتحتاج المساعد المحلي المثبت والمتصل.'
+}
+
+export function wordPdfCapabilityText(
+  capabilities: Pick<RuntimeCapabilities, 'wordPdfConversionAvailable'>,
+): { browser: string; office: string } {
+  return {
+    browser: 'إنشاء PDF من عرض المتصفح متاح على هذا الجهاز؛ لا يستخدم Microsoft Word وقد يختلف عنه قليلًا في التنسيق.',
+    office: capabilities.wordPdfConversionAvailable
+      ? 'إنشاء PDF المطابق عبر Microsoft Word متاح الآن من خلال المساعد المحلي.'
+      : 'إنشاء PDF المطابق عبر Microsoft Word غير متاح في الموقع الحي؛ يحتاج Microsoft Word والمساعد المحلي المتصل.',
+  }
 }
 
 export function canImportWordFileInRuntime(fileName: string, capabilities: Pick<RuntimeCapabilities, 'wordPdfEndpointAvailable'>): boolean {

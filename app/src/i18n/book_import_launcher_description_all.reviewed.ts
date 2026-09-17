@@ -1,0 +1,23 @@
+/** وصف مشغّل الاستيراد؛ أسماء الملفات وبياناتها ليست جزءًا من القاموس. */
+const source='مكان واحد لملفات Word وPDF وEPUB وBOK والنصوص؛ يتعرف النظام إلى كل صيغة ويعالجها بمسارها الصحيح.'
+const one=(value:string)=>({[source]:value})
+export const REVIEWED_BOOK_IMPORT_LAUNCHER_DESCRIPTION_ALL_UI={
+en:one('One place for Word, PDF, EPUB, BOK, and text files; each format is detected and handled through its proper path.'),fr:one('Un seul endroit pour les fichiers Word, PDF, EPUB, BOK et texte ; chaque format est détecté et traité par le parcours approprié.'),
+ug:one('Word، PDF، EPUB، BOK ۋە تېكىست ھۆججەتلىرى ئۈچۈن بىر جاي؛ سىستېما ھەر فورماتنى تونۇپ، توغرا يولدا بىر تەرەپ قىلىدۇ.'),ckb:one('یەک شوێن بۆ فایلەکانی Word و PDF و EPUB و BOK و دەق؛ سیستەم هەر فۆرماتێک دەناسێت و بە ڕێگای دروست چارەسەری دەکات.'),
+ku:one('Cihek ji bo pelên Word, PDF, EPUB, BOK û nivîsê; pergal her formatê nas dike û bi rêya rast dixebitîne.'),tr:one('Word, PDF, EPUB, BOK ve metin dosyaları için tek yer; sistem her biçimi tanır ve doğru yoldan işler.'),
+ur:one('Word، PDF، EPUB، BOK اور متنی فائلوں کے لیے ایک جگہ؛ نظام ہر صیغہ پہچان کر درست طریقے سے عمل کرتا ہے۔'),fa:one('یک مکان برای فایل‌های Word، PDF، EPUB، BOK و متنی؛ سامانه هر قالب را تشخیص می‌دهد و از مسیر درست پردازش می‌کند.'),
+sw:one('Mahali pamoja kwa faili za Word, PDF, EPUB, BOK na maandishi; mfumo hutambua kila aina na kuishughulikia kwa njia sahihi.'),hi:one('Word, PDF, EPUB, BOK और पाठ फ़ाइलों के लिए एक स्थान; सिस्टम हर प्रारूप पहचानकर सही प्रक्रिया अपनाता है।'),
+hu:one('Egy hely a Word-, PDF-, EPUB-, BOK- és szövegfájlokhoz; a rendszer felismeri és a megfelelő módon kezeli mindegyiket.'),id:one('Satu tempat untuk file Word, PDF, EPUB, BOK, dan teks; sistem mengenali setiap format dan memprosesnya dengan jalur yang tepat.'),
+ms:one('Satu tempat untuk fail Word, PDF, EPUB, BOK dan teks; sistem mengenali setiap format dan memprosesnya melalui laluan yang betul.'),bn:one('Word, PDF, EPUB, BOK ও পাঠ্য ফাইলের এক স্থান; সিস্টেম প্রতিটি বিন্যাস চিনে সঠিক পথে প্রক্রিয়া করে।'),
+ps:one('د Word، PDF، EPUB، BOK او متن فایلونو لپاره یو ځای؛ سیسټم هره بڼه پېژني او په سمه لاره یې پروسس کوي.'),so:one('Hal meel oo loogu talagalay faylasha Word, PDF, EPUB, BOK iyo qoraalka; nidaamku nooc kasta wuu aqoonsadaa oo si sax ah ayuu u farsameeyaa.'),
+ha:one('Wuri guda don fayilolin Word, PDF, EPUB, BOK da rubutu; tsarin yana gane kowane tsari kuma ya sarrafa shi ta hanya madaidaiciya.'),ru:one('Одно место для файлов Word, PDF, EPUB, BOK и текста; система распознаёт каждый формат и обрабатывает его правильным способом.'),
+uk:one('Одне місце для файлів Word, PDF, EPUB, BOK і тексту; система розпізнає кожен формат і обробляє його належним способом.'),de:one('Ein Ort für Word-, PDF-, EPUB-, BOK- und Textdateien; das System erkennt jedes Format und verarbeitet es auf dem richtigen Weg.'),
+es:one('Un lugar para archivos Word, PDF, EPUB, BOK y de texto; el sistema reconoce cada formato y lo procesa por la vía adecuada.'),pt:one('Um local para ficheiros Word, PDF, EPUB, BOK e texto; o sistema reconhece cada formato e processa-o pela via correta.'),
+it:one('Un solo posto per file Word, PDF, EPUB, BOK e di testo; il sistema riconosce ogni formato e lo elabora nel modo corretto.'),nl:one('Eén plek voor Word-, PDF-, EPUB-, BOK- en tekstbestanden; het systeem herkent elk formaat en verwerkt het via de juiste route.'),
+sv:one('En plats för Word-, PDF-, EPUB-, BOK- och textfiler; systemet känner igen varje format och behandlar det på rätt sätt.'),no:one('Ett sted for Word-, PDF-, EPUB-, BOK- og tekstfiler; systemet gjenkjenner hvert format og behandler det på riktig måte.'),
+pl:one('Jedno miejsce dla plików Word, PDF, EPUB, BOK i tekstowych; system rozpoznaje każdy format i przetwarza go właściwą ścieżką.'),ro:one('Un singur loc pentru fișiere Word, PDF, EPUB, BOK și text; sistemul recunoaște fiecare format și îl procesează corect.'),
+bs:one('Jedno mjesto za Word, PDF, EPUB, BOK i tekstualne datoteke; sistem prepoznaje svaki format i obrađuje ga ispravnim putem.'),sq:one('Një vend për skedarët Word, PDF, EPUB, BOK dhe tekst; sistemi njeh çdo format dhe e përpunon në mënyrën e duhur.'),
+az:one('Word, PDF, EPUB, BOK və mətn faylları üçün bir yer; sistem hər formatı tanıyır və düzgün yolla emal edir.'),uz:one('Word, PDF, EPUB, BOK va matn fayllari uchun bir joy; tizim har formatni taniydi va to‘g‘ri yo‘lda qayta ishlaydi.'),
+kk:one('Word, PDF, EPUB, BOK және мәтін файлдарына арналған бір орын; жүйе әр пішімді танып, дұрыс жолмен өңдейді.'),zh:one('集中处理 Word、PDF、EPUB、BOK 和文本文件；系统会识别每种格式并按正确流程处理。'),
+ja:one('Word、PDF、EPUB、BOK、テキストファイルを一か所で扱い、形式を識別して適切な手順で処理します。'),ko:one('Word, PDF, EPUB, BOK 및 텍스트 파일을 한곳에서 형식을 인식해 올바른 절차로 처리합니다.'),
+} as const

@@ -1,7 +1,28 @@
 import { icon, type IconName } from './icons'
 import { h } from './ui'
 
-export type StateKind = 'loading' | 'empty' | 'no-results' | 'error'
+export type StateKind = 'loading' | 'empty' | 'no-results' | 'error' | 'offline'
+
+export type CollectionStateKind = StateKind | 'filled'
+
+export interface CollectionStateSnapshot {
+  settled: boolean
+  count?: number
+  filtered?: boolean
+  error?: unknown
+  online?: boolean
+}
+
+/**
+ * المصدر الوحيد لقرار حالة القوائم غير المتزامنة. لا يسمح بإعلان الفراغ أو
+ * «لا نتائج» قبل اكتمال القراءة، ويفصل انقطاع الشبكة عن الخطأ الحقيقي.
+ */
+export function collectionStateKind(snapshot: CollectionStateSnapshot): CollectionStateKind {
+  if (!snapshot.settled) return 'loading'
+  if (snapshot.error) return snapshot.online === false ? 'offline' : 'error'
+  if ((snapshot.count ?? 0) > 0) return 'filled'
+  return snapshot.filtered ? 'no-results' : 'empty'
+}
 
 export interface StateSemantics {
   role: 'status' | 'alert'
@@ -30,7 +51,7 @@ export interface StateViewOptions {
 export function stateView(options: StateViewOptions): HTMLElement {
   const semantics = stateSemantics(options.kind)
   const root = h('div', { class: `state-view state-view--${options.kind}${options.compact ? ' state-view--compact' : ''}`, role: semantics.role, 'aria-live': semantics.live },
-    h('span', { class: 'state-view__icon', 'aria-hidden': 'true' }, icon(options.icon ?? (options.kind === 'error' ? 'close' : options.kind === 'loading' ? 'clock' : 'search'), 25)),
+    h('span', { class: 'state-view__icon', 'aria-hidden': 'true' }, icon(options.icon ?? (options.kind === 'error' ? 'close' : options.kind === 'loading' ? 'clock' : options.kind === 'offline' ? 'globe' : 'search'), 25)),
     h('strong', options.titleId ? { id: options.titleId } : null, options.title),
     ...(options.description ? [h('p', null, options.description)] : []),
   )

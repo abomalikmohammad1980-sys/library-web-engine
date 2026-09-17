@@ -1,0 +1,28 @@
+/** قوالب تنقل المحفوظات؛ تُبقي تسمية المستخدم الملتقطة بلا ترجمة. */
+const templates:Record<string,readonly[string,string,string,string,string]>={
+en:['Bookmark added to page {n}','Bookmark removed from page {n}','Page {n} bookmark','Page {n}','Go to {label}, page {n}'],fr:['Signet ajouté à la page {n}','Signet retiré de la page {n}','Signet de la page {n}','Page {n}','Aller à {label}, page {n}'],
+ug:['{n}-بەتكە بەلگە قوشۇلدى','{n}-بەتتىكى بەلگە ئۆچۈرۈلدى','{n}-بەت بەلگىسى','{n}-بەت','{label}، {n}-بەتكە بېرىش'],ckb:['نیشانە بۆ پەڕەی {n} زیاد کرا','نیشانەی پەڕەی {n} سڕایەوە','نیشانەی پەڕەی {n}','پەڕەی {n}','بڕۆ بۆ {label}، پەڕەی {n}'],
+ku:['Nîşan li rûpela {n} hat zêdekirin','Nîşana rûpela {n} hat rakirin','Nîşana rûpela {n}','Rûpela {n}','Biçe {label}, rûpela {n}'],tr:['{n}. sayfaya işaret eklendi','{n}. sayfanın işareti kaldırıldı','{n}. sayfa işareti','Sayfa {n}','{label} konumuna, {n}. sayfaya git'],
+ur:['صفحہ {n} پر نشان شامل ہوا','صفحہ {n} کا نشان ہٹا دیا گیا','صفحہ {n} کا نشان','صفحہ {n}','{label}، صفحہ {n} پر جائیں'],fa:['نشان به صفحهٔ {n} افزوده شد','نشان صفحهٔ {n} حذف شد','نشان صفحهٔ {n}','صفحهٔ {n}','رفتن به {label}، صفحهٔ {n}'],
+sw:['Alama imeongezwa kwenye ukurasa {n}','Alama imeondolewa kwenye ukurasa {n}','Alama ya ukurasa {n}','Ukurasa {n}','Nenda kwenye {label}, ukurasa {n}'],hi:['पृष्ठ {n} पर चिह्न जोड़ा गया','पृष्ठ {n} का चिह्न हटाया गया','पृष्ठ {n} का चिह्न','पृष्ठ {n}','{label}, पृष्ठ {n} पर जाएँ'],
+hu:['Könyvjelző hozzáadva a(z) {n}. oldalhoz','A(z) {n}. oldal könyvjelzője eltávolítva','A(z) {n}. oldal könyvjelzője','{n}. oldal','Ugrás ide: {label}, {n}. oldal'],id:['Penanda ditambahkan ke halaman {n}','Penanda halaman {n} dihapus','Penanda halaman {n}','Halaman {n}','Buka {label}, halaman {n}'],
+ms:['Penanda ditambah pada halaman {n}','Penanda halaman {n} dibuang','Penanda halaman {n}','Halaman {n}','Pergi ke {label}, halaman {n}'],bn:['পৃষ্ঠা {n}-এ চিহ্ন যোগ হয়েছে','পৃষ্ঠা {n}-এর চিহ্ন সরানো হয়েছে','পৃষ্ঠা {n}-এর চিহ্ন','পৃষ্ঠা {n}','{label}, পৃষ্ঠা {n}-এ যান'],
+ps:['{n} پاڼې ته نښه زیاته شوه','د {n} پاڼې نښه لرې شوه','د {n} پاڼې نښه','{n} پاڼه','{label}، {n} پاڼې ته لاړ شئ'],so:['Calaamad ayaa lagu daray bogga {n}','Calaamadda bogga {n} waa la saaray','Calaamadda bogga {n}','Bogga {n}','Tag {label}, bogga {n}'],
+ha:['An ƙara alama a shafi {n}','An cire alamar shafi {n}','Alamar shafi {n}','Shafi {n}','Je zuwa {label}, shafi {n}'],ru:['Закладка добавлена на страницу {n}','Закладка страницы {n} удалена','Закладка страницы {n}','Страница {n}','Перейти к {label}, страница {n}'],
+uk:['Закладку додано на сторінку {n}','Закладку сторінки {n} видалено','Закладка сторінки {n}','Сторінка {n}','Перейти до {label}, сторінка {n}'],de:['Lesezeichen auf Seite {n} hinzugefügt','Lesezeichen von Seite {n} entfernt','Lesezeichen auf Seite {n}','Seite {n}','Zu {label}, Seite {n} springen'],
+es:['Marcador añadido a la página {n}','Marcador eliminado de la página {n}','Marcador de la página {n}','Página {n}','Ir a {label}, página {n}'],pt:['Marcador adicionado à página {n}','Marcador removido da página {n}','Marcador da página {n}','Página {n}','Ir para {label}, página {n}'],
+it:['Segnalibro aggiunto a pagina {n}','Segnalibro rimosso da pagina {n}','Segnalibro di pagina {n}','Pagina {n}','Vai a {label}, pagina {n}'],nl:['Bladwijzer toegevoegd aan pagina {n}','Bladwijzer van pagina {n} verwijderd','Bladwijzer van pagina {n}','Pagina {n}','Ga naar {label}, pagina {n}'],
+sv:['Bokmärke tillagt på sida {n}','Bokmärke borttaget från sida {n}','Bokmärke på sida {n}','Sida {n}','Gå till {label}, sida {n}'],no:['Bokmerke lagt til på side {n}','Bokmerke fjernet fra side {n}','Bokmerke på side {n}','Side {n}','Gå til {label}, side {n}'],
+pl:['Dodano zakładkę na stronie {n}','Usunięto zakładkę strony {n}','Zakładka strony {n}','Strona {n}','Przejdź do {label}, strona {n}'],ro:['Semn de carte adăugat la pagina {n}','Semn de carte eliminat de la pagina {n}','Semn de carte la pagina {n}','Pagina {n}','Mergi la {label}, pagina {n}'],
+bs:['Oznaka dodana na stranicu {n}','Oznaka uklonjena sa stranice {n}','Oznaka stranice {n}','Stranica {n}','Idi na {label}, stranica {n}'],sq:['Faqeshënuesi u shtua në faqen {n}','Faqeshënuesi u hoq nga faqja {n}','Faqeshënuesi i faqes {n}','Faqja {n}','Shko te {label}, faqja {n}'],
+az:['{n}-ci səhifəyə nişan əlavə edildi','{n}-ci səhifənin nişanı silindi','{n}-ci səhifənin nişanı','Səhifə {n}','{label}, {n}-ci səhifəyə keç'],uz:['{n}-sahifaga belgi qo‘shildi','{n}-sahifa belgisi olib tashlandi','{n}-sahifa belgisi','{n}-sahifa','{label}, {n}-sahifaga o‘tish'],
+kk:['{n}-бетке бетбелгі қосылды','{n}-беттің бетбелгісі жойылды','{n}-беттің бетбелгісі','{n}-бет','{label}, {n}-бетке өту'],zh:['已在第 {n} 页添加书签','已移除第 {n} 页的书签','第 {n} 页书签','第 {n} 页','转到 {label}，第 {n} 页'],
+ja:['{n} ページにしおりを追加しました','{n} ページのしおりを削除しました','{n} ページのしおり','{n} ページ','{label}、{n} ページへ移動'],ko:['{n}페이지에 책갈피를 추가했습니다','{n}페이지의 책갈피를 제거했습니다','{n}페이지 책갈피','{n}페이지','{label}, {n}페이지로 이동'],
+}
+const fill=(template:string,n:string,label?:string)=>template.replace('{n}',n).replace('{label}',label??'')
+export function translateReaderAnnotationNavigation(source:string,language:string):string|undefined{
+const t=templates[language];if(!t)return undefined
+const patterns:readonly(readonly[RegExp,0|1|2|3])[]=[[/^أُضيفت علامة للصفحة\s+([0-9٠-٩]+)$/u,0],[/^أزيلت علامة الصفحة\s+([0-9٠-٩]+)$/u,1],[/^علامة الصفحة\s+([0-9٠-٩]+)$/u,2],[/^صفحة\s+([0-9٠-٩]+)$/u,3]]
+for(const[p,i]of patterns){const n=source.match(p)?.[1];if(n)return fill(t[i],n)}
+const jump=source.match(/^الانتقال إلى\s+(.+)،\s+صفحة\s+([0-9٠-٩]+)$/u);const label=jump?.[1],n=jump?.[2];return label&&n?fill(t[4],n,label):undefined
+}

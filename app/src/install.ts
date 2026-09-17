@@ -21,8 +21,13 @@ export function isStandalone(displayMode: boolean, navigatorStandalone = false):
   return displayMode || navigatorStandalone
 }
 
-export function installGuidance(platform: InstallPlatform): string {
+export function installGuidance(platform: InstallPlatform, userAgent = typeof navigator==='undefined'?'':navigator.userAgent): string {
   if (platform === 'ios') return 'من زر المشاركة اختر «إضافة إلى الشاشة الرئيسية».'
+  if (/firefox|waterfox|librewolf|floorp|zen\//i.test(userAgent)) {
+    if(platform==='android')return 'من قائمة المتصفح ⋮ اختر «تثبيت» أو «إضافة إلى الشاشة الرئيسية». إن لم يظهر الخيار، احفظ الموقع علامة مرجعية.'
+    if(/windows/i.test(userAgent))return 'في Firefox على Windows: اضغط أيقونة تطبيقات الويب في شريط العنوان. تتوفر في Firefox 143 فأحدث (150 لنسخة Microsoft Store)، خارج النافذة الخاصة. المتصفحات المبنية عليه قد لا توفرها؛ إن غابت احفظ الموقع علامة مرجعية، أو افتحه في Edge واختر التطبيقات ← تثبيت هذا الموقع كتطبيق.'
+    return 'قد لا يتيح هذا المتصفح تثبيت تطبيق ويب. يمكنك حفظ الموقع علامة مرجعية من قائمة المتصفح للوصول السريع، أو فتحه في متصفح يدعم التثبيت.'
+  }
   if (platform === 'android') return 'ثبّت الخِزانة من قائمة المتصفح لتعمل كتطبيق مستقل.'
   if (platform === 'desktop') return 'ثبّت الخِزانة من شريط العنوان لتفتح كتطبيق على جهازك.'
   return 'يمكن تثبيت الخِزانة من قائمة المتصفح على جهازك.'
@@ -30,7 +35,7 @@ export function installGuidance(platform: InstallPlatform): string {
 
 export function installCtaLabel(standalone: boolean, promptAvailable: boolean): string {
   if (standalone) return 'التطبيق مثبت على هذا الجهاز'
-  return promptAvailable ? 'تثبيت الخِزانة الآن' : 'التثبيت متاح من المتصفح'
+  return promptAvailable ? 'تثبيت الخِزانة الآن' : 'طريقة تثبيت التطبيق'
 }
 
 export function canPromptInstall(): boolean { return deferredPrompt !== undefined }
@@ -39,10 +44,12 @@ export async function promptInstall(): Promise<'accepted' | 'dismissed' | 'unava
   const prompt = deferredPrompt
   if (!prompt) return 'unavailable'
   deferredPrompt = undefined
-  await prompt.prompt()
-  const choice = await prompt.userChoice
-  notify()
-  return choice.outcome
+  try {
+    await prompt.prompt()
+    const choice = await prompt.userChoice
+    return choice.outcome
+  } catch { return 'unavailable' }
+  finally { notify() }
 }
 
 export function onInstallAvailabilityChange(listener: () => void): () => void {

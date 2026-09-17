@@ -11,6 +11,8 @@ export type IconName =
   | 'bookmark'
   | 'more'
   | 'settings'
+  | 'edit'
+  | 'trash'
   | 'list'
   | 'sun'
   | 'moon'
@@ -25,8 +27,17 @@ export type IconName =
   | 'check'
   | 'copy'
   | 'globe'
+  | 'features'
+  | 'telegram'
+  | 'repeat'
+  | 'play'
+  | 'pause'
+  | 'lock'
+  | 'info'
+  | 'palette'
 
 const MARKUP: Record<IconName, string> = {
+  palette: '<path d="M12 3a9 9 0 1 0 0 18h1a2 2 0 0 0 1.4-3.4 1.5 1.5 0 0 1 1.1-2.6H17a4 4 0 0 0 4-4c0-4.4-4-8-9-8Z"/><circle cx="7.5" cy="10" r=".7"/><circle cx="10.5" cy="6.8" r=".7"/><circle cx="15" cy="7.5" r=".7"/><circle cx="17.5" cy="11" r=".7"/>',
   search: '<circle cx="11" cy="11" r="7"/><path d="m20.5 20.5-4.6-4.6"/>',
   book: '<path d="M12 6.5c-2.4-2-5.8-2.4-8.5-1.8v13.4c2.7-.6 6.1-.2 8.5 1.8 2.4-2 5.8-2.4 8.5-1.8V4.7c-2.7-.6-6.1-.2-8.5 1.8z"/><path d="M12 6.5v13.4"/>',
   compass: '<circle cx="12" cy="12" r="9.5"/><path d="m16.2 7.8-2.4 5.8-5.9 2.6 2.3-5.9z"/>',
@@ -44,6 +55,8 @@ const MARKUP: Record<IconName, string> = {
   moon: '<path d="M20 14.2A8.2 8.2 0 1 1 9.8 4a6.6 6.6 0 0 0 10.2 10.2z"/>',
   drop: '<path d="M12 3.5s6 6.3 6 10.2a6 6 0 0 1-12 0C6 9.8 12 3.5 12 3.5z"/>',
   'font-size': '<path d="M5 19.5 9 7l4 12.5"/><path d="M6.6 15.5h4.9"/><path d="M17 8.5V19"/><path d="M15.5 11h3"/>',
+  edit: '<path d="m16 3 5 5-12 12-6 1 1-6Z M14 5l5 5"/>',
+  trash: '<path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7M14 10v7"/>',
   close: '<path d="M18 6 6 18M6 6l12 12"/>',
   box: '<path d="M21 8.2 12 3 3 8.2v7.6L12 21l9-5.2z"/><path d="M3.3 8.5 12 13l8.7-4.5M12 13v8"/>',
   share: '<path d="M12 15V4"/><path d="m7.5 8.5 4.5-4.5 4.5 4.5"/><path d="M5 12v6a1.5 1.5 0 0 0 1.5 1.5h11A1.5 1.5 0 0 0 19 18v-6"/>',
@@ -53,6 +66,13 @@ const MARKUP: Record<IconName, string> = {
   check: '<path d="m5 12.5 4.5 4.5L19 7.5"/>',
   copy: '<rect x="8" y="8" width="11" height="11" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/>',
   globe: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/>',
+  features: '<path d="m12 3 1.4 4.2L18 9l-4.6 1.8L12 15l-1.4-4.2L6 9l4.6-1.8z"/><path d="m18.5 15 .8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8zM5.5 14l.8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8z"/>',
+  telegram: '<path d="m21 4-3.1 16-5.2-4.1-2.7 2.6.5-4.9L18.3 7 8.7 12.8 4 11.2z"/>',
+  repeat: '<path d="m17 2 4 4-4 4"/><path d="M3 11V9a3 3 0 0 1 3-3h15"/><path d="m7 22-4-4 4-4"/><path d="M21 13v2a3 3 0 0 1-3 3H3"/>',
+  play: '<path d="m8 5 11 7-11 7z" fill="currentColor" stroke="none"/>',
+  pause: '<path d="M8 5v14M16 5v14"/>',
+  lock: '<rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/>',
+  info: '<circle cx="12" cy="12" r="9"/><path d="M12 10.5v6"/><path d="M12 7.5h.01"/>',
 }
 
 export function icon(name: IconName, size = 24, className = ''): SVGSVGElement {

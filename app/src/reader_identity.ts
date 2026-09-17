@@ -2,7 +2,7 @@ const SITE_NAME = 'الخِزانة'
 
 export function readerDocumentTitle(bookTitle?: string): string {
   const title = bookTitle?.trim() || 'قراءة الكتاب'
-  return `${title} — ${SITE_NAME}`
+  return `${title} - ${SITE_NAME}`
 }
 
 export function readerIdentityLabel(bookTitle?: string, author?: string): string {

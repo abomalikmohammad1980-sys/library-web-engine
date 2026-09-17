@@ -6,15 +6,15 @@ import { existsSync, readFileSync } from "node:fs";
 import { beforeAll, describe, expect, it, vi } from "vitest";
 import { extractFromDocx, parseDocument, parseStyles } from "@engine/ooxml-model";
 import { setDocumentFactory } from "./dom.js";
-import { buildPageElement, coverAnchorForPage, documentPageNumbers, fillPageWithCover, footnotesBlock, groupPages, headerFooterAnchorReservesSpace, nextDocumentPageNumber, noteBodyNeedsMarker, notePositionForPage, noteSeparatorParagraphs, pageCountsBySection, paragraphAnchorTop, positionFloatingAnchor, renumberNoteRefsForPages, renderDocument, replacePageFieldText, storyClearancePx, styleRefValuesForPage, takeRenderedAssetCleanup } from "./render.js";
-import { framePrCss, headerFooterElement, headerFooterPartName, headerFooterType, pageBorderElement, pageNumberText } from "./SectPr.js";
+import { buildPageElement, composeAtomicNoteMarker, coverAnchorForPage, documentPageNumbers, fillPageWithCover, floatingAnchorBehindDocument, footnotesBlock, groupPages, headerFooterAnchorReservesSpace, nextDocumentPageNumber, noteBodyNeedsMarker, notePositionForPage, noteSeparatorParagraphs, pageCountsBySection, paragraphAnchorTop, positionFloatingAnchor, renumberNoteRefsForPages, renderDocument, replacePageFieldText, storyClearancePx, styleRefValuesForPage, takeRenderedAssetCleanup, wordStoryBodyHeight } from "./render.js";
+import { framePrCss, headerFooterElement, headerFooterPartName, headerFooterType, materializeHeaderFooterParagraph, pageBorderElement, pageNumberText } from "./SectPr.js";
 import { anchorToElement, anchorTransformCss, rasterPayload, shapeFrameCss } from "./ImageToWidget.js";
-import { newRenderCtx, numberMarkerFontCss, numberMarkerLookCss, paragraphOutlineAttrs, paragraphToElement } from "./Paragraph.js";
+import { newRenderCtx, numberMarkerFontCss, numberMarkerLookCss, paragraphOutlineAttrs, paragraphToElement, tocRowElement, tocRowWidthTwips } from "./Paragraph.js";
 import { formatNumber } from "./abstractNum.js";
 import { runCss, runToNode, textReflectionCss, wordFontKerning } from "./runT.js";
 import { paragraphCss, wordJustification } from "./PPr.js";
 import { columnFragments, renderPageBlocks, rowHeightCss } from "./ParagraphTable.js";
-import { groupTable, tableWidthTwips, withRepeatedHeaderRows } from "./ParagraphTable.js";
+import { groupTable, tableWidthPercent, tableWidthTwips, withRepeatedHeaderRows } from "./ParagraphTable.js";
 import { wordBorderStyle } from "./BorderCss.js";
 
 const TAWHID = new URL("../../../../../كتب للاختبار/توحيد الحاكمية.docx", import.meta.url);
@@ -25,10 +25,12 @@ const ZAAD = new URL("../../../../../كتب للاختبار/زادُ المجا
 const TADRIS_ART_BORDER = new URL("../../../corpus/books/sample-tadris.docx", import.meta.url);
 const OPENXML_COMPLEX_TABLE = new URL("../../../tmp/Word external QA/OpenXmlSdk-ComplexTable/complex-table.docx", import.meta.url);
 const IBHAJ_SANITIZED = new URL("../../../docs/qa/publish-sanitized-staging/إبهاج أهل الصناعة بدراسة حديث بعثت بالسيف بين يدي الساعة - أبو ذر السمهري اليماني.docx", import.meta.url);
+const IBHAJ_PUBLISHED = new URL("../../../app/public/library/published/assets/7c464cf9b0b1ceb3.docx", import.meta.url);
 const USUS_NOTES = new URL("../../../../../كتب للاختبار/أُسس قوام الشخصية الفاعلة.. شرح سورة الشرح.docx", import.meta.url);
 const OPENXML_GREETING_LINE = new URL("../../../tmp/Word external QA/OpenXmlSdk-GreetingLine/greeting-line.docx", import.meta.url);
 const OPENXML_TABLE_CELL_2_PARA = new URL("../../../tmp/Word external QA/OpenXmlSdk-TableCell2Para/table-cell-2-para.docx", import.meta.url);
 const OPENXML_HYPERLINK_TABLE = new URL("../../../tmp/Word external QA/OpenXmlSdk-HyperlinkInTable/hyperlink-in-table.docx", import.meta.url);
+const SAYYID_QUTB_DIWAN = new URL("../../../app/public/library/published/assets/f21266f0bba8d2d9.docx", import.meta.url);
 
 describe("إطار twistedLines1 الفني", () => {
   it.runIf(existsSync(TADRIS_ART_BORDER))("يحفظ النمط وزواياه الأربع من corpus بدل solid", () => {
@@ -230,7 +232,7 @@ describe("اتصال العربية عبر حدود runs", () => {
     expect(runCss(run)).toContain("text-shadow:1px 0px 2px rgba(128,0,0,0.35)");
   });
   it("يرسم w14:reflection كطبقة مطلقة ممسوحة ولا يكرر النص القابل للنسخ", () => {
-    const run = { direction: "rtl", text: "منعكس", family: "Arial", emTwips: 320, hidden: false,
+    const run = { direction: "rtl", text: "{ منعكس }", family: "Arial", emTwips: 320, hidden: false,
       textReflection: { xTwips: 0, yTwips: 1003 / 635, blurTwips: 20,
         scaleX: 1, scaleY: -1, startOpacity: .28, endOpacity: 0,
         startPosition: 0, endPosition: .45, fadeAngle: 180 } } as Parameters<typeof runToNode>[0];
@@ -241,10 +243,10 @@ describe("اتصال العربية عبر حدود runs", () => {
     expect(style).toContain("rgba(0,0,0,0.28) 0%");
     expect(style).toContain("rgba(0,0,0,0) 45%");
     const node = runToNode(run) as unknown as FakeNode;
-    expect(node.textContent).toBe("منعكس");
+    expect(node.textContent).toBe("{ منعكس }");
     const copy = descendants(node, "span").find(child => child.attrs.get("class") === "run-reflection");
     expect(copy?.attrs.get("aria-hidden")).toBe("true");
-    expect(copy?.attrs.get("data-reflection-text")).toBe("منعكس");
+    expect(copy?.attrs.get("data-reflection-text")).toBe("{ منعكس }");
   });
   it("لا يعزل الرن العربي فيفصل حرفًا عن بقية الكلمة", () => {
     const css = runCss({ direction: "rtl" } as Parameters<typeof runCss>[0]);
@@ -267,14 +269,31 @@ describe("اتصال العربية عبر حدود runs", () => {
     expect(node.textContent).not.toContain("0");
   });
 
-  it("يعرض الأقواس المعقوفة العربية بجهة الفتح المطابقة لـWord", () => {
-    const node = runToNode({ text: "{ آية }", direction: "rtl" } as Parameters<typeof runToNode>[0]) as unknown as FakeNode;
-    expect(node.textContent).toBe("} آية {");
+  it.each(["rtl", "ltr", undefined] as const)("يحفظ أقواس المصدر ويترك انعكاس الرسم للمتصفح: %s", direction => {
+    const source = "{ آية } [83] (تفسير) ﴿ آية ﴾";
+    const node = runToNode({ text: source, direction } as Parameters<typeof runToNode>[0]) as unknown as FakeNode;
+    expect(node.textContent).toBe(source);
   });
 
-  it("يصرّح بضبط الكلمات لفقرة Word المضبوطة", () => {
+  it("يحفظ الأقواس المفصولة بين رنات Word ونتائج الحقول دون تبديل", () => {
+    const parts = ["{", " آية ", "}"];
+    const nodes = parts.map(text => runToNode({ text, direction: "rtl" } as Parameters<typeof runToNode>[0]) as unknown as FakeNode);
+    expect(nodes.map(node => node.textContent).join("")).toBe("{ آية }");
+    const field = runToNode({ text: "", fieldResult: "{ آية }", direction: "rtl" } as Parameters<typeof runToNode>[0]) as unknown as FakeNode;
+    expect(field.textContent).toBe("{ آية }");
+  });
+
+  it("يستعمل تشكيل العربية الطبيعي لفقرة Word المضبوطة", () => {
     const p = { bidi: true, jc: "both", spacing: {}, runs: [], tabStops: [] } as Parameters<typeof paragraphCss>[0];
-    expect(paragraphCss(p)).toContain("text-justify:inter-word");
+    expect(paragraphCss(p)).toContain("text-justify:inter-character");
+    expect(paragraphCss(p)).not.toContain("text-align-last:justify");
+  });
+
+  it("يمد سطر Shift+Enter فقط ولا يمد خاتمة الفقرة العادية", () => {
+    const ordinary = { bidi: true, jc: "both", spacing: {}, runs: [{ text: "خاتمة عادية", hidden: false }], tabStops: [] } as Parameters<typeof paragraphCss>[0];
+    const shifted = { ...ordinary, runs: [{ text: "سطر يدوي\n", hidden: false }] } as Parameters<typeof paragraphCss>[0];
+    expect(paragraphCss(ordinary)).not.toContain("text-align-last:justify");
+    expect(paragraphCss(shifted)).toContain("text-align-last:justify");
   });
 
   it.each([
@@ -291,10 +310,60 @@ describe("اتصال العربية عبر حدود runs", () => {
   });
 
   it("لا يحول أوضاع الكشيدة إلى توزيع مسافات", () => {
-    const p = { bidi: true, jc: "mediumKashida", spacing: {}, runs: [], tabStops: [] } as Parameters<typeof paragraphCss>[0];
+    const p = { bidi: true, jc: "mediumKashida", spacing: {}, runs: [{ text: "سطر يدوي\n", hidden: false }], tabStops: [] } as Parameters<typeof paragraphCss>[0];
     expect(paragraphCss(p)).toContain("text-align:justify");
-    expect(paragraphCss(p)).toContain("text-justify:auto");
+    expect(paragraphCss(p)).toContain("text-justify:inter-character");
+    expect(paragraphCss(p)).toContain("text-align-last:justify");
     expect(paragraphCss(p)).not.toContain("text-justify:inter-word");
+  });
+
+  it("يحافظ على lowKashida في الشعر بكشيدة مرئية قصيرة لا فراغات موزعة", () => {
+    const p = { bidi: true, jc: "lowKashida", tableCell: { tableId: "poem", row: 0, col: 0 }, spacing: {}, runs: [], tabStops: [] } as Parameters<typeof paragraphCss>[0];
+    const declarations = paragraphCss(p).split(";");
+    expect(declarations).toContain("word-spacing:normal");
+    expect(declarations).toContain("text-align:start");
+    expect(declarations).toContain("text-align-last:start");
+  });
+
+  it("يحفظ نسب عروض جداول Word المختلفة إلى مساحة الطباعة", () => {
+    expect(tableWidthPercent(4500, 9000)).toBe(50);
+    expect(tableWidthPercent(7200, 9000)).toBe(80);
+    expect(tableWidthPercent(8100, 9000)).toBe(90);
+    expect(tableWidthPercent(9000, 9000)).toBe(100);
+  });
+
+  it("يبقي lowKashida النثرية مضبوطة دون مد خاتمة عادية", () => {
+    const p = { bidi: true, jc: "lowKashida", spacing: {}, runs: [{ text: "خاتمة", hidden: false }], tabStops: [] } as Parameters<typeof paragraphCss>[0];
+    const declarations = paragraphCss(p).split(";");
+    expect(declarations).toContain("text-align:justify");
+    expect(declarations).not.toContain("text-align-last:justify");
+    expect(declarations).not.toContain("word-spacing:0.08em");
+  });
+
+  it("يربط عرض صف الفهرس بـrightTab داخل عرض عمود Word", () => {
+    expect(tocRowWidthTwips(8296, 8306)).toBe(8296);
+    expect(tocRowWidthTwips(9000, 8306)).toBe(8306);
+  });
+
+  it("يفصل عنوان الفهرس والقائد وعمود الصفحة إلى مناطق غير نصية متداخلة", () => {
+    const paragraph = { index: 24, sectionIndex: 0, bidi: true, indLeft: 320,
+      spacing: {}, jc: null, tabStops: [], runs: [
+        { text: "تمهيد", family: "Traditional Arabic", bold: true },
+        { text: "\t" }, { text: "21", family: "Traditional Arabic", bold: true },
+      ], toc: { entry: "تمهيد", pageNum: "21", leader: "dot", rightTabTwips: 8296 } };
+    const section = { columnTwips: 8306 };
+    const model = { section, sections: [section], numbering: new Map() } as unknown as Parameters<typeof newRenderCtx>[0];
+    const row = tocRowElement(paragraph as unknown as Parameters<typeof tocRowElement>[0], newRenderCtx(model)) as unknown as FakeNode;
+    const entry = row.children.find(child => child.attrs.get("class") === "toc-entry")!;
+    const leader = row.children.find(child => child.attrs.get("class") === "toc-leader")!;
+    const page = row.children.find(child => child.attrs.get("class") === "toc-page")!;
+    expect(entry.textContent).toBe("تمهيد");
+    expect(leader.textContent).toBe("");
+    expect(leader.attrs.get("style")).toContain("min-width:12px");
+    expect(leader.attrs.get("style")).toContain("radial-gradient");
+    expect(page.textContent).toBe("21");
+    expect(row.attrs.get("style")).toContain("width:553.067px");
+    expect(row.dataset.tocLevel).toBe("1");
   });
 
   it("لا يحوّل atLeast الصغير إلى ارتفاع ثابت يراكم الأسطر", () => {
@@ -359,9 +428,9 @@ describeSuroor("انحدار سرور بل أحزان الحقيقي", () => {
 });
 
 const ZAHAR = new URL("../../../../../كتب للاختبار/زهر الخمائل في مسائل النوازل.docx", import.meta.url);
-const describeZahar = existsSync(ZAHAR) ? describe : describe.skip;
-describeZahar("انحدار زهر الخمائل الحقيقي", () => {
-  const model = extractFromDocx(readFileSync(ZAHAR));
+if (existsSync(ZAHAR)) describe("انحدار زهر الخمائل الحقيقي", () => {
+  let model: ReturnType<typeof extractFromDocx>;
+  beforeAll(() => { model = extractFromDocx(readFileSync(ZAHAR)); });
 
   it("يحفظ أوجه الخطوط المضمنة بدل تسجيلها كلها normal", () => {
     const faces = [...model.embeddedFonts.values()];
@@ -406,8 +475,7 @@ describeZahar("انحدار زهر الخمائل الحقيقي", () => {
 });
 
 const QURAN_ROAD = new URL("file:///C:/Users/Windows_OS/Documents/%D8%A7%D9%84%D9%85%D9%83%D8%AA%D8%A8%D8%A9/%D8%A7%D9%84%D8%B7%D8%B1%D9%8A%D9%82%20%D8%A5%D9%84%D9%89%20%D8%A7%D9%84%D9%82%D8%B1%D8%A2%D9%86.docx");
-const describeQuranRoad = existsSync(QURAN_ROAD) ? describe : describe.skip;
-describeQuranRoad("QA-004 — الطريق إلى القرآن", () => {
+if (existsSync(QURAN_ROAD)) describe("QA-004 — الطريق إلى القرآن", () => {
   const model = extractFromDocx(readFileSync(QURAN_ROAD));
   const pages = groupPages(model);
 
@@ -465,6 +533,17 @@ describe("رأس الصفحة الأولى المختلفة", () => {
     expect(style).toContain("left:0px");
   });
 
+  it("يقيس framePr المربوط بالنص من هامش عمود Word لا من حافة الورقة", () => {
+    const style = framePrCss({ signature: "folio", w: null, h: null, x: null, y: 1,
+      hSpace: 0, vSpace: 0, hAnchor: "text", vAnchor: "text",
+      xAlign: null, yAlign: null, wrap: "around" }, {
+      pageWTwips: 11906, pageHTwips: 16838,
+      marLeftTwips: 2275, marRightTwips: 2275,
+    } as Parameters<typeof framePrCss>[1]);
+    expect(style).toContain("left:151.667px");
+    expect(style).toContain("width:max-content");
+  });
+
   it("يبقي framePr بلا عرض على قياس محتواه بدل قلب رقم PAGE إلى يمين قصة RTL", () => {
     const style = framePrCss({ signature: "auto", w: null, h: null, x: null, y: 1,
       hSpace: 0, vSpace: 0, hAnchor: "text", vAnchor: "text",
@@ -491,8 +570,23 @@ describe("رأس الصفحة الأولى المختلفة", () => {
     expect(parseFloat(node.style.top)).toBeCloseTo(-61.13, 1);
   });
 
-  it.runIf(existsSync(IBHAJ_SANITIZED))("يحافظ على غلاف إبهاج عند حافة الورقة وتذييله عند الحافة السفلية", () => {
-    const model = extractFromDocx(readFileSync(IBHAJ_SANITIZED));
+  it("لا يطرح هامش المتن مرتين من مرساة paragraph في قصة الرأس", () => {
+    const node = new FakeNode("div") as unknown as HTMLElement;
+    const page = new FakeNode("div") as unknown as HTMLElement;
+    positionFloatingAnchor(node, {
+      extentW: 1200, extentH: 300, posHRel: "margin", posHOffset: 0,
+      posVRel: "paragraph", posVOffset: 234, posHAlign: null, posVAlign: null,
+      behindDoc: false, zOrder: 1, distL: 0, distR: 0, distT: 0, distB: 0,
+      wrap: "None", rId: null,
+    }, 0, {
+      pageWTwips: 11907, pageHTwips: 16839, marLeftTwips: 2275, marRightTwips: 2275,
+      marTopTwips: 2275, marBottomTwips: 2275, headerDistTwips: 1138,
+    } as Parameters<typeof positionFloatingAnchor>[3], page, "header");
+    expect(parseFloat(node.style.top)).toBeCloseTo((1138 + 234) / 15, 3);
+  });
+
+  it.runIf(existsSync(IBHAJ_PUBLISHED))("يحافظ على غلاف إبهاج عند حافة الورقة وتذييله عند الحافة السفلية", () => {
+    const model = extractFromDocx(readFileSync(IBHAJ_PUBLISHED));
     const section = model.sections[0]!;
     const cover = model.paragraphs.flatMap(paragraph => paragraph.anchors)
       .find(anchor => anchor.vml && anchor.rId);
@@ -504,18 +598,21 @@ describe("رأس الصفحة الأولى المختلفة", () => {
     const node = new FakeNode("div") as unknown as HTMLElement;
     const page = new FakeNode("div") as unknown as HTMLElement;
     positionFloatingAnchor(node, cover!, 1, section, page);
-    fillPageWithCover(node, section);
-    expect(parseFloat(node.style.left)).toBeCloseTo(-151.667, 3);
-    expect(parseFloat(node.style.top)).toBeCloseTo(-151.667, 3);
-    expect(parseFloat(node.style.width)).toBeCloseTo(793.733, 3);
+    fillPageWithCover(node, section, cover!);
+    // column/paragraph-relative bleed is converted to physical sheet space:
+    // 2275-2280=-5tw horizontally and 2275-2275=0tw vertically.
+    expect(parseFloat(node.style.left)).toBeCloseTo(-0.333, 3);
+    expect(parseFloat(node.style.top)).toBeCloseTo(0, 3);
+    expect(parseFloat(node.style.width)).toBeCloseTo(794.533, 3);
 
     const footer = headerFooterElement(model, section, 1, "footer", newRenderCtx(model), "2", 22, 22);
     expect(footer).not.toBeNull();
-    expect((footer as unknown as FakeNode).attrs.get("style")).toContain("bottom:-75.8px");
+    expect((footer as unknown as FakeNode).attrs.get("style")).toContain("bottom:75.867px");
     const frames = descendants(footer as unknown as FakeNode, "div")
       .filter(child => child.attrs.get("class") === "word-frame");
     expect(frames).toHaveLength(1);
     expect(frames[0]!.attrs.get("style")).toContain("width:max-content");
+    expect(frames[0]!.attrs.get("style")).toContain("left:151.667px");
     expect((footer as unknown as FakeNode).textContent).toContain("(2)");
     expect((footer as unknown as FakeNode).textContent).toContain("منبر التوحيد والجهاد");
   });
@@ -568,6 +665,12 @@ describe("STYLEREF في الرأس", () => {
 describe("فصل الرأس والتذييل عن المتن", () => {
   const anchor = (behindDoc: boolean, wrap: string) => ({ behindDoc, wrap }) as Parameters<typeof headerFooterAnchorReservesSpace>[0];
 
+  it("يعامل behindDoc المحذوف كطبقة أمامية حسب افتراض OOXML", () => {
+    expect(floatingAnchorBehindDocument({})).toBe(false);
+    expect(floatingAnchorBehindDocument({ behindDoc: false })).toBe(false);
+    expect(floatingAnchorBehindDocument({ behindDoc: true })).toBe(true);
+  });
+
   it("لا تدفع العلامة المائية الخلفية المتن", () => {
     expect(headerFooterAnchorReservesSpace(anchor(true, "Square"))).toBe(false);
   });
@@ -590,10 +693,16 @@ describe("فصل الرأس والتذييل عن المتن", () => {
     expect(storyClearancePx(160, 140, 2)).toBe(22);
     expect(storyClearancePx(120, 140, 2)).toBe(0);
   });
+
+  it("يقتطع حزامي الرأس والتذييل من جسم Word بدل دفعهما خارج الورقة", () => {
+    expect(wordStoryBodyHeight(900, 24, 32)).toBe(844);
+    expect(wordStoryBodyHeight(900, -4, Number.NaN)).toBe(900);
+    expect(wordStoryBodyHeight(40, 24, 32)).toBe(0);
+  });
 });
 
 describe("مراسي DrawingML المرتبطة بالفقرة", () => {
-  it("يحفظ أبعاد وملكية صور ص3 من توحيد الحاكمية دون ضغط responsive", () => {
+  it.runIf(existsSync(TAWHID))("يحفظ أبعاد وملكية صور ص3 من توحيد الحاكمية دون ضغط responsive", () => {
     expect(existsSync(TAWHID)).toBe(true);
     const model = extractFromDocx(readFileSync(TAWHID));
     const ctx = newRenderCtx(model);
@@ -684,7 +793,7 @@ describe("مراسي DrawingML المرتبطة بالفقرة", () => {
   });
 });
 
-describe("انحدار ترسيم منهاج مخيم جيل العزة", () => {
+describe.runIf(existsSync(MINHAJ_CAMP))("انحدار ترسيم منهاج مخيم جيل العزة", () => {
   it("يرسم corpus كاملًا دون exception ويحفظ عدد حدود صفحاته", () => {
     expect(existsSync(MINHAJ_CAMP)).toBe(true);
     const model = extractFromDocx(readFileSync(MINHAJ_CAMP));
@@ -706,7 +815,7 @@ describe("انحدار ترسيم منهاج مخيم جيل العزة", () => 
   });
 });
 
-describe("حواشي توحيد الحاكمية على صفحات Word", () => {
+describe.runIf(existsSync(TAWHID))("حواشي توحيد الحاكمية على صفحات Word", () => {
   it("لا يفعل linePitch منفردًا عندما يغيب نوع شبكة الأسطر", () => {
     const model = extractFromDocx(readFileSync(TAWHID));
     expect(model.section.docGridLinePitch).toBe(360);
@@ -736,6 +845,38 @@ describe("حواشي توحيد الحاكمية على صفحات Word", () => 
 });
 
 describe("جداول الحواشي ومنع انقسام صفوفها", () => {
+  it("يركب علامة الحاشية الذرية داخل المتن ويحذف الرقم/الأقواس المنفصلة", () => {
+    const base = {
+      index: 0, sectionIndex: 0, text: "متن", runs: [{ text: "متن", noteRef: { id: "1", num: 1, kind: "footnote", fmt: "decimal" } }],
+      anchors: [], bookmarkIds: [], tableCell: null, spacing: {}, tabStops: [], ptabAt: [], tabAt: [],
+      pBdr: null, shd: null, framePr: null, toc: null, excluded: null, bidi: true,
+    };
+    const note = { ...base, index: 1, text: "(1( نص الحاشية", runs: [
+      { text: "(" }, { text: "1", noteBodyRef: "footnote" }, { text: "(" }, { text: " نص الحاشية" },
+    ] };
+    const section = { pageWTwips: 12000, pageHTwips: 16000, marTopTwips: 1000, marBottomTwips: 1000,
+      marLeftTwips: 1000, marRightTwips: 1000, colCount: 1, colSpaceTwips: 0 };
+    const model = { paragraphs: [base], footnotes: new Map([["1", [note]]]), endnotes: new Map(),
+      headerFooters: new Map(), sections: [section], section,
+      noteSettings: { footnote: { start: 1, restart: "continuous", fmt: "decimal", position: "pageBottom" } },
+    } as unknown as ReturnType<typeof extractFromDocx>;
+    const block = footnotesBlock(model, [base] as typeof model.paragraphs, newRenderCtx(model)) as unknown as FakeNode;
+    const entry = descendants(block, "div").find(node => node.attrs.get("class") === "fn-entry")!;
+    const body = descendants(entry, "div").find(node => node.attrs.get("class") === "fn-body")!;
+    expect(descendants(entry, "sup")).toHaveLength(0);
+    expect(body.dataset.wordNoteMarker).toBe("(١)");
+    expect(body.textContent).toBe("(١) نص الحاشية");
+    expect(body.textContent).not.toContain("()");
+  });
+
+  it("لا يقتطع القوس المؤلف إذا بدأ متن الحاشية بعبارة معترضة", () => {
+    const paragraph = { text: "1(عجبتُ): قراءة", runs: [
+      { text: "1", noteBodyRef: "footnote" }, { text: "(عجبتُ): قراءة" },
+    ] } as Parameters<typeof composeAtomicNoteMarker>[0][number];
+    const rendered = composeAtomicNoteMarker([paragraph], "3")[0]!;
+    expect(rendered.text).toBe("(3) (عجبتُ): قراءة");
+  });
+
   it("يبني جدول الحاشية المصغر ولا يحوله إلى فقرات مسطحة", () => {
     const base = {
       index: 0, sectionIndex: 0, text: "متن", runs: [{ text: "متن", noteRef: { id: "1", num: 1, kind: "footnote", fmt: "decimal" } }],
@@ -762,10 +903,10 @@ describe("جداول الحواشي ومنع انقسام صفوفها", () => {
     const table = descendants(block, "table");
     expect(table).toHaveLength(1);
     expect(descendants(table[0]!, "tr")[0]!.attrs.get("style")).toContain("break-inside:avoid");
-    expect(table[0]!.textContent).toBe("يمينيسار");
+    expect(table[0]!.textContent).toBe("(1) يمينيسار");
   });
 
-  it("يحفظ جدول الحاشية 219 في corpus كجدول ذي أربعة صفوف غير قابلة للانقسام", () => {
+  it.runIf(existsSync(FOOTNOTE_TABLE_BOOK))("يحفظ جدول الحاشية 219 في corpus كجدول ذي أربعة صفوف غير قابلة للانقسام", () => {
     expect(existsSync(FOOTNOTE_TABLE_BOOK)).toBe(true);
     const model = extractFromDocx(readFileSync(FOOTNOTE_TABLE_BOOK));
     const owner = model.paragraphs.find(paragraph => paragraph.runs.some(run => run.noteRef?.id === "219"));
@@ -791,11 +932,12 @@ describe.runIf(existsSync(USUS_NOTES))("حاشية corpus متعددة الفق�
       .filter(node => node.attrs.get("class") === "fn-entry");
     const entry = entries.find(node => node.textContent.includes("صحيح مسلم"));
     expect(entry).toBeDefined();
-    expect(descendants(entry!, "sup")).toHaveLength(1);
+    expect(descendants(entry!, "sup")).toHaveLength(0);
     const body = descendants(entry!, "div").find(node => node.attrs.get("class") === "fn-body");
     expect(body?.children).toHaveLength(2);
     expect(entry!.textContent).toContain("صحيح البخاري");
     expect(entry!.textContent).toContain("صحيح مسلم");
+    expect(body?.dataset.wordNoteMarker).toMatch(/^\(.+\)$/u);
   });
 });
 
@@ -829,7 +971,7 @@ describe("فواصل الأعمدة الموثقة في corpus", () => {
       .toBe("قبلبعد");
   });
 
-  it("يحفظ مواضع الفواصل الستة في زاد المجاهد والاثنين في الديوان", () => {
+  it.runIf(existsSync(POETRY) && existsSync(ZAAD))("يحفظ مواضع الفواصل الستة في زاد المجاهد والاثنين في الديوان", () => {
     const poetry = extractFromDocx(readFileSync(POETRY));
     const zaad = extractFromDocx(readFileSync(ZAAD));
     expect(poetry.paragraphs.filter(paragraph => paragraph.columnBreakAt?.length)).toHaveLength(2);
@@ -843,7 +985,7 @@ describe("فواصل الأعمدة الموثقة في corpus", () => {
   });
 });
 
-describe("ديوان هموم وآلام — الغلاف وبنية الشعر", () => {
+describe.runIf(existsSync(POETRY))("ديوان هموم وآلام — الغلاف وبنية الشعر", () => {
   it("يبقي صورة الغلاف VML كاملة في الصفحة الأولى المعروضة", () => {
     expect(existsSync(POETRY)).toBe(true);
     const model = extractFromDocx(readFileSync(POETRY));
@@ -931,6 +1073,21 @@ describe("ترجمة أنماط إطارات Word إلى CSS صالح", () => {
 });
 
 describe("تنسيق أرقام الحواشي كما في Word", () => {
+  it("يعرض مرجع المتن العربي هنديًا بتنسيق رن Word نفسه بلا رفع ثانٍ", () => {
+    const node = runToNode({ text: "", direction: "rtl", family: "Traditional Arabic",
+      emTwips: 320, superscript: true, noteRef: {
+      id: "1", num: 12, kind: "footnote", fmt: "decimal",
+    } } as Parameters<typeof runToNode>[0]) as unknown as FakeNode;
+    expect(node.textContent).toBe("١٢");
+    const marker = node.children[0]!;
+    expect(marker.tag).toBe("span");
+    expect(marker.attrs.get("style")).not.toMatch(/font-family|font-size|vertical-align|font-weight/);
+    expect(node.attrs.get("style")).toContain("font-family:'Traditional Arabic'");
+    // runCss يوحّد وحدات OOXML إلى px؛ 320 twips = 16pt = 21.333px.
+    expect(node.attrs.get("style")).toContain("font-size:21.333px");
+    expect(node.attrs.get("style")).toContain("vertical-align:super");
+  });
+
   it("يحفظ groupTable عنوان الخلية الأم للجدول المتداخل", () => {
     const tableCell = { tableId: 4, parentTableId: 3, parentRow: 1, parentCol: 2, nestingDepth: 2,
       row: 0, col: 0, colXTwips: 0, colWTwips: 1000, gridSpan: 1, totalGridTwips: 1000,
@@ -1078,7 +1235,7 @@ describeCorpusNumberFormats("تنسيقات الترقيم غير اللاتين
   });
 });
 
-describe("حقول الصفحة داخل مربعات النص العائمة", () => {
+describe.runIf(existsSync(TAWHID))("حقول الصفحة داخل مربعات النص العائمة", () => {
   it("يعرض PAGE المستخرج من Content Control في تذييل توحيد الحاكمية", () => {
     const model = extractFromDocx(readFileSync(TAWHID));
     const footer = headerFooterElement(model, model.section, 2, "footer", newRenderCtx(model), "3", 32, 32, 3);
@@ -1206,18 +1363,28 @@ describe("صفحة الغلاف الخالصة", () => {
     expect(coverAnchorForPage(paras, section)).toBeNull();
   });
 
-  it("يفرض الصورة داخل كامل إطار الورقة", () => {
+  it("لا يستبدل هندسة المرساة المؤلفة بهندسة ورقة مصطنعة", () => {
     const node = new FakeNode("img") as unknown as HTMLElement;
-    fillPageWithCover(node, section);
-    expect(node.style.left).toBe("0px");
-    expect(node.style.top).toBe("0px");
-    expect(node.style.width).toBe("800px");
-    expect(node.style.height).toBe("1133.333px");
+    const diwanSection = { ...section, marLeftTwips: 1800, marTopTwips: 1440 };
+    const diwanAnchor = { ...cover, posHRel: "column", posHOffset: -1785,
+      posVRel: "paragraph", posVOffset: -1425, extentW: 11985, extentH: 16927 };
+    fillPageWithCover(node, diwanSection as Parameters<typeof fillPageWithCover>[1],
+      diwanAnchor as Parameters<typeof fillPageWithCover>[2]);
+    expect(node.style.left).toBe("1px");
+    expect(node.style.top).toBe("1px");
+    expect(node.style.width).toBe("799px");
+    expect(node.style.height).toBe("1128.467px");
+    expect(node.style.objectFit).toBeUndefined();
     expect((node as unknown as FakeNode).attrs.get("data-word-cover")).toBe("true");
   });
 });
 
 describe("تحويلات مربعات النص", () => {
+  it('places a margin-relative cover at the physical page origin plus its authored offset',()=>{
+    const node=new FakeNode('img') as unknown as HTMLElement;
+    fillPageWithCover(node,{marLeftTwips:1418,marTopTwips:2268} as Parameters<typeof fillPageWithCover>[1],{posHRel:'margin',posVRel:'margin',posHOffset:-1520,posVOffset:-2775,extentW:12114,extentH:17366} as Parameters<typeof fillPageWithCover>[2]);
+    expect(node.style.left).toBe('-6.8px');expect(node.style.top).toBe('-33.8px');
+  });
   it("لا يعكس حروف PAGE أو العربية مع flipH/flipV ويبقي الدوران", () => {
     const textbox = { flipH: true, flipV: true, rotDeg: 90, textBox: [{}] } as Parameters<typeof anchorTransformCss>[0];
     expect(anchorTransformCss(textbox)).toEqual(["rotate(90deg)"]);
@@ -1244,6 +1411,18 @@ describe("تحويلات مربعات النص", () => {
     const node = anchorToElement(anchor, newRenderCtx(model)) as unknown as FakeNode;
     expect(node.children.map(child => child.attrs.get("class"))).toEqual(["flt-textbox-fill", "flt-textbox-content"]);
     expect(node.textContent).toContain("عنوان فوق الصورة");
+  });
+
+  it("لا يقص نص مربع noAutofit خارج ارتفاع الشكل المؤلف", () => {
+    const model = { partRels: new Map(), relTargets: new Map(), mediaFiles: new Map() } as unknown as Parameters<typeof newRenderCtx>[0];
+    const paragraph = { text: "نص طويل", runs: [{ text: "نص طويل", hidden: false }],
+      anchors: [], spacing: {}, tabStops: [], ptabAt: [], tabAt: [], bookmarkIds: [], tableCell: null,
+    } as unknown as NonNullable<Parameters<typeof anchorToElement>[0]["textBox"]>[number];
+    const anchor = { extentW: 1200, extentH: 200, rId: null, boxNoAutofit: true,
+      shape: { prst: "rect", fill: null, stroke: null, strokeW: 0, adj: null }, textBox: [paragraph],
+    } as Parameters<typeof anchorToElement>[0];
+    const node = anchorToElement(anchor, newRenderCtx(model)) as unknown as FakeNode;
+    expect(node.attrs.get("style")).toContain("overflow:visible");
   });
 });
 
@@ -1323,6 +1502,170 @@ describe("تحويل EMF المتجهي", () => {
     expect(svg).toContain('<path d="M10 10 L90 10 L90 90 Z"');
   });
 
+  it("يرسم EMR_POLYGON16 بالنقاط القصيرة بدل إسقاط الزخرفة", () => {
+    const header = new Uint8Array(88), hv = new DataView(header.buffer);
+    hv.setUint32(0, 1, true); hv.setUint32(4, 88, true);
+    hv.setInt32(16, 100, true); hv.setInt32(20, 100, true);
+    const polygon = new Uint8Array(40), pv = new DataView(polygon.buffer);
+    pv.setUint32(0, 86, true); pv.setUint32(4, polygon.length, true);
+    pv.setUint32(24, 3, true);
+    [[10, 20], [90, 20], [50, 80]].forEach(([x, y], i) => {
+      pv.setInt16(28 + i * 4, x!, true); pv.setInt16(30 + i * 4, y!, true);
+    });
+    const emf = new Uint8Array(128); emf.set(header); emf.set(polygon, 88);
+    const payload = rasterPayload(emf);
+    expect(payload?.mime).toBe("image/svg+xml");
+    expect(new TextDecoder().decode(payload!.bytes)).toContain('<polygon points="10,20 90,20 50,80"');
+  });
+
+  it("يواصل EMR_POLYLINETO16 الرسم من موضع GDI الحالي", () => {
+    const header = new Uint8Array(88), hv = new DataView(header.buffer);
+    hv.setUint32(0, 1, true); hv.setUint32(4, 88, true);
+    hv.setInt32(16, 100, true); hv.setInt32(20, 100, true);
+    const move = new Uint8Array(16), mv = new DataView(move.buffer);
+    mv.setUint32(0, 27, true); mv.setUint32(4, 16, true);
+    mv.setInt32(8, 10, true); mv.setInt32(12, 20, true);
+    const lineTo = new Uint8Array(36), lv = new DataView(lineTo.buffer);
+    lv.setUint32(0, 89, true); lv.setUint32(4, lineTo.length, true);
+    lv.setUint32(24, 2, true);
+    lv.setInt16(28, 50, true); lv.setInt16(30, 60, true);
+    lv.setInt16(32, 90, true); lv.setInt16(34, 20, true);
+    const emf = new Uint8Array(140); emf.set(header); emf.set(move, 88); emf.set(lineTo, 104);
+    const payload = rasterPayload(emf);
+    expect(payload?.mime).toBe("image/svg+xml");
+    const svg = new TextDecoder().decode(payload!.bytes);
+    expect(svg).toContain('x1="10" y1="20" x2="50" y2="60"');
+    expect(svg).toContain('x1="50" y1="60" x2="90" y2="20"');
+  });
+
+  it("يستخدم قلم EMR_EXTCREATEPEN بلونه وعرضه", () => {
+    const header = new Uint8Array(88), hv = new DataView(header.buffer);
+    hv.setUint32(0, 1, true); hv.setUint32(4, 88, true);
+    hv.setInt32(16, 100, true); hv.setInt32(20, 100, true);
+    const pen = new Uint8Array(52), pv = new DataView(pen.buffer);
+    pv.setUint32(0, 95, true); pv.setUint32(4, pen.length, true);
+    pv.setUint32(8, 1, true); pv.setUint32(28, 0, true);
+    pv.setUint32(32, 5, true); pv.setUint32(40, 0x00332211, true);
+    const select = new Uint8Array(12), sv = new DataView(select.buffer);
+    sv.setUint32(0, 37, true); sv.setUint32(4, 12, true); sv.setUint32(8, 1, true);
+    const move = new Uint8Array(16), mv = new DataView(move.buffer);
+    mv.setUint32(0, 27, true); mv.setUint32(4, 16, true); mv.setInt32(8, 10, true); mv.setInt32(12, 20, true);
+    const line = new Uint8Array(16), lv = new DataView(line.buffer);
+    lv.setUint32(0, 54, true); lv.setUint32(4, 16, true); lv.setInt32(8, 90, true); lv.setInt32(12, 80, true);
+    const emf = new Uint8Array(184); emf.set(header); emf.set(pen, 88);
+    emf.set(select, 140); emf.set(move, 152); emf.set(line, 168);
+    const svg = new TextDecoder().decode(rasterPayload(emf)!.bytes);
+    expect(svg).toContain('stroke="#112233" stroke-width="5"');
+  });
+
+  it("يحفظ نمط PS_DASH من EMR_EXTCREATEPEN", () => {
+    const header = new Uint8Array(88), hv = new DataView(header.buffer);
+    hv.setUint32(0, 1, true); hv.setUint32(4, 88, true);
+    hv.setInt32(16, 100, true); hv.setInt32(20, 100, true);
+    const pen = new Uint8Array(52), pv = new DataView(pen.buffer);
+    pv.setUint32(0, 95, true); pv.setUint32(4, pen.length, true);
+    pv.setUint32(8, 1, true); pv.setUint32(28, 1, true); // PS_DASH
+    pv.setUint32(32, 3, true); pv.setUint32(40, 0x00665544, true);
+    const select = new Uint8Array(12), sv = new DataView(select.buffer);
+    sv.setUint32(0, 37, true); sv.setUint32(4, 12, true); sv.setUint32(8, 1, true);
+    const move = new Uint8Array(16), mv = new DataView(move.buffer);
+    mv.setUint32(0, 27, true); mv.setUint32(4, 16, true); mv.setInt32(8, 10, true); mv.setInt32(12, 20, true);
+    const line = new Uint8Array(16), lv = new DataView(line.buffer);
+    lv.setUint32(0, 54, true); lv.setUint32(4, 16, true); lv.setInt32(8, 90, true); lv.setInt32(12, 80, true);
+    const emf = new Uint8Array(184); emf.set(header); emf.set(pen, 88);
+    emf.set(select, 140); emf.set(move, 152); emf.set(line, 168);
+    const svg = new TextDecoder().decode(rasterPayload(emf)!.bytes);
+    expect(svg).toContain('stroke-dasharray="6 3"');
+  });
+
+  it("يرسم EMR_POLYBEZIER16 كمسار منحني بدل إسقاطه", () => {
+    const header = new Uint8Array(88), hv = new DataView(header.buffer);
+    hv.setUint32(0, 1, true); hv.setUint32(4, 88, true);
+    hv.setInt32(16, 100, true); hv.setInt32(20, 100, true);
+    const bezier = new Uint8Array(44), bv = new DataView(bezier.buffer);
+    bv.setUint32(0, 85, true); bv.setUint32(4, bezier.length, true);
+    bv.setUint32(24, 4, true);
+    [[10, 50], [25, 10], [75, 90], [90, 50]].forEach(([x, y], i) => {
+      bv.setInt16(28 + i * 4, x!, true); bv.setInt16(30 + i * 4, y!, true);
+    });
+    const emf = new Uint8Array(132); emf.set(header); emf.set(bezier, 88);
+    const payload = rasterPayload(emf);
+    expect(payload?.mime).toBe("image/svg+xml");
+    expect(new TextDecoder().decode(payload!.bytes)).toContain('d="M10 50 C25 10 75 90 90 50"');
+  });
+
+  it("يفصل مضلعات EMR_POLYPOLYGON16 وفق جدول أعداد النقاط", () => {
+    const header = new Uint8Array(88), hv = new DataView(header.buffer);
+    hv.setUint32(0, 1, true); hv.setUint32(4, 88, true);
+    hv.setInt32(16, 100, true); hv.setInt32(20, 100, true);
+    const polygons = new Uint8Array(64), pv = new DataView(polygons.buffer);
+    pv.setUint32(0, 91, true); pv.setUint32(4, polygons.length, true);
+    pv.setUint32(24, 2, true); pv.setUint32(28, 6, true);
+    pv.setUint32(32, 3, true); pv.setUint32(36, 3, true);
+    [[10, 10], [30, 10], [20, 30], [60, 60], [90, 60], [75, 90]].forEach(([x, y], i) => {
+      pv.setInt16(40 + i * 4, x!, true); pv.setInt16(42 + i * 4, y!, true);
+    });
+    const emf = new Uint8Array(152); emf.set(header); emf.set(polygons, 88);
+    const payload = rasterPayload(emf);
+    expect(payload?.mime).toBe("image/svg+xml");
+    const svg = new TextDecoder().decode(payload!.bytes);
+    expect(svg).toContain('<polygon points="10,10 30,10 20,30"');
+    expect(svg).toContain('<polygon points="60,60 90,60 75,90"');
+  });
+
+  it("يفصل مضلعات EMR_POLYPOLYGON ذات الإحداثيات 32 بت", () => {
+    const header = new Uint8Array(88), hv = new DataView(header.buffer);
+    hv.setUint32(0, 1, true); hv.setUint32(4, 88, true);
+    hv.setInt32(16, 100, true); hv.setInt32(20, 100, true);
+    const polygons = new Uint8Array(88), pv = new DataView(polygons.buffer);
+    pv.setUint32(0, 8, true); pv.setUint32(4, polygons.length, true);
+    pv.setUint32(24, 2, true); pv.setUint32(28, 6, true);
+    pv.setUint32(32, 3, true); pv.setUint32(36, 3, true);
+    [[-10, 10], [30, 10], [20, 30], [60, 60], [90, 60], [75, 90]].forEach(([x, y], i) => {
+      pv.setInt32(40 + i * 8, x!, true); pv.setInt32(44 + i * 8, y!, true);
+    });
+    const emf = new Uint8Array(176); emf.set(header); emf.set(polygons, 88);
+    const payload = rasterPayload(emf);
+    expect(payload?.mime).toBe("image/svg+xml");
+    const svg = new TextDecoder().decode(payload!.bytes);
+    expect(svg).toContain('<polygon points="-10,10 30,10 20,30"');
+    expect(svg).toContain('<polygon points="60,60 90,60 75,90"');
+  });
+
+  it("يفسر أوامر EMR_POLYDRAW16 ويغلق الشكل", () => {
+    const header = new Uint8Array(88), hv = new DataView(header.buffer);
+    hv.setUint32(0, 1, true); hv.setUint32(4, 88, true);
+    hv.setInt32(16, 100, true); hv.setInt32(20, 100, true);
+    const draw = new Uint8Array(44), dv = new DataView(draw.buffer);
+    dv.setUint32(0, 92, true); dv.setUint32(4, draw.length, true);
+    dv.setUint32(24, 3, true);
+    [[10, 10], [90, 10], [50, 80]].forEach(([x, y], i) => {
+      dv.setInt16(28 + i * 4, x!, true); dv.setInt16(30 + i * 4, y!, true);
+    });
+    draw.set([0x06, 0x02, 0x03], 40); // MOVETO, LINETO, LINETO|CLOSEFIGURE.
+    const emf = new Uint8Array(132); emf.set(header); emf.set(draw, 88);
+    const payload = rasterPayload(emf);
+    expect(payload?.mime).toBe("image/svg+xml");
+    expect(new TextDecoder().decode(payload!.bytes)).toContain('d="M10 10 L90 10 L50 80 Z"');
+  });
+
+  it("يفسر أوامر EMR_POLYDRAW ذات الإحداثيات 32 بت", () => {
+    const header = new Uint8Array(88), hv = new DataView(header.buffer);
+    hv.setUint32(0, 1, true); hv.setUint32(4, 88, true);
+    hv.setInt32(16, 100, true); hv.setInt32(20, 100, true);
+    const draw = new Uint8Array(56), dv = new DataView(draw.buffer);
+    dv.setUint32(0, 56, true); dv.setUint32(4, draw.length, true);
+    dv.setUint32(24, 3, true);
+    [[-10, 10], [90, 10], [50, 80]].forEach(([x, y], i) => {
+      dv.setInt32(28 + i * 8, x!, true); dv.setInt32(32 + i * 8, y!, true);
+    });
+    draw.set([0x06, 0x02, 0x03], 52);
+    const emf = new Uint8Array(144); emf.set(header); emf.set(draw, 88);
+    const payload = rasterPayload(emf);
+    expect(payload?.mime).toBe("image/svg+xml");
+    expect(new TextDecoder().decode(payload!.bytes)).toContain('d="M-10 10 L90 10 L50 80 Z"');
+  });
+
   it("يحوّل سجلات WMF الخطية القديمة إلى SVG", () => {
     const wmf = new Uint8Array(18 + 10 * 3 + 6), view = new DataView(wmf.buffer);
     view.setUint16(0, 1, true); view.setUint16(2, 9, true);
@@ -1374,6 +1717,160 @@ describe("تحويل EMF المتجهي", () => {
     expect(svg).toContain('<stop offset="0%" stop-color="#ff0000"');
     expect(svg).toContain('<stop offset="100%" stop-color="#0000ff"');
     expect(svg).toContain('fill="url(#emfGradient0)"');
+  });
+
+  it("يحوّل مثلث EMR_GRADIENTFILL إلى شبكة ألوان ثنائية الأبعاد", () => {
+    const header = new Uint8Array(88), hv = new DataView(header.buffer);
+    hv.setUint32(0, 1, true); hv.setUint32(4, 88, true);
+    hv.setInt32(16, 100, true); hv.setInt32(20, 100, true);
+    const gradient = new Uint8Array(96), gv = new DataView(gradient.buffer);
+    gv.setUint32(0, 118, true); gv.setUint32(4, 96, true);
+    gv.setUint32(24, 3, true); gv.setUint32(28, 1, true); gv.setUint32(32, 2, true);
+    // ثلاثة رؤوس: أحمر، أخضر، أزرق؛ mode=GRADIENT_FILL_TRIANGLE.
+    gv.setInt32(36, 10, true); gv.setInt32(40, 10, true); gv.setUint16(44, 0xffff, true);
+    gv.setInt32(52, 90, true); gv.setInt32(56, 10, true); gv.setUint16(62, 0xffff, true);
+    gv.setInt32(68, 50, true); gv.setInt32(72, 90, true); gv.setUint16(80, 0xffff, true);
+    gv.setUint32(84, 0, true); gv.setUint32(88, 1, true); gv.setUint32(92, 2, true);
+    const emf = new Uint8Array(184); emf.set(header); emf.set(gradient, 88);
+    const svg = new TextDecoder().decode(rasterPayload(emf)!.bytes);
+    expect(svg).toContain('data-emf-gradient-triangle="true"');
+    expect(svg).toContain('data-emf-gradient-colors="#ff0000 #00ff00 #0000ff"');
+    expect((svg.match(/<polygon /g) ?? []).length).toBeGreaterThan(16);
+  });
+
+  it("يستخرج EMR_ALPHABLEND مع قناة ألفا ومكوّنات اللون غير المضروبة", () => {
+    const header = new Uint8Array(88), hv = new DataView(header.buffer);
+    hv.setUint32(0, 1, true); hv.setUint32(4, 88, true);
+    hv.setInt32(16, 1, true); hv.setInt32(20, 1, true);
+    const blend = new Uint8Array(152), bv = new DataView(blend.buffer);
+    bv.setUint32(0, 114, true); bv.setUint32(4, blend.length, true);
+    // BLENDFUNCTION: AC_SRC_OVER، SourceConstantAlpha=255، AC_SRC_ALPHA.
+    blend.set([0, 0, 255, 1], 40);
+    bv.setUint32(84, 108, true); bv.setUint32(88, 40, true);
+    bv.setUint32(92, 148, true); bv.setUint32(96, 4, true);
+    bv.setInt32(108, 40, true); bv.setInt32(112, 1, true); bv.setInt32(116, -1, true);
+    bv.setUint16(120, 1, true); bv.setUint16(122, 32, true);
+    // BGRA premultiplied: أحمر بنصف الشدة/ألفا؛ PNG يحتاج RGB مستقيمًا.
+    blend.set([0, 0, 128, 128], 148);
+    const emf = new Uint8Array(240); emf.set(header); emf.set(blend, 88);
+    const payload = rasterPayload(emf);
+    expect(payload?.mime).toBe("image/png");
+    expect(Array.from(payload!.bytes).join(",")).toContain("255,0,0,128");
+  });
+
+  it("يطبق SourceConstantAlpha على EMR_ALPHABLEND ذي 24 بت", () => {
+    const header = new Uint8Array(88), hv = new DataView(header.buffer);
+    hv.setUint32(0, 1, true); hv.setUint32(4, 88, true);
+    hv.setInt32(16, 1, true); hv.setInt32(20, 1, true);
+    const blend = new Uint8Array(152), bv = new DataView(blend.buffer);
+    bv.setUint32(0, 114, true); bv.setUint32(4, blend.length, true);
+    blend.set([0, 0, 128, 0], 40); // ألفا ثابت، بلا AC_SRC_ALPHA.
+    bv.setUint32(84, 108, true); bv.setUint32(88, 40, true);
+    bv.setUint32(92, 148, true); bv.setUint32(96, 4, true);
+    bv.setInt32(108, 40, true); bv.setInt32(112, 1, true); bv.setInt32(116, -1, true);
+    bv.setUint16(120, 1, true); bv.setUint16(122, 24, true);
+    blend.set([0x30, 0x20, 0x10, 0], 148); // BGR + محاذاة.
+    const emf = new Uint8Array(240); emf.set(header); emf.set(blend, 88);
+    const payload = rasterPayload(emf);
+    expect(payload?.mime).toBe("image/png");
+    expect(Array.from(payload!.bytes).join(",")).toContain("16,32,48,128");
+  });
+
+  it("يحوّل لون EMR_TRANSPARENTBLT المفتاحي إلى شفافية", () => {
+    const header = new Uint8Array(88), hv = new DataView(header.buffer);
+    hv.setUint32(0, 1, true); hv.setUint32(4, 88, true);
+    hv.setInt32(16, 2, true); hv.setInt32(20, 1, true);
+    const transparent = new Uint8Array(156), tv = new DataView(transparent.buffer);
+    tv.setUint32(0, 116, true); tv.setUint32(4, transparent.length, true);
+    // COLORREF للمفتاح الأرجواني (R=255,G=0,B=255).
+    tv.setUint32(76, 0x00ff00ff, true);
+    tv.setUint32(84, 108, true); tv.setUint32(88, 40, true);
+    tv.setUint32(92, 148, true); tv.setUint32(96, 8, true);
+    tv.setInt32(108, 40, true); tv.setInt32(112, 2, true); tv.setInt32(116, -1, true);
+    tv.setUint16(120, 1, true); tv.setUint16(122, 32, true);
+    // بكسل أرجواني مفتاحي ثم أزرق؛ بايت ألفا مهمل في TransparentBlt.
+    transparent.set([255, 0, 255, 0, 255, 0, 0, 0], 148);
+    const emf = new Uint8Array(244); emf.set(header); emf.set(transparent, 88);
+    const payload = rasterPayload(emf);
+    expect(payload?.mime).toBe("image/png");
+    const encoded = Array.from(payload!.bytes).join(",");
+    expect(encoded).toContain("255,0,255,0,0,0,255,255");
+  });
+
+  it("يطبق لون EMR_TRANSPARENTBLT المفتاحي على DIB ذي 24 بت", () => {
+    const header = new Uint8Array(88), hv = new DataView(header.buffer);
+    hv.setUint32(0, 1, true); hv.setUint32(4, 88, true);
+    hv.setInt32(16, 2, true); hv.setInt32(20, 1, true);
+    const transparent = new Uint8Array(156), tv = new DataView(transparent.buffer);
+    tv.setUint32(0, 116, true); tv.setUint32(4, transparent.length, true);
+    tv.setUint32(76, 0x00ff00ff, true);
+    tv.setUint32(84, 108, true); tv.setUint32(88, 40, true);
+    tv.setUint32(92, 148, true); tv.setUint32(96, 8, true);
+    tv.setInt32(108, 40, true); tv.setInt32(112, 2, true); tv.setInt32(116, -1, true);
+    tv.setUint16(120, 1, true); tv.setUint16(122, 24, true);
+    // BGR: أرجواني ثم أخضر، وبعدهما بايتا محاذاة للسطر.
+    transparent.set([255, 0, 255, 0, 255, 0, 0, 0], 148);
+    const emf = new Uint8Array(244); emf.set(header); emf.set(transparent, 88);
+    const payload = rasterPayload(emf);
+    expect(payload?.mime).toBe("image/png");
+    expect(Array.from(payload!.bytes).join(",")).toContain("255,0,255,0,0,255,0,255");
+  });
+
+  it("يستخرج DIB من EMR_SETDIBITSTODEVICE بدل إسقاط الغلاف", () => {
+    const header = new Uint8Array(88), hv = new DataView(header.buffer);
+    hv.setUint32(0, 1, true); hv.setUint32(4, 88, true);
+    hv.setInt32(16, 1, true); hv.setInt32(20, 1, true);
+    const dibRecord = new Uint8Array(120), dv = new DataView(dibRecord.buffer);
+    dv.setUint32(0, 80, true); dv.setUint32(4, dibRecord.length, true);
+    dv.setUint32(48, 76, true); dv.setUint32(52, 40, true);
+    dv.setUint32(56, 116, true); dv.setUint32(60, 4, true);
+    dv.setInt32(76, 40, true); dv.setInt32(80, 1, true); dv.setInt32(84, -1, true);
+    dv.setUint16(88, 1, true); dv.setUint16(90, 32, true);
+    dibRecord.set([0x33, 0x22, 0x11, 0], 116);
+    const emf = new Uint8Array(208); emf.set(header); emf.set(dibRecord, 88);
+    const payload = rasterPayload(emf);
+    expect(payload?.mime).toBe("image/png");
+    expect(Array.from(payload!.bytes).join(",")).toContain("17,34,51,255");
+  });
+
+  it("يستخرج DIB من EMR_BITBLT عندما تكون العملية SRCCOPY", () => {
+    const header = new Uint8Array(88), hv = new DataView(header.buffer);
+    hv.setUint32(0, 1, true); hv.setUint32(4, 88, true);
+    hv.setInt32(16, 1, true); hv.setInt32(20, 1, true);
+    const bitBlt = new Uint8Array(144), bv = new DataView(bitBlt.buffer);
+    bv.setUint32(0, 76, true); bv.setUint32(4, bitBlt.length, true);
+    bv.setUint32(40, 0x00cc0020, true); // SRCCOPY
+    bv.setUint32(84, 100, true); bv.setUint32(88, 40, true);
+    bv.setUint32(92, 140, true); bv.setUint32(96, 4, true);
+    bv.setInt32(100, 40, true); bv.setInt32(104, 1, true); bv.setInt32(108, -1, true);
+    bv.setUint16(112, 1, true); bv.setUint16(114, 32, true);
+    bitBlt.set([0x66, 0x55, 0x44, 0], 140);
+    const emf = new Uint8Array(232); emf.set(header); emf.set(bitBlt, 88);
+    const payload = rasterPayload(emf);
+    expect(payload?.mime).toBe("image/png");
+    expect(Array.from(payload!.bytes).join(",")).toContain("68,85,102,255");
+    new DataView(emf.buffer).setUint32(88 + 40, 0x00660046, true); // SRCINVERT يعتمد على بكسلات الوجهة.
+    expect(rasterPayload(emf)).toBeNull();
+  });
+
+  it("يستخرج DIB من EMR_STRETCHBLT عندما تكون العملية SRCCOPY", () => {
+    const header = new Uint8Array(88), hv = new DataView(header.buffer);
+    hv.setUint32(0, 1, true); hv.setUint32(4, 88, true);
+    hv.setInt32(16, 1, true); hv.setInt32(20, 1, true);
+    const stretchBlt = new Uint8Array(152), sv = new DataView(stretchBlt.buffer);
+    sv.setUint32(0, 77, true); sv.setUint32(4, stretchBlt.length, true);
+    sv.setUint32(40, 0x00cc0020, true); // SRCCOPY
+    sv.setUint32(84, 108, true); sv.setUint32(88, 40, true);
+    sv.setUint32(92, 148, true); sv.setUint32(96, 4, true);
+    sv.setInt32(108, 40, true); sv.setInt32(112, 1, true); sv.setInt32(116, -1, true);
+    sv.setUint16(120, 1, true); sv.setUint16(122, 32, true);
+    stretchBlt.set([0x99, 0x88, 0x77, 0], 148);
+    const emf = new Uint8Array(240); emf.set(header); emf.set(stretchBlt, 88);
+    const payload = rasterPayload(emf);
+    expect(payload?.mime).toBe("image/png");
+    expect(Array.from(payload!.bytes).join(",")).toContain("119,136,153,255");
+    new DataView(emf.buffer).setUint32(88 + 40, 0x00660046, true);
+    expect(rasterPayload(emf)).toBeNull();
   });
 
   it("يحفظ META_EXTTEXTOUT في WMF مع مصفوفة تباعد الحروف", () => {
@@ -1438,9 +1935,52 @@ describe("ooxml-dom — عينة أحاديث (فهرسٌ مقسّم بالصف�
     expect(pageNumberText({ ...model.section, pgNumFmt: "thaiNumbers", pgNumStart: 1 }, 1)).toBe("๒");
   });
 
+  it("يجمع رقم PAGE وقوسيه العربيين في folio ذري صحيح الاتجاه", () => {
+    const paragraph = { text: "(1(", runs: [
+      { text: "(", fieldResult: null, hidden: false, direction: "rtl" },
+      { text: "1", fieldResult: "PAGE", hidden: false, direction: "rtl" },
+      { text: "(", fieldResult: null, hidden: false, direction: null },
+    ] } as Parameters<typeof materializeHeaderFooterParagraph>[0];
+    const rendered = materializeHeaderFooterParagraph(paragraph, "37", "299", "297");
+    expect(rendered.text).toBe("(37)");
+    expect(rendered.runs).toHaveLength(1);
+    expect(rendered.runs[0]).toMatchObject({ text: "(37)", fieldResult: "(37)", direction: "ltr" });
+  });
+
   it("لا يترك كلمة PAGE الحقلية ظاهرة في تذييل الصفحات", () => {
     const doc = renderDocument(model) as unknown as FakeNode;
     expect(doc.textContent).not.toContain("PAGE");
     expect(doc.textContent).toContain("(1)");
+  });
+});
+
+describe.runIf(existsSync(SAYYID_QUTB_DIWAN))("PAGE في نافذة ديوان سيد قطب", () => {
+  const diwan = extractFromDocx(readFileSync(SAYYID_QUTB_DIWAN));
+  const pages = groupPages(diwan);
+
+  it("يحفظ الرقم الفعلي والقوس الصحيح عند رسم صفحة واحدة لا التسلسل كله", () => {
+    const firstNumbered = pages.findIndex(page => page.some(paragraph => paragraph.sectionIndex === 2));
+    expect(firstNumbered).toBeGreaterThanOrEqual(0);
+    const physicalIndex = firstNumbered + 1;
+    const doc = renderDocument(diwan, [pages[physicalIndex]!], {
+      fullPageGroups: pages,
+      physicalPageOffset: physicalIndex,
+    }) as unknown as FakeNode;
+    const footer = descendants(doc, "footer")[0];
+    expect(footer).toBeDefined();
+    expect(footer!.textContent).toBe("(2)");
+  });
+
+  it("يبقي كل تذييلات مقاطع الديوان داخل سطح الورقة بلا إزاحة سالبة", () => {
+    for (const section of diwan.sections) {
+      for (const pageIndex of [0, 1]) {
+        const footer = headerFooterElement(diwan, section, pageIndex, "footer", newRenderCtx(diwan));
+        if (!footer) continue;
+        const style = (footer as unknown as FakeNode).attrs.get("style") ?? "";
+        const bottom = Number(style.match(/bottom:([\d.-]+)px/)?.[1]);
+        expect(bottom).toBeGreaterThanOrEqual(0);
+        expect(style).toContain("max-height:100%");
+      }
+    }
   });
 });

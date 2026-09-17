@@ -2,6 +2,10 @@ export interface BookPageCountSource {
   physicalPageCount?: number
   readerPageCount?: number
   wordPageMap?: { totalPages: number; pages?: readonly unknown[] }
+  bokPages?: ReadonlyArray<{ part?: number }>
+  volumes?: readonly unknown[]
+  parts?: readonly unknown[]
+  volumeCount?: number
 }
 
 const KEY_PREFIX = 'alkhizana:reader-page-count:'
@@ -23,11 +27,21 @@ export function clearCachedReaderPageCount(bookId: string): void {
 }
 
 export function bookPageCount(book: BookPageCountSource, cachedCount?: number): number {
+  if (book.bokPages?.length) return book.bokPages.length
   const rendered = Number(cachedCount ?? book.physicalPageCount ?? book.readerPageCount)
   if (Number.isInteger(rendered) && rendered > 0) return rendered
   const mapped = Number(book.wordPageMap?.totalPages)
   if (Number.isInteger(mapped) && mapped > 0) return mapped
   return book.wordPageMap?.pages?.length ?? 0
+}
+
+export function bookVolumeCount(book: BookPageCountSource): number {
+  if (book.bokPages?.length) {
+    const parts = new Set(book.bokPages.map(page => Number(page.part)).filter(part => Number.isInteger(part) && part > 0))
+    if (parts.size) return parts.size
+  }
+  const derived = book.volumes?.length ?? book.parts?.length ?? Number(book.volumeCount)
+  return Number.isInteger(derived) && derived > 0 ? derived : 1
 }
 
 export function wordPageMaximum(book: BookPageCountSource): number {

@@ -14,6 +14,16 @@
 
 import { extractFromDocx, type BodyParagraph, type DocumentModelV0 } from '@engine/ooxml-model'
 
+export type WordOpenFailureStage = 'load' | 'parse'
+
+/** يحفظ المرحلة الحقيقية لفشل فتح Word كي لا يُنسب فشل الشبكة إلى محلل OOXML. */
+export class WordOpenError extends Error {
+  constructor(readonly stage: WordOpenFailureStage, message: string, cause?: unknown) {
+    super(message, { cause })
+    this.name = 'WordOpenError'
+  }
+}
+
 /** فقرةٌ مُقسَّمة — الصفحةُ مجموعةُ فقرات تبدأ بعد علامةِ كسر. */
 export interface BookPage {
   paragraphs: BodyParagraph[]
@@ -26,16 +36,25 @@ export interface LoadedBook {
 
 /** يجلب ملف docx عامّ ويحلّله بالنموذج. المسارُ نسبيٌّ إلى جذر public. */
 export async function loadBook(url: string): Promise<LoadedBook> {
-  const res = await fetch(url)
-  if (!res.ok) throw new Error(`تعذّر جلب الكتاب: ${res.status}`)
-  const buf = await res.arrayBuffer()
-  return loadBookFromBuffer(new Uint8Array(buf))
+  let res: Response
+  try { res = await fetch(url) }
+  catch (error) { throw new WordOpenError('load', 'تعذّر جلب ملف Word', error) }
+  if (!res.ok) throw new WordOpenError('load', `تعذّر جلب ملف Word: ${res.status}`)
+  let bytes: Uint8Array
+  try { bytes = new Uint8Array(await res.arrayBuffer()) }
+  catch (error) { throw new WordOpenError('load', 'تعذّرت قراءة استجابة ملف Word', error) }
+  return loadBookFromBuffer(bytes)
 }
 
 /** يحلّل بايتات docx إلى نموذج + صفحات (بدون جلب URL). */
 export function loadBookFromBuffer(buf: Uint8Array): LoadedBook {
-  const model = extractFromDocx(buf)
-  return { model, pages: splitPages(model) }
+  try {
+    const model = extractFromDocx(buf)
+    return { model, pages: splitPages(model) }
+  } catch (error) {
+    if (error instanceof WordOpenError) throw error
+    throw new WordOpenError('parse', 'تعذّرت قراءة بنية ملف Word', error)
+  }
 }
 
 /** تقسيم الفقرات: كلُّ فقرةٍ بـpageBreakBefore تفتح صفحةً جديدة.

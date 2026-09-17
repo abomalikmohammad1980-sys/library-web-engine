@@ -11,7 +11,7 @@ export interface AppSourceSyncGateway {
 
 declare global { interface Window { __KHIZANA_SOURCE_SYNC__?: AppSourceSyncGateway } }
 
-export interface SourceSyncPresentation { title: string; detail: string; tone: 'neutral' | 'progress' | 'success' | 'warning' | 'danger'; canRefresh: boolean; canSignIn: boolean }
+export interface SourceSyncPresentation { title: string; detail: string; detailBinding?: {id:string;parameters:Readonly<Record<string,string|number>>}; tone: 'neutral' | 'progress' | 'success' | 'warning' | 'danger'; canRefresh: boolean; canSignIn: boolean }
 
 export function presentSourceSync(state: SourceSyncViewState, gateway?: AppSourceSyncGateway): SourceSyncPresentation {
   const counts = state.quarantineCount ? `${state.quarantineCount} ملف قيد العزل` : state.conflictCount ? `${state.conflictCount} تعارض` : state.pendingCount ? `${state.pendingCount} عملية معلقة` : ''
@@ -27,7 +27,15 @@ export function presentSourceSync(state: SourceSyncViewState, gateway?: AppSourc
     quarantined: { title: 'ملف معزول للمراجعة', detail: counts, tone: 'danger' },
     error: { title: 'تعذّر جلب حالة المزامنة', detail: 'لم تتأثر النسخة المحلية. يمكنك إعادة المحاولة لاحقًا.', tone: 'danger' },
   }
-  return { ...map[state.phase], canRefresh: Boolean(gateway?.baseUrl && gateway.bookId && gateway.deviceId && gateway.token), canSignIn: state.phase === 'signedOut' && Boolean(gateway?.requestSignIn) }
+  // Bind only owned display fragments; a device label is arbitrary saved data.
+  const detailBinding = state.phase === 'synced' && state.activeDevice
+    ? {id:'b08f380e3e1c4fc4',parameters:{p1:state.activeDevice.label}}
+    : ['pending','conflict','quarantined'].includes(state.phase)
+      ? state.quarantineCount ? {id:'0ea5682c9d89782f',parameters:{p1:state.quarantineCount}}
+        : state.conflictCount ? {id:'0308714e014bcd36',parameters:{p1:state.conflictCount}}
+        : state.pendingCount ? {id:'e477a1a2580b1dde',parameters:{p1:state.pendingCount}} : undefined
+      : undefined
+  return { ...map[state.phase], ...(detailBinding ? {detailBinding} : {}), canRefresh: Boolean(gateway?.baseUrl && gateway.bookId && gateway.deviceId && gateway.token), canSignIn: state.phase === 'signedOut' && Boolean(gateway?.requestSignIn) }
 }
 
 export function localSourceSyncState(phase: 'signedOut' | 'guest' | 'localOnly'): SourceSyncViewState {

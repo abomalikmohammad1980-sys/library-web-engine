@@ -7,8 +7,9 @@ import { css, el, px } from "./dom.js";
 import { twipsToPx } from "./units.js";
 import { paragraphToElement, type RenderCtx } from "./Paragraph.js";
 import { wordBorderStyle } from "./BorderCss.js";
+import { paragraphEndsWithManualLineBreak } from "./PPr.js";
 
-interface CellData {
+export interface CellData {
   col: number;
   colSpan: number;
   rowSpan: number;
@@ -20,7 +21,7 @@ interface CellData {
   borders: Borders4 | null;
 }
 
-interface TableData {
+export interface TableData {
   tableId: number;
   parentTableId?: number; parentRow?: number; parentCol?: number; parentBlockIndex?: number; nestingDepth?: number;
   totalGridTwips: number;
@@ -31,6 +32,75 @@ interface TableData {
   tblWType: string;
   tblLayout: "fixed" | "autofit";
   rows: { row: number; cantSplit: boolean; repeatHeader: boolean; rowHeight: number | null; rowHeightRule: string | null; cells: CellData[] }[];
+}
+
+function isAlternatingSingleHemistichTable(t: TableData): boolean {
+  if (t.rows.length < 1) return false;
+  // بعض المقاطع (ومنها الإهداء) ألّفها Word كشطر منفرد يتناوب بين
+  // جانبي شبكة من ثلاثة أعمدة: خلية الشطر تمتد عمودين والخلية المقابلة
+  // فارغة. عدّ الخلايا وحده يجعلها تبدو جدولًا ثنائيًا غير متوازن، مع
+  // أنها في الحقيقة شعر مضبوط بـ lowKashida. نثبتها من بنية Word نفسها
+  // بلا تخمين نصي، كي يصل «التباعد الصغير» أيضًا إلى البيت المنفرد.
+  return t.rows.every(row => {
+    if (row.cells.length !== 2) return false;
+    const visible = row.cells.filter(cell => cell.paras.some(paragraph => paragraph.text.trim()));
+    if (visible.length !== 1) return false;
+    const [hemistich] = visible;
+    if (!hemistich || hemistich.colSpan !== 2) return false;
+    const paragraphs = hemistich.paras.filter(paragraph => paragraph.text.trim());
+    return paragraphs.length > 0 && paragraphs.every(paragraph =>
+      /[\u0600-\u06ff]/u.test(paragraph.text)
+      && (paragraph.jc === "lowKashida" || paragraph.jc === "mediumKashida"
+        || paragraph.jc === "highKashida"));
+  });
+}
+
+/** يميّز جدول صدر/عجز القصيدة من بنيته، لا من w:jc الذي يغيب في بعض صفحات Word. */
+export function isPoetryHemistichTable(t: TableData): boolean {
+  if (t.rows.length < 1) return false;
+  if (isAlternatingSingleHemistichTable(t)) return true;
+  const physicalColumns = Math.max(...t.rows.map(row => row.cells.length));
+  if (physicalColumns !== 2 && physicalColumns !== 3) return false;
+  const verseRows = t.rows.filter(row => row.cells.length === physicalColumns);
+  // قد تتخلل الأبيات لازمةٌ مؤلفة كخلية واحدة ممتدة على الأعمدة الثلاثة.
+  if (verseRows.length < 1 || t.rows.some(row => row.cells.length !== physicalColumns
+    && !(row.cells.length === 1 && row.cells[0]!.col === 0 && row.cells[0]!.colSpan >= physicalColumns))) return false;
+  const cols = verseRows[0]!.cells.map(cell => cell.col);
+  if (new Set(cols).size !== physicalColumns || t.rows.some(row => row.cells.some((cell, i) => cell.col !== cols[i]))) return false;
+  const widths = cols.map(col => {
+    const cell = t.rows.find(row => row.cells.some(candidate => candidate.col === col))!.cells.find(candidate => candidate.col === col)!;
+    return cell.paras[0]!.tableCell!.colWTwips;
+  });
+  const firstWidth = widths[0]!, lastWidth = widths.at(-1)!;
+  if (Math.abs(firstWidth - lastWidth) > Math.max(firstWidth, lastWidth) * 0.15) return false;
+  if (physicalColumns === 3) {
+    const separatorWidth = widths[1]!;
+    if (separatorWidth >= (firstWidth + lastWidth) * 0.2) return false;
+    const middle = verseRows.flatMap(row => row.cells.filter(cell => cell.col === cols[1]));
+    if (middle.some(cell => cell.paras.some(paragraph => paragraph.text.trim()))) return false;
+  }
+  const separatorCol = physicalColumns === 3 ? cols[1] : null;
+  const outer = t.rows.flatMap(row => row.cells.filter(cell => cell.col !== separatorCol))
+    .flatMap(cell => cell.paras).filter(paragraph => paragraph.text.trim());
+  if (outer.length < 2) return false;
+  // يستبعد الجداول الرقمية/البيانية حتى لو صادف أن شبكتها 3 أعمدة.
+  const arabic = outer.filter(paragraph => /[\u0600-\u06ff]/u.test(paragraph.text)).length / outer.length >= 0.6;
+  // جدول البيت المفرد لا يملك صفًا ثانيًا يساعد في التصنيف؛ نعتمده فقط
+  // حين يحمل شطراه صراحة محاذاة الكشيدة التي كتبها Word.
+  const singleVerseIsExplicit = t.rows.length > 1 || outer.every(paragraph =>
+    paragraph.jc === "lowKashida" || paragraph.jc === "mediumKashida" || paragraph.jc === "highKashida");
+  return arabic && singleVerseIsExplicit;
+}
+
+export function isPoetryHemistichParagraph(t: TableData, cell: CellData, paragraph: BodyParagraph): boolean {
+  if (!isPoetryHemistichTable(t) || !paragraph.text.trim()) return false;
+  if (isAlternatingSingleHemistichTable(t)) return true;
+  const physicalColumns = Math.max(...t.rows.map(row => row.cells.length));
+  const middleCol = physicalColumns === 3
+    ? t.rows.find(row => row.cells.length === 3)!.cells[1]!.col : null;
+  // الخلية الممتدة على الجدول كله لازمة/فاصل داخل القصيدة وليست صدرًا أو
+  // عجزًا؛ مطّها إلى عرض الصفحة هو سبب التشوه الكبير في الصفحات الحدية.
+  return cell.colSpan < physicalColumns && cell.col !== middleCol;
 }
 
 /** ‏w:trHeight@hRule: auto لا يفرض الارتفاع حتى إن وُجدت w:val؛ exact يفرضه
@@ -152,6 +222,142 @@ export function tableWidthTwips(args: {
   return args.grid > 0 ? args.grid : available;
 }
 
+/** نسبة عرض الجدول إلى مساحة الطباعة في مقطع Word.
+ * تبقي 50/80/90/100٪ كما ألّفها الملف، ولا تحولها إلى قياس موحد. */
+export function tableWidthPercent(tableTwips: number, sectionTwips: number): number {
+  return sectionTwips > 0 ? tableTwips * 100 / sectionTwips : 100;
+}
+
+/** عرض الخلية من شبكة Word نفسها؛ لا يترك autofit يضغط شطر الشعر. */
+export function cellGridWidthPercent(paragraph: BodyParagraph, totalGridTwips: number): number {
+  const width = paragraph.tableCell?.colWTwips ?? 0;
+  return totalGridTwips > 0 && width > 0 ? width * 100 / totalGridTwips : 0;
+}
+
+/**
+ * يحاكي «تباعد صغير» في Word بلا إدخال U+0640 أو تغيير النص.
+ * يظل الشطر نصًا أصليًا قابلًا للنسخ والبحث، وتتمدد طبقة الرسم فقط حتى
+ * حد خلية الشعر. وهذا يطابق أثر Shift+Enter من غير تلويث المحتوى.
+ */
+export function poetrySmallSpacingScale(naturalWidth: number, cellWidth: number): number {
+  if (!(naturalWidth > 0) || !(cellWidth > 0)) return 1;
+  return Math.max(1, Math.min(4.5, cellWidth * .92 / naturalWidth));
+}
+
+export function poetrySmallKashidaDisplayText(text: string, amount = 1): string {
+  const nonJoiningAfter = new Set("ءاأإآدذرزوأؤةى");
+  const kashida = "ـ".repeat(Math.max(1, Math.floor(amount)));
+  return text.replace(/[\u0620-\u063A\u0641-\u064A]{3,}/gu, word => {
+    const candidates: number[] = [];
+    for (let index = 0; index < word.length - 1; index++)
+      if (!nonJoiningAfter.has(word[index]!)) candidates.push(index + 1);
+    if (!candidates.length) return word;
+    const at = candidates[Math.floor((candidates.length - 1) / 2)]!;
+    return word.slice(0, at) + kashida + word.slice(at);
+  });
+}
+
+function applyPoetrySmallSpacing(node: HTMLElement, visualKashida = false): void {
+  const doc = node.ownerDocument;
+  if (!doc?.createElement || node.querySelector(":scope > .word-poetry-line")) return;
+  const line = doc.createElement("span");
+  line.className = "word-poetry-line";
+  line.style.display = "inline-block";
+  line.style.whiteSpace = "nowrap";
+  line.style.transformOrigin = "right center";
+  line.style.willChange = "transform";
+  while (node.firstChild) line.appendChild(node.firstChild);
+  node.appendChild(line);
+
+  if (visualKashida) {
+    // النص المرئي في ::after لا يملك عناصر run الخاصة بـWord، ولذلك كان
+    // يرث خط واجهة الموقع بدل Traditional Arabic/الخط المؤلف في المستند.
+    // ننقل خصائص الخط فقط إلى غلاف الرسم؛ تبقى الرنات الأصلية والنص القابل
+    // للنسخ كما هما، وتَرِث طبقة الكشيدة الشكل الطباعي الصحيح.
+    const authoredRun = line.querySelector<HTMLElement>(":scope > .run");
+    if (authoredRun) {
+      for (const property of ["font-family", "font-size", "font-weight", "font-style",
+        "font-variant", "font-stretch", "line-height", "letter-spacing"] as const) {
+        const value = authoredRun.style.getPropertyValue(property);
+        if (value) line.style.setProperty(property, value);
+      }
+    }
+    const visualText = poetrySmallKashidaDisplayText(node.textContent ?? "");
+    if (visualText !== (node.textContent ?? "")) {
+      line.classList.add("word-poetry-line--visual-kashida");
+      line.dataset.wordVisualText = visualText;
+    }
+  }
+
+  const fit = (): boolean => {
+    if (node.clientWidth <= 0) return false;
+    line.style.transform = "none";
+    // offsetWidth وclientWidth كلاهما في إحداثيات Word المحلية. استعمال
+    // getBoundingClientRect هنا يخلطهما مع scale الصفحة الخارجية، فيضاعف
+    // مد الشطر عند تصغير الورقة ويجعله يتجاوز خليته أو يبدو كسطر منفرد.
+    let natural = line.offsetWidth;
+    // إن استُخدمت كشيدة بصرية، يجب قياس النص المرئي الأطول لا النص الأصلي
+    // المخفي؛ وإلا يخرج الرسم من الخلية ويتداخل الصدر والعجز عند تكرار كلمة.
+    let visualText = line.dataset.wordVisualText;
+    if (visualText) {
+      const measure = doc.createElement("span");
+      measure.style.cssText = line.style.cssText;
+      measure.style.position = "absolute";
+      measure.style.visibility = "hidden";
+      measure.style.transform = "none";
+      measure.style.whiteSpace = "nowrap";
+      node.appendChild(measure);
+      // Word في «تباعد صغير» يزيد الكشيدة داخل الحروف ولا يمدّ شكل الحرف
+      // نفسه. اختر مقدار الكشيدة الذي يملأ الشطر حتى 92٪ من خليته، مع إبقاء
+      // النص الأصلي في DOM للنسخ والبحث، ومن دون scaleX يشوّه الخط المؤلف.
+      const sourceText = node.textContent ?? "";
+      const target = node.clientWidth * .92;
+      let bestText = visualText;
+      let bestWidth = 0;
+      for (let amount = 1; amount <= 24; amount++) {
+        const candidate = poetrySmallKashidaDisplayText(sourceText, amount);
+        measure.textContent = candidate;
+        const width = measure.offsetWidth;
+        if (width <= target && width >= bestWidth) {
+          bestText = candidate;
+          bestWidth = width;
+        }
+        if (width >= target) break;
+      }
+      line.dataset.wordVisualText = bestText;
+      visualText = bestText;
+      measure.textContent = visualText;
+      natural = measure.offsetWidth || natural;
+      measure.remove();
+      line.style.transform = "none";
+      line.dataset.wordPoetryScale = "1.0000";
+      return true;
+    }
+    if (natural <= 0) return false;
+    const scale = poetrySmallSpacingScale(natural, node.clientWidth);
+    line.style.transform = `scaleX(${scale.toFixed(4)})`;
+    line.dataset.wordPoetryScale = scale.toFixed(4);
+    return true;
+  };
+  const run = (): void => {
+    let attempts = 0;
+    const step = (): void => {
+      if (fit() || attempts++ >= 8) return;
+      if (typeof requestAnimationFrame !== "undefined") requestAnimationFrame(step);
+    };
+    step();
+  };
+  if (node.clientWidth > 0) run();
+  else if (typeof ResizeObserver !== "undefined") {
+    const observer = new ResizeObserver(() => {
+      if (node.clientWidth <= 0) return;
+      observer.disconnect();
+      run();
+    });
+    observer.observe(node);
+  }
+}
+
 /** يبني عناصر فقرات صفحةٍ (خارج الصفحة) — الجداول مجموعةٌ والبقية مفردة. */
 export function renderPageBlocks(paras: BodyParagraph[], section: SectionGeometry, ctx: RenderCtx): HTMLElement[] {
   const out: HTMLElement[] = [];
@@ -163,6 +369,17 @@ export function renderPageBlocks(paras: BodyParagraph[], section: SectionGeometr
   }
   const tables = new Map([...tableParas].map(([id, owned]) =>
     [id, groupTable(withRepeatedHeaderRows(owned, ctx.model.paragraphs))] as const));
+  // قد تحتوي الصفحة الأولى/الأخيرة من جدول الشعر صفًا واحدًا فقط، فلا تكفي
+  // شريحة الصفحة وحدها للتعرّف إلى بنية الصدر/العجز. نحمل شكل الجدول الأصلي
+  // للتصنيف فقط، مع إبقاء عناصر الصفحة نفسها كما هي بلا نقل أو دمج.
+  const authoredTables = new Map([...tableParas].map(([id, owned]) => {
+    // جداول الحواشي والرؤوس قصص مستقلة، ولذلك لا تظهر فقراتها في
+    // model.paragraphs (متن المستند). استعمل القصة الكاملة حين تتوفر، وإلا
+    // استعمل الفقرات المملوكة للكتلة الحالية بدل تمرير مصفوفة فارغة إلى
+    // groupTable وإسقاط الحاشية كلها.
+    const authored = ctx.model.paragraphs.filter(paragraph => paragraph.tableCell?.tableId === id);
+    return [id, groupTable(authored.length ? authored : owned)] as const;
+  }));
   const renderedTables = new Set<number>();
   let i = 0;
   while (i < paras.length) {
@@ -183,7 +400,7 @@ export function renderPageBlocks(paras: BodyParagraph[], section: SectionGeometr
     i++;
     const table = tables.get(tableId);
     if (!table || renderedTables.has(tableId) || table.parentTableId != null) continue;
-    out.push(renderTable(table, section, ctx, tables, renderedTables));
+    out.push(renderTable(table, section, ctx, tables, renderedTables, authoredTables));
   }
   return out;
 }
@@ -236,18 +453,24 @@ export function withRepeatedHeaderRows(slice: BodyParagraph[], all: BodyParagrap
 export function renderTable(
   t: TableData, section: SectionGeometry, ctx: RenderCtx,
   allTables?: ReadonlyMap<number, TableData>, rendered = new Set<number>(),
+  authoredTables?: ReadonlyMap<number, TableData>,
 ): HTMLElement {
   rendered.add(t.tableId);
   const availableTwips = section.columnTwips - t.tblIndTwips;
   const tableTwips = tableWidthTwips({
     available: availableTwips, grid: t.totalGridTwips, value: t.tblWVal, type: t.tblWType,
   });
-  const tablePx = twipsToPx(tableTwips);
+  const tablePercent = tableWidthPercent(tableTwips, section.columnTwips);
+  const authoredShape = authoredTables?.get(t.tableId);
+  const poetryShape = isPoetryHemistichTable(t) ? t
+    : authoredShape && isPoetryHemistichTable(authoredShape) ? authoredShape : null;
+  const poetryTable = poetryShape != null;
 
   const table = el("table", {
     class: "tbl",
     "data-word-table-id": String(t.tableId),
     "data-word-table-depth": String(t.nestingDepth ?? 0),
+    ...(poetryTable ? { "data-word-poetry-table": "true" } : {}),
     ...(t.parentTableId != null ? {
       "data-word-parent-table": String(t.parentTableId),
       "data-word-parent-row": String(t.parentRow),
@@ -256,8 +479,9 @@ export function renderTable(
     } : {}),
     style: css([
       "border-collapse:collapse",
-      `width:${px(tablePx)}`,
-      `table-layout:${t.tblLayout === "fixed" ? "fixed" : "auto"}`,
+      `width:${tablePercent.toFixed(3)}%`,
+      "max-width:none",
+      `table-layout:${poetryTable || t.tblLayout === "fixed" ? "fixed" : "auto"}`,
       `direction:${t.bidiVisual ? "rtl" : "ltr"}`,
       t.tblIndTwips ? `margin-inline-start:${px(twipsToPx(t.tblIndTwips))}` : "",
       t.tblJc === "center" ? "margin-inline:auto" : "",
@@ -271,15 +495,17 @@ export function renderTable(
 
   // colgroup: أعمدـة بنِسَبٍ من مواضع colX (أساسُ tblGrid)
   const colgroup = el("colgroup");
-  const boundarySet = new Set<number>();
-  for (const row of t.rows) for (const c of row.cells) boundarySet.add(c.paras[0]!.tableCell!.colXTwips);
+  const boundarySet = new Set<number>([0, t.totalGridTwips]);
+  for (const row of t.rows) for (const c of row.cells) {
+    const cc = c.paras[0]!.tableCell!;
+    boundarySet.add(cc.colXTwips);
+    boundarySet.add(cc.colXTwips + cc.colWTwips);
+  }
   const b = [...boundarySet].sort((a, z) => a - z);
   const edges: number[] = [];
   for (let k = 0; k < b.length; k++) {
     edges.push(b[k]!);
   }
-  // حافة الجدول اليمنى = مجموع الشبكة
-  if (edges.length) edges.push(t.totalGridTwips);
   for (let k = 0; k < edges.length - 1; k++) {
     const w = Math.max(0, (edges[k + 1]! - edges[k]!) / t.totalGridTwips);
     colgroup.appendChild(el("col", { style: `width:${(w * 100).toFixed(3)}%` }));
@@ -302,6 +528,8 @@ export function renderTable(
         colspan: cell.colSpan > 1 ? cell.colSpan : undefined,
         style: css([
           "box-sizing:border-box",
+          cellGridWidthPercent(cell.paras[0]!, t.totalGridTwips) > 0
+            ? `width:${cellGridWidthPercent(cell.paras[0]!, t.totalGridTwips).toFixed(3)}%` : "",
           "vertical-align:" + (cell.vAlign === "center" ? "middle" : cell.vAlign === "bottom" ? "bottom" : "top"),
           cell.textDirection === "tbRl" || cell.textDirection === "tbRlV"
             ? "writing-mode:vertical-rl"
@@ -321,11 +549,40 @@ export function renderTable(
       const blocks: { index: number; order: number; node: HTMLElement }[] = [];
       for (const child of nested)
         if (!rendered.has(child.tableId)) blocks.push({ index: child.parentBlockIndex ?? 0,
-          order: child.tableId, node: renderTable(child, section, ctx, allTables, rendered) });
+          order: child.tableId, node: renderTable(child, section, ctx, allTables, rendered, authoredTables) });
       for (const p of cell.paras) {
         const node = paragraphToElement(p, ctx);
-        if (node) blocks.push({ index: p.tableCell?.cellBlockIndex ?? Number.MAX_SAFE_INTEGER,
-          order: p.index, node });
+        if (node) {
+          if (poetryShape && isPoetryHemistichParagraph(poetryShape, cell, p)) {
+            // HTMLElement الحقيقي يملك الاثنين؛ حارس الاختبار يبقي renderer
+            // صالحًا أيضًا مع DOM المصغر الذي لا ينفذ classList/dataset.
+            node.classList?.add("word-poetry-hemistich");
+            if (node.dataset) node.dataset.wordPoetrySpacing = "small";
+            // «تباعد صغير» محدود خاص بالشعر، لا ضبط كامل ولا كشيدة نصية.
+            node.style.wordSpacing = "normal";
+            // ارتفاع الصف في Word هو المرجع. لا نضيف بعده هامش الفقرة مرة
+            // ثانية، وإلا صار الفراغ بين بيتين عدة أسطر بدل سطر واحد.
+            node.style.marginTop = "0";
+            node.style.marginBottom = "0";
+            if (typeof node.style.setProperty === "function") node.style.setProperty("text-justify", "auto");
+            else (node.style as unknown as Record<string, string>)["text-justify"] = "auto";
+            if (!p.jc || p.jc === "start" || p.jc === "end" || p.jc === "lowKashida"
+                || p.jc === "both" || p.jc === "distribute"
+                || p.jc === "mediumKashida" || p.jc === "highKashida") {
+              node.style.textAlign = "start";
+              node.style.textAlignLast = "start";
+            }
+            const visibleInRow = row.cells.flatMap(candidate => candidate.paras)
+              .filter(paragraph => paragraph.text.trim()).length;
+            const authoredRows = poetryShape?.rows.length ?? t.rows.length;
+            const sliceBoundary = authoredRows > t.rows.length
+              && (row === t.rows[0] || row === t.rows.at(-1));
+            const standaloneOrSingle = authoredRows === 1 || visibleInRow === 1;
+            applyPoetrySmallSpacing(node, sliceBoundary || standaloneOrSingle);
+          }
+          blocks.push({ index: p.tableCell?.cellBlockIndex ?? Number.MAX_SAFE_INTEGER,
+            order: p.index, node });
+        }
       }
       for (const block of blocks.sort((a, b) => a.index - b.index || a.order - b.order))
         td.appendChild(block.node);

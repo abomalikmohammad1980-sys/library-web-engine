@@ -1,0 +1,103 @@
+{
+  "buildPassed": true,
+  "productionReady": true,
+  "published": true,
+  "version": "batch-20260917-33",
+  "baselineDeploymentId": "36a4eb26-f57a-48ce-9322-8b6785c2311e",
+  "payloadFingerprint": "91fe23900768c1fe3adcba12c837c4300222181360883544f65fc9a7cf0f2ca9",
+  "deployFingerprint": "885d409c1ffca23258ba90ae5c5e6edfabb641ca73c8dbb9a921b75591828157",
+  "functionsFingerprint": "9c34bbf263598353a5d5689b4be33cd4189555274f0abc9729713cb6fa14284f",
+  "overlay": {
+    "source": [
+      "app/src/taxonomy_links.ts",
+      "app/src/path_location.ts",
+      "app/src/engine/library_store.ts",
+      "app/src/search_presentation.ts",
+      "app/src/background_search_index.ts",
+      "app/src/account_book_mirror.ts",
+      "app/src/local_import_guard.ts",
+      "app/src/book_import.ts",
+      "app/src/i18n/en.reviewed.ts",
+      "app/src/independent_pdf_edition.ts",
+      "app/src/independent_pdf_panel.ts",
+      "app/src/independent_pdf_cloud.ts",
+      "app/src/account_service.ts",
+      "app/src/screens/book.ts",
+      "app/src/screens/library.ts",
+      "app/src/screens/reader.ts",
+      "app/src/published_book_controls.ts",
+      "app/src/bok_text_editor.ts",
+      "app/src/bok_text_release.ts",
+      "app/src/bok_annotation_revalidation.ts",
+      "app/src/annotation_store.ts",
+      "app/src/shamela_pack_seed.ts",
+      "app/src/people_facet_refresh.ts",
+      "app/src/reader_loading.ts",
+      "app/src/router.ts",
+      "app/src/styles/components.css",
+      "packages/ooxml-dom/src/runT.ts"
+    ],
+    "functions": [
+      "alpha-publish/functions/_seo-presentation.js",
+      "alpha-publish/functions/api/account/books.js",
+      "alpha-publish/functions/api/library/book-editions.js",
+      "alpha-publish/functions/api/library/author-overrides.js"
+    ],
+    "public": [
+      "app/public/theme-init.js"
+    ],
+    "migrations": [
+      "alpha-publish/migrations/0031_independent_pdf_editions.sql"
+    ]
+  },
+  "files": 19996,
+  "requiredMigrations": [
+    "alpha-publish/migrations/0031_independent_pdf_editions.sql"
+  ],
+  "acceptanceRequired": [
+    "isolated migrated edition workflow",
+    "combined Chrome preview",
+    "field coverage and BOK transaction separate activation gates"
+  ],
+  "fullAcceptanceClosed": false,
+  "deploymentId": "a5ff7588-b3c5-41f7-8efa-75f4af2924c5",
+  "url": "https://a5ff7588.khezana.pages.dev",
+  "productionUrl": "https://khzanah.com",
+  "publishedAt": "2026-09-17T06:56:01.575Z",
+  "publishedDirectory": "../.artifacts/batch33/deploy/pages-dist",
+  "rollbackDirectory": "../.artifacts/batch29/deploy/pages-dist",
+  "previousDeploymentId": "36a4eb26-f57a-48ce-9322-8b6785c2311e",
+  "checks": [
+    {
+      "path": "/",
+      "status": 200,
+      "title": "الخزانة: المكتبة الإسلامية الذكية"
+    },
+    {
+      "path": "/books/151179",
+      "status": 200,
+      "title": "التفسير والبيان لأحكام القرآن — عبد العزيز الطريفي | الخِزانة"
+    },
+    {
+      "path": "/authors/000020",
+      "status": 200,
+      "title": "الشافعي: سيرته وكتبه | الخِزانة"
+    },
+    {
+      "path": "/books/999999999",
+      "status": 404,
+      "title": "الصفحة غير موجودة | الخِزانة"
+    },
+    {
+      "path": "/api/library/book-editions?id=410021633",
+      "status": 200
+    }
+  ],
+  "migration": "0031_independent_pdf_editions applied successfully",
+  "caveats": [
+    "Field-separated search activation remains gated and is not included.",
+    "BOK publication activation has not passed isolated cloud acceptance.",
+    "Original DOCX visual comparison and full slow-network timing remain open.",
+    "Edition endpoint recognizes 21633 but returns 404 for 151179; edition coverage for that book remains open, while its reader works."
+  ]
+}

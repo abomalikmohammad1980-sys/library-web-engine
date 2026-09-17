@@ -1,3 +1,5 @@
+import {readingStorageKey} from './reading_identity_scope'
+
 export interface ReadingActivity {
   lastBookId?: string
   lastOpenedAt?: number
@@ -10,7 +12,7 @@ const KEY = 'alkhizana:reading-activity:v1'
 
 export function getReadingActivity(): ReadingActivity {
   try {
-    const saved = JSON.parse(localStorage.getItem(KEY) ?? '{}') as Partial<ReadingActivity>
+    const saved = JSON.parse(localStorage.getItem(readingStorageKey(KEY)) ?? '{}') as Partial<ReadingActivity>
     return {
       ...(saved.lastBookId ? { lastBookId: saved.lastBookId } : {}),
       ...(saved.lastOpenedAt ? { lastOpenedAt: saved.lastOpenedAt } : {}),
@@ -60,7 +62,7 @@ function dayKey(date: Date): string {
 }
 
 function save(state: ReadingActivity): void {
-  localStorage.setItem(KEY, JSON.stringify(state))
+  localStorage.setItem(readingStorageKey(KEY), JSON.stringify(state))
 }
 
 export function saveReadingActivity(state: ReadingActivity): void { save(state) }

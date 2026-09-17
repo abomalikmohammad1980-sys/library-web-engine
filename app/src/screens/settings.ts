@@ -1,7 +1,7 @@
 import { pageContent } from '../components'
-import { getSettings, resetSettings, saveSettings, type AppSettings } from '../settings_store'
+import { ACCESSIBLE_SCALE_MAX, getSettings, INTERFACE_SCALE_MIN, READER_SCALE_MIN, resetSettings, saveSettings, type AppSettings } from '../settings_store'
 import { arabicNum, h, toast } from '../ui'
-import { currentReadingData, importReadingData } from '../reading_data'
+import { currentReadingData, importReadingDataFile } from '../reading_data'
 import { capabilitySummary, offlineCapabilities, type OfflineCapability } from '../offline_policy'
 import { makeProgrammaticFileInput } from '../programmatic_file_input'
 import { downloadArtifact } from '../artifact_download'
@@ -11,19 +11,19 @@ import { parseLibraryArchive, previewLibraryArchive, restoreLibraryArchive, type
 import { connectAppSourceSync, presentSourceSync, type AppSourceSyncGateway } from '../source_sync_ui'
 import { captureRouteResourceScope, routeEventListener } from '../resource_lifecycle'
 import { brandMark } from '../brand'
+import { publicPageHero } from '../public_page_hero'
+import { resolveUiLabel } from '../ui_dictionary_loader'
+import { uiTemplateText } from '../ui_template_binding'
 
 export function settingsScreen(): HTMLElement {
   const resourceScope = captureRouteResourceScope()
   let settings = getSettings()
   const root = pageContent(
-    h('section', { class: 'settings-hero', 'aria-labelledby': 'settings-title' },
-      h('p', { class: 'page-eyebrow' }, 'الإعدادات'),
-      h('h1', { class: 'page-title', id: 'settings-title' }, 'اجعل الخِزانة كما ترتاح لها'),
-      h('p', { class: 'page-sub' }, 'تُطبق التغييرات فورًا، وتبقى محفوظة على هذا الجهاز.'),
-    ),
+    publicPageHero({ eyebrow: 'الإعدادات', title: 'اجعل الخِزانة كما ترتاح لها', titleId: 'settings-title', description: 'تُطبق التغييرات فورًا، وتبقى محفوظة على هذا الجهاز.', className: 'settings-hero' }),
   )
-  const interfaceRange = rangeControl('حجم واجهة الموقع', 'يكبّر القوائم والأزرار والنصوص خارج صفحات Word.', 85, 130, settings.interfaceScale)
-  const readerRange = rangeControl('حجم صفحة القراءة', 'يكبّر الورقة بصريًا من دون تغيير فواصل Word أو محتواها.', 80, 140, settings.readerScale)
+  root.classList.add('settings-page')
+  const interfaceRange = rangeControl('حجم واجهة الموقع', 'يكبّر القوائم والأزرار والنصوص خارج صفحات Word حتى ٢٠٠٪.', INTERFACE_SCALE_MIN, ACCESSIBLE_SCALE_MAX, settings.interfaceScale)
+  const readerRange = rangeControl('حجم صفحة القراءة', 'يكبّر الورقة بصريًا من دون تغيير فواصل Word أو محتواها حتى ٢٠٠٪.', READER_SCALE_MIN, ACCESSIBLE_SCALE_MAX, settings.readerScale)
   const contrast = switchControl('تباين مرتفع', 'حدود أوضح وألوان أقوى لضعف البصر.', settings.highContrast)
   const motion = switchControl('تقليل الحركة', 'يلغي الانتقالات والحركة السلسة قدر الإمكان.', settings.reduceMotion)
   const theme = themeControl(settings.theme ?? 'original')
@@ -54,7 +54,7 @@ export function settingsScreen(): HTMLElement {
   const archivePolicy = h('select', { 'aria-label': 'سياسة تعارض معرفات أرشيف المكتبة' }, h('option', { value: 'skip' }, 'تجاوز الكتب الموجودة'), h('option', { value: 'replace-as-new' }, 'استيراد المتعارض كنسخة جديدة'), h('option', { value: 'replace-same' }, 'استبدال الكتاب ذي المعرف نفسه')) as HTMLSelectElement
   const archiveInput = makeProgrammaticFileInput(h('input', { type: 'file', accept: '.zip,application/zip' }) as HTMLInputElement), archiveImport = h('button', { class: 'btn btn--secondary', type: 'button' }, 'استعادة أرشيف المكتبة') as HTMLButtonElement
   archiveImport.addEventListener('click', () => archiveInput.click())
-  archiveInput.addEventListener('change', async () => { const file = archiveInput.files?.[0]; if (!file) return; archiveImport.disabled = true; try { const candidates = await parseLibraryArchive(new Uint8Array(await file.arrayBuffer())), existing = new Set((await listBooks()).map(book => book.id)), preview = previewLibraryArchive(candidates, existing), policy = archivePolicy.value as ArchiveConflictPolicy; const warning = policy === 'replace-same' ? ' ستُستبدل الكتب المتعارضة بمعاملة مستقلة لكل كتاب.' : ''; if (!confirm(`المعاينة: ${arabicNum(preview.total)} كتاب، منها ${arabicNum(preview.conflicts)} متعارض.${warning} لا تُستورد بيانات القراءة من هذا ZIP. متابعة؟`)) { toast('أُلغيت الاستعادة بلا تغيير'); return } const report = await restoreLibraryArchive(candidates, existing, policy, restoreArchivedBook); toast(`استُعيد ${arabicNum(report.imported)} · تُجاوز ${arabicNum(report.skipped)} · فشل ${arabicNum(report.failed.length)}`); if (report.imported) window.dispatchEvent(new CustomEvent('library-changed')) } catch (error) { toast(error instanceof Error ? error.message : 'تعذّر استعادة الأرشيف') } finally { archiveImport.disabled = false; archiveInput.value = '' } })
+  archiveInput.addEventListener('change', async () => { const file = archiveInput.files?.[0]; if (!file) return; archiveImport.disabled = true; try { const candidates = await parseLibraryArchive(new Uint8Array(await file.arrayBuffer())), existing = new Set((await listBooks()).map(book => book.id)), preview = previewLibraryArchive(candidates, existing), policy = archivePolicy.value as ArchiveConflictPolicy; const warning = policy === 'replace-same' ? ' ستُستبدل الكتب المتعارضة بمعاملة مستقلة لكل كتاب.' : ''; const prompt = `المعاينة: ${arabicNum(preview.total)} كتاب، منها ${arabicNum(preview.conflicts)} متعارض.${warning} لا تُستورد بيانات القراءة من هذا ZIP. متابعة؟`; if (!confirm(await resolveUiLabel(prompt, document.documentElement.dataset.siteLanguage ?? 'ar'))) { toast('أُلغيت الاستعادة بلا تغيير'); return } const report = await restoreLibraryArchive(candidates, existing, policy, restoreArchivedBook); toast(`استُعيد ${arabicNum(report.imported)} · تُجاوز ${arabicNum(report.skipped)} · فشل ${arabicNum(report.failed.length)}`); if (report.imported) window.dispatchEvent(new CustomEvent('library-changed')) } catch (error) { toast(error instanceof Error ? error.message : 'تعذّر استعادة الأرشيف') } finally { archiveImport.disabled = false; archiveInput.value = '' } })
   const importInput = makeProgrammaticFileInput(h('input', { type: 'file', accept: 'application/json,.json' }) as HTMLInputElement)
   const importButton = h('button', { class: 'btn btn--secondary', type: 'button' }, 'استيراد نسخة محفوظة') as HTMLButtonElement
   const importStatus = h('p', { class: 'settings-import-status', role: 'status', 'aria-live': 'polite' }, 'يُدمج المستورد مع بيانات هذا الجهاز ولا يحذف المحفوظات الحالية.')
@@ -62,11 +62,12 @@ export function settingsScreen(): HTMLElement {
   importInput.addEventListener('change', async () => {
     const file = importInput.files?.[0]
     if (!file) return
-    importButton.disabled = true; importStatus.textContent = `جارٍ فحص ${file.name}…`
+    importButton.disabled = true; importStatus.replaceChildren(uiTemplateText('35a8b5d266365424',{p1:file.name}))
     try {
-      const parsed = JSON.parse(await file.text()) as unknown
-      if (!confirm('ستُدمج الرفوف والعلامات والملاحظات والنشاط مع بيانات هذا الجهاز. هل تريد المتابعة؟')) { importStatus.textContent = 'أُلغي الاستيراد ولم تتغير البيانات.'; return }
-      const merged = importReadingData(parsed)
+      const confirmation = await resolveUiLabel('ستُدمج الرفوف والعلامات والملاحظات والنشاط مع بيانات هذا الجهاز. هل تريد المتابعة؟', document.documentElement.dataset.siteLanguage ?? 'ar')
+      if (resourceScope.disposed) return
+      const merged = await importReadingDataFile(file, () => confirm(confirmation))
+      if (!merged) { importStatus.textContent = 'أُلغي الاستيراد ولم تتغير البيانات.'; return }
       settings = merged.settings
       interfaceRange.input.value = String(settings.interfaceScale); readerRange.input.value = String(settings.readerScale)
       contrast.input.checked = settings.highContrast; motion.input.checked = settings.reduceMotion
@@ -102,7 +103,7 @@ function sourceSyncPanel(gateway?: AppSourceSyncGateway): HTMLElement {
   const render = (state: Parameters<typeof presentSourceSync>[0]): void => {
     const view = presentSourceSync(state, gateway)
     status.className = `source-sync-card source-sync-card--${view.tone}`
-    status.replaceChildren(h('strong', null, view.title), h('p', null, view.detail), state.usage ? h('small', null, `المستخدم: ${arabicNum(state.usage.committedBytes)} بايت من ${arabicNum(state.usage.maxAccountStorageBytes)} بايت`) : h('small', null, 'لا تُرسل بيانات القراءة ضمن مزامنة مصادر الكتب.'))
+    status.replaceChildren(h('strong', null, view.title), h('p', null, view.detailBinding ? uiTemplateText(view.detailBinding.id,view.detailBinding.parameters) : view.detail), state.usage ? h('small', null, uiTemplateText('8033e117e94730fe',{p1:state.usage.committedBytes,p2:state.usage.maxAccountStorageBytes})) : h('small', null, 'لا تُرسل بيانات القراءة ضمن مزامنة مصادر الكتب.'))
     actions.replaceChildren()
     if (view.canRefresh) { const refresh = h('button', { class: 'btn btn--secondary', type: 'button' }, 'تحديث الحالة') as HTMLButtonElement; refresh.addEventListener('click', () => { refresh.disabled = true; void connectAppSourceSync(gateway, render).finally(() => { refresh.disabled = false }) }); actions.append(refresh) }
     if (view.canSignIn) { const signIn = h('button', { class: 'btn btn--primary', type: 'button' }, 'تسجيل الدخول عبر المزود') as HTMLButtonElement; signIn.addEventListener('click', () => gateway?.requestSignIn?.()); actions.append(signIn) }

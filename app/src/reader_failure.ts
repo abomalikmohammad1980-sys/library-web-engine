@@ -19,13 +19,19 @@ const STAGE_DETAILS: Record<ReaderFailureStage, Omit<ReaderFailure, 'stage'>> = 
   unknown: { code: 'READER-UNKNOWN-001', title: 'تعذّر عرض الكتاب', description: 'حدث خلل غير متوقع، لكن ملف Word والبيانات الإدارية بقيا محفوظين.' },
 }
 
-export function classifyReaderFailure(error: unknown, attemptedStage: ReaderFailureStage): ReaderFailure {
+export function classifyReaderFailure(error: unknown, attemptedStage: ReaderFailureStage, format?: string): ReaderFailure {
   const name = error instanceof Error ? error.name : ''
   const message = error instanceof Error ? error.message.toLocaleLowerCase('en') : ''
   let stage = attemptedStage
-  if (name === 'WordPageMapMismatchError' || /page.?map|word_page_map/.test(message)) stage = 'page-map'
+  const explicitWordStage = error instanceof Error && error.name === 'WordOpenError'
+    ? (error as Error & { stage?: unknown }).stage
+    : undefined
+  if (explicitWordStage === 'load' || explicitWordStage === 'parse') stage = explicitWordStage
+  else if (name === 'WordPageMapMismatchError' || /page.?map|word_page_map/.test(message)) stage = 'page-map'
   else if (/font|fontface|harfbuzz|wasm/.test(`${name} ${message}`.toLocaleLowerCase('en'))) stage = 'font'
-  const detail = STAGE_DETAILS[stage] ?? STAGE_DETAILS.unknown
+  const detail = stage === 'parse' && format === 'shamela-bok'
+    ? { code: 'READER-PARSE-001', title: 'تعذّرت قراءة بنية BOK', description: 'لم تُحذف النسخة الأصلية. أعد المحاولة أو نزّل ملف BOK الأصلي.' }
+    : STAGE_DETAILS[stage] ?? STAGE_DETAILS.unknown
   return { stage, ...detail }
 }
 

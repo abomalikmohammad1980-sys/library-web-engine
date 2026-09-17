@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://alkhizana.local/schema/data-release-overlay.json",
+  "title": "Alkhizana corpus/search Pages overlay",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["contract", "releaseId", "projects"],
+  "properties": {
+    "contract": { "const": "alkhizana-pages-client/1" },
+    "releaseId": { "type": "string", "pattern": "^[a-f0-9]{24}$" },
+    "projects": {
+      "type": "array",
+      "minItems": 2,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "group", "baseUrl"],
+        "properties": {
+          "name": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]{2,62}$" },
+          "group": { "enum": ["corpus", "search"] },
+          "baseUrl": { "type": "string", "pattern": "^https://[^/?#]+/?$" }
+        }
+      }
+    }
+  }
+}

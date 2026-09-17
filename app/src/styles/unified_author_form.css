@@ -1,0 +1,6 @@
+.unified-author-form{display:grid;gap:1rem}
+.unified-author-form__grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem}
+.unified-author-form .person-section{display:grid;gap:.65rem;min-width:0;margin:0}
+.unified-author-form input:not([type=checkbox]),.unified-author-form textarea{box-sizing:border-box;width:100%;min-width:0}
+.unified-author-form input[readonly]{opacity:.8;background:var(--surface,#f5f2e9)}
+@media(max-width:640px){.unified-author-form__grid{grid-template-columns:minmax(0,1fr)}}

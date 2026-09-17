@@ -10,6 +10,9 @@ export type AppTheme = 'original' | 'light' | 'dark' | 'sepia'
 
 const KEY = 'alkhizana:settings:v1'
 const DEFAULTS: AppSettings = { interfaceScale: 100, readerScale: 100, highContrast: false, reduceMotion: false, theme: 'original' }
+export const INTERFACE_SCALE_MIN = 85
+export const READER_SCALE_MIN = 80
+export const ACCESSIBLE_SCALE_MAX = 200
 
 function appTheme(value: unknown): AppTheme {
   return value === 'light' || value === 'dark' || value === 'sepia' ? value : 'original'
@@ -18,20 +21,21 @@ function appTheme(value: unknown): AppTheme {
 export function getSettings(): AppSettings {
   try {
     const saved = JSON.parse(localStorage.getItem(KEY) ?? '{}') as Partial<AppSettings>
-    return {
-      interfaceScale: clamp(Number(saved.interfaceScale) || DEFAULTS.interfaceScale, 85, 130),
-      readerScale: clamp(Number(saved.readerScale) || DEFAULTS.readerScale, 80, 140),
+    return normalizeSettings({
+      interfaceScale: Number(saved.interfaceScale) || DEFAULTS.interfaceScale,
+      readerScale: Number(saved.readerScale) || DEFAULTS.readerScale,
       highContrast: Boolean(saved.highContrast),
       reduceMotion: Boolean(saved.reduceMotion),
       theme: appTheme(saved.theme),
-    }
+    })
   } catch { return { ...DEFAULTS } }
 }
 
 export function saveSettings(settings: AppSettings): void {
-  localStorage.setItem(KEY, JSON.stringify(settings))
-  applySettings(settings)
-  window.dispatchEvent(new CustomEvent('alkhizana:settings-changed', { detail: settings }))
+  const normalized = normalizeSettings(settings)
+  localStorage.setItem(KEY, JSON.stringify(normalized))
+  applySettings(normalized)
+  window.dispatchEvent(new CustomEvent('alkhizana:settings-changed', { detail: normalized }))
 }
 
 export function resetSettings(): AppSettings {
@@ -58,6 +62,14 @@ function applySettings(settings: AppSettings): void {
   root.style.colorScheme = theme === 'dark' ? 'dark' : 'light'
   const themeColors: Record<AppTheme, string> = { original: '#f1ede3', light: '#ffffff', dark: '#171816', sepia: '#eadcc3' }
   if (typeof document.querySelector === 'function') document.querySelector<HTMLMetaElement>('meta[name="theme-color"]')?.setAttribute('content', themeColors[theme])
+}
+
+function normalizeSettings(settings: AppSettings): AppSettings {
+  return { ...settings,
+    interfaceScale: clamp(settings.interfaceScale, INTERFACE_SCALE_MIN, ACCESSIBLE_SCALE_MAX),
+    readerScale: clamp(settings.readerScale, READER_SCALE_MIN, ACCESSIBLE_SCALE_MAX),
+    theme: appTheme(settings.theme),
+  }
 }
 
 function clamp(value: number, min: number, max: number): number { return Math.min(max, Math.max(min, value)) }

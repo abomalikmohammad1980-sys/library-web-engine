@@ -6,6 +6,8 @@ import type { BodyParagraph, BorderSide, Borders4, SectionGeometry, SpacingProps
 import { css, px } from "./dom.js";
 import { twipsToPx } from "./units.js";
 import { wordBorderStyle } from "./BorderCss.js";
+import {paragraphNaturalLineTwips} from './font-line-metrics.js';
+import {cssFamily} from './fonts.js';
 
 /** ‏w:jc ⟵ CSS text-align. القيم المطلقة (left/right/center/both) تبقى مطلقة؛
  *  والقيم المنطقية (start/end) تُفوَّض للاتجاه. */
@@ -27,7 +29,8 @@ function textAlign(jc: string | null): string {
   switch (jc) {
     case "center": return "center";
     case "both": case "distribute": case "thaiDistribute":
-    case "lowKashida": case "mediumKashida": case "highKashida": return "justify";
+    case "mediumKashida": case "highKashida": return "justify";
+    case "lowKashida": return "start";
     case "left": return "left";
     case "right": return "right";
     case "start": return "start";
@@ -72,6 +75,8 @@ function lineHeight(spacing: SpacingProps, p: BodyParagraph, section?: SectionGe
   // than tall Arabic faces and makes adjacent rows paint through each other.
   // Browsers cannot express "requested multiplier, but at least the resolved
   // font metrics", so values below a natural line defer to the font's own box.
+  const measuredNatural = paragraphNaturalLineTwips(p);
+  if (measuredNatural !== null && line >= 240) return `${px(twipsToPx(measuredNatural * line / 240))}`;
   return line < 240 ? null : `${line / 240}`;
 }
 
@@ -123,12 +128,43 @@ export function paragraphCss(p: BodyParagraph, section?: SectionGeometry): strin
   // both يوزع المسافات؛ distribute يوزع المحارف ويشمل السطر الأخير.
   // أوضاع الكشيدة لا تختزل إلى inter-word: تبقى موسومةً لوحدة التشكيل
   // العربية، بينما auto هو أفضل سقوط أصلي في المتصفح قبل تركيبها.
-  if (justification === "word") items.push("text-justify:inter-word");
+  // inter-word يمد الفراغات العربية بصورة قبيحة. في الفقرة RTL نترك
+  // المشكّل العربي للمتصفح يوازن الحروف/الكشيدة طبيعيًا، مع بقاء اللاتيني
+  // على سلوك Word المعتاد بين الكلمات.
+  if (justification === "word") {
+    items.push(p.bidi ? "text-justify:inter-character" : "text-justify:inter-word");
+    // Word لا يمد السطر الأخير العادي لفقرة both. الاستثناء هو الفاصل
+    // اليدوي Shift+Enter في نهاية الفقرة: السطر السابق له ليس خاتمة فقرة
+    // ويظل مضبوطًا. CSS يعبّر عن هذا الاستثناء بـ text-align-last فقط حين
+    // يحمل المصدر فعلًا w:br textWrapping في النهاية، لا لكل فقرة عربية.
+    if (p.bidi && paragraphEndsWithManualLineBreak(p)) items.push("text-align-last:justify");
+  }
   if (justification === "distribute") {
     items.push("text-justify:inter-character");
     items.push("text-align-last:justify");
   }
-  if (justification.endsWith("Kashida")) items.push("text-justify:auto");
+  if (justification.endsWith("Kashida")) {
+    items.push("text-justify:inter-character");
+    // A hemistich in a Word poetry table is normally a one-line paragraph.
+    // CSS does not justify the final (and therefore only) line unless this is
+    // explicit, which collapsed Word's low/medium/high-kashida alignment to a
+    // ragged edge.  Keep the authored text untouched (no synthetic U+0640)
+    // and let the browser's Arabic shaper perform its native justification.
+    if (justification === "lowKashida" && p.tableCell) {
+      // لا نستخدم justify لأنه يوسّع الفراغات. طبقة جدول الشعر تمدد رسم
+      // الشطر كاملًا بلا إضافة محارف إلى النص القابل للنسخ.
+      items.push("word-spacing:normal");
+      items.push("text-align:start");
+      items.push("text-align-last:start");
+    }
+    else if (justification === "lowKashida") {
+      // lowKashida في النثر تعني ضبطًا عربيًا خفيفًا، لا محاذاة بداية.
+      // الاستثناء المحافظ أعلاه خاص بأبيات الشعر داخل خلايا الجداول.
+      items.push("text-align:justify");
+      if (paragraphEndsWithManualLineBreak(p)) items.push("text-align-last:justify");
+    }
+    else if (paragraphEndsWithManualLineBreak(p)) items.push("text-align-last:justify");
+  }
 
   // المسافات: margin-top/bottom مع طيِّ الهوامش يحقق «max(before, after)» بين فقرتين
   const sp = p.spacing;
@@ -136,10 +172,18 @@ export function paragraphCss(p: BodyParagraph, section?: SectionGeometry): strin
   if (sp.after) items.push(`margin-bottom:${px(twipsToPx(sp.after))}`);
   const lh = lineHeight(sp, p, section);
   if (lh) items.push(`line-height:${lh}`);
+  if (!p.numbered && !p.runs.some(run => run.text && !run.hidden) && p.paragraphMark) {
+    const mark = p.paragraphMark;
+    if (mark.family) items.push(`font-family:${cssFamily(mark.family)}`);
+    if (mark.emTwips) items.push(`font-size:${px(twipsToPx(mark.emTwips))}`);
+    if (mark.bold) items.push('font-weight:700');
+    if (mark.italic) items.push('font-style:italic');
+  }
 
   // البادئات: left/right مادية (من حافة الصفحة)، text-indent تتبّع الاتجاه
-  if (p.indLeft) items.push(`padding-left:${px(twipsToPx(p.indLeft))}`);
-  if (p.indRight) items.push(`padding-right:${px(twipsToPx(p.indRight))}`);
+  // CSS rejects negative padding. An outdent expands this paragraph, not its table.
+  if (p.indLeft) items.push(`${p.indLeft < 0 ? 'margin' : 'padding'}-left:${px(twipsToPx(p.indLeft))}`);
+  if (p.indRight) items.push(`${p.indRight < 0 ? 'margin' : 'padding'}-right:${px(twipsToPx(p.indRight))}`);
   if (p.indFirstLine) items.push(`text-indent:${px(twipsToPx(p.indFirstLine))}`);
 
   if (p.shd) items.push(`background-color:#${p.shd}`);
@@ -157,4 +201,17 @@ export function paragraphCss(p: BodyParagraph, section?: SectionGeometry): strin
   const tabSize = p.tabStops[0]?.posTwips ?? 720;
   if (tabSize > 0) items.push(`tab-size:${px(twipsToPx(tabSize))}`);
   return css(items);
+}
+
+/** آخر محرف مرئي في قصة الفقرة ناتج من w:br غير الصفحي (Shift+Enter).
+ * يحتفظ المستخرج به كـ\n داخل الرن؛ لا نخمّن من طول الفقرة أو كونها حاشية. */
+export function paragraphEndsWithManualLineBreak(p: BodyParagraph): boolean {
+  for (let index = p.runs.length - 1; index >= 0; index--) {
+    const run = p.runs[index]!;
+    if (run.hidden) continue;
+    const text = run.fieldResult ?? run.text;
+    if (!text) continue;
+    return /\n$/u.test(text);
+  }
+  return false;
 }

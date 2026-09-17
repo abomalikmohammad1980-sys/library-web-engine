@@ -1,0 +1,7 @@
+import type { IconName } from './icons'
+export type DestinationId='quran'|'sunnah'|'library'|'authors'|'search'|'discover'|'me'|'features'|'shelves'|'reading-plans'|'settings'
+export interface NavigationDestination{id:DestinationId;label:string;icon:IconName;href:string}
+export const NAVIGATION_DESTINATIONS:Record<DestinationId,NavigationDestination>={
+quran:{id:'quran',label:'القرآن',icon:'book',href:'#/quran'},sunnah:{id:'sunnah',label:'السنة',icon:'book',href:'#/sunnah'},library:{id:'library',label:'مكتبتي',icon:'book',href:'#/library'},authors:{id:'authors',label:'المؤلفون',icon:'person',href:'#/authors'},search:{id:'search',label:'البحث',icon:'search',href:'#/search'},discover:{id:'discover',label:'اكتشف',icon:'compass',href:'#/browse'},me:{id:'me',label:'أنا',icon:'person',href:'#/me'},features:{id:'features',label:'الميزات',icon:'features',href:'#/features'},shelves:{id:'shelves',label:'رفوفي',icon:'list',href:'#/shelves'},'reading-plans':{id:'reading-plans',label:'خطط القراءة',icon:'clock',href:'#/reading-plans'},settings:{id:'settings',label:'الإعدادات',icon:'settings',href:'#/settings'}}
+export function destination(id:DestinationId):NavigationDestination{return NAVIGATION_DESTINATIONS[id]}
+export function destinationActive(item:NavigationDestination,currentHash:string):boolean{return currentHash===item.href||currentHash.startsWith(item.href+'/')||currentHash.startsWith(item.href+'?')}

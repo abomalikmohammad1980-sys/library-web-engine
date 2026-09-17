@@ -93,17 +93,22 @@ function sectionForParagraph(p: BodyParagraph, ctx: RenderCtx) {
 }
 
 export function tocRowElement(p: BodyParagraph, ctx: RenderCtx): HTMLElement {
-  const style = paragraphCss(p, sectionForParagraph(p, ctx));
+  const section = sectionForParagraph(p, ctx);
+  const style = paragraphCss({ ...p, indLeft: 0 }, section);
   const toc = p.toc!;
   const rawHref = p.runs.find(run => run.href)?.href ?? null;
   const external = rawHref ? /^[a-z]+:/i.test(rawHref) : false;
   const href = rawHref ? (external ? rawHref : "#") : null;
   const row = el(href ? "a" : "div", {
     class: "p toc-row",
+    "data-toc-level": String(Math.max(0, Math.round((p.indLeft ?? 0) / 320))),
     ...paragraphOutlineAttrs(p),
     ...(href ? { href, target: /^https?:/i.test(href) ? "_blank" : undefined,
       ...(!external && rawHref ? { "data-word-bookmark": rawHref } : {}) } : {}),
-    style: css([style, "display:flex", "align-items:baseline", "white-space:nowrap"]),
+    style: css([style, "display:flex", "align-items:baseline", "white-space:nowrap",
+      toc.rightTabTwips > 0 ? `width:${px(twipsToPx(tocRowWidthTwips(toc.rightTabTwips, section.columnTwips)))}` : "",
+      `padding-inline-start:${px(twipsToPx(Math.max(0, p.indLeft ?? 0)))}`,
+      "max-width:100%", "box-sizing:border-box"]),
   });
   row.dataset.idx = String(p.index);
   if (p.bookmarkIds?.length) row.id = p.bookmarkIds[0]!;
@@ -115,13 +120,26 @@ export function tocRowElement(p: BodyParagraph, ctx: RenderCtx): HTMLElement {
     target?.scrollIntoView({ behavior: "smooth", block: "start" });
     target?.focus({ preventScroll: true });
   });
-  row.appendChild(el("span", { class: "toc-entry" }, toc.entry));
+  const tabRun = p.runs.findIndex(run => run.text.includes("\t"));
+  const entryNodes = (tabRun >= 0 ? p.runs.slice(0, tabRun) : p.runs)
+    .map(run => runToNode(run)).filter((node): node is Node => node !== null);
+  row.appendChild(el("span", { class: "toc-entry", style: "flex:0 1 auto;min-width:0" },
+    entryNodes.length ? entryNodes : [toc.entry]));
   row.appendChild(el("span", {
     class: "toc-leader",
-    style: "flex:1 1 auto;border-bottom:1px dotted #000;margin-inline:6px",
+    "aria-hidden": "true",
+    style: "flex:1 1 24px;min-width:12px;height:1em;margin-inline:6px;overflow:hidden;background-image:radial-gradient(circle,currentColor 1px,transparent 1.2px);background-size:5px 2px;background-repeat:repeat-x;background-position:left calc(100% - 0.18em)",
   }));
-  row.appendChild(el("span", { class: "toc-page" }, toc.pageNum));
+  const pageNodes = (tabRun >= 0 ? p.runs.slice(tabRun + 1) : [])
+    .map(run => runToNode(run)).filter((node): node is Node => node !== null);
+  row.appendChild(el("span", { class: "toc-page", style: "flex:none;direction:ltr;unicode-bidi:isolate" },
+    pageNodes.length ? pageNodes : [toc.pageNum]));
   return row;
+}
+
+/** موضع right tab لا يتجاوز عمود Word حتى في مستند ذي قيمة تالفة. */
+export function tocRowWidthTwips(rightTabTwips: number, columnTwips: number): number {
+  return Math.max(1, Math.min(rightTabTwips, columnTwips));
 }
 
 /** فقرة w:ptab ⟵ ثلاثة أقسامٍ مرنة (يمين/وسط/يسار) حسب المحاذاة. */
@@ -214,7 +232,7 @@ export function paragraphToElement(p: BodyParagraph, ctx: RenderCtx): HTMLElemen
   const ownsParagraphAnchor = p.anchors.some(anchor => anchor.posVRel === "paragraph");
   if (div.children.length === 0 && !p.shd && !p.pBdr && !ownsParagraphAnchor) {
     // فقرة فارغة: سطرٌ فارغ بارتفاع سطر
-    div.appendChild(el("span", { style: "display:inline-block;min-width:1px;height:1em" }));
+    div.appendChild(el("span", { style: `display:inline-block;min-width:1px;height:${p.paragraphMark ? '1lh' : '1em'}` }));
   }
   return div;
 }

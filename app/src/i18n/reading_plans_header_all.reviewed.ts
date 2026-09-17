@@ -1,0 +1,37 @@
+const KEYS = ['خططك في مشهد واحد','لا توجد خطة قراءة فعالة','اختر كتابًا'] as const
+const labels = (values: readonly string[]): Readonly<Record<string, string>> => Object.fromEntries(KEYS.map((key, index) => [key, values[index]!]))
+
+/** عنوان شاشة الخطط وحالتها الفارغة؛ لا يحتوي بيانات كتاب أو مؤلف. */
+export const REVIEWED_READING_PLANS_HEADER_ALL_UI: Readonly<Record<string, Readonly<Record<string, string>>>> = {
+  en: labels(['Your plans at a glance','There is no active reading plan','Choose a book']),
+  fr: labels(['Vos plans en un coup d’œil','Aucun plan de lecture actif','Choisir un livre']),
+  ug: labels(['پىلانلىرىڭىز بىر كۆرۈنۈشتە','ئاكتىپ ئوقۇش پىلانى يوق','كىتاب تاللاڭ']),
+  sw: labels(['Mipango yako kwa muhtasari','Hakuna mpango wa kusoma unaotumika','Chagua kitabu']),
+  hi: labels(['आपकी योजनाएँ एक नज़र में','कोई सक्रिय पठन योजना नहीं है','एक पुस्तक चुनें']),
+  hu: labels(['Tervei egy pillantásra','Nincs aktív olvasási terv','Válasszon könyvet']),
+  id: labels(['Rencana Anda sekilas','Tidak ada rencana membaca aktif','Pilih buku']),
+  ms: labels(['Pelan anda sepintas lalu','Tiada pelan bacaan aktif','Pilih buku']),
+  bn: labels(['আপনার পরিকল্পনাগুলো এক নজরে','কোনো সক্রিয় পাঠ পরিকল্পনা নেই','একটি বই বেছে নিন']),
+  ps: labels(['ستاسو پلانونه په یوه نظر کې','د لوستلو فعال پلان نشته','یو کتاب وټاکئ']),
+  so: labels(['Qorshayaashaada oo kooban','Ma jiro qorshe akhris oo shaqaynaya','Dooro buug']),
+  ha: labels(['Tsare-tsarenku a taƙaice','Babu tsarin karatu mai aiki','Zaɓi littafi']),
+  ru: labels(['Ваши планы одним взглядом','Нет активного плана чтения','Выберите книгу']),
+  uk: labels(['Ваші плани одним поглядом','Немає активного плану читання','Виберіть книгу']),
+  de: labels(['Ihre Pläne auf einen Blick','Kein aktiver Leseplan','Buch auswählen']),
+  es: labels(['Tus planes de un vistazo','No hay un plan de lectura activo','Elige un libro']),
+  pt: labels(['Seus planos em resumo','Não há plano de leitura ativo','Escolha um livro']),
+  it: labels(['I tuoi piani a colpo d’occhio','Non c’è un piano di lettura attivo','Scegli un libro']),
+  nl: labels(['Uw plannen in één oogopslag','Er is geen actief leesplan','Kies een boek']),
+  sv: labels(['Dina planer i korthet','Det finns ingen aktiv läsplan','Välj en bok']),
+  no: labels(['Planene dine på et øyeblikk','Det finnes ingen aktiv leseplan','Velg en bok']),
+  pl: labels(['Twoje plany w skrócie','Brak aktywnego planu czytania','Wybierz książkę']),
+  ro: labels(['Planurile tale dintr-o privire','Nu există un plan de lectură activ','Alege o carte']),
+  bs: labels(['Vaši planovi na jednom mjestu','Nema aktivnog plana čitanja','Odaberite knjigu']),
+  sq: labels(['Planet e tua me një vështrim','Nuk ka plan aktiv leximi','Zgjidh një libër']),
+  az: labels(['Planlarınız bir baxışda','Aktiv oxu planı yoxdur','Kitab seçin']),
+  uz: labels(['Rejalaringiz bir ko‘rinishda','Faol o‘qish rejasi yo‘q','Kitob tanlang']),
+  kk: labels(['Жоспарларыңыз бір көріністе','Белсенді оқу жоспары жоқ','Кітап таңдаңыз']),
+  zh: labels(['一览您的计划','没有正在进行的阅读计划','选择一本书']),
+  ja: labels(['読書計画を一覧','有効な読書計画はありません','書籍を選択']),
+  ko: labels(['독서 계획 한눈에 보기','활성화된 독서 계획이 없습니다','책 선택']),
+}

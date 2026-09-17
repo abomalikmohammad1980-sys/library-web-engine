@@ -54,7 +54,7 @@ export async function pdfFirstPageCover(data: Uint8Array): Promise<{ data: Uint8
   const pdfjs = await import('pdfjs-dist')
   const worker = await import('pdfjs-dist/build/pdf.worker.min.mjs?url')
   pdfjs.GlobalWorkerOptions.workerSrc = worker.default
-  const task = pdfjs.getDocument({ data: new Uint8Array(data), disableFontFace: true, useSystemFonts: false, useWasm: false, ...pdfJsLocalAssets() })
+  const task = pdfjs.getDocument({ data: new Uint8Array(data), disableFontFace: true, useSystemFonts: false, useWasm: true, ...pdfJsLocalAssets() })
   try {
     const pdf = await task.promise
     const page = await pdf.getPage(1)

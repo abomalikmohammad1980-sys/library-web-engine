@@ -1,13 +1,14 @@
+import { readingStorageKey } from './reading_identity_scope'
 export interface ReaderNote { id: string; bookId: string; pageIndex: number; text: string; createdAt: number }
 export type HighlightColor = 'important' | 'evidence' | 'review' | 'correction'
-export interface ReaderHighlight { id: string; bookId: string; pageIndex: number; text: string; color: HighlightColor; occurrence?: number; createdAt: number }
+export interface ReaderHighlight { id: string; bookId: string; pageIndex: number; text: string; color: HighlightColor; occurrence?: number; comment?:string; createdAt: number; /** Retain quote/comment but do not paint it onto an uncertain revised source. */ sourceReviewRequired?:boolean }
 export interface ReaderAnnotations { bookmarks: Record<string, number[]>; notes: ReaderNote[]; highlights: ReaderHighlight[] }
 
 const KEY = 'alkhizana:annotations:v1'
 
 export function getAnnotations(): ReaderAnnotations {
   try {
-    const value = JSON.parse(localStorage.getItem(KEY) ?? '{}') as Partial<ReaderAnnotations>
+    const value = JSON.parse(localStorage.getItem(readingStorageKey(KEY)) ?? '{}') as Partial<ReaderAnnotations>
     return { bookmarks: value.bookmarks && typeof value.bookmarks === 'object' ? value.bookmarks : {}, notes: Array.isArray(value.notes) ? value.notes : [], highlights: Array.isArray(value.highlights) ? value.highlights : [] }
   } catch { return { bookmarks: {}, notes: [], highlights: [] } }
 }
@@ -42,8 +43,15 @@ export function addHighlight(bookId: string, pageIndex: number, text: string, co
 export function deleteHighlight(id: string): void {
   const state = getAnnotations(); state.highlights = state.highlights.filter((highlight) => highlight.id !== id); save(state); removeSpacedReview(id); removeAnnotationFromProjects(id)
 }
+export function setHighlightComment(id:string,comment:string):void {
+  const state=getAnnotations(),highlight=state.highlights.find(item=>item.id===id)
+  if(!highlight)throw Error('التظليل غير موجود')
+  const value=comment.trim();if(value.length>2000)throw Error('التعليق طويل جدًا')
+  if(value)highlight.comment=value;else delete highlight.comment
+  save(state)
+}
 
-function save(state: ReaderAnnotations): void { localStorage.setItem(KEY, JSON.stringify(state)) }
+function save(state: ReaderAnnotations): void { localStorage.setItem(readingStorageKey(KEY), JSON.stringify(state)) }
 
 export function saveAnnotations(state: ReaderAnnotations): void { save(state) }
 import { removeSpacedReview } from './spaced_review'

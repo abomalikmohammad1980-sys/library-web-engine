@@ -2,7 +2,7 @@
  *  `ImageToWidget.dart`): صورة (rId) أو شكل متجه (shape/diagram) أو مجموعة
  *  (groupChildren) أو مربّع نصٍّ (textBox). */
 
-import type { DocumentModelV0, FloatAnchor } from "@engine/ooxml-model";
+import type { BodyParagraph, DocumentModelV0, FloatAnchor } from "@engine/ooxml-model";
 import { css, el, px } from "./dom.js";
 import { twipsToPx } from "./units.js";
 import type { RenderCtx } from "./Paragraph.js";
@@ -31,7 +31,8 @@ function emfVectorSvg(bytes: Uint8Array): Uint8Array | null {
   const left = i32(8), top = i32(12), right = i32(16), bottom = i32(20);
   const width = Math.max(1, right - left), height = Math.max(1, bottom - top);
   const color = (v: number) => `#${(v & 255).toString(16).padStart(2,"0")}${((v >>> 8) & 255).toString(16).padStart(2,"0")}${((v >>> 16) & 255).toString(16).padStart(2,"0")}`;
-  type Gdi = { kind: "pen"; color: string; width: number; none: boolean }
+  const penDash = (rawStyle: number) => [undefined, "6 3", "1 3", "6 3 1 3", "6 3 1 3 1 3"][rawStyle & 0xf];
+  type Gdi = { kind: "pen"; color: string; width: number; none: boolean; dash?: string | undefined }
     | { kind: "brush"; color: string; none: boolean }
     | { kind: "font"; family: string; size: number; weight: number; italic: boolean };
   const objects = new Map<number, Gdi>();
@@ -55,7 +56,7 @@ function emfVectorSvg(bytes: Uint8Array): Uint8Array | null {
       : mode === "stroke" ? style(false) : style(true);
     shapes.push(`<path d="${d}" ${paint}/>`);
   };
-  const style = (fill = true) => `fill="${fill && !brush.none ? brush.color : "none"}" stroke="${pen.none ? "none" : pen.color}" stroke-width="${Math.max(0.5, pen.width)}"`;
+  const style = (fill = true) => `fill="${fill && !brush.none ? brush.color : "none"}" stroke="${pen.none ? "none" : pen.color}" stroke-width="${Math.max(0.5, pen.width)}"${pen.dash ? ` stroke-dasharray="${pen.dash}"` : ""}`;
   const esc = (n: number) => Number.isFinite(n) ? n : 0;
   const ellipticalArc = (l: number, t: number, r: number, b: number,
     sx: number, sy: number, ex: number, ey: number, close: "none" | "chord" | "pie") => {
@@ -76,7 +77,11 @@ function emfVectorSvg(bytes: Uint8Array): Uint8Array | null {
     if (type === 38 && size >= 28) {
       const rawStyle = u32(at + 12), w = Math.abs(i32(at + 16));
       objects.set(u32(at + 8), { kind: "pen", color: color(u32(at + 24)), width: w || 1,
-        none: (rawStyle & 0xf) === 5 });
+        none: (rawStyle & 0xf) === 5, dash: penDash(rawStyle) });
+    } else if (type === 95 && size >= 52) {
+      const rawStyle = u32(at + 28), w = Math.abs(i32(at + 32));
+      objects.set(u32(at + 8), { kind: "pen", color: color(u32(at + 40)), width: w || 1,
+        none: (rawStyle & 0xf) === 5, dash: penDash(rawStyle) });
     } else if (type === 39 && size >= 24) {
       const rawStyle = u32(at + 12);
       objects.set(u32(at + 8), { kind: "brush", color: color(u32(at + 16)), none: rawStyle === 1 });
@@ -120,6 +125,89 @@ function emfVectorSvg(bytes: Uint8Array): Uint8Array | null {
           }
         }
       } else if (points.length) shapes.push(`<${type === 3 ? "polygon" : "polyline"} points="${points.join(" ")}" ${style(type === 3)}/>`);
+    } else if ((type === 56 || type === 92) && size >= 28) {
+      const count = u32(at + 24), pointsAt = at + 28, pointBytes = type === 92 ? 4 : 8;
+      const typesAt = pointsAt + count * pointBytes;
+      const coord = (pointAt: number) => type === 92
+        ? [dv.getInt16(pointAt, true), dv.getInt16(pointAt + 2, true)] as const
+        : [i32(pointAt), i32(pointAt + 4)] as const;
+      if (typesAt + count <= at + size) {
+        for (let i = 0; i < count; i++) {
+          const pointAt = pointsAt + i * pointBytes;
+          const [x, y] = coord(pointAt);
+          const command = bytes[typesAt + i]!, kind = command & 0x06;
+          if (kind === 0x06) point(x, y, true);
+          else if (kind === 0x02) point(x, y);
+          else if (kind === 0x04 && i + 2 < count
+              && (bytes[typesAt + i + 1]! & 0x06) === 0x04
+              && (bytes[typesAt + i + 2]! & 0x06) === 0x04) {
+            const bAt = pointsAt + (i + 1) * pointBytes, cAt = pointsAt + (i + 2) * pointBytes;
+            const [bx, by] = coord(bAt), [cx, cy] = coord(cAt);
+            if (!path) point(currentX, currentY, true);
+            path += `C${x} ${y} ${bx} ${by} ${cx} ${cy} `;
+            currentX = cx; currentY = cy;
+            i += 2;
+            if ((bytes[typesAt + i]! & 0x01) !== 0) path += "Z ";
+            continue;
+          }
+          if ((command & 0x01) !== 0) path += "Z ";
+        }
+        if (!collectingPath && path) { emitPath("stroke"); path = ""; }
+      }
+    } else if ((type === 7 || type === 8 || type === 90 || type === 91) && size >= 32) {
+      const polygonCount = u32(at + 24), pointCount = u32(at + 28);
+      const countsAt = at + 32, pointsAt = countsAt + polygonCount * 4;
+      const shortPoints = type === 90 || type === 91, pointBytes = shortPoints ? 4 : 8;
+      const polygon = type === 8 || type === 91;
+      if (pointsAt <= at + size && pointsAt + pointCount * pointBytes <= at + size) {
+        const counts = Array.from({ length: polygonCount }, (_, i) => u32(countsAt + i * 4));
+        if (counts.reduce((sum, count) => sum + count, 0) === pointCount) {
+          let pointIndex = 0;
+          for (const count of counts) {
+            const points: string[] = [];
+            for (let i = 0; i < count; i++, pointIndex++) {
+              const pointAt = pointsAt + pointIndex * pointBytes;
+              points.push(shortPoints
+                ? `${dv.getInt16(pointAt, true)},${dv.getInt16(pointAt + 2, true)}`
+                : `${i32(pointAt)},${i32(pointAt + 4)}`);
+            }
+            if (points.length) shapes.push(`<${polygon ? "polygon" : "polyline"} points="${points.join(" ")}" ${style(polygon)}/>`);
+          }
+        }
+      }
+    } else if ((type === 86 || type === 87) && size >= 28) {
+      const count = u32(at + 24), points: string[] = [];
+      for (let i = 0; i < count && at + 28 + i * 4 + 4 <= at + size; i++) {
+        const pointAt = at + 28 + i * 4;
+        points.push(`${dv.getInt16(pointAt, true)},${dv.getInt16(pointAt + 2, true)}`);
+      }
+      if (points.length) shapes.push(`<${type === 86 ? "polygon" : "polyline"} points="${points.join(" ")}" ${style(type === 86)}/>`);
+    } else if (type === 89 && size >= 28) {
+      const count = u32(at + 24);
+      for (let i = 0; i < count && at + 28 + i * 4 + 4 <= at + size; i++) {
+        const pointAt = at + 28 + i * 4;
+        const x = dv.getInt16(pointAt, true), y = dv.getInt16(pointAt + 2, true);
+        if (collectingPath) point(x, y);
+        else {
+          shapes.push(`<line x1="${currentX}" y1="${currentY}" x2="${x}" y2="${y}" ${style(false)}/>`);
+          currentX = x; currentY = y;
+        }
+      }
+    } else if ((type === 85 || type === 88) && size >= 28) {
+      const count = u32(at + 24), coords: Array<[number, number]> = [];
+      for (let i = 0; i < count && at + 28 + i * 4 + 4 <= at + size; i++) {
+        const pointAt = at + 28 + i * 4;
+        coords.push([dv.getInt16(pointAt, true), dv.getInt16(pointAt + 2, true)]);
+      }
+      let i = 0;
+      if (type === 85 && coords.length) { point(coords[0]![0], coords[0]![1], true); i = 1; }
+      else if (!path) point(currentX, currentY, true);
+      for (; i + 2 < coords.length; i += 3) {
+        const a = coords[i]!, b = coords[i + 1]!, c = coords[i + 2]!;
+        path += `C${a[0]} ${a[1]} ${b[0]} ${b[1]} ${c[0]} ${c[1]} `;
+        currentX = c[0]; currentY = c[1];
+      }
+      if (!collectingPath && path) { emitPath("stroke"); path = ""; }
     } else if ((type === 2 || type === 5) && size >= 28) {
       const count = u32(at + 24), coords: Array<[number, number]> = [];
       for (let i = 0; i < count && at + 28 + i * 8 + 8 <= at + size; i++)
@@ -167,7 +255,8 @@ function emfVectorSvg(bytes: Uint8Array): Uint8Array | null {
         const o = verticesAt + index * 16;
         if (index >= vertexCount || o + 16 > at + size) return null;
         const channel = (offset: number) => Math.round(dv.getUint16(o + offset, true) / 257);
-        return { x: i32(o), y: i32(o + 4), color: `#${channel(8).toString(16).padStart(2,"0")}${channel(10).toString(16).padStart(2,"0")}${channel(12).toString(16).padStart(2,"0")}` };
+        const rgb = [channel(8), channel(10), channel(12)] as const;
+        return { x: i32(o), y: i32(o + 4), rgb, color: `#${rgb.map(value => value.toString(16).padStart(2,"0")).join("")}` };
       };
       if ((mode === 0 || mode === 1) && meshAt + meshCount * 8 <= at + size) {
         for (let i = 0; i < meshCount; i++) {
@@ -176,6 +265,39 @@ function emfVectorSvg(bytes: Uint8Array): Uint8Array | null {
           const id = `emfGradient${gradientSerial++}`;
           const direction = mode === 0 ? 'x1="0%" y1="0%" x2="100%" y2="0%"' : 'x1="0%" y1="0%" x2="0%" y2="100%"';
           shapes.push(`<defs><linearGradient id="${id}" ${direction}><stop offset="0%" stop-color="${a.color}"/><stop offset="100%" stop-color="${b.color}"/></linearGradient></defs><rect x="${Math.min(a.x, b.x)}" y="${Math.min(a.y, b.y)}" width="${Math.abs(b.x - a.x)}" height="${Math.abs(b.y - a.y)}" fill="url(#${id})" stroke="none"/>`);
+        }
+      } else if (mode === 2 && meshAt + meshCount * 12 <= at + size) {
+        // لا يملك SVG 1.1 تدرجًا مثلثيًا واسع الدعم. نقرب المزج الباري-مركزي
+        // بشبكة منتظمة من المثلثات الصغيرة كي تبقى النتيجة متجهية ومحمولة.
+        const divisions = 8;
+        for (let mesh = 0; mesh < meshCount; mesh++) {
+          const meshOffset = meshAt + mesh * 12;
+          const a = vertex(u32(meshOffset)), b = vertex(u32(meshOffset + 4)), c = vertex(u32(meshOffset + 8));
+          if (!a || !b || !c) continue;
+          const sample = (i: number, j: number) => {
+            const wb = i / divisions, wc = j / divisions, wa = 1 - wb - wc;
+            return {
+              x: a.x * wa + b.x * wb + c.x * wc,
+              y: a.y * wa + b.y * wb + c.y * wc,
+              rgb: [
+                a.rgb[0] * wa + b.rgb[0] * wb + c.rgb[0] * wc,
+                a.rgb[1] * wa + b.rgb[1] * wb + c.rgb[1] * wc,
+                a.rgb[2] * wa + b.rgb[2] * wb + c.rgb[2] * wc
+              ] as const
+            };
+          };
+          const polygon = (points: ReturnType<typeof sample>[]) => {
+            const rgb = [0, 1, 2].map(channel => Math.round(points.reduce((sum, p) => sum + p.rgb[channel]!, 0) / points.length));
+            const color = `#${rgb.map(value => value.toString(16).padStart(2, "0")).join("")}`;
+            return `<polygon points="${points.map(p => `${Math.round(p.x * 1000) / 1000},${Math.round(p.y * 1000) / 1000}`).join(" ")}" fill="${color}" stroke="${color}" stroke-width="0.25"/>`;
+          };
+          const cells: string[] = [];
+          for (let i = 0; i < divisions; i++) for (let j = 0; j < divisions - i; j++) {
+            const p00 = sample(i, j), p10 = sample(i + 1, j), p01 = sample(i, j + 1);
+            cells.push(polygon([p00, p10, p01]));
+            if (i + j < divisions - 1) cells.push(polygon([p10, sample(i + 1, j + 1), p01]));
+          }
+          shapes.push(`<g data-emf-gradient-triangle="true" data-emf-gradient-colors="${a.color} ${b.color} ${c.color}">${cells.join("")}</g>`);
         }
       }
     }
@@ -300,14 +422,24 @@ function wmfVectorSvg(bytes: Uint8Array, placeable: boolean): Uint8Array | null 
 }
 
 /** PNG بلا مكتبة خارجية: RGBA + deflate stored blocks، مناسب لتحويل DIB في المتصفح. */
-function pngFromBgra32(source: Uint8Array, at: number, width: number, height: number, bottomUp: boolean): Uint8Array {
+function pngFromBgrPixels(source: Uint8Array, at: number, width: number, height: number, bottomUp: boolean,
+  preserveAlpha = false, constantAlpha = 255, transparentColor?: readonly [number, number, number],
+  bitsPerPixel: 24 | 32 = 32): Uint8Array {
   const raw = new Uint8Array((width * 4 + 1) * height);
+  const sourceStride = Math.ceil(width * bitsPerPixel / 32) * 4;
+  const pixelBytes = bitsPerPixel / 8;
   for (let y = 0; y < height; y++) {
     const srcY = bottomUp ? height - 1 - y : y;
-    let src = at + srcY * width * 4, dst = y * (width * 4 + 1) + 1;
-    for (let x = 0; x < width; x++, src += 4, dst += 4) {
-      raw[dst] = source[src + 2]!; raw[dst + 1] = source[src + 1]!;
-      raw[dst + 2] = source[src]!; raw[dst + 3] = 255;
+    let src = at + srcY * sourceStride, dst = y * (width * 4 + 1) + 1;
+    for (let x = 0; x < width; x++, src += pixelBytes, dst += 4) {
+      const sourceAlpha = preserveAlpha && bitsPerPixel === 32 ? source[src + 3]! : 255;
+      const straight = (value: number) => preserveAlpha && sourceAlpha
+        ? Math.min(255, Math.round(value * 255 / sourceAlpha)) : value;
+      const red = straight(source[src + 2]!), green = straight(source[src + 1]!), blue = straight(source[src]!);
+      raw[dst] = red; raw[dst + 1] = green; raw[dst + 2] = blue;
+      raw[dst + 3] = transparentColor && red === transparentColor[0]
+        && green === transparentColor[1] && blue === transparentColor[2]
+        ? 0 : Math.round(sourceAlpha * constantAlpha / 255);
     }
   }
   const blocks = Math.ceil(raw.length / 65535);
@@ -382,9 +514,15 @@ export function rasterPayload(bytes: Uint8Array): { bytes: Uint8Array; mime: str
       const type = u32(record);
       const size = u32(record + 4);
       if (size < 8 || record + size > bytes.length) break;
-      if (type === 81 && size >= 80) {
-        const offBmi = u32(record + 48), cbBmi = u32(record + 52);
-        const offBits = u32(record + 56), cbBits = u32(record + 60);
+      const directBltCopy = ((type === 76 && size >= 100) || (type === 77 && size >= 108))
+        && u32(record + 40) === 0x00cc0020;
+      if (directBltCopy || ((type === 80 && size >= 76) || (type === 81 && size >= 80))
+          || ((type === 114 || type === 116) && size >= 108)) {
+        const alphaBlend = type === 114;
+        const transparentBlt = type === 116;
+        const offsetsAt = alphaBlend || transparentBlt || directBltCopy ? 84 : 48;
+        const offBmi = u32(record + offsetsAt), cbBmi = u32(record + offsetsAt + 4);
+        const offBits = u32(record + offsetsAt + 8), cbBits = u32(record + offsetsAt + 12);
         if (cbBmi >= 40 && cbBits > 0 && offBmi + cbBmi <= size && offBits + cbBits <= size) {
           const dibAt = record + offBmi;
           const dibView = new DataView(bytes.buffer, bytes.byteOffset + dibAt, cbBmi);
@@ -394,10 +532,17 @@ export function rasterPayload(bytes: Uint8Array): { bytes: Uint8Array; mime: str
           const compression = dibView.getUint32(16, true);
           // متصفحاتٌ عديدة ترفض DIB ‏32-bit الآتي من GDI أو تتعامل مع قناة
           // alpha غير المهيأة كصورة تالفة. نحوله إلى BGR ‏24-bit قياسيًا.
-          if (dibW > 0 && dibH > 0 && bitCount === 32 && compression === 0
-              && dibW * dibH * 4 <= cbBits) {
+          const rowBytes = Math.ceil(dibW * bitCount / 32) * 4;
+          if (dibW > 0 && dibH > 0 && (bitCount === 32 || ((transparentBlt || alphaBlend) && bitCount === 24))
+              && compression === 0 && rowBytes * dibH <= cbBits) {
             const source = record + offBits;
-            return { bytes: pngFromBgra32(bytes, source, dibW, dibH, dibView.getInt32(8, true) > 0), mime: "image/png" };
+            const alphaFormat = alphaBlend ? bytes[record + 43]! : 0;
+            const constantAlpha = alphaBlend ? bytes[record + 42]! : 255;
+            const transparent = transparentBlt ? u32(record + 76) : -1;
+            const transparentColor = transparentBlt
+              ? [transparent & 255, (transparent >>> 8) & 255, (transparent >>> 16) & 255] as const : undefined;
+            return { bytes: pngFromBgrPixels(bytes, source, dibW, dibH, dibView.getInt32(8, true) > 0,
+              alphaBlend && (alphaFormat & 1) !== 0, constantAlpha, transparentColor, bitCount), mime: "image/png" };
           }
           const bmp = new Uint8Array(14 + cbBmi + cbBits);
           const view = new DataView(bmp.buffer);
@@ -544,6 +689,94 @@ export function shapeFrameCss(shape: NonNullable<FloatAnchor["shape"]>): string[
   ].filter(Boolean);
 }
 
+/** Paint a VML line as a line, not as a four-sided CSS rectangle.
+ * Word's header/footer ornaments use a zero-height `v:line`; applying the
+ * generic shape border to that box either hides it or draws unwanted vertical
+ * edges.  A single border edge also preserves compound styles such as
+ * `thinThick`, which Word serialises as one VML rule. */
+function lineFrameCss(shape: NonNullable<FloatAnchor["shape"]>, w: number, h: number): string[] {
+  const compound = !!shape.lineStyle && shape.lineStyle !== "single";
+  const dashed = !!shape.dash?.length;
+  const style = compound ? "double" : dashed ? "dashed" : "solid";
+  const thickness = Math.max(twipsToPx(shape.strokeW || 15), compound ? 3 : 1);
+  const color = shape.stroke ?? "000000";
+  // `v:line` in the Ibhaj headers/footers is horizontal.  Retain a vertical
+  // fallback for other authored Word lines without changing page geometry.
+  return w >= h
+    ? [`height:0`, `border:0`, `border-top:${px(thickness)} ${style} #${color}`]
+    : [`width:0`, `border:0`, `border-left:${px(thickness)} ${style} #${color}`];
+}
+
+/**
+ * Word permits a complete table inside a VML text box.  Flattening that table
+ * into unrelated paragraphs loses the authored two-column composition (the
+ * closing Ibhaj panel is a representative example: copy/links on the right and
+ * a logo on the left).  Rebuild the small, self-contained table here so the
+ * text box remains one layout group.  Body tables still use ParagraphTable;
+ * this path is deliberately limited to a text-box story and cannot affect
+ * ordinary document pagination.
+ */
+function textBoxStoryNodes(paragraphs: BodyParagraph[], ctx: RenderCtx): HTMLElement[] {
+  const nodes: HTMLElement[] = [];
+  const rendered = new Set<number>();
+
+  for (const paragraph of paragraphs) {
+    const cell = paragraph.tableCell;
+    if (!cell) {
+      const node = paragraphToElement(paragraph, ctx);
+      if (node) nodes.push(node);
+      continue;
+    }
+    if (cell.parentTableId != null || rendered.has(cell.tableId)) continue;
+    rendered.add(cell.tableId);
+
+    const owned = paragraphs.filter(item => item.tableCell?.tableId === cell.tableId);
+    const rows = [...new Set(owned.map(item => item.tableCell!.row))].sort((a, b) => a - b);
+    const total = Math.max(1, ...owned.map(item => item.tableCell!.totalGridTwips || 0));
+    const table = el("table", {
+      class: "tbl flt-textbox-table",
+      "data-word-textbox-table": String(cell.tableId),
+      style: css(["width:100%", "height:100%", "border-collapse:collapse", "table-layout:fixed",
+        `direction:${cell.bidiVisual ? "rtl" : "ltr"}`]),
+    });
+    const body = el("tbody");
+
+    for (const rowNumber of rows) {
+      const rowParas = owned.filter(item => item.tableCell!.row === rowNumber);
+      const columns = [...new Set(rowParas.map(item => item.tableCell!.col))].sort((a, b) => a - b);
+      const row = el("tr");
+      const first = rowParas[0]?.tableCell;
+      if (first?.rowHeight && first.rowHeightRule !== "auto") {
+        const height = px(twipsToPx(first.rowHeight));
+        row.style[first.rowHeightRule === "exact" ? "height" : "minHeight"] = height;
+      }
+      for (const column of columns) {
+        const content = rowParas.filter(item => item.tableCell!.col === column);
+        const meta = content[0]!.tableCell!;
+        const vertical = meta.vAlign === "center" ? "middle" : meta.vAlign === "bottom" ? "bottom" : "top";
+        const td = el("td", {
+          ...(meta.gridSpan > 1 ? { colspan: String(meta.gridSpan) } : {}),
+          style: css([
+            `width:${((meta.colWTwips / total) * 100).toFixed(3)}%`,
+            `vertical-align:${vertical}`,
+            `padding:${px(twipsToPx(meta.marTop))} ${px(twipsToPx(meta.marRight))} ${px(twipsToPx(meta.marBottom))} ${px(twipsToPx(meta.marLeft))}`,
+            meta.shdFill ? `background-color:#${meta.shdFill}` : false,
+          ]),
+        });
+        for (const item of content) {
+          const node = paragraphToElement(item, ctx);
+          if (node) td.appendChild(node);
+        }
+        row.appendChild(td);
+      }
+      body.appendChild(row);
+    }
+    table.appendChild(body);
+    nodes.push(table);
+  }
+  return nodes;
+}
+
 /** يبني عنصر الصورة/الشكل للأبعاد المعطاة (twips). */
 export function anchorToElement(anc: FloatAnchor, ctx: RenderCtx): HTMLElement | null {
   const w = px(twipsToPx(anc.extentW));
@@ -620,7 +853,13 @@ export function anchorToElement(anc: FloatAnchor, ctx: RenderCtx): HTMLElement |
       // the explicit height both distorts the picture and changes the line box
       // which owns it.  Keep the authoritative OOXML extent here; the whole Word
       // page is scaled by the reader as one unit when the viewport is narrower.
-      style: css([...base, "display:block", "max-width:none", "object-fit:" + (anc.stretch ? "fill" : "contain")]),
+      // DrawingML normally serialises pictures with a:stretch even when Word
+      // keeps the bitmap's aspect ratio inside the authored picture frame.
+      // Treating that marker as CSS `fill` distorted reused artwork (notably
+      // the closing logo in إبهاج) whenever a second frame had another ratio.
+      // Cropping is handled in the branch above; an uncropped picture must
+      // therefore keep its source ratio inside the exact OOXML frame.
+      style: css([...base, "display:block", "max-width:none", "object-fit:contain"]),
     });
   }
 
@@ -638,7 +877,7 @@ export function anchorToElement(anc: FloatAnchor, ctx: RenderCtx): HTMLElement |
       "data-word-frame": anc.shape?.prst ?? "textbox",
       style: css([...base, ...shapeFrameCss(anc.shape ?? {
         prst: "rect", fill: null, stroke: null, strokeW: 0, adj: null,
-      }), "position:relative", "overflow:hidden"]),
+      }), "position:relative", `overflow:${anc.boxNoAutofit ? "visible" : "hidden"}`]),
     });
     const fillBytes = anc.shapeFill ? resolveImageBytes(anc.shapeFill.rId, anc.part ?? null, ctx.model) : null;
     const fillUrl = fillBytes ? imageUrl(fillBytes, ctx.imageCache) : null;
@@ -662,7 +901,7 @@ export function anchorToElement(anc: FloatAnchor, ctx: RenderCtx): HTMLElement |
     frame.appendChild(el("div", { class: "flt-textbox-content", style: css(["position:relative", "z-index:1",
       "box-sizing:border-box", "width:100%", "height:100%", "display:flex", "flex-direction:column",
       `justify-content:${align}`, ...pad]) },
-    ...anc.textBox.map((p) => paragraphToElement(p, ctx)).filter((x): x is HTMLElement => !!x)));
+    ...textBoxStoryNodes(anc.textBox, ctx)));
     return frame;
   }
 
@@ -735,7 +974,9 @@ export function anchorToElement(anc: FloatAnchor, ctx: RenderCtx): HTMLElement |
     return el("div", {
       class: "flt-shape",
       "data-word-frame": s.prst,
-      style: css([...base, ...shapeFrameCss(s)]),
+      style: css([...base, ...(s.prst === "line"
+        ? lineFrameCss(s, twipsToPx(anc.extentW), twipsToPx(anc.extentH))
+        : shapeFrameCss(s))]),
     });
   }
 

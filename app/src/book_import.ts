@@ -1,5 +1,8 @@
 import { h, arabicNum, toast } from './ui'
+import {uiTemplateText} from './ui_template_binding'
 import { icon } from './icons'
+import {localBookIndexJobs,localIndexStatusPanel} from './local_index_status'
+import {currentLibraryIdentityScope} from './engine/library_store'
 import { deleteBook, getBook, saveBook, saveBokBook, saveEpubBook, savePdfBook, saveTextBook, saveUploadedPdf, listAuthorRecords, canonicalAuthorName, downloadBytes, type StoredAuthor, type BookAuthorRef, type BookPart, type BookIntakeFields, type MarkdownAsset } from './engine/library_store'
 import { convertStoredBookToPdf } from './engine/word_pdf'
 import { BOOK_CATEGORIES, approximateGregorianYear, applyFolderAuthor, extractSingleFileMetadata, folderAuthorFromRelativePath, isWordFile, parseBookFileName, shouldShowMultiFileImportControls } from './library_metadata'
@@ -19,8 +22,26 @@ import { listShelves, setBookOnShelf } from './shelf_store'
 import { parseReviewedTags, suggestTagsFromHeadings, type BookTag } from './book_tags'
 import { requestEstimatedImportOverride, wordImportAuthorityMode, type PaginationConsent } from './word_import_authority'
 import { hasAuthoritativeWordPageMaps } from './reader_page_authority'
+import { assertStoredWordPageMaps } from './word_import_validation'
+import { convertWordToBok } from './word_to_bok'
+import { mirrorLocallySavedBookToAccount, retryPendingAccountBookMirrors } from './account_book_mirror'
+import {captureCentralImportGuard,type CentralImportSaveStrategy,type CentralImportInput} from './central_import_guard'
+import {captureLocalImportGuard} from './local_import_guard'
+import {mountCentralImportAuthor,centralAuthorCreateLauncher} from './central_import_author'
+import {captureRouteResourceScope} from './resource_lifecycle'
+import {bookTagChips} from './book_tag_chips'
+import {importAuthorDeath} from './import_author_death'
+import {importAuthorChronology,importAuthorHasPublicIdentity} from './import_author_chronology'
+import {readWordCompanionPackage,validateWordCompanionPackage,type WordCompanionPackage} from './word_companion_package'
+import {wordCompanionHelp} from './word_companion_help'
+import {ensureWordUploadSetup} from './word_upload_setup'
+import {convertWithConnectedWord} from './word_connected_client'
+// Connected conversion is available in the upload dialog, not only in Vite.
+const wordCompanionEnabled=true
+import {saveBookPdf} from './engine/library_store'
 
 interface ImportDraft {
+  companion?:WordCompanionPackage
   format: BookFormat
   file: File
   data: Uint8Array
@@ -46,9 +67,13 @@ interface ImportDraft {
   cover?: { mediaPath: string; bytes: Uint8Array; mimeType: string }
 }
 interface DirectoryHandleLike { kind: 'file' | 'directory'; name?: string; values(): AsyncIterableIterator<DirectoryHandleLike>; getFile(): Promise<File> }
+export interface BookImportManagerOptions { hideLauncher?: boolean; initialFiles?: File[]; centralSave?:CentralImportSaveStrategy }
 
-export function bookImportManager(onSaved: () => void): HTMLElement {
-  const section = h('section', { class: 'import-manager', 'aria-labelledby': 'import-title' })
+export function bookImportManager(onSaved: () => void, options: BookImportManagerOptions = {}): HTMLElement {
+  const centralGuard=options.centralSave?captureCentralImportGuard():captureLocalImportGuard()
+  const centralLauncherController=new AbortController();captureRouteResourceScope().add(()=>centralLauncherController.abort())
+  if(!options.centralSave)void retryPendingAccountBookMirrors().then(result => { if (result.uploaded) toast(`اكتمل رفع ${arabicNum(result.uploaded)} من الكتب المحفوظة إلى الحساب.`) })
+  const section = h('section', { class: 'import-manager', ...(options.hideLauncher ? { 'aria-label': 'مراجعة الكتب المختارة' } : { 'aria-labelledby': 'import-title' }) })
   const head = h('div', { class: 'import-manager__head' },
     h('div', null, h('p', { class: 'page-eyebrow' }, 'استيراد منظم'), h('h2', { id: 'import-title' }, 'أضف كتبًا إلى الخِزانة'), h('p', null, 'مكان واحد لملفات Word وPDF وEPUB وBOK والنصوص؛ يتعرف النظام إلى كل صيغة ويعالجها بمسارها الصحيح.')),
   )
@@ -56,16 +81,21 @@ export function bookImportManager(onSaved: () => void): HTMLElement {
   const filesButton = h('button', { class: 'btn btn--primary import-manager__primary', type: 'button' }, icon('plus', 19), 'إضافة ملفات')
   const folderButton = h('button', { class: 'btn btn--primary import-manager__folder', type: 'button', title: 'اختيار مجلد كامل', 'aria-label': 'إضافة مجلد كامل' }, icon('box', 18), h('span', null, 'إضافة مجلد'))
   actions.append(h('div', { class: 'import-manager__unified' }, filesButton, folderButton))
+  if(options.centralSave)actions.append(centralAuthorCreateLauncher(centralLauncherController.signal))
   head.appendChild(actions)
   const fileInput = makeProgrammaticFileInput(h('input', { type: 'file', accept: '.docx,.doc,.rtf,.pdf,.epub,.bok,.txt,.md,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/msword,application/rtf,text/rtf,application/pdf,application/epub+zip,application/x-shamela-bok,text/plain,text/markdown' }) as HTMLInputElement)
+  if(wordCompanionEnabled)fileInput.accept+=',.khizana-word'
   fileInput.multiple = true
   const folderInput = makeProgrammaticFileInput(h('input', { type: 'file' }) as HTMLInputElement)
   folderInput.multiple = true
   folderInput.setAttribute('webkitdirectory', '')
   const workspace = h('div', { class: 'import-workspace', 'aria-live': 'polite' })
+  if (options.hideLauncher) head.hidden = true
   section.append(head, fileInput, folderInput, workspace)
+  if(options.centralSave)section.prepend(h('p',{role:'status'},'إضافة مركزية: بعد المراجعة ستُنشر الكتب للعامة بصلاحيتك. لا تختَر ملفات خاصة.'))
 
   const stage = async (selected: File[], pickedFolderAuthor?: string): Promise<void> => {
+    centralGuard?.()
     const accepted = selected.filter(isSupportedBookFile).sort((a, b) => a.name.localeCompare(b.name, 'ar', { numeric: true }))
     const ignored = selected.length - accepted.length
     if (!accepted.length) { toast('لم يُعثر على ملفات كتب بصيغة مدعومة'); return }
@@ -74,6 +104,12 @@ export function bookImportManager(onSaved: () => void): HTMLElement {
     const failures: string[] = []
     const legacyOriginals: File[] = []
     const capabilities = await getRuntimeCapabilities()
+    const needsConnectedWord=accepted.some(isWordFile)&&!capabilities.wordPdfConversionAvailable
+    if(needsConnectedWord){
+      const ready=await ensureWordUploadSetup(workspace,centralLauncherController.signal)
+      if(!ready)return
+      centralGuard?.()
+    }
     for (const file of accepted) {
       try {
         if (!isWordFile(file)) {
@@ -81,6 +117,18 @@ export function bookImportManager(onSaved: () => void): HTMLElement {
           continue
         }
         const legacy = /\.(doc|rtf)$/i.test(file.name)
+        if(needsConnectedWord){
+          const bytes=await convertWithConnectedWord(file,()=>{workspace.textContent=`يعالج Word ملف «${file.name}» في الخلفية. لم يبدأ الرفع بعد؛ يمكنك متابعة العمل في مستنداتك.`})
+          centralGuard?.()
+          if(centralLauncherController.signal.aborted)return
+          const companion=await readWordCompanionPackage(bytes)
+          await validateWordCompanionPackage(companion)
+          const normalizedName=file.name.replace(/\.(docx|doc|rtf)$/i,'.docx')
+          const normalized=new File([new Uint8Array(companion.source)],normalizedName,{type:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'})
+          const proposed=applyFolderAuthor(extractSingleFileMetadata(companion.source,normalizedName),pickedFolderAuthor)
+          drafts.push({format:'word',file:normalized,data:companion.source,title:proposed.title,author:proposed.author??'',companion})
+          continue
+        }
         if (legacy && !canImportWordFileInRuntime(file.name, capabilities)) {
           failures.push(`${file.name}: تحويل DOC/RTF يحتاج تشغيل الخِزانة المحلي؛ لم يُحفظ سجل غير قابل للقراءة`)
           legacyOriginals.push(file)
@@ -103,14 +151,19 @@ export function bookImportManager(onSaved: () => void): HTMLElement {
       const existing = selected ? knownAuthors.find(author => author.canonicalName === selected || author.aliases.some(alias => canonicalAuthorName(alias) === selected)) : undefined
       if (existing) draft.author = existing.name
     }
-    renderReview(workspace, drafts, { ignored, failures, legacyOriginals }, onSaved, knownAuthors)
+    centralGuard?.()
+    renderReview(workspace, drafts, { ignored, failures, legacyOriginals }, onSaved, knownAuthors,options.centralSave,centralGuard)
   }
   const importSelected = async (selected: File[], pickedFolderAuthor?: string): Promise<void> => {
+    if (!selected.length) { section.dispatchEvent(new CustomEvent('book-import-cancelled')); return }
+    section.dispatchEvent(new CustomEvent('book-import-selection'))
     await stage(selected, pickedFolderAuthor)
   }
   filesButton.addEventListener('click', () => fileInput.click())
   fileInput.addEventListener('change', () => { void importSelected(Array.from(fileInput.files ?? [])); fileInput.value = '' })
   folderInput.addEventListener('change', () => { void importSelected(Array.from(folderInput.files ?? [])); folderInput.value = '' })
+  fileInput.addEventListener('cancel', () => section.dispatchEvent(new CustomEvent('book-import-cancelled')))
+  folderInput.addEventListener('cancel', () => section.dispatchEvent(new CustomEvent('book-import-cancelled')))
   folderButton.addEventListener('click', async () => {
     const picker = (window as Window & { showDirectoryPicker?: () => Promise<DirectoryHandleLike> }).showDirectoryPicker
     if (!picker) { folderInput.click(); return }
@@ -120,19 +173,29 @@ export function bookImportManager(onSaved: () => void): HTMLElement {
       await collectDirectory(root, files)
       await importSelected(files, root.name)
     } catch (error) {
-      if (error instanceof DOMException && error.name === 'AbortError') return
+      if (error instanceof DOMException && error.name === 'AbortError') { section.dispatchEvent(new CustomEvent('book-import-cancelled')); return }
       toast('تعذّر فتح المجلد؛ استخدم اختيار المجلد البديل')
       folderInput.click()
     }
   })
+  if (options.initialFiles?.length) queueMicrotask(() => { void importSelected(options.initialFiles!).catch(() => toast('تعذّر تجهيز الملفات المختارة؛ أعد المحاولة.')) })
   return section
 }
 
 function isSupportedBookFile(file: File): boolean {
-  return isWordFile(file) || /\.(pdf|epub|bok|txt|md)$/i.test(file.name)
+  return isWordFile(file) || /\.(pdf|epub|bok|txt|md|khizana-word)$/i.test(file.name)
 }
 
 async function prepareStandaloneDraft(file: File, pickedFolderAuthor?: string, siblingFiles: File[] = []): Promise<ImportDraft> {
+  if(/\.khizana-word$/i.test(file.name)){
+    if(!wordCompanionEnabled)throw Error('رفع حزمة أداة Word غير متاح بعد؛ يجري إكمال حفظها على الخادم.')
+    if(file.size>128*1024*1024)throw Error('حزمة Word تتجاوز الحد المسموح (128 ميجابايت)')
+    const companion=await readWordCompanionPackage(new Uint8Array(await file.arrayBuffer()))
+    await validateWordCompanionPackage(companion)
+    const original=new File([new Uint8Array(companion.source)],companion.fileName,{type:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'})
+    const proposed=applyFolderAuthor(extractSingleFileMetadata(companion.source,original.name),pickedFolderAuthor)
+    return {format:'word',file:original,data:companion.source,title:proposed.title,author:proposed.author??'',companion}
+  }
   const fromName = parseBookFileName(file.name)
   const folderAuthor = pickedFolderAuthor ?? folderAuthorFromRelativePath((file as File & { webkitRelativePath?: string }).webkitRelativePath)
   const fallbackAuthor = fromName.author || folderAuthor || 'غير معروف'
@@ -208,43 +271,44 @@ function mimeFromAsset(path: string): string {
   return extension === 'png' ? 'image/png' : extension === 'gif' ? 'image/gif' : extension === 'webp' ? 'image/webp' : extension === 'avif' ? 'image/avif' : 'image/jpeg'
 }
 
-function renderReview(root: HTMLElement, drafts: ImportDraft[], report: { ignored: number; failures: string[]; legacyOriginals: File[] }, onSaved: () => void, knownAuthors: StoredAuthor[]): void {
+function renderReview(root: HTMLElement, drafts: ImportDraft[], report: { ignored: number; failures: string[]; legacyOriginals: File[] }, onSaved: () => void, knownAuthors: StoredAuthor[],centralSave?:CentralImportSaveStrategy,centralGuard?:()=>void): void {
+  const centralController=new AbortController();captureRouteResourceScope().add(()=>centralController.abort())
   if (!drafts.length) {
     root.replaceChildren(reportBox(0, report.failures, report.ignored, report.legacyOriginals))
     return
   }
   const form = h('form', { class: 'import-review' })
+  const deathTasks=new Map<HTMLInputElement,Promise<void>>()
   const authorListId = `known-authors-${Date.now()}`
   const authorList = h('datalist', { id: authorListId }, ...knownAuthors.map(author => h('option', { value: author.name }, author.deathYearHijri ? `ت ${author.deathYearHijri} هـ` : author.contemporary ? 'معاصر' : 'مؤلف مسجل')))
   form.appendChild(authorList)
   form.appendChild(h('div', { class: 'import-review__head' }, h('div', null, h('h3', null, `مراجعة ${arabicNum(drafts.length)} كتاب`), h('p', null, 'الحقول المعلّمة مطلوبة قبل حفظ أي كتاب.')), h('button', { class: 'btn btn--secondary', type: 'button', onclick: () => root.replaceChildren() }, 'إلغاء')))
   const rows = h('div', { class: 'import-review__rows' })
-  const controls: Array<{ draft: ImportDraft; title: HTMLInputElement; author: HTMLInputElement; coAuthors: HTMLInputElement[]; suggestedTags: BookTag[]; tags: HTMLInputElement; death: HTMLInputElement; contemporary: HTMLInputElement; category: HTMLSelectElement; publisher: HTMLInputElement; edition: HTMLInputElement; investigator: HTMLInputElement; publicationYear: HTMLInputElement; description: HTMLTextAreaElement; shelf: HTMLSelectElement; customCover: HTMLInputElement; keepPdfCover: HTMLInputElement; approx: HTMLElement; syncDeath: () => void; refreshCover: () => void }> = []
+  const controls: Array<{ draft: ImportDraft; title: HTMLInputElement; author: HTMLInputElement; centralAuthor?:ReturnType<typeof mountCentralImportAuthor>; coAuthors: HTMLInputElement[]; suggestedTags: BookTag[]; tags: {value:string}; death: HTMLInputElement; contemporary: HTMLInputElement; category: HTMLSelectElement; publisher: HTMLInputElement; edition: HTMLInputElement; investigator: HTMLInputElement; publicationYear: HTMLInputElement; description: HTMLTextAreaElement; shelf: HTMLSelectElement; customCover: HTMLInputElement; keepPdfCover: HTMLInputElement; approx: HTMLElement; syncDeath: () => void; refreshCover: () => void; convertToBok?: () => Promise<boolean> }> = []
   drafts.forEach((draft, index) => {
     const title = textInput('عنوان الكتاب', draft.title)
     const author = textInput('المؤلف', draft.author)
     author.setAttribute('list', authorListId)
     const coAuthors: HTMLInputElement[] = []
     const coAuthorsHost = h('div', { class: 'import-coauthors', 'aria-live': 'polite' })
-    const addCoAuthor = h('button', { class: 'import-author-add', type: 'button', title: 'إضافة مؤلف مشارك', 'aria-label': 'إضافة مؤلف مشارك' }, '+') as HTMLButtonElement
+    const addCoAuthor = h('button', { class: 'import-author-add', type: 'button', title: 'إضافة مؤلف مشارك', 'aria-label': 'إضافة مؤلف مشارك' }, icon('plus', 18)) as HTMLButtonElement
     const authorControl = h('div', { class: 'import-author-control' }, author, addCoAuthor, coAuthorsHost)
     const appendCoAuthor = (): void => {
       const input = textInput('اسم المؤلف المشارك', '')
       input.setAttribute('list', authorListId)
-      const remove = h('button', { type: 'button', class: 'import-author-remove', title: 'حذف المؤلف المشارك', 'aria-label': 'حذف المؤلف المشارك' }, '×')
+      const remove = h('button', { type: 'button', class: 'import-author-remove', title: 'حذف المؤلف المشارك', 'aria-label': 'حذف المؤلف المشارك' }, icon('close', 18))
       const row = h('div', { class: 'import-coauthors__row' }, input, remove)
       remove.addEventListener('click', () => { coAuthors.splice(coAuthors.indexOf(input), 1); row.remove() })
       coAuthors.push(input); coAuthorsHost.appendChild(row); input.focus()
     }
     addCoAuthor.addEventListener('click', appendCoAuthor)
     const death = textInput('سنة الوفاة الهجرية', draft.deathYearHijri ? String(draft.deathYearHijri) : '', 'number')
-    death.min = '1'; death.max = '2000'; death.inputMode = 'numeric'
+    death.min = '-10000'; death.max = '3000'; death.inputMode = 'numeric'
     const contemporary = h('input', { type: 'checkbox' }) as HTMLInputElement
     const category = categorySelect()
     if (draft.category && BOOK_CATEGORIES.some(value => value === draft.category)) category.value = draft.category
     const suggestedTags = suggestTagsFromHeadings(draft.textToc?.map(item => ({ ...item })) ?? draft.bokToc?.map(item => ({ title: item.title, level: item.level, pageId: item.id })) ?? [])
-    const tags = textInput('الوسوم', suggestedTags.map(tag => tag.name).join('، '))
-    tags.placeholder = 'اختياري — افصل الوسوم بفاصلة'
+    const tags = bookTagChips(suggestedTags.map(tag => tag.name).join('، '))
     const publisher = textInput('الناشر', draft.publisher ?? '')
     const edition = textInput('الطبعة', draft.edition ?? '')
     const investigator = textInput('المحقق', draft.investigator ?? '')
@@ -261,8 +325,23 @@ function renderReview(root: HTMLElement, drafts: ImportDraft[], report: { ignore
     title.addEventListener('input', refreshCover); author.addEventListener('input', refreshCover)
     category.addEventListener('change', refreshCover)
     const approx = h('small', { class: 'import-approx' }, 'أدخل السنة الهجرية لعرض الميلادي التقريبي')
+    const deathGuard=importAuthorDeath({death,contemporary})
+    let deathRequest=0,pendingDeath=false
+    const selectKnownDeath=(existing:StoredAuthor):void=>{
+      const request=++deathRequest,selectedName=author.value
+      pendingDeath=false
+      deathGuard.select(existing)
+      if(existing.deathYearHijri!==undefined&&!importAuthorHasPublicIdentity(existing)){deathTasks.delete(author);return}
+      pendingDeath=true;contemporary.checked=false;contemporary.disabled=true
+      const task=importAuthorChronology(existing).then(value=>{if(request!==deathRequest||author.value!==selectedName)return;pendingDeath=false;deathGuard.select(value);updateDeath()})
+      deathTasks.set(author,task)
+      void task.catch(()=>{if(request===deathRequest&&author.value===selectedName){deathGuard.clear();contemporary.disabled=true;approx.textContent='تعذّر التحقق من وفاة المؤلف؛ أعد اختيار اسمه للمحاولة.'}})
+    }
+    let deathAuthorName=author.value
     const updateDeath = (): void => {
-      death.disabled = contemporary.checked
+      if(deathAuthorName!==author.value){deathAuthorName=author.value;const existing=knownAuthors.find(item=>item.canonicalName===canonicalAuthorName(author.value)||item.aliases.some(alias=>canonicalAuthorName(alias)===canonicalAuthorName(author.value)));if(existing)selectKnownDeath(existing);else {++deathRequest;pendingDeath=false;deathTasks.delete(author);deathGuard.clear()}}
+      deathGuard.sync()
+      if(pendingDeath){contemporary.checked=false;contemporary.disabled=true}
       if (contemporary.checked) { death.value = ''; approx.textContent = 'مؤلف معاصر' }
       else {
         const hijri = Number(death.value)
@@ -270,29 +349,89 @@ function renderReview(root: HTMLElement, drafts: ImportDraft[], report: { ignore
       }
     }
     death.addEventListener('input', updateDeath); contemporary.addEventListener('change', updateDeath)
-    author.addEventListener('change', () => {
+    const syncAuthorDeath=():void=>{
+      ++deathRequest;pendingDeath=false;deathTasks.delete(author)
+      deathAuthorName=author.value
       const selected = canonicalAuthorName(author.value)
       const existing = knownAuthors.find(item => item.canonicalName === selected || item.aliases.some(alias => canonicalAuthorName(alias) === selected))
-      if (!existing) return
-      contemporary.checked = Boolean(existing.contemporary)
-      death.value = existing.deathYearHijri ? String(existing.deathYearHijri) : ''
+      if(existing)selectKnownDeath(existing)
+      else deathGuard.clear()
       updateDeath()
-    })
+    }
+    author.addEventListener('input',syncAuthorDeath)
+    const centralAuthor=centralSave?mountCentralImportAuthor({authorInput:author,signal:centralController.signal,onChange:selected=>{if(selected){++deathRequest;pendingDeath=false;deathTasks.delete(author);deathAuthorName=author.value;deathGuard.select(selected);updateDeath()}else syncAuthorDeath()}}):undefined
+    if(centralAuthor)authorControl.append(centralAuthor.element)
+    const initialAuthor=knownAuthors.find(item=>item.canonicalName===canonicalAuthorName(author.value)||item.aliases.some(alias=>canonicalAuthorName(alias)===canonicalAuthorName(author.value)))
+    if(initialAuthor)selectKnownDeath(initialAuthor)
     updateDeath()
+    const formatBadge = h('strong', { class: 'format-badge' }, formatLabel({ sourceFormat: draft.format }))
+    const bokAction = draft.format === 'word'
+      ? h('button', { class: 'btn btn--secondary import-word-bok', type: 'button' }, 'تحويله إلى BOK') as HTMLButtonElement
+      : undefined
+    const convertToBok = draft.format === 'word' ? async (): Promise<boolean> => {
+      const action = bokAction!
+      const oldLabel = action.textContent
+      action.disabled = true
+      action.textContent = 'جارٍ التحويل إلى BOK…'
+      try {
+        const result = await convertWordToBok({
+          fileName: draft.file.name, data: draft.data, ...(draft.sourceData ? { sourceData: draft.sourceData } : {}),
+          title: title.value.trim() || draft.title, author: author.value.trim() || 'غير معروف',
+        })
+        const { parseBok } = await import('./bok_import')
+        const parsed = parseBok(result.data, result.fileName)
+        draft.format = 'shamela-bok'
+        draft.file = new File([result.data.slice().buffer as ArrayBuffer], result.fileName, { type: 'application/x-shamela-bok' })
+        draft.data = result.data
+        delete draft.sourceData
+        draft.extractedText = parsed.extractedText
+        draft.bokPages = parsed.pages
+        draft.bokToc = parsed.toc
+        formatBadge.textContent = 'BOK'
+        action.textContent = 'سيُحفظ BOK فقط'
+        if (!tags.value.trim() && parsed.toc.length) tags.value = suggestTagsFromHeadings(parsed.toc.map(item => ({ title: item.title, level: item.level, pageId: item.id }))).map(tag => tag.name).join('، ')
+        toast('تم التحويل؛ سيُحفظ BOK فقط ولن تُحفظ نسخة Word')
+        return true
+      } catch (error) {
+        toast(error instanceof Error ? error.message : 'تعذّر تحويل Word إلى BOK')
+        return false
+      } finally {
+        if (draft.format === 'word') { action.disabled = false; action.textContent = oldLabel }
+      }
+    } : undefined
+    bokAction?.addEventListener('click', () => { void convertToBok?.() })
     const row = h('fieldset', { class: 'import-book' },
-      h('legend', null, h('span', null, arabicNum(index + 1)), draft.file.name, h('strong', { class: 'format-badge' }, formatLabel({ sourceFormat: draft.format }))),
+      h('legend', null, h('span', null, arabicNum(index + 1)), draft.file.name, formatBadge),
       cover.element,
       h('div', { class: 'import-book__fields' },
       field('عنوان الكتاب *', title), field('المؤلف *', authorControl),
       h('div', { class: 'import-death' }, field('سنة الوفاة (هـ) *', death), h('label', { class: 'import-contemporary' }, contemporary, h('span', null, 'معاصر')), approx),
-      field('التصنيف *', category), field('الوسوم المقترحة من الفهرس (اختيارية)', tags), field('الناشر', publisher), field('الطبعة', edition), field('المحقق', investigator), field('سنة النشر (هـ)', publicationYear), field('الرف', shelf),
+      field('التصنيف *', category), field('الوسوم المقترحة من الفهرس (اختيارية)', tags.element), field('الناشر', publisher), field('الطبعة', edition), field('المحقق', investigator), field('سنة النشر (هـ)', publicationYear), field('الرف', shelf),
       ...(draft.pdfFirstPageCover ? [h('div', { class: 'import-pdf-cover-choice' }, h('p', null, draft.pdfHasTextLayer === false ? 'هذا PDF ممسوح ضوئيًا بلا طبقة نصية في الصفحة الأولى؛ يُعرض من الصور الأصلية ولا يتاح بحث نصي بلا OCR.' : 'استُخدمت معاينة محدودة الدقة من الصفحة الأولى غلافًا؛ ملف PDF الأصلي لم يتغير.'), h('label', null, keepPdfCover, h('span', null, 'اعتماد الصفحة الأولى غلافًا — أزل العلامة لاستخدام الغلاف المولّد')))] : []),
       field('استبدال الغلاف (اختياري)', customCover), field('الوصف', description)),
+      bokAction,
     )
     rows.appendChild(row)
-    controls.push({ draft, title, author, coAuthors, suggestedTags, tags, death, contemporary, category, publisher, edition, investigator, publicationYear, description, shelf, customCover, keepPdfCover, approx, syncDeath: updateDeath, refreshCover })
+    controls.push({ draft, title, author, ...(centralAuthor?{centralAuthor}:{}), coAuthors, suggestedTags, tags, death, contemporary, category, publisher, edition, investigator, publicationYear, description, shelf, customCover, keepPdfCover, approx, syncDeath: ()=>{centralAuthor?.getCentralAuthorId();updateDeath()}, refreshCover, ...(convertToBok ? { convertToBok } : {}) })
   })
   const batch = batchDefaultsPanel(controls)
+  const bulkBok = h('button', { class: 'btn btn--secondary import-bulk-bok', type: 'button' }, 'تحويل جميع كتب Word إلى BOK') as HTMLButtonElement
+  const bulkBokPanel = h('section', { class: 'import-bulk-conversion' },
+    h('div', null, h('h4', null, 'صيغة الحفظ للمجموعة'), h('p', null, 'يحوّل جميع ملفات Word المختارة إلى BOK دفعة واحدة؛ تبقى الملفات غير التابعة لـWord كما هي.')),
+    bulkBok,
+  )
+  bulkBok.addEventListener('click', async () => {
+    const pending = controls.filter(control => control.draft.format === 'word' && control.convertToBok)
+    if (!pending.length) { toast('لا توجد كتب Word متبقية للتحويل'); return }
+    bulkBok.disabled = true
+    let converted = 0
+    for (let index = 0; index < pending.length; index++) {
+      bulkBok.textContent = `تحويل ${arabicNum(index + 1)} من ${arabicNum(pending.length)} إلى BOK…`
+      if (await pending[index]!.convertToBok!()) converted++
+    }
+    bulkBok.textContent = converted === pending.length ? 'تم تحويل جميع كتب Word إلى BOK' : `تم تحويل ${arabicNum(converted)} من ${arabicNum(pending.length)}`
+    bulkBok.disabled = converted === pending.length
+  })
   const mergeParts = h('input', { type: 'checkbox' }) as HTMLInputElement
   const mergedTitle = textInput('اسم الكتاب متعدد الأجزاء', drafts[0]?.title ?? '')
   mergedTitle.disabled = true
@@ -321,38 +460,65 @@ function renderReview(root: HTMLElement, drafts: ImportDraft[], report: { ignore
   const submit = h('button', { class: 'btn btn--primary import-review__save', type: 'submit' }, `حفظ ${arabicNum(drafts.length)} كتاب`)
   const wordOnly = drafts.every(draft => draft.format === 'word')
   if (shouldShowMultiFileImportControls(drafts.length)) form.append(batch)
+  if (shouldShowMultiFileImportControls(drafts.length) && drafts.some(draft => draft.format === 'word')) form.append(bulkBokPanel)
   if (shouldShowMultiFileImportControls(drafts.length) && wordOnly) form.append(multipart)
   if (wordOnly) form.append(pdfOption)
+  if(wordCompanionEnabled&&drafts.some(d=>d.format==='word'&&!d.companion))form.prepend(wordCompanionHelp())
+  if(drafts.some(d=>d.companion))form.prepend(h('p',{role:'status'},'اجتازت حزمة Word فحص ارتباط النص وملف PDF وخريطة الصفحات.'))
   form.append(rows, submit)
   form.addEventListener('submit', async (event) => {
     event.preventDefault()
-    const invalid = controls.find(({ title, author, death, contemporary, category }) => !title.value.trim() || !author.value.trim() || !category.value || (!contemporary.checked && !(Number(death.value) > 0)))
+    if(drafts.some(d=>d.companion)&&(mergeParts.checked||manualPdf.checked)){toast('احفظ حزم الأداة ككتب مستقلة دون استبدال PDF المرجعي أو جمع الأجزاء.');return}
+    try{centralGuard?.()}catch(error){toast(error instanceof Error?error.message:'تعذّر النشر');return}
+    try{await Promise.all([...deathTasks.values()])}catch{toast('تعذّر التحقق من وفاة المؤلف؛ أعد اختيار اسمه قبل الحفظ.');return}
+    controls.forEach(item=>{item.centralAuthor?.getCentralAuthorId();item.syncDeath()})
+    const invalid = controls.find(({ title, author, death, contemporary, category }) => !title.value.trim() || !author.value.trim() || !category.value || (!contemporary.checked && !(death.readOnly&&death.value!==''&&Number.isFinite(Number(death.value))) && !(Number(death.value) > 0)))
     if (invalid) { invalid.title.closest('.import-book')?.classList.add('import-book--invalid'); invalid.title.focus(); toast('أكمل العنوان والمؤلف والوفاة أو «معاصر» والتصنيف لكل كتاب'); return }
     if (mergeParts.checked && !mergedTitle.value.trim()) { mergedTitle.focus(); toast('أدخل اسم الكتاب الجامع للأجزاء'); return }
+    if (mergeParts.checked && drafts.some(draft => draft.format !== 'word')) { toast('جمع الأجزاء متاح لملفات Word؛ ألغِ الجمع عند الحفظ بصيغة BOK'); return }
     if (manualPdf.checked && !pdfFile.files?.[0]) { pdfFile.focus(); toast('اختر ملف PDF الجاهز'); return }
     if (manualPdf.checked && !mergeParts.checked && controls.length > 1) { toast('لربط PDF يدويًا بعدة ملفات، اجمعها أولًا كأجزاء كتاب واحد أو أضف كل كتاب منفردًا'); return }
     const capabilities = await getRuntimeCapabilities()
+    const hasWordDrafts = drafts.some(draft => draft.format === 'word')
     const authorityMode = wordImportAuthorityMode({
-      hasWord: drafts.some(draft => draft.format === 'word'),
-      manualPdf: manualPdf.checked,
+      hasWord: drafts.some(d=>d.format==='word'&&!d.companion),
+      manualPdf: hasWordDrafts && manualPdf.checked,
       wordConversionAvailable: capabilities.wordPdfConversionAvailable,
     })
     let wordConsent: PaginationConsent | undefined
-    if (wordOnly && authorityMode === 'estimated-consent') {
-      const consent = await requestEstimatedImportOverride(drafts[0]!.data, message => window.confirm(message))
+    if (hasWordDrafts && authorityMode === 'estimated-consent') {
+      const consent = await requestEstimatedImportOverride(drafts.find(d=>d.format==='word'&&!d.companion)!.data, message => window.confirm(message))
       if (!consent) { toast('لم يُحفظ الكتاب؛ أعد المعالجة للحصول على مطابقة Word موثقة'); return }
       wordConsent = consent
     }
     submit.disabled = true; submit.textContent = 'جارٍ حفظ الكتب…'
     const canAutoConvertPdf = authorityMode === 'authoritative-conversion'
+    const importOwnerScope=currentLibraryIdentityScope()
     let success = 0
+    let accountMirrorFailures = 0
     const failures = [...report.failures]
+    const retries:HTMLElement[]=[]
+    const publishCentral=async(id:string,files:File[])=>{
+      centralGuard?.();const book=await getBook(id);centralGuard?.();if(!book)throw Error('تعذّر استعادة النسخة المحلية للنشر')
+      const input:CentralImportInput={localBookId:id,metadata:book,files,book}
+      try{centralGuard?.();await centralSave!.save(input);centralGuard?.()}
+      catch(error){
+        const status=h('p',{role:'status'},'حُفظت النسخة المحلية؛ لم نتأكد من نشرها للعامة. لا توجد إعادة رفع عامة تلقائية.')
+        const retry=h('button',{type:'button',class:'btn btn--secondary'},`إعادة محاولة نشر ${book.title}`) as HTMLButtonElement
+        retry.onclick=async()=>{retry.disabled=true;try{centralGuard?.();await centralSave!.save(input);centralGuard?.();status.textContent='تأكد نشر الكتاب للعامة.';retry.remove();onSaved()}catch(error){status.textContent=error instanceof Error?error.message:'تعذّر تأكيد النشر.'}finally{retry.disabled=false}}
+        retries.push(h('section',null,status,retry));throw error
+      }
+    }
     if (mergeParts.checked) {
       let savedId: string | undefined
       try {
+        centralGuard?.()
         const item = controls[0]!
-        const authors = reviewedAuthors(item.author, item.coAuthors, knownAuthors)
+        const centralAuthorId=centralSave?item.centralAuthor?.getCentralAuthorId():undefined
+        const authors:BookAuthorRef[] = centralAuthorId?[{id:centralAuthorId,name:item.author.value.trim()},...item.coAuthors.map(input=>({name:input.value.trim()})).filter(ref=>ref.name)]:reviewedAuthors(item.author, item.coAuthors, knownAuthors)
         const linkedAuthor = authors[0]
+        const mergedCustomCover=centralSave?await readCustomCover(item.customCover.files?.[0]):undefined
+        centralGuard?.()
         const id = await saveBook({
           title: mergedTitle.value.trim(), author: item.author.value.trim(),
           ...(linkedAuthor?.id ? { authorId: linkedAuthor.id } : {}),
@@ -360,6 +526,14 @@ function renderReview(root: HTMLElement, drafts: ImportDraft[], report: { ignore
           tags: parseReviewedTags(item.tags.value, item.suggestedTags),
           contemporary: item.contemporary.checked, category: item.category.value,
           coverHue: deterministicCoverHue(`${mergedTitle.value.trim()}|${item.draft.file.name}`),
+          ...(centralSave?{
+            ...(item.publisher.value.trim()?{publisher:item.publisher.value.trim()}:{}),
+            ...(item.edition.value.trim()?{edition:item.edition.value.trim()}:{}),
+            ...(item.investigator.value.trim()?{investigator:item.investigator.value.trim()}:{}),
+            ...(item.description.value.trim()?{description:item.description.value.trim()}:{}),
+            ...(Number(item.publicationYear.value)>0?{publicationYearHijri:Number(item.publicationYear.value)}:{}),
+            ...(mergedCustomCover?{customCoverData:mergedCustomCover.data,customCoverMimeType:mergedCustomCover.mimeType}:{}),
+          }:{}),
           ...(item.draft.cover ? { coverMediaPath: item.draft.cover.mediaPath } : {}),
           fileName: item.draft.file.name, data: item.draft.data, mimeType: item.draft.file.type,
           ...(item.draft.sourceData ? { sourceData: item.draft.sourceData, sourceMimeType: item.draft.file.type } : {}),
@@ -368,19 +542,41 @@ function renderReview(root: HTMLElement, drafts: ImportDraft[], report: { ignore
           ...wordConsent,
         })
         savedId = id
+        centralGuard?.()
         if (manualPdf.checked) await attachReadyPdf(id, pdfFile.files![0]!, controls.length, pdfStarts.value)
         else if (canAutoConvertPdf) await requireAuthoritativeWordImport(id)
+        centralGuard?.()
+        if(!centralSave)for (let index = 0; index < controls.length; index++) {
+          centralGuard?.()
+          const volume = controls[index]!
+          const mirror = await mirrorLocallySavedBookToAccount({
+            localBookId: id,
+            sourcePartNumber: index + 1,
+            file: volume.draft.file,
+            title: `${mergedTitle.value.trim()} — الجزء ${index + 1}`,
+            author: item.author.value.trim(),
+            category: item.category.value,
+          })
+          if (mirror.kind === 'local-only') accountMirrorFailures++
+          centralGuard?.()
+        }
+        localBookIndexJobs.enqueue(id,mergedTitle.value.trim(),importOwnerScope)
+        if(centralSave)await publishCentral(id,controls.map(item=>item.draft.file))
         success++
       } catch (error) {
-        if (savedId) await deleteBook(savedId).catch(() => undefined)
+        try{centralGuard?.()}catch{return}
+        if (savedId&&!centralSave) await deleteBook(savedId).catch(() => undefined)
         failures.push(`${mergedTitle.value}: ${error instanceof Error ? error.message : String(error)}`)
       }
     } else for (const item of controls) {
       let savedId: string | undefined
       try {
-        const authors = reviewedAuthors(item.author, item.coAuthors, knownAuthors)
+        centralGuard?.()
+        const centralAuthorId=centralSave?item.centralAuthor?.getCentralAuthorId():undefined
+        const authors:BookAuthorRef[] = centralAuthorId?[{id:centralAuthorId,name:item.author.value.trim()},...item.coAuthors.map(input=>({name:input.value.trim()})).filter(ref=>ref.name)]:reviewedAuthors(item.author, item.coAuthors, knownAuthors)
         const linkedAuthor = authors[0]
         const uploadedCustom = await readCustomCover(item.customCover.files?.[0])
+        centralGuard?.()
         const custom = uploadedCustom ?? (item.keepPdfCover.checked ? item.draft.pdfFirstPageCover : undefined)
         const metadata: BookIntakeFields = {
           title: item.title.value.trim(), author: item.author.value.trim(), contemporary: item.contemporary.checked, category: item.category.value,
@@ -402,23 +598,40 @@ function renderReview(root: HTMLElement, drafts: ImportDraft[], report: { ignore
         }
         const id = await saveReviewedDraft(item.draft, metadata, wordConsent)
         savedId = id
-        if (wordOnly && manualPdf.checked) await attachReadyPdf(id, pdfFile.files![0]!, 1, pdfStarts.value)
-        else if (item.draft.format === 'word' && canAutoConvertPdf) await requireAuthoritativeWordImport(id)
+        centralGuard?.()
+        if (item.draft.format === 'word' && manualPdf.checked) await attachReadyPdf(id, pdfFile.files![0]!, 1, pdfStarts.value)
+        else if (item.draft.format === 'word' && !item.draft.companion && canAutoConvertPdf) await requireAuthoritativeWordImport(id)
+        centralGuard?.()
         if (item.shelf.value) setBookOnShelf(item.shelf.value, id, true)
+        if(!centralSave){const mirror = await mirrorLocallySavedBookToAccount({
+          localBookId: id,
+          ...(item.draft.companion?{wordCompanion:true}:{}),
+          file: item.draft.file,
+          title: metadata.title,
+          author: metadata.author,
+          ...(metadata.category ? { category: metadata.category } : {}),
+        })
+        if (mirror.kind === 'local-only') accountMirrorFailures++;centralGuard?.()}
+        if(item.draft.format==='word')localBookIndexJobs.enqueue(id,metadata.title,importOwnerScope)
+        if(centralSave)await publishCentral(id,[item.draft.file])
         success++
       } catch (error) {
-        if (savedId) await deleteBook(savedId).catch(() => undefined)
+        try{centralGuard?.()}catch{return}
+        if (savedId&&!centralSave) await deleteBook(savedId).catch(() => undefined)
         failures.push(`${item.draft.file.name}: ${error instanceof Error ? error.message : String(error)}`)
+        if(centralSave){try{centralGuard?.()}catch{break}}
       }
     }
-    root.replaceChildren(reportBox(success, failures, report.ignored, report.legacyOriginals))
+    try{centralGuard?.()}catch{return}
+    root.replaceChildren(reportBox(success, failures, report.ignored, report.legacyOriginals),...retries,localIndexStatusPanel())
+    if (accountMirrorFailures) toast(`حُفظت الكتب محليًا، وتعذّر رفع ${arabicNum(accountMirrorFailures)} منها إلى الحساب؛ بقيت النسخة المحلية ولم تُحذف.`)
     if (success) { onSaved(); window.dispatchEvent(new Event('library-changed')) }
   })
   root.replaceChildren(form)
 }
 
 async function requireAuthoritativeWordImport(bookId: string): Promise<void> {
-  await convertStoredBookToPdf(bookId)
+  await convertStoredBookToPdf(bookId, 'office')
   const stored = await getBook(bookId)
   if (!stored) throw new Error('تعذّر استعادة الكتاب بعد معالجة Word')
   const maps = stored.volumes?.length
@@ -427,6 +640,7 @@ async function requireAuthoritativeWordImport(bookId: string): Promise<void> {
   if (!hasAuthoritativeWordPageMaps(maps, maps.length)) {
     throw new Error('أعاد Microsoft Word أثرًا ناقصًا؛ أُلغي الاستيراد ولم تُحفظ نسخة تقديرية')
   }
+  await assertStoredWordPageMaps(stored)
 }
 
 function reviewedAuthors(primary: HTMLInputElement, additional: HTMLInputElement[], knownAuthors: StoredAuthor[]): BookAuthorRef[] {
@@ -447,6 +661,12 @@ async function readCustomCover(file?: File): Promise<{ data: Uint8Array; mimeTyp
 }
 
 async function saveReviewedDraft(draft: ImportDraft, metadata: BookIntakeFields, wordConsent?: PaginationConsent): Promise<string> {
+  if(draft.companion){
+    await validateWordCompanionPackage(draft.companion)
+    const id=await saveBook({...metadata,fileName:draft.file.name,data:draft.data,mimeType:draft.file.type,wordPageMap:draft.companion.map,paginationAuthority:'word-map'})
+    try{await saveBookPdf(id,draft.companion.pdf,draft.file.name.replace(/\.docx$/i,'.pdf'),draft.companion.map,'microsoft-word-companion-v1');return id}
+    catch(error){await deleteBook(id);throw error}
+  }
   if (draft.format === 'pdf') return savePdfBook({ ...metadata, fileName: draft.file.name, data: draft.data })
   if (draft.format === 'epub') return saveEpubBook({ ...metadata, fileName: draft.file.name, data: draft.data, extractedText: draft.extractedText ?? '', ...(draft.textToc?.length ? { toc: draft.textToc } : {}) })
   if (draft.format === 'text' || draft.format === 'markdown') return saveTextBook({ ...metadata, fileName: draft.file.name, data: draft.data, sourceFormat: draft.format, ...(draft.textToc?.length ? { toc: draft.textToc } : {}), ...(draft.markdownAssets?.length ? { markdownAssets: draft.markdownAssets } : {}) })
@@ -512,12 +732,12 @@ function batchDefaultsPanel(controls: ReviewControl[]): HTMLElement {
     if (contemporary.checked) { death.value = ''; approx.textContent = 'سيُطبّق: مؤلف معاصر' }
     else {
       const hijri = Number(death.value)
-      approx.textContent = hijri > 0 ? `سيُطبّق: ${arabicNum(hijri)}هـ · نحو ${arabicNum(approximateGregorianYear(hijri))}م — تقريبي` : 'لن تُغيّر الوفاة ما لم تدخل سنة أو تحدد «معاصر»'
+      approx.replaceChildren(hijri > 0 ? uiTemplateText('import-batch-death',{p1:arabicNum(hijri),p2:arabicNum(approximateGregorianYear(hijri))}) : 'لن تُغيّر الوفاة ما لم تدخل سنة أو تحدد «معاصر»')
     }
   }
   death.addEventListener('input', sync); contemporary.addEventListener('change', sync)
   const status = h('p', { class: 'import-batch__status', role: 'status' }, 'لا توجد بيانات مطبّقة بعد.')
-  const apply = h('button', { class: 'btn btn--primary', type: 'button' }, `تطبيق على جميع الكتب (${arabicNum(controls.length)})`)
+  const apply = h('button', { class: 'btn btn--primary', type: 'button' }, uiTemplateText('import-batch-apply',{p1:arabicNum(controls.length)}))
   const undo = h('button', { class: 'btn btn--secondary', type: 'button' }, 'تراجع عن آخر تطبيق')
   undo.hidden = true
   let snapshot: Array<{ author: string; death: string; contemporary: boolean; category: string }> | null = null
@@ -542,7 +762,7 @@ function batchDefaultsPanel(controls: ReviewControl[]): HTMLElement {
       const after = `${item.author.value}\0${item.death.value}\0${item.contemporary.checked}\0${item.category.value}`
       if (before !== after) affected++
     }
-    status.textContent = affected ? `طُبقت البيانات المحددة على ${arabicNum(affected)} كتاب. يمكنك تعديل أي بطاقة قبل الحفظ.` : 'القيم المحددة مطابقة للقيم الموجودة؛ لم يتغير كتاب.'
+    status.replaceChildren(affected ? uiTemplateText('import-batch-applied',{p1:arabicNum(affected)}) : 'القيم المحددة مطابقة للقيم الموجودة؛ لم يتغير كتاب.')
     undo.hidden = false
   })
   undo.addEventListener('click', () => {
@@ -559,10 +779,10 @@ function batchDefaultsPanel(controls: ReviewControl[]): HTMLElement {
     })
     snapshot = null
     undo.hidden = true
-    status.textContent = `تراجعت عن آخر تطبيق جماعي على ${arabicNum(controls.length)} كتاب.`
+    status.replaceChildren(uiTemplateText('import-batch-undone',{p1:arabicNum(controls.length)}))
   })
   return h('section', { class: 'import-batch', 'aria-labelledby': 'import-batch-title' },
-    h('div', { class: 'import-batch__head' }, h('div', null, h('h3', { id: 'import-batch-title' }, 'بيانات مشتركة للدفعة'), h('p', null, 'تُطبّق فقط الحقول التي تحددها؛ عناوين الكتب لا تتغير.')), h('span', null, `${arabicNum(controls.length)} كتاب`)),
+    h('div', { class: 'import-batch__head' }, h('div', null, h('h3', { id: 'import-batch-title' }, 'بيانات مشتركة للدفعة'), h('p', null, 'تُطبّق فقط الحقول التي تحددها؛ عناوين الكتب لا تتغير.')), h('span', null, uiTemplateText('import-book-count',{p1:arabicNum(controls.length)}))),
     h('div', { class: 'import-batch__fields' }, field('المؤلف', author), h('div', { class: 'import-death' }, field('سنة الوفاة (هـ)', death), h('label', { class: 'import-contemporary' }, contemporary, h('span', null, 'معاصر')), approx), field('التصنيف', category)),
     h('div', { class: 'import-batch__actions' }, apply, undo, status),
   )
@@ -570,14 +790,14 @@ function batchDefaultsPanel(controls: ReviewControl[]): HTMLElement {
 
 function reportBox(success: number, failures: string[], ignored: number, legacyOriginals: File[] = []): HTMLElement {
   const box = h('div', { class: 'import-report', role: 'status' },
-    h('h3', null, success ? `تم حفظ ${arabicNum(success)} كتاب` : 'لم تُحفظ كتب'),
-    h('p', null, `${arabicNum(success)} ناجح · ${arabicNum(failures.length)} فشل · ${arabicNum(ignored)} ملف غير مدعوم جرى تجاهله`),
+    h('h3', null, success ? uiTemplateText('import-saved-count',{p1:arabicNum(success)}) : 'لم تُحفظ كتب'),
+    h('p', null, uiTemplateText('import-report-counts',{p1:arabicNum(success),p2:arabicNum(failures.length),p3:arabicNum(ignored)})),
   )
   if (failures.length) box.appendChild(h('ul', null, ...failures.map((failure) => h('li', null, failure))))
   if (legacyOriginals.length) {
     const originals = h('div', { class: 'import-report__originals' }, h('strong', null, 'ملفات Word الأصلية لم تتغير:'))
     for (const file of legacyOriginals) {
-      const download = h('button', { class: 'btn btn--secondary', type: 'button' }, `تنزيل الأصل: ${file.name}`)
+      const download = h('button', { class: 'btn btn--secondary', type: 'button' }, uiTemplateText('import-original-download',{p1:file.name}))
       download.addEventListener('click', async () => downloadArtifact({ content: await file.arrayBuffer(), fileName: file.name, mimeType: file.type || 'application/octet-stream' }))
       originals.appendChild(download)
     }

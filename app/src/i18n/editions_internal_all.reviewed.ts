@@ -1,0 +1,37 @@
+const KEYS = ['مركز الطبعات','الطبعة الأولى','الطبعة الثانية','المقارنة النصية','لا توجد طبعات متعددة موثقة بعد'] as const
+const labels = (values: readonly string[]): Readonly<Record<string, string>> => Object.fromEntries(KEYS.map((key, index) => [key, values[index]!]))
+
+/** عبارات مركز الطبعات الداخلية؛ عناوين الأعمال والمؤلفون وقيم الطبعات مستثناة. */
+export const REVIEWED_EDITIONS_INTERNAL_ALL_UI: Readonly<Record<string, Readonly<Record<string, string>>>> = {
+  en: labels(['Edition center','First edition','Second edition','Text comparison','No multiple verified editions yet']),
+  fr: labels(['Centre des éditions','Première édition','Deuxième édition','Comparaison textuelle','Aucune édition multiple vérifiée pour le moment']),
+  ug: labels(['نەشر مەركىزى','بىرىنچى نەشر','ئىككىنچى نەشر','تېكىست سېلىشتۇرمىسى','تېخى كۆپ دەلىللەنگەن نەشر يوق']),
+  sw: labels(['Kituo cha matoleo','Toleo la kwanza','Toleo la pili','Ulinganisho wa maandishi','Bado hakuna matoleo mengi yaliyothibitishwa']),
+  hi: labels(['संस्करण केंद्र','पहला संस्करण','दूसरा संस्करण','पाठ तुलना','अभी एक से अधिक सत्यापित संस्करण नहीं हैं']),
+  hu: labels(['Kiadásközpont','Első kiadás','Második kiadás','Szöveg-összehasonlítás','Még nincs több ellenőrzött kiadás']),
+  id: labels(['Pusat edisi','Edisi pertama','Edisi kedua','Perbandingan teks','Belum ada beberapa edisi terverifikasi']),
+  ms: labels(['Pusat edisi','Edisi pertama','Edisi kedua','Perbandingan teks','Belum ada beberapa edisi yang disahkan']),
+  bn: labels(['সংস্করণ কেন্দ্র','প্রথম সংস্করণ','দ্বিতীয় সংস্করণ','পাঠ তুলনা','এখনও একাধিক যাচাইকৃত সংস্করণ নেই']),
+  ps: labels(['د چاپونو مرکز','لومړی چاپ','دوهم چاپ','متني پرتله','تر اوسه څو تایید شوي چاپونه نشته']),
+  so: labels(['Xarunta daabacaadaha','Daabacaadda koowaad','Daabacaadda labaad','Isbarbardhigga qoraalka','Weli ma jiraan daabacaado badan oo la xaqiijiyey']),
+  ha: labels(['Cibiyar bugu','Bugun farko','Bugun na biyu','Kwatancen rubutu','Babu bugu masu yawa da aka tabbatar tukuna']),
+  ru: labels(['Центр изданий','Первое издание','Второе издание','Сравнение текста','Пока нет нескольких проверенных изданий']),
+  uk: labels(['Центр видань','Перше видання','Друге видання','Порівняння тексту','Поки немає кількох перевірених видань']),
+  de: labels(['Ausgabenzentrum','Erste Ausgabe','Zweite Ausgabe','Textvergleich','Noch keine mehreren geprüften Ausgaben']),
+  es: labels(['Centro de ediciones','Primera edición','Segunda edición','Comparación de texto','Aún no hay varias ediciones verificadas']),
+  pt: labels(['Centro de edições','Primeira edição','Segunda edição','Comparação textual','Ainda não há várias edições verificadas']),
+  it: labels(['Centro edizioni','Prima edizione','Seconda edizione','Confronto del testo','Non ci sono ancora più edizioni verificate']),
+  nl: labels(['Editiecentrum','Eerste editie','Tweede editie','Tekstvergelijking','Nog geen meerdere geverifieerde edities']),
+  sv: labels(['Utgåvecentrum','Första utgåvan','Andra utgåvan','Textjämförelse','Inga flera verifierade utgåvor ännu']),
+  no: labels(['Utgavesenter','Første utgave','Andre utgave','Tekstsammenligning','Ingen flere bekreftede utgaver ennå']),
+  pl: labels(['Centrum wydań','Pierwsze wydanie','Drugie wydanie','Porównanie tekstu','Brak wielu zweryfikowanych wydań']),
+  ro: labels(['Centrul edițiilor','Prima ediție','A doua ediție','Comparație textuală','Nu există încă mai multe ediții verificate']),
+  bs: labels(['Centar izdanja','Prvo izdanje','Drugo izdanje','Poređenje teksta','Još nema više provjerenih izdanja']),
+  sq: labels(['Qendra e botimeve','Botimi i parë','Botimi i dytë','Krahasimi i tekstit','Nuk ka ende disa botime të verifikuara']),
+  az: labels(['Nəşrlər mərkəzi','Birinci nəşr','İkinci nəşr','Mətn müqayisəsi','Hələ bir neçə təsdiqlənmiş nəşr yoxdur']),
+  uz: labels(['Nashrlar markazi','Birinchi nashr','Ikkinchi nashr','Matn taqqoslash','Hali bir nechta tasdiqlangan nashr yo‘q']),
+  kk: labels(['Басылымдар орталығы','Бірінші басылым','Екінші басылым','Мәтінді салыстыру','Әзірге бірнеше тексерілген басылым жоқ']),
+  zh: labels(['版本中心','第一版','第二版','文本比较','尚无多个已核验版本']),
+  ja: labels(['版センター','第1版','第2版','テキスト比較','確認済みの複数版はまだありません']),
+  ko: labels(['판본 센터','첫 번째 판본','두 번째 판본','텍스트 비교','확인된 복수 판본이 아직 없습니다']),
+}

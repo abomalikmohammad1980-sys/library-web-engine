@@ -16,6 +16,17 @@ export async function headingIndex(book: StoredBook): Promise<HeadingIndex> {
   }) }
  } else if (book.textToc !== undefined) {
   result = { complete: true, entries: book.textToc.filter(entry => entry.title.trim()).map(entry => ({ value: entry.title, paragraphIndex: entry.paragraphIndex })) }
+ } else if (inferBookFormat(book) === 'markdown' && (book.extractedText?.trim() || book.data?.length)) {
+  // Use the reader's sanitized outline and pagination, not a regex over prose
+  // (which would also mistake headings inside fenced code for real titles).
+  try {
+   const { storedTextSource } = await import('../text_import')
+   const { renderMarkdownPages } = await import('../markdown_render')
+   const rendered = renderMarkdownPages(storedTextSource(book.data, book.extractedText))
+   try {
+    result = { complete: true, entries: rendered.toc.map(entry => ({ value: entry.title, pageIndex: entry.page - 1, pageLabel: String(entry.page) })) }
+   } finally { for (const url of rendered.assetUrls) URL.revokeObjectURL(url) }
+  } catch { /* Preserve incomplete coverage and allow repair to retry. */ }
  } else if (book.data?.length && inferBookFormat(book) === 'pdf') {
   try { result=await (await import('../pdf_heading_index')).pdfHeadingIndex(book.data) }
   catch { /* A failed read must remain incomplete and retryable. */ }

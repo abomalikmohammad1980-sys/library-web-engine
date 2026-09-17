@@ -1,0 +1,39 @@
+{
+  "source": [
+    "app/src/taxonomy_links.ts",
+    "app/src/path_location.ts",
+    "app/src/engine/library_store.ts",
+    "app/src/search_presentation.ts",
+    "app/src/background_search_index.ts",
+    "app/src/account_book_mirror.ts",
+    "app/src/local_import_guard.ts",
+    "app/src/book_import.ts",
+    "app/src/i18n/en.reviewed.ts",
+    "app/src/independent_pdf_edition.ts",
+    "app/src/independent_pdf_panel.ts",
+    "app/src/independent_pdf_cloud.ts",
+    "app/src/account_service.ts",
+    "app/src/screens/book.ts",
+    "app/src/screens/library.ts",
+    "app/src/screens/reader.ts",
+    "app/src/published_book_controls.ts",
+    "app/src/bok_text_editor.ts",
+    "app/src/bok_text_release.ts",
+    "app/src/bok_annotation_revalidation.ts",
+    "app/src/annotation_store.ts",
+    "app/src/shamela_pack_seed.ts",
+    "app/src/people_facet_refresh.ts",
+    "app/src/reader_loading.ts",
+    "app/src/router.ts",
+    "app/src/styles/components.css",
+    "packages/ooxml-dom/src/runT.ts"
+  ],
+  "functions": [
+    "alpha-publish/functions/_seo-presentation.js",
+    "alpha-publish/functions/api/account/books.js",
+    "alpha-publish/functions/api/library/book-editions.js",
+    "alpha-publish/functions/api/library/author-overrides.js"
+  ],
+  "public": ["app/public/theme-init.js"],
+  "migrations": ["alpha-publish/migrations/0031_independent_pdf_editions.sql"]
+}

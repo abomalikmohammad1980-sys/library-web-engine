@@ -1,5 +1,11 @@
 /** مصطلحات إنجليزية راجعها محرر بشري بحسب سياق الخِزانة. */
 export const REVIEWED_EN_UI: Record<string, string> = {
+  'أُعيد البحث بعد تهيئة الكتب': 'The search was repeated after preparing the books',
+  'أُوقفت التهيئة. يمكنك استئنافها.': 'Preparation stopped. You can resume it.',
+  'أُوقفت التهيئة لتغيّر الجلسة.': 'Preparation stopped because the session changed.',
+  'تعذّرت التهيئة؛ أعد المحاولة.': 'Preparation failed. Please try again.',
+  'لم يتوفر سجل الكتاب؛ أعد تحميل الكتالوج.': 'The book record is unavailable. Reload the catalog.',
+  'تعذّرت تهيئة الكتاب.': 'The book could not be prepared.',
   'الخِزانة': 'Al-Khezana', 'الرئيسية': 'Home', 'القرآن': 'Quran', 'مكتبتي': 'My Library', 'المؤلفون': 'Authors', 'بحث': 'Search',
   'رفوفي': 'My Shelves', 'الإعدادات': 'Settings', 'لغة الموقع': 'Site language', 'ترجمة': 'Translate', 'ترجمة النص': 'Translate selection',
   'ترجمة الصفحة': 'Translate page', 'تصفية اللغات': 'Filter languages', 'ضيف': 'Guest', 'تسجيل الدخول': 'Sign in', 'إنشاء حساب': 'Create account',
@@ -33,7 +39,7 @@ export const REVIEWED_EN_UI: Record<string, string> = {
   'العنوان': 'Title', 'المؤلف': 'Author', 'المؤلفون المشاركون': 'Co-authors', 'التصنيف': 'Category', 'الوسوم': 'Tags', 'الناشر': 'Publisher',
   'الطبعة': 'Edition', 'التحقيق': 'Critical edition', 'المحقق': 'Editor', 'سنة الوفاة': 'Year of death', 'سنة النشر': 'Publication year',
   'المتن': 'Main text', 'شجرة العناوين': 'Heading tree', 'بطاقات الكتب': 'Book descriptions', 'نمط المطابقة': 'Match mode', 'مطابقة العبارة': 'Exact phrase',
-  'توسيع صرفي تجريبي': 'Experimental morphological expansion', 'جذر تقريبي': 'Approximate root search', 'من سنة هـ': 'From AH', 'إلى سنة هـ': 'To AH',
+  'البحث الصرفي': 'Morphological search', 'البحث بالجذر': 'Root search', 'من سنة هـ': 'From AH', 'إلى سنة هـ': 'To AH',
   'قبل الهجرة': 'Before Hijra', 'القرن الهجري': 'Hijri century', 'صلة': 'Relevance', 'الأقدم وفاة': 'Earliest death first', 'الأحدث وفاة': 'Latest death first',
   'لا توجد نتائج': 'No results', 'جارٍ البحث…': 'Searching…', 'نتيجة': 'result', 'نتائج': 'results', 'عرض المزيد': 'Show more',
   'تجاوز إلى المحتوى': 'Skip to content', 'إغلاق': 'Close', 'فتح': 'Open', 'تنزيل': 'Download', 'حذف': 'Delete', 'تعديل': 'Edit',

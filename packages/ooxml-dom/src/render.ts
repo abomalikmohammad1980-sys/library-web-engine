@@ -12,6 +12,11 @@ import { twipsToPx } from "./units.js";
 import { anchorToElement } from "./ImageToWidget.js";
 import { formatNumber } from "./abstractNum.js";
 
+/** OOXML defaults an omitted wp:anchor@behindDoc to the front layer. */
+export function floatingAnchorBehindDocument(anchor: Pick<FloatAnchor, "behindDoc">): boolean {
+  return anchor.behindDoc ?? false;
+}
+
 /** هل يجب أن يحجز عائم الرأس/التذييل مساحةً من المتن؟
  * كل عنصر أمام المتن يُعامل حاجزًا بصريًا، حتى Wrap=None: هذا النمط شائع في
  * شعارات وصور الرؤوس الحرة، وتركه بلا خلوص كان يضعه فوق أول سطور الصفحة.
@@ -34,6 +39,23 @@ export function storyClearancePx(obstacleEdge: number, bodyEdge: number, scale: 
   if (!Number.isFinite(scale) || scale <= 0) return 0;
   const overlap = (obstacleEdge - bodyEdge) / scale;
   return overlap > 0 ? overlap + gap : 0;
+}
+
+/** Bottom page padding already reserves marBottom; add only actual intrusion. */
+export function footerMarginExcess(pageBottom: number, footerTop: number, marginBottom: number, scale: number, gap = 12): number {
+  if (![pageBottom, footerTop, marginBottom, scale].every(Number.isFinite) || scale <= 0) return 0;
+  return Math.max(0, (pageBottom - footerTop) / scale + gap - Math.max(0, marginBottom));
+}
+
+/**
+ * خلوص الرأس والتذييل جزء من مساحة Word القابلة للطباعة، لا إضافة خارجها.
+ * إبقاء minHeight كاملًا مع margin كان يثبت حاشية pageBottom عند الحد القديم
+ * ثم يدفع التذييل تحته، فتتقاطع القصتان. ننقص الحزامين من جسم المتن مع إبقاء
+ * الهوامش نفسها، فيظل مجموع (هامش + جسم + هامش) مساويًا لارتفاع Word.
+ */
+export function wordStoryBodyHeight(bodyHeight: number, topClearance: number, bottomClearance: number): number {
+  const finite = (value: number): number => Number.isFinite(value) ? Math.max(0, value) : 0;
+  return Math.max(0, finite(bodyHeight) - finite(topClearance) - finite(bottomClearance));
 }
 
 /** موضع مرساة relativeFrom=paragraph بعد حل موضع فقرتها في إحداثيات الصفحة. */
@@ -62,19 +84,25 @@ export function coverAnchorForPage(
 }
 
 /** يفرض غلاف الصفحة الخالص داخل حافة الورقة، بلا بطاقة بيضاء خلفه. */
-export function fillPageWithCover(node: HTMLElement, section: SectionGeometry): void {
-  // The positioned child lives in the page's padded containing block.  Word's
-  // page coordinates start at the physical sheet edge, so x/y=0 must cancel
-  // the page padding instead of starting at the text margin.
-  node.style.left = px(-twipsToPx(section.marLeftTwips ?? 0));
-  node.style.top = px(-twipsToPx(section.marTopTwips ?? 0));
-  node.style.width = px(twipsToPx(section.pageWTwips));
-  node.style.height = px(twipsToPx(section.pageHTwips));
-  // الغلاف الخالص في Word يمتد إلى حدود الورقة. كانت صورة DrawingML غير
-  // المعلّمة stretch ترث object-fit:contain فتظهر شرائط بيضاء جانبية.
-  node.style.objectFit = "fill";
-  const image = typeof node.querySelector === "function" ? node.querySelector<HTMLImageElement>("img") : null;
-  if (image) image.style.objectFit = "fill";
+export function fillPageWithCover(node: HTMLElement, section: SectionGeometry, anchor?: FloatAnchor): void {
+  // الموضع والحجم وsrcRect حُسمت من wp:anchor نفسه قبل هذه الدالة. إعادة
+  // كتابتها بحجم الورقة كانت تقص امتداد الديوان الحقيقي (15tw من الحافة ثم
+  // نزف 94tw). لا نغير شيئًا هندسيًا هنا؛ overflow الصفحة وحده يقص النزف
+  // كما يفعل Word، وstretch/contain يبقيان من خصائص المرساة المؤلفة.
+  if (anchor) {
+    // wp:positionH relativeFrom=column starts at the text column, whereas the
+    // absolutely positioned web child starts in the padded page. Convert to
+    // physical-sheet coordinates so authored -1785tw + 1800tw = 15tw, not
+    // -119px of horizontal overflow.
+    const physicalX = anchor.posHRel === "column" || anchor.posHRel === "margin"
+      ? section.marLeftTwips + anchor.posHOffset : anchor.posHOffset;
+    const physicalY = anchor.posVRel === "paragraph" || anchor.posVRel === "margin"
+      ? section.marTopTwips + anchor.posVOffset : anchor.posVOffset;
+    node.style.left = px(twipsToPx(physicalX));
+    node.style.top = px(twipsToPx(physicalY));
+    node.style.width = px(twipsToPx(anchor.extentW));
+    node.style.height = px(twipsToPx(anchor.extentH));
+  }
   node.setAttribute("data-word-cover", "true");
 }
 
@@ -91,13 +119,17 @@ function materializeFloatingPageFields(
 ): void {
   const root = node as Node;
   const stack: Node[] = [root];
+  let hasPageField = false;
   while (stack.length) {
     const current = stack.pop()!;
-    if (current.nodeType === 3 && current.nodeValue)
+    if (current.nodeType === 3 && current.nodeValue) {
+      if (/\bPAGE\b/.test(current.nodeValue)) hasPageField = true;
       current.nodeValue = replacePageFieldText(current.nodeValue, page, total, sectionTotal)
         .replace(/STYLEREF:([^\s]+)/g, (_all, id: string) => styleRefs.get(id) ?? "");
+    }
     for (const child of Array.from(current.childNodes ?? [])) stack.push(child);
   }
+  if (hasPageField) node.setAttribute("data-word-page-field", "true");
 }
 
 /** فقرة تمهيدية بنيوية لا تحمل شيئًا مرئيًا. بعض ملفات Word تبدأ بواحدة
@@ -225,6 +257,7 @@ export function noteSeparatorParagraphs(
 /** Custom marks are commonly stored as literal text at the start of the note
  * body.  In that form Word does not synthesize a second marker. */
 export function noteBodyNeedsMarker(paras: BodyParagraph[], customMark: string | null): boolean {
+  if (paras.some(paragraph => paragraph.runs?.some(run => run.noteBodyRef))) return false;
   if (!customMark) return true;
   const leading = paras.map(paragraph => paragraph.text).join("").trimStart();
   return !leading.startsWith(customMark);
@@ -267,8 +300,14 @@ export function renumberNoteRefsForPages(model: DocumentModelV0, pages: BodyPara
 export function nextDocumentPageNumber(
   previous: number, physicalPageIndex: number, pageIndexInSection: number, section: SectionGeometry,
 ): number {
-  if (physicalPageIndex === 0) return section.pgNumStart ?? 1;
-  if (pageIndexInSection === 0 && section.pgNumStart != null) return section.pgNumStart;
+  // Word emits w:start="0" in a number of converted documents to mean that
+  // the section does not visibly restart its PAGE sequence. Treating zero as
+  // a literal first page made every such section show 0, 1, ... in its footer
+  // although the authored footer continues the physical document sequence.
+  const authoredStart = section.pgNumStart != null && section.pgNumStart > 0
+    ? section.pgNumStart : null;
+  if (physicalPageIndex === 0) return authoredStart ?? 1;
+  if (pageIndexInSection === 0 && authoredStart != null) return authoredStart;
   return previous + 1;
 }
 
@@ -281,15 +320,17 @@ export function footnotesBlock(
   const entries: { id: string; num: number; kind: string; fmt: string;
     customMark: string | null; order: number }[] = [];
   let order = 0;
-  const noteParas = endnoteParas ? [...pageParas, ...endnoteParas] : pageParas;
+  // Footnotes and endnotes are separate Word stories and can have different
+  // placement (commonly pageBottom vs docEnd). Never merge both into a single
+  // block merely because the current sheet also closes an endnote scope.
+  const renderedKind = endnoteParas ? "endnote" : "footnote";
+  const noteParas = endnoteParas ?? pageParas;
   for (const p of noteParas) {
     for (const r of p.runs) {
       const n = r.noteRef;
-      if (!n || !n.id) continue;
+      if (!n || !n.id || n.kind !== renderedKind) continue;
       const noteKey = `${n.kind}:${n.id}`;
       if (seen.has(noteKey)) continue;
-      if (n.kind === "endnote" && !endnoteParas) continue;
-      if (n.kind === "footnote" && !pageParas.includes(p)) continue;
       seen.add(noteKey);
       entries.push({ id: n.id, num: n.num, kind: n.kind, fmt: n.fmt ?? "decimal",
         customMark: n.custom ? (n.customMark ?? r.text) : null, order: order++ });
@@ -323,28 +364,66 @@ export function footnotesBlock(
     const src = e.kind === "endnote" ? model.endnotes : model.footnotes;
     const paras = src.get(e.id);
     if (!paras?.length) continue;
+    const rtlNote = paras.some(paragraph => paragraph.bidi
+      || paragraph.runs.some(run => run.direction === "rtl" || run.bidiLanguage?.toLowerCase().startsWith("ar")));
+    const marker = e.customMark ?? formatNumber(e.fmt === "decimal" && rtlNote ? "hindiNumbers" : e.fmt, e.num);
+    const renderedParas = composeAtomicNoteMarker(paras, marker);
     const entry = el("div", { class: "fn-entry", style: css([
-      "display:grid", "grid-template-columns:auto minmax(0,1fr)", "direction:rtl", "align-items:start", "column-gap:5px",
+      "display:block", "direction:rtl",
     ]) });
-    if (noteBodyNeedsMarker(paras, e.customMark)) {
-      entry.appendChild(el("sup", {
-        class: "fn-num",
-        style: "font-size:0.72em;line-height:1;min-width:1.2em;text-align:start;direction:rtl;unicode-bidi:isolate",
-      }, e.customMark ?? formatNumber(e.fmt, e.num)));
-    } else {
-      // Keep the two-column structure while the literal custom mark remains
-      // part of the authored note text.
-      entry.appendChild(el("span", { class: "fn-num fn-num-authored", "aria-hidden": "true" }));
-    }
-    const body = el("div", { class: "fn-body", style: css(["font-size:10pt", "text-align:justify"]) });
+    const body = el("div", { class: "fn-body", "data-word-note-marker": `(${marker})`,
+      style: css(["font-size:10pt", "text-align:justify"]) });
     // A note is a block container in Word, not a flat paragraph list.  In
     // particular, tables inside footnotes carry row/cell geometry and
     // cantSplit semantics that paragraphToElement alone cannot preserve.
-    for (const node of renderPageBlocks(paras, section, ctx)) body.appendChild(node);
+    for (const node of renderPageBlocks(renderedParas, section, ctx)) body.appendChild(node);
     entry.appendChild(body);
     wrap.appendChild(entry);
   }
   return wrap;
+}
+
+/** يركّب رقم الحاشية في أول فقرة كتشغيل واحد ذري، ويحذف أقواس Word المفصولة.
+ * الفقرات التالية تبقى بلا عمود رقم مستقل فتبدأ بمحاذاة متن الحاشية. */
+export function composeAtomicNoteMarker(paras: BodyParagraph[], marker: string): BodyParagraph[] {
+  const firstIndex = paras.findIndex(paragraph => paragraph.runs.length > 0);
+  if (firstIndex < 0) return paras;
+  return paras.map((paragraph, paragraphIndex) => {
+    if (paragraphIndex !== firstIndex) return paragraph;
+    const authoredRefIndex = paragraph.runs.findIndex(run => run.noteBodyRef);
+    const authoredRef = authoredRefIndex >= 0 ? paragraph.runs[authoredRefIndex] : undefined;
+    const basis = authoredRef ?? paragraph.runs[0]!;
+    let beforeContent = true;
+    const markerRunIndices = new Set<number>();
+    if (authoredRefIndex >= 0) {
+      markerRunIndices.add(authoredRefIndex);
+      for (const adjacent of [authoredRefIndex - 1, authoredRefIndex + 1]) {
+        const text = paragraph.runs[adjacent]?.text ?? "";
+        if (/^[\s()（）]*$/u.test(text)) markerRunIndices.add(adjacent);
+      }
+    }
+    const contentRuns = paragraph.runs.flatMap((run, runIndex) => {
+      if (markerRunIndices.has(runIndex) || run.noteBodyRef) return [];
+      let text = run.text;
+      if (beforeContent && authoredRefIndex >= 0) {
+        text = text.replace(/^\s+/u, "");
+        if (text) beforeContent = false;
+      } else if (beforeContent) {
+        // في بعض المحولات لا توجد noteBodyRef مستقلة، بل علامة آلية فارغة
+        // أو رقمية في أول الرن. احذف زوج العلامة الكامل فقط؛ حذف كل قوس بادئ
+        // كان يقتطع قوسًا مؤلفًا من متن حاشية تبدأ مثل «(عجبتُ): ...».
+        text = text.replace(/^\s*[（(]\s*[0-9٠-٩]*\s*[）)]\s*/u, "");
+        if (text) beforeContent = false;
+      }
+      return text ? [{ ...run, text }] : [];
+    });
+    const atomic = { ...basis, text: `(${marker})`, noteBodyRef: null,
+      family: "Adwa Assalaf", bold: false, italic: false, superscript: false,
+      subscript: false, position: 0, direction: "ltr" as const };
+    const spacer = { ...atomic, text: " " };
+    const runs = [atomic, spacer, ...contentRuns];
+    return { ...paragraph, text: runs.map(run => run.text).join(""), runs };
+  });
 }
 
 /** يبني حاويةَ صفحةٍ كاملةً (هندسة + ترويسة + متن + حواشٍ + تذييل). */
@@ -379,17 +458,29 @@ export function buildPageElement(
       const paragraphs = part ? model.headerFooters.get(part) : null;
       const anchors = (paragraphs ?? [])
         .flatMap(paragraph => paragraph.anchors.map(anchor => ({ anchor, paragraphIndex: paragraph.index })))
-        .filter(item => !item.anchor.inlineFlow && item.anchor.behindDoc === behind)
+        // wp:anchor@behindDoc is optional and defaults to false.  Treating an
+        // omitted attribute as neither front nor back silently dropped the
+        // whole shape (including its textbox story) from both passes.
+        .filter(item => !item.anchor.inlineFlow && floatingAnchorBehindDocument(item.anchor) === behind)
         .sort((a, b) => (a.anchor.zOrder ?? 0) - (b.anchor.zOrder ?? 0));
       for (const { anchor, paragraphIndex } of anchors) {
         const node = anchorToElement(anchor, ctx);
         if (!node) continue;
         materialize(node);
         positionFloatingAnchor(node, anchor, paragraphIndex, section, page, kind);
-        // قصة الرأس/التذييل بكاملها خلف قصة المتن في Word. relativeHeight يرتب
-        // العناصر داخل القصة فقط، ولا يحق له رفع صندوق رأس فوق غلاف المتن.
-        node.style.zIndex = behind ? "0" : "1";
+        // behindDoc هو وحده الذي يضع زخرفة الرأس/التذييل خلف المتن. كانت
+        // العناصر الأمامية تُعطى z-index=1 بينما page-body عند 2، فيبقى الخط
+        // والصندوق موجودين في DOM لكن يغطيهما بياض المتن (كما حدث في إبهاج).
+        // ارفع العناصر الأمامية فقط؛ الخلفيات/العلامات المائية تبقى خلف المتن.
+        node.style.zIndex = behind ? "0" : "5";
         node.style.pointerEvents = "none";
+        // يظل العنصر العائم تابعًا لقصة التذييل عند تمديد سطح الورقة في
+        // القارئ. وسم القصة أهم من موضعه الحالي لأن top محسوب من ارتفاع Word
+        // الأصلي، بخلاف holder النصي المثبت بـ bottom.
+        // لا نضع data-word-story على الزخرفة نفسها؛ هذا الوسم محجوز لحاوية
+        // القصة الفعلية (header/footer). وإلا يعيد querySelector الزخرفة قبل
+        // مالك الفقرة، فتفشل محاذاة الخطوط والمربعات في الصفحات المرنة.
+        node.setAttribute("data-word-story-ornament", kind);
         // العنصر العائم Wrap=None طبقة زخرفية حرة (وقد يكون غلافًا أو علامة
         // مائية) ولا يدفع المتن. الأنواع الملتفة الأمامية وحدها تحجز خلوصًا.
         if (headerFooterAnchorReservesSpace(anchor, section, kind))
@@ -402,14 +493,14 @@ export function buildPageElement(
   const appendFloats = (behind: boolean): void => {
     const anchors = pageParas
       .flatMap(paragraph => paragraph.anchors.map(anchor => ({ anchor, paragraphIndex: paragraph.index })))
-      .filter(item => !item.anchor.inlineFlow && item.anchor.behindDoc === behind)
+      .filter(item => !item.anchor.inlineFlow && floatingAnchorBehindDocument(item.anchor) === behind)
       .sort((a, b) => (a.anchor.zOrder ?? 0) - (b.anchor.zOrder ?? 0));
       for (const { anchor, paragraphIndex } of anchors) {
         const node = anchorToElement(anchor, ctx);
         if (!node) continue;
         materialize(node);
         positionFloatingAnchor(node, anchor, paragraphIndex, section, page);
-        if (anchor === coverAnchor) fillPageWithCover(node, section);
+        if (anchor === coverAnchor) fillPageWithCover(node, section, anchor);
         node.style.zIndex = behind ? "0" : "4";
       node.style.pointerEvents = "none";
       page.appendChild(node);
@@ -432,7 +523,8 @@ export function buildPageElement(
   body.style.minHeight = px(bodyHeight);
   const content = renderPageBlocks(pageParas, section, ctx);
   // الحواشي أسفل المتن (بعد كل الفقرات) — ككتلةٍ مستقلّة
-  const fn = footnotesBlock(model, pageParas, ctx, endnoteParas);
+  const fn = footnotesBlock(model, pageParas, ctx);
+  const en = endnoteParas ? footnotesBlock(model, pageParas, ctx, endnoteParas) : null;
   const footnoteAtBottom = fn?.dataset.wordNotePosition === "pageBottom";
   if (footnoteAtBottom) {
     body.style.display = "flex";
@@ -469,6 +561,7 @@ export function buildPageElement(
   }
   for (const node of content) contentTarget.appendChild(node);
   if (fn) body.appendChild(fn);
+  if (en) body.appendChild(en);
   page.appendChild(body);
 
   appendFloats(false);
@@ -484,6 +577,7 @@ export function buildPageElement(
   const syncStoryClearance = () => {
     if (typeof page.getBoundingClientRect !== "function" || typeof body.getBoundingClientRect !== "function") return;
     const pageRect = page.getBoundingClientRect(), bodyRect = body.getBoundingClientRect();
+    if (page.isConnected === false || pageRect.width <= 0 || pageRect.height <= 0) return;
     const scale = page.offsetWidth ? pageRect.width / page.offsetWidth : 1;
     if (!Number.isFinite(scale) || scale <= 0) return;
     const rects = (nodes: HTMLElement[]) => nodes
@@ -502,16 +596,22 @@ export function buildPageElement(
     body.style.marginTop = px(nextTop);
 
     const footerTop = Math.min(pageRect.bottom, ...rects([...(footer ? [footer] : []), ...footerFrontFloats]).map(rect => rect.top));
-    const freshBody = body.getBoundingClientRect();
     const oldBottom = Number(body.dataset.wordFooterClearance ?? 0);
-    const measuredBottom = storyClearancePx(freshBody.bottom, footerTop, scale);
     // لا ننقص الخلوص في الدورة التالية بعد أن أدى تمدد الورقة إلى تحريك التذييل؛
     // وإلا تتذبذب الصفحة بين ارتفاعين مع ResizeObserver.
-    const footerBand = twipsToPx(Math.max(240,
-      section.marBottomTwips - (section.footerDistTwips ?? 720)));
-    const nextBottom = Math.min(footerBand, Math.max(oldBottom, measuredBottom));
+    const excess = footerMarginExcess(pageRect.bottom, footerTop,
+      twipsToPx(section.marBottomTwips), scale);
+    // The existing page padding owns the bottom margin. Only a tall footer
+    // protruding above that margin reduces the usable body area. Real content
+    // overflow remains visible and is handled by the reader geometry audit.
+    const nextBottom = Math.max(oldBottom, excess);
     body.dataset.wordFooterClearance = String(nextBottom);
     body.style.marginBottom = px(nextBottom);
+    // قارئ الويب قد يحوّل ورقة Word قليلة المحتوى إلى سطح مرن أقصر. لا نعد
+    // بعد ذلك min-height الأصلي في دورة الخطوط/ResizeObserver المتأخرة، وإلا
+    // دفعت margin-top:auto الحاشية إلى قاع الورقة القديمة وأعادت الفراغ الكبير.
+    body.style.minHeight = body.dataset.wordCompactSurface === "true"
+      ? "0px" : px(wordStoryBodyHeight(bodyHeight, nextTop, nextBottom));
   };
   if (typeof page.addEventListener === "function") {
     page.addEventListener("word-layout", syncStoryClearance);
@@ -586,14 +686,61 @@ export function positionFloatingAnchor(
   node.setAttribute("data-allow-overlap", String(anchor.allowOverlap !== false));
   node.setAttribute("data-layout-in-cell", String(anchor.layoutInCell !== false));
   node.style.position = "absolute";
-  // `.page` stores Word margins as CSS padding.  Absolute offsets are relative
-  // to that padded containing block, whereas OOXML offsets above are physical
-  // page coordinates.  Translate once here for every page/margin/column
-  // anchor; the reference-origin calculation above remains unchanged.
-  node.style.left = px(left - marginX);
-  node.style.top = px(top - marginY);
+  // An absolutely positioned child of `.page` is measured from the physical
+  // page padding box, not from the beginning of the text column. `left` above
+  // is already a physical Word coordinate (column start + authored offset).
+  // Subtracting marLeft a second time moved body text boxes to the sheet edge;
+  // the closing Ibhaj panel is authored almost exactly in the centre of its
+  // text column, yet appeared flush-left in the web reader. Keep the physical
+  // horizontal coordinate for body and header/footer stories alike.
+  node.style.left = px(left);
+  // العقدة العائمة ابن مباشر للورقة ذات padding علوي يساوي marTop. مراسي
+  // المتن/topMargin تحمل إحداثيًا محسوبًا من عمود المتن، ولذلك نلغي padding
+  // مرة واحدة. أما مرساة paragraph داخل قصة الرأس/التذييل فقد حُوّلت أعلاه
+  // بالفعل إلى إحداثي الصفحة الفيزيائي انطلاقًا من headerDist/footerDist؛
+  // طرح marTop منها مرة أخرى كان يدفع زخارف الرأس إلى قيمة سالبة ويقصها قبل
+  // أن تتاح دورة RAF لحل الفقرة المالكة (ولا تعمل RAF أصلًا في التصدير).
+  const storyParagraphCoordinate = Boolean(partKind && anchor.posVRel === "paragraph");
+  node.style.top = px(storyParagraphCoordinate ? top : top - marginY);
   if (anchor.relWidth?.pct && anchor.relWidth.pct > 0) node.style.width = px(w);
   if (anchor.relHeight?.pct && anchor.relHeight.pct > 0) node.style.height = px(h);
+
+  if (partKind && anchor.posVRel === "paragraph" && typeof requestAnimationFrame === "function") {
+    // A VML rule in a header/footer is relative to the actual owning
+    // paragraph.  footerDist is the story reference line, not that
+    // paragraph's top.  Using it directly drew Ibhaj's rule below the caption
+    // instead of above it.  Resolve after the story holder is mounted and keep
+    // tracking it when fonts/zoom change.
+    // لا نُخفِ زخرفة الرأس/التذييل أثناء انتظار قياس فقرة الارتكاز. بعض
+    // الصفحات تُبنى خارج DOM ثم تدخل القارئ بالتحميل المتدرج؛ وفي تلك الحالة
+    // قد تسبق دورة القياس اتصال الصفحة بالوثيقة، فكان الخط/المربع يبقى
+    // visibility:hidden إلى الأبد. الموضع الأولي المبني على header/footerDist
+    // صالح وآمن للعرض، ثم نصححه إلى موضع الفقرة فور إمكان قياسها.
+    node.setAttribute("data-word-anchor-owner", String(paragraphIndex));
+    let observedOwner: HTMLElement | null = null;
+    const syncToStoryOwner = () => {
+      const story = page.querySelector<HTMLElement>(
+        `${partKind}[data-word-story="${partKind}"]`,
+      );
+      const owner = story?.querySelector<HTMLElement>(`[data-idx="${paragraphIndex}"]`);
+      if (!owner) return;
+      const pageRect = page.getBoundingClientRect();
+      const ownerRect = owner.getBoundingClientRect();
+      if (pageRect.width <= 0 || ownerRect.width <= 0) return;
+      const localScale = page.offsetWidth > 0 ? pageRect.width / page.offsetWidth : 1;
+      node.style.top = px((ownerRect.top - pageRect.top) / (localScale || 1)
+        + twipsToPx(anchor.posVOffset));
+      node.style.visibility = "";
+      node.setAttribute("data-word-anchor-resolved", "true");
+      if (typeof ResizeObserver === "function" && observedOwner !== owner) {
+        observedOwner = owner;
+        const observer = new ResizeObserver(syncToStoryOwner);
+        observer.observe(owner);
+      }
+    };
+    page.addEventListener?.("word-layout", syncToStoryOwner as EventListener);
+    requestAnimationFrame(syncToStoryOwner);
+  }
 
   if (!partKind && anchor.posVRel === "paragraph" && typeof requestAnimationFrame === "function") {
     // لا تملك المرساة paragraph-relative موضعًا صالحًا قبل قياس فقرتها. رسمها
@@ -693,7 +840,18 @@ export function takeRenderedAssetCleanup(root: HTMLElement): (() => void) | unde
   return cleanup;
 }
 
-export function renderDocument(model: DocumentModelV0, pageGroups?: BodyParagraph[][]): HTMLElement {
+export interface RenderDocumentOptions {
+  /** التسلسل الكامل حين نرسم نافذة/صفحة مفردة منه. يمنع إعادة PAGE إلى 1. */
+  fullPageGroups?: BodyParagraph[][];
+  /** فهرس أول pageGroups داخل fullPageGroups، صفر الأساس. */
+  physicalPageOffset?: number;
+}
+
+export function renderDocument(
+  model: DocumentModelV0,
+  pageGroups?: BodyParagraph[][],
+  options: RenderDocumentOptions = {},
+): HTMLElement {
   const ctx = newRenderCtx(model);
   const doc = el("div", { class: "doc", style: css(["direction:rtl"]) });
 
@@ -701,31 +859,38 @@ export function renderDocument(model: DocumentModelV0, pageGroups?: BodyParagrap
   void registerEmbeddedFonts(model);
 
   const pages = pageGroups ?? groupPages(model);
+  const fullPages = options.fullPageGroups ?? pages;
+  const physicalOffset = Math.max(0, options.physicalPageOffset ?? 0);
   renumberNoteRefsForPages(model, pages);
-  const pagesPerSection = pageCountsBySection(pages, model.sections.length - 1);
+  const pagesPerSection = pageCountsBySection(fullPages, model.sections.length - 1);
   const pageInSection = new Map<number, number>();
-  const pageNumbers = documentPageNumbers(model, pages);
+  for (let index = 0; index < physicalOffset; index++) {
+    const secIdx = pageSectionIndex(fullPages, index, model.sections.length - 1);
+    pageInSection.set(secIdx, (pageInSection.get(secIdx) ?? 0) + 1);
+  }
+  const pageNumbers = documentPageNumbers(model, fullPages);
   const precedingStyleText = new Map<string, string>();
   for (let pageIndex = 0; pageIndex < pages.length; pageIndex++) {
     const pageParas = pages[pageIndex]!;
-    const secIdx = pageSectionIndex(pages, pageIndex, model.sections.length - 1);
+    const physicalPageIndex = physicalOffset + pageIndex;
+    const secIdx = pageSectionIndex(fullPages, physicalPageIndex, model.sections.length - 1);
     const section = model.sections[secIdx] ?? model.section;
     const idx = pageInSection.get(secIdx) ?? 0;
     pageInSection.set(secIdx, idx + 1);
-    const documentPageNumber = pageNumbers[pageIndex]!;
+    const documentPageNumber = pageNumbers[physicalPageIndex]!;
     const displayedPageNumber = formatPageNumberValue(section, documentPageNumber);
     // في الرأس يبحث STYLEREF أولًا في الصفحة الحالية من أعلاها، ثم إلى الخلف.
     const styleRefs = styleRefValuesForPage(pageParas, precedingStyleText);
-    const isLast = pageIndex === pages.length - 1;
-    const nextSection = pageIndex + 1 < pages.length
-      ? pageSectionIndex(pages, pageIndex + 1, model.sections.length - 1) : undefined;
+    const isLast = physicalPageIndex === fullPages.length - 1;
+    const nextSection = physicalPageIndex + 1 < fullPages.length
+      ? pageSectionIndex(fullPages, physicalPageIndex + 1, model.sections.length - 1) : undefined;
     const sectionEnds = nextSection == null || nextSection !== secIdx;
     const endPos = notePositionForPage(model, section, "endnote");
     const endnoteScope = (endPos === "sectEnd" && sectionEnds)
       ? model.paragraphs.filter(p => p.sectionIndex === secIdx)
       : (endPos !== "sectEnd" && isLast ? model.paragraphs : null);
     doc.appendChild(buildPageElement(model, section, pageParas, idx, ctx, endnoteScope,
-      displayedPageNumber, pages.length, pagesPerSection.get(secIdx) ?? 1,
+      displayedPageNumber, fullPages.length, pagesPerSection.get(secIdx) ?? 1,
       documentPageNumber, styleRefs));
     for (const p of pageParas) if (p.styleId && p.text) precedingStyleText.set(p.styleId, p.text);
   }

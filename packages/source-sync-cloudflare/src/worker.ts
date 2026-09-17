@@ -56,7 +56,7 @@ export function createBoundSourceSyncWorker(dependencies: {
     );
     const authenticator=cloudflareAuthenticator(boundIdentity??=oidcVerifierFromBindings(env));
     if(new URL(request.url).pathname.endsWith("/quarantine-status"))return new UserQuarantineStatusRouter(new D1UserQuarantineStatusStore(env.DB),authenticator).handle(request) as unknown as Promise<Response>;
-    if(request.method==="GET"&&new URL(request.url).pathname.endsWith("/account/usage"))return new AccountUsageHttpRouter(new D1AccountUsageStore(env.DB),authenticator).handle(request) as unknown as Promise<Response>;
+    if(new URL(request.url).pathname.endsWith("/account/usage"))return new AccountUsageHttpRouter(new D1AccountUsageStore(env.DB),authenticator).handle(request) as unknown as Promise<Response>;
     if(new URL(request.url).pathname.includes("/devices"))return new DeviceRegistryHttpRouter(new DeviceRegistryAuthority(devices),authenticator).handle(request) as unknown as Promise<Response>;
     if(new URL(request.url).pathname.endsWith("/source-revisions/resolve-conflict"))return new ConflictResolutionHttpRouter(new ConflictResolutionAuthority(new D1ConflictResolutionStore(env.DB),devices),authenticator).handle(request) as unknown as Promise<Response>;
     if(new URL(request.url).pathname.includes("/source-revisions/rollback")||request.method==="GET"&&new URL(request.url).pathname.endsWith("/source-revisions")) return new RevisionHistoryHttpRouter(new RevisionHistoryAuthority(new D1RevisionHistoryStore(env.DB),devices),authenticator).handle(request) as unknown as Promise<Response>;

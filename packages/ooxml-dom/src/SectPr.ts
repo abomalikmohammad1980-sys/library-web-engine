@@ -150,11 +150,28 @@ export function formatPageNumberValue(section: SectionGeometry, n: number): stri
 
 /** موضع framePr داخل قصة الرأس/التذييل. القيم العددية twips؛ وغياب العرض
  * يعني امتداد الإطار في عرض قصة النص كما يفعل Word في فوترات corpus. */
-export function framePrCss(frame: NonNullable<BodyParagraph["framePr"]>): string {
+export function framePrCss(
+  frame: NonNullable<BodyParagraph["framePr"]>,
+  section?: SectionGeometry,
+): string {
   const out = ["position:absolute", `top:${px(twipsToPx(frame.y ?? 0))}`];
-  if (frame.xAlign === "center") out.push("left:50%", "transform:translateX(-50%)");
-  else if (frame.xAlign === "right" || frame.xAlign === "outside") out.push("right:0");
-  else out.push(`left:${px(twipsToPx(frame.x ?? 0))}`);
+  // w:framePr@hAnchor="text" is measured from the physical text column,
+  // not from the sheet edge.  Header/footer holders intentionally span the
+  // full sheet because their ordinary paragraphs and VML ornaments may use
+  // page/column coordinates independently.  Translate only the frame here;
+  // this preserves the authored left folio in Ibhaj without moving its
+  // right-aligned footer caption.
+  const textLeft = frame.hAnchor === "text" && section ? twipsToPx(section.marLeftTwips) : 0;
+  const textRight = frame.hAnchor === "text" && section ? twipsToPx(section.marRightTwips) : 0;
+  if (frame.xAlign === "center") {
+    if (frame.hAnchor === "text" && section) {
+      const columnWidth = twipsToPx(section.pageWTwips - section.marLeftTwips - section.marRightTwips);
+      out.push(`left:${px(textLeft + columnWidth / 2)}`, "transform:translateX(-50%)");
+    } else out.push("left:50%", "transform:translateX(-50%)");
+  }
+  else if (frame.xAlign === "right" || frame.xAlign === "outside")
+    out.push(frame.hAnchor === "text" && section ? `right:${px(textRight)}` : "right:0");
+  else out.push(`left:${px(textLeft + twipsToPx(frame.x ?? 0))}`);
   if (frame.w != null && frame.w > 0) out.push(`width:${px(twipsToPx(frame.w))}`);
   // A single text frame with no w:w is auto-sized by Word.  Stretching it to
   // the story width reverses the visible side of an RTL PAGE frame (Ibhaj:
@@ -174,13 +191,27 @@ export function renderHeaderFooterBlocks(
   paragraphs: BodyParagraph[], section: SectionGeometry, ctx: RenderCtx,
 ): HTMLElement[] {
   const out: HTMLElement[] = [];
+  const storyColumn = (nodes: HTMLElement[]): HTMLElement => {
+    const column = el("div", {
+      class: "word-story-column",
+      style: css([
+        `margin-left:${px(twipsToPx(section.marLeftTwips))}`,
+        `margin-right:${px(twipsToPx(section.marRightTwips))}`,
+        "position:relative",
+        "box-sizing:border-box",
+      ]),
+    });
+    for (const node of nodes) column.appendChild(node);
+    return column;
+  };
   let i = 0;
   while (i < paragraphs.length) {
     const frame = paragraphs[i]!.framePr;
     if (!frame) {
       const plain: BodyParagraph[] = [];
       while (i < paragraphs.length && !paragraphs[i]!.framePr) plain.push(paragraphs[i++]!);
-      out.push(...renderPageBlocks(plain, section, ctx));
+      const nodes = renderPageBlocks(plain, section, ctx);
+      if (nodes.length) out.push(storyColumn(nodes));
       continue;
     }
     const framed: BodyParagraph[] = [];
@@ -188,9 +219,12 @@ export function renderHeaderFooterBlocks(
       framed.push(paragraphs[i++]!);
     const anchor = i < paragraphs.length && !paragraphs[i]!.framePr ? paragraphs[i++]! : null;
     const stack = el("div", { class: "word-frame-stack", style: "position:relative" });
-    if (anchor) for (const node of renderPageBlocks([anchor], section, ctx)) stack.appendChild(node);
+    if (anchor) {
+      const anchorNodes = renderPageBlocks([anchor], section, ctx);
+      if (anchorNodes.length) stack.appendChild(storyColumn(anchorNodes));
+    }
     const box = el("div", { class: "word-frame", "data-word-frame-anchor": `${frame.hAnchor}:${frame.vAnchor}`,
-      style: framePrCss(frame) });
+      style: framePrCss(frame, section) });
     for (const paragraph of framed) {
       const node = paragraphToElement(paragraph, ctx);
       if (node) box.appendChild(node);
@@ -199,6 +233,44 @@ export function renderHeaderFooterBlocks(
     out.push(stack);
   }
   return out;
+}
+
+/** يحوّل حقول الرأس/التذييل إلى قيم الصفحة الحالية، ويجمع folio المحاط
+ * بقوسين في رن LTR ذري. يخزن Word العربي قوس الإغلاق أحيانًا كـ"(" ثانية
+ * معتمدًا على خوارزمية bidi؛ فصلها إلى ثلاثة spans في الويب يقلب القوس أو
+ * يبعده عن الرقم. التجميع يغيّر الرسم فقط ويحفظ قيمة PAGE الفعلية. */
+export function materializeHeaderFooterParagraph(
+  paragraph: BodyParagraph,
+  pageNumber: string,
+  totalPages: string,
+  sectionPages: string,
+  styleRefs: ReadonlyMap<string, string> = new Map(),
+): BodyParagraph {
+  const replaceFields = (value: string) => value
+    .replace(/\bSECTIONPAGES\b/g, sectionPages)
+    .replace(/\bNUMPAGES\b/g, totalPages)
+    .replace(/\bPAGE\b/g, pageNumber)
+    .replace(/STYLEREF:([^\s]+)/g, (_all, id: string) => styleRefs.get(id) ?? "");
+  const runs = paragraph.runs.map(run => ({
+    ...run,
+    text: replaceFields(run.text),
+    ...(run.fieldResult != null
+      ? { fieldResult: run.fieldResult === "PAGE" ? pageNumber
+        : run.fieldResult === "NUMPAGES" ? totalPages
+        : run.fieldResult === "SECTIONPAGES" ? sectionPages
+        : replaceFields(run.fieldResult) }
+      : {}),
+  }));
+  for (let index = 1; index + 1 < runs.length; index++) {
+    const field = runs[index]!;
+    if (paragraph.runs[index]?.fieldResult !== "PAGE") continue;
+    const before = runs[index - 1]!, after = runs[index + 1]!;
+    if (!/^\s*[（(]\s*$/u.test(before.text) || !/^\s*[（）()]\s*$/u.test(after.text)) continue;
+    const atomic = { ...field, text: `(${pageNumber})`, fieldResult: `(${pageNumber})`, direction: "ltr" as const };
+    runs.splice(index - 1, 3, atomic);
+    index--;
+  }
+  return { ...paragraph, text: runs.map(run => run.fieldResult ?? run.text).join(""), runs };
 }
 
 /** عنصر الترويسة/التذييل للصفحة — يُموضع داخل حاشية الصفحة (margin box). */
@@ -223,45 +295,37 @@ export function headerFooterElement(
   const totalPages = String(totalPagesOverride ?? Math.max(1, model.paragraphs.reduce((count, p) =>
     count + (p.pageBreaksBefore ?? (p.pageBreakBefore ? 1 : 0)), 1)));
   const sectionPages = String(sectionPagesOverride ?? totalPages);
-  const replaceFields = (value: string) => value
-    .replace(/\bSECTIONPAGES\b/g, sectionPages)
-    .replace(/\bNUMPAGES\b/g, totalPages)
-    .replace(/\bPAGE\b/g, pageNumber)
-    .replace(/STYLEREF:([^\s]+)/g, (_all, id: string) => styleRefs.get(id) ?? "");
-  const displayParas = paras.map((paragraph) => ({
-    ...paragraph,
-    text: replaceFields(paragraph.text),
-    runs: paragraph.runs.map((run) => ({
-      ...run,
-      text: replaceFields(run.text),
-      ...(run.fieldResult != null
-        ? { fieldResult: run.fieldResult === "PAGE" ? pageNumber
-          : run.fieldResult === "NUMPAGES" ? totalPages
-          : run.fieldResult === "SECTIONPAGES" ? sectionPages
-          : replaceFields(run.fieldResult) }
-        : {}),
-    })),
-  }));
+  const displayParas = paras.map(paragraph => materializeHeaderFooterParagraph(
+    paragraph, pageNumber, totalPages, sectionPages, styleRefs,
+  ));
 
   const distTwips = kind === "header" ? section.headerDistTwips ?? 720 : section.footerDistTwips ?? 720;
-  // موضع absolute داخل `.page` يبدأ من حافة مساحة المتن لأن الصفحة تحمل
-  // الهوامش كـpadding.  أما header/footer distance ففي Word فمن حافة الورقة؛
-  // لذا نلغي padding الموافق (وينطبق الأمر نفسه على right/bottom).
-  const offsetPx = twipsToPx(distTwips);
+  // containing block للعنصر المطلق هو padding box الخاص بالورقة، وتبدأ
+  // إحداثياته من حافة الورق نفسها. لذلك w:pgMar@header/@footer يُستعمل
+  // مباشرةً كمسافة من حافة الورقة. طرح هامش المتن هنا كان يدفع التذييل إلى
+  // قيمة سالبة، فيسقط خط أساس رقم الصفحة ونصفه خارج الورقة.
+  const offsetPx = Math.max(0, twipsToPx(distTwips));
   const pos = kind === "header"
-    ? `top:${px(offsetPx - twipsToPx(section.marTopTwips))}`
-    : `bottom:${px(offsetPx - twipsToPx(section.marBottomTwips))}`;
+    ? `top:${px(offsetPx)}`
+    : `bottom:${px(offsetPx)}`;
 
   const holder = el(kind === "header" ? "header" : "footer", {
     class: "page-" + (kind === "header" ? "header" : "footer"),
+    // هذا هو مالك قصة Word الحقيقي. كانت الزخارف العائمة تحمل الوسم وحدها،
+    // فيجدها مزامن الموضع قبل الحاوية ولا يعثر داخلها على فقرة الارتكاز؛
+    // وعندئذ يبقى خط الرأس/التذييل في موضعه الابتدائي أو خارج الورقة.
+    "data-word-story": kind,
     style: css([
       "position:absolute",
       "left:0",
       "right:0",
       pos,
+      "max-height:100%",
+      "box-sizing:border-box",
       "direction:rtl",
-      // قصة الرأس/التذييل خلف قصة المتن؛ تبقى مرئية في منطقة الهامش الشفافة.
-      "z-index:1",
+      // نص قصة الرأس/التذييل ليس behindDoc. إبقاؤه تحت page-body كان يخفي
+      // الرأس حين يلامس حافة المتن؛ العناصر العائمة الخلفية وحدها تبقى عند 0.
+      "z-index:5",
     ]),
   });
   for (const node of renderHeaderFooterBlocks(displayParas, section, ctx)) holder.appendChild(node);

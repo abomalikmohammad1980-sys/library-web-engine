@@ -1,0 +1,21 @@
+/** Reading UI attributes only. Book titles are protected parameter values. */
+export const EN_READING_TEMPLATES_REVIEWED = {
+  '2ad0367328ba34be':{source:'الكتاب {p1}',translations:{en:'Book {p1}'}},
+  '5ba22c8c112e844a':{source:'العودة إلى {p1}، الصفحة {p2}',translations:{en:'Return to {p1}, page {p2}'}},
+  '9c1c06a14f9fbeb9':{source:'المشروع {p1}: {p2}',translations:{en:'Project {p1}: {p2}'}},
+  '99fe92fc8190d341':{source:'{p1} فوائد مختارة',translations:{en:'Selected excerpts: {p1}'}},
+  'c381f7f82fd61735':{source:'حذف مشروع «{p1}»؟ لن تُحذف الملاحظات والتظليلات.',translations:{en:'Delete project “{p1}”? Notes and highlights will not be deleted.'}},
+  '0587dc3f680fd785':{source:'{p1} — يتطلب التطبيق المحلي',translations:{en:'{p1} — requires the local app'}},
+  'e95fdd861149fc31':{source:'صفحة {p1}',translations:{en:'Page {p1}'}},
+  '2889e8ac6a00a75c':{source:'صفحة {p1} من {p2} - بلغت {p3}٪ منه',translations:{en:'Page {p1} of {p2} — {p3}% read'}},
+  '06af96cb55cedae6':{source:'{p1} — صفحات متتابعة',translations:{en:'{p1} — continuous pages'}},
+  'a42ac02d751540dc':{source:'تنزيل {p1} الأصلي',translations:{en:'Download original {p1}'}},
+  '1393f9791e896eb9':{source:'النتيجة {p1} · صفحة {p2}',translations:{en:'Result {p1} · page {p2}'}},
+  'c5714523a62a1c37':{source:'النتيجة {p1}، صفحة {p2}، {p3}',translations:{en:'Result {p1}, page {p2}, {p3}'}},
+  'e539ec82d9b52370':{source:'الصفحة {p1}',translations:{en:'Page {p1}'}},
+  'e287e3be66c2acfb':{source:'حذف {p1} من «{p2}» في الصفحة {p3}؟ لا يمكن التراجع عن هذا الحذف.',translations:{en:'Delete {p1} from “{p2}” on page {p3}? This deletion cannot be undone.'}},
+  '74f748471b69e34f':{source:'حذف {p1} في الصفحة {p2}؟ لا يمكن التراجع عن هذا الحذف.',translations:{en:'Delete {p1} on page {p2}? This deletion cannot be undone.'}},
+  'afecb05314ef7e20': {source:'الكتاب {p1}: {p2}',translations:{en:'Book {p1}: {p2}'}},
+  '2b2b04bbd233109f': {source:'{p1} {p2} من {p3}، صفحة {p4}',translations:{en:'{p1} {p2} from {p3}, page {p4}'}},
+  '8353b16eaeab196c': {source:'افتح {p1}',translations:{en:'Open {p1}'}},
+} as const

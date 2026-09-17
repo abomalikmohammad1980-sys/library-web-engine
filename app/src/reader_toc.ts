@@ -1,4 +1,5 @@
-export interface ReaderTocEntry { num: number; label: string; bookmark?: string }
+export interface PdfTocDestination { kind: 'XYZ' | 'FitH' | 'FitBH'; top: number }
+export interface ReaderTocEntry { num: number; label: string; bookmark?: string; pdfDestination?: PdfTocDestination }
 export interface PdfOutlineItem { title?: string; dest?: string | unknown[] | null; items?: PdfOutlineItem[] }
 export interface PdfOutlineDocument { getOutline(): Promise<PdfOutlineItem[] | null>; getDestination(name: string): Promise<unknown[] | null>; getPageIndex(ref: unknown): Promise<number> }
 
@@ -17,7 +18,15 @@ export async function extractPdfOutline(document: PdfOutlineDocument): Promise<R
       if (title && destination?.[0]) {
         try {
           const pageIndex = typeof destination[0] === 'number' ? destination[0] : await document.getPageIndex(destination[0])
-          result.push({ num: pageIndex + 1, label: [...parents, title].join(' ← ') })
+          const rawKind = destination[1]
+          const kind = typeof rawKind === 'string' ? rawKind
+            : rawKind && typeof rawKind === 'object' && 'name' in rawKind ? String((rawKind as { name: unknown }).name) : ''
+          const topAt = kind === 'XYZ' ? 3 : kind === 'FitH' || kind === 'FitBH' ? 2 : -1
+          const top = topAt >= 0 ? Number(destination[topAt]) : Number.NaN
+          const pdfDestination = Number.isFinite(top) && (kind === 'XYZ' || kind === 'FitH' || kind === 'FitBH')
+            ? { kind, top } as PdfTocDestination : undefined
+          result.push({ num: pageIndex + 1, label: [...parents, title].join(' ← '),
+            ...(pdfDestination ? { pdfDestination } : {}) })
         } catch { /* وجهة غير قابلة للحل؛ لا نخمن من النص */ }
       }
       if (item.items?.length) await visit(item.items, title ? [...parents, title] : parents)

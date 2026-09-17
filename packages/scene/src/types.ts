@@ -280,6 +280,14 @@ export interface BuildOptions {
   onProgress?: (current: number, total: number, msg: string) => void;
   /** تُستدعى عند اكتمال كل صفحة — للعرض التدريجي */
   onPage?: (page: ScenePage, partial: SceneDocument) => void;
+  /** ميزانية العمل المتصل قبل تسليم حلقة الأحداث. لا تغيّر ناتج التخطيط. */
+  cooperativeBudgetMs?: number;
+  /** حقن نقطة التسليم للاختبارات/العمال. الافتراضي setTimeout(0). */
+  yieldControl?: () => Promise<void>;
+  /** إلغاء خارجي لبناء طويل. يفشل صراحة بدل إبقاء القارئ معلّقًا. */
+  signal?: AbortSignal;
+  /** حد زمني اختياري للبناء؛ لا ينتج مستندًا مبتورًا بل يفشل صراحة. */
+  maxElapsedMs?: number;
 }
 
 /** أسماء ألوان التظليل الشائعة (w:highlight) ⟵ RRGGBB */

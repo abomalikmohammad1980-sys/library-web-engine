@@ -1,0 +1,4 @@
+import {json,trustedAccount} from '../_account-contract.js'
+import {pagination} from '../_oversight.js'
+export async function onRequestGet(context){const actor=await trustedAccount(context);if(!actor)return json({error:'authentication_required'},401);try{const {page,limit}=pagination(new URL(context.request.url),['page','limit']);const result=await context.env.VISITORS_DB.prepare('SELECT id,message,reason,created_at AS createdAt FROM oversight_notifications WHERE recipient_subject=?1 ORDER BY id DESC LIMIT ?2 OFFSET ?3').bind(actor.subject,limit+1,page*limit).all(),rows=result.results??[];return json({notifications:rows.slice(0,limit),page,hasMore:rows.length>limit})}catch{return json({error:'notifications_unavailable'},503)}}
+export const onRequest=()=>json({error:'method_not_allowed'},405,{allow:'GET'})

@@ -1,11 +1,11 @@
 import { Buffer } from 'buffer'
 import MDBReader from 'mdb-reader'
 
-export interface BokPage { id: number; text: string; part: number; page: number }
+export interface BokPage { id: number; text: string; part: number; page: number; hadithNumber?: number }
 export interface BokTocEntry { id: number; title: string; level: number; parent: number }
 export interface BokBetakaMetadata { publisher?: string; edition?: string; investigator?: string; publicationYearHijri?: number; category?: string; deathYearHijri?: number; volumeCount?: number; description: string; rawBetaka: string }
 export interface ParsedBok extends BokBetakaMetadata { title: string; author: string; pages: BokPage[]; toc: BokTocEntry[]; extractedText: string }
-export const CURRENT_BOK_TEXT_VERSION = 3
+export const CURRENT_BOK_TEXT_VERSION = 5
 
 const MAX_BOK_BYTES = 200 * 1024 * 1024
 
@@ -89,12 +89,16 @@ export function parseBok(data: Uint8Array, fileName: string): ParsedBok {
   const bodyName = names.find(name => name.toLocaleLowerCase() === `b${bookId}`.toLocaleLowerCase())
   const tocName = names.find(name => name.toLocaleLowerCase() === `t${bookId}`.toLocaleLowerCase())
   if (!bodyName) throw new Error('جدول صفحات الكتاب مفقود')
-  const pages = reader.getTable(bodyName).getData<Record<string, unknown>>().map((row, index) => ({
-    id: Number(row.id) || index + 1,
-    text: decodeShamelaJetText(row.nass),
-    part: Math.max(1, Number(row.part) || 1),
-    page: Math.max(1, Number(row.page) || index + 1),
-  })).filter(page => page.text)
+  const pages = reader.getTable(bodyName).getData<Record<string, unknown>>().map((row, index) => {
+    const sourceNumber = Number(row.number ?? row.Number ?? row.NUMBER)
+    return {
+      id: Number(row.id) || index + 1,
+      text: decodeShamelaJetText(row.nass),
+      part: Math.max(1, Number(row.part ?? row.Part) || 1),
+      page: Math.max(1, Number(row.page ?? row.Page) || index + 1),
+      ...(Number.isSafeInteger(sourceNumber) && sourceNumber > 0 ? { hadithNumber: sourceNumber } : {}),
+    }
+  }).filter(page => page.text)
   if (!pages.length) throw new Error('لا يحتوي BOK صفحات نصية قابلة للقراءة')
   const rawToc = tocName ? reader.getTable(tocName).getData<Record<string, unknown>>().map(row => ({
     id: Number(row.id) || 1,
@@ -105,14 +109,19 @@ export function parseBok(data: Uint8Array, fileName: string): ParsedBok {
   // بعض قواعد الشاملة تضع في جدول الفهرس معرّف الصفحة التالية/السابقة.
   // إذا ظهر عنوان الفهرس في صفحة واحدة فقط فالنص نفسه هو المرساة الأوثق.
   const compact = (value: string): string => value.replace(/\s+/g, ' ').trim()
-  const indexedPages = pages.map(page => ({ page, text: compact(page.text) }))
+  const indexedPages = new Map(pages.map(page => [page.id, { page, text: compact(page.text) }] as const))
   const toc = rawToc.map(entry => {
     const title = compact(entry.title)
     if (title.length < 8) return entry
     // الانزياح المعروف في قواعد BOK محلي (غالبًا 1–3 صفحات). حصر
-    // المطابقة في نافذة صغيرة يجعل استيراد الكتب الضخمة خطيًا تقريبًا.
-    const nearby = indexedPages.filter(item => Math.abs(item.page.id - entry.id) <= 4)
-    const matches = nearby.filter(item => item.text.includes(title))
+    // المطابقة في نافذة صغيرة يجعل استيراد الكتب الضخمة خطيًا فعلًا. كان
+    // تنفيذ filter على جميع صفحات الكتاب لكل عنوان فهرس يعلّق الكتب الكبيرة
+    // مثل «في ظلال القرآن» قبل أن يصل القارئ إلى سجل الكتاب.
+    const matches: Array<{ page: BokPage; text: string }> = []
+    for (let pageId = entry.id - 4; pageId <= entry.id + 4; pageId += 1) {
+      const candidate = indexedPages.get(pageId)
+      if (candidate?.text.includes(title)) matches.push(candidate)
+    }
     return matches.length === 1 ? { ...entry, id: matches[0]!.page.id } : entry
   })
   const betaka = parseBokBetaka(decodeShamelaJetText(main.Betaka))

@@ -1,0 +1,22 @@
+/** قاموس كرمانجي محلي محدود؛ أي مفتاح غائب يبقى بالعربية عمدًا. */
+export const REVIEWED_KU_UI: Readonly<Record<string, string>> = {
+  'الرئيسية':'Sereke','القرآن':'Quran','السنة':'Sîret û Sunnah','مكتبتي':'Pirtûkxaneya min',
+  'المؤلفون':'Nivîskar','بحث':'Lêgerîn','رفوفي':'Refên min','الإعدادات':'Mîheng',
+  'الخِزانة':'Xezîne','لغة الموقع':'Zimanê malperê','ترجمة الصفحة':'Wergerandina rûpelê',
+  'إغلاق':'Bigire','ابحث':'Lêbigere','الكتب':'Pirtûk','الباحث الشامل':'Lêgerîna giştî',
+  'إضافة مؤلف':'Nivîskarek lê zêde bike',
+  'فتح':'Veke','العودة':'Vegere','السابق':'Paş','التالي':'Pêş',
+  'إعادة المحاولة':'Dîsa biceribîne','تحميل':'Daxistin','مشاركة':'Parvekirin',
+  'لا توجد نتائج':'Encamek tune','إدارة المكتبة':'Rêveberiya pirtûkxaneyê',
+  'فتح المكتبة':'Pirtûkxaneyê veke','إضافة':'Zêde bike',
+  'اختيار لغة الموقع':'Zimanê malperê hilbijêre','ترجمة الموقع':'Wergerandina malperê',
+  'الخدمات':'Xizmet','اكتشف':'Bibîne','أنا':'Ez',
+  'الكتب الأكثر استعمالا':'Pirtûkên herî pir tên bikaranîn','لوحة اليوم':'Panoya îro',
+  'اقرأ الآن':'Niha bixwîne','بحث في الكتاب':'Di pirtûkê de bigere','الفهرس':'Naverok',
+  'معلومات الكتاب':'Agahiyên pirtûkê','ملاحظاتي':'Têbîniyên min','علامة':'Nîşan','سكينة':'Aramî',
+  'تحميل PDF':'PDF daxîne','تحميل Word':'Word daxîne','العودة إلى المكتبة':'Vegere pirtûkxaneyê',
+  'لم يُعثر على الكتاب في المكتبة':'Pirtûk di pirtûkxaneyê de nehat dîtin',
+  'كل المؤلفين':'Hemû nivîskar','كل التصنيفات':'Hemû kategorî','كل النتائج':'Hemû encam',
+  'اكتب كلمة أو عبارة…':'Peyvek an hevokek binivîse…','جارٍ البحث في خزانتك':'Di xezîneya te de digere',
+  'تعذّر البحث الآن':'Lêgerîn niha nehat kirin',
+}

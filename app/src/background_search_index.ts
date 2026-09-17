@@ -6,6 +6,7 @@ import {prepareLocalBookSearchIndex} from './engine/search_store'
 /** Serial, local-only warmup. Never download the public corpus at startup. */
 export function installBackgroundSearchIndex():()=>void{
  const attempted=new Set<string>()
+ const failures=new Map<string,number>()
  let timer:ReturnType<typeof setTimeout>|undefined,running=false,again=false,disposed=false
  let controller:AbortController|undefined
  const schedule=()=>{
@@ -25,22 +26,31 @@ export function installBackgroundSearchIndex():()=>void{
     // Remote placeholders are handled by server indexing or demand repair.
     if(!book.data?.length||book.sourceKind==='shamela4.1')continue
     const key=JSON.stringify([identity,book.id,book.originalSha256,book.textToc,book.bokToc])
-    if(attempted.has(key))continue
-    attempted.add(key)
+    if(attempted.has(key)||(failures.get(key)??0)>=3)continue
     try{
-     await headingIndex(book)
+     const headings=await headingIndex(book)
      if(signal.aborted||currentLibraryIdentityScope()!==identity)break
      if(inferBookFormat(book)!=='pdf')await prepareLocalBookSearchIndex(book.id,{signal})
-    }catch{/* Preserve coverage failures; retry only after source change or explicit repair. */}
+     // Parsers may return incomplete instead of throwing on a transient failure.
+     // Never stamp that revision as ready merely because body indexing succeeded.
+     if(!headings.complete)throw Error('heading_index_incomplete')
+     if(!signal.aborted&&currentLibraryIdentityScope()===identity){attempted.add(key);failures.delete(key)}
+    }catch{
+     // A failed attempt is not an indexed revision. Retry transient failures
+     // automatically, but bound retries for corrupt or missing source files.
+     if(!signal.aborted&&currentLibraryIdentityScope()===identity){const count=(failures.get(key)??0)+1;failures.set(key,count);if(count<3)again=true}
+    }
     // Yield between books to keep input/navigation responsive.
     await new Promise<void>(resolve=>setTimeout(resolve,50))
    }
   }catch{/* Offline/catalog failures are retried on the next library change. */}
   finally{running=false;controller=undefined;if(again){again=false;schedule()}}
  }
- const identityChanged=()=>{controller?.abort();attempted.clear();schedule()}
+ const identityChanged=()=>{controller?.abort();attempted.clear();failures.clear();schedule()}
+ const online=()=>{failures.clear();schedule()}
  window.addEventListener('library-changed',schedule)
  window.addEventListener('alkhizana:account-changed',identityChanged)
+ window.addEventListener('online',online)
  schedule()
- return ()=>{disposed=true;controller?.abort();if(timer!==undefined)clearTimeout(timer);window.removeEventListener('library-changed',schedule);window.removeEventListener('alkhizana:account-changed',identityChanged)}
+ return ()=>{disposed=true;controller?.abort();if(timer!==undefined)clearTimeout(timer);window.removeEventListener('library-changed',schedule);window.removeEventListener('alkhizana:account-changed',identityChanged);window.removeEventListener('online',online)}
 }

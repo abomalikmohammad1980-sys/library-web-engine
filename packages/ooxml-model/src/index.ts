@@ -27,6 +27,8 @@ export interface EffectiveRun {
     /** w:customMarkFollows: Word uses the following run text as the mark and
      * does not substitute an automatic sequence number. */
     custom?: boolean; customMark?: string } | null;
+  /** موضع w:footnoteRef/w:endnoteRef داخل قصة الحاشية، وليس مرجعًا جديدًا. */
+  noteBodyRef?: "footnote" | "endnote" | null;
   /** ‏w:vertAlign=superscript — علامةُ الحاشية تُرفَع وتُصغَّر (تدخل صندوق السطر) */
   superscript?: boolean;
   /** رابط تشعبي (من w:hyperlink) — يُفتَح عند النقر */
@@ -153,6 +155,8 @@ export interface BodyParagraph {
   /** خط علامة الترقيم بشريحة ASCII (rFonts ascii من rPr علامة الفقرة) —
    *  أرقام العلامة «1.» لاتينية فتُرسم به وترفع ascent سطرها (لغز 586) */
   markAsciiFamily: string | null;
+  /** Resolved paragraph-mark face; supplies the line box of a textless paragraph. */
+  paragraphMark?: { family: string | null; emTwips: number | null; bold: boolean; italic: boolean };
   /** يجب أن تبدأ هذه الفقرة في صفحةٍ جديدة — من w:pageBreakBefore، أو كسرِ
    *  صفحةٍ صريح (w:br type=page) قبلها، أو حدِّ مقطعٍ (sectPr nextPage). generic. */
   pageBreakBefore: boolean;
@@ -237,6 +241,7 @@ export interface TableCellCtx {
   conditionalStyle?: {
     sz: number | null; family: string | null; jc: string | null; bidi: boolean | null;
     look: RunLook;
+    spacing?: SpacingProps;
   };
   /** مجموع أعمدة tblGrid (twips) — أساسُ معامل القياس إلى عرض العمود المتاح */
   totalGridTwips: number;
@@ -427,6 +432,9 @@ export interface FloatAnchor {
   flipV?: boolean;
   /** ‏wps:bodyPr@anchor — رسوُّ النصّ في الصندوق عموديًّا: t (أعلى) / ctr (وسط) / b (أسفل) */
   boxAnchor?: string;
+  /** ‏a:noAutofit داخل wps:bodyPr — لا يصغّر Word النص كي يلائم الامتداد،
+   *  بل يسمح له بالفيض رأسيًّا. نحفظه صراحةً كي لا يقصّه الراسم. */
+  boxNoAutofit?: boolean;
   /** حشواتُ الصندوق بالـtwips (‏tIns/bIns/lIns/rIns؛ الافتراضيّ ٧٢ و١٤٤) */
   boxIns?: { t: number; b: number; l: number; r: number };
 }
@@ -541,6 +549,7 @@ const parser = new XMLParser({
   attributeNamePrefix: "@",
   preserveOrder: true,
   trimValues: false,
+  parseTagValue: false,
 });
 const OOXML_CANONICAL_PREFIX = new Map<string, string>([
   ["http://schemas.openxmlformats.org/wordprocessingml/2006/main", "w"],
@@ -991,7 +1000,7 @@ interface StyleProps {
   look: RunLook;
 }
 export interface StyleTable {
-  defaults: { sz: number | null; family: string | null; spacing: SpacingProps; bidi: boolean | null; suppressAutoHyphens: boolean | null; outlineLevel: number | null; keepNext: boolean | null; keepLines: boolean | null; contextualSpacing: boolean | null; widowControl: boolean | null; snapToGrid: boolean | null };
+  defaults: { sz: number | null; family: string | null; spacing: SpacingProps; jc: string | null; bidi: boolean | null; suppressAutoHyphens: boolean | null; outlineLevel: number | null; keepNext: boolean | null; keepLines: boolean | null; contextualSpacing: boolean | null; widowControl: boolean | null; snapToGrid: boolean | null };
   /** نمط الفقرة الافتراضي (w:default="1") — الفقرات بلا pStyle ترثه قبل
    *  docDefaults (درس masjid الرأسي: ‏Normal ‏line=240 يلغي docDefaults 276) */
   defaultParagraphStyleId: string | null;
@@ -1003,6 +1012,7 @@ export interface StyleTable {
 }
 
 interface TableStyleRegion {
+  spacing: SpacingProps;
   shdFill: string | null;
   borders: Borders4 | null;
   sz: number | null;
@@ -1289,6 +1299,7 @@ export interface RunLook {
   underline?: string | null; underlineColor?: string | null;
   strike?: boolean; doubleStrike?: boolean;
   caps?: boolean; smallCaps?: boolean; italic?: boolean;
+  superscript?: boolean; subscript?: boolean;
   charSpacing?: number; position?: number; kern?: number; charScale?: number;
   textGradient?: { angle: number; stops: { pos: number; color: string }[] };
   textOutline?: { widthTwips: number; color: string };
@@ -1330,6 +1341,8 @@ export function rPrLook(rpr: XNode[] | null, theme: Map<string, string>): RunLoo
   const sc = onFlag(rpr, "w:smallCaps"); if (sc !== undefined) out.smallCaps = sc;
   const it = onFlag(rpr, "w:i") ?? onFlag(rpr, "w:iCs"); if (it !== undefined) out.italic = it;
   const bd = onFlag(rpr, "w:b") ?? onFlag(rpr, "w:bCs"); if (bd !== undefined) out.bold = bd;
+  const va = findAttr(rpr, "w:vertAlign")?.["@w:val"];
+  if (va) { out.superscript = va === "superscript"; out.subscript = va === "subscript"; }
   const legacyShadow = onFlag(rpr, "w:shadow");
   if (legacyShadow !== undefined) out.legacyShadow = legacyShadow;
   // ‏w:spacing داخل rPr تباعدُ محارفَ بالـtwips (غيرُ w:spacing في pPr وهو رأسيّ)
@@ -1454,7 +1467,7 @@ export function parseStyles(
   stylesXml: string | null, theme: Map<string, string> = new Map(),
 ): StyleTable {
   const table: StyleTable = {
-    defaults: { sz: null, family: null, spacing: NO_SPACING, bidi: null, suppressAutoHyphens: null, outlineLevel: null, keepNext: null, keepLines: null, contextualSpacing: null, widowControl: null, snapToGrid: null },
+    defaults: { sz: null, family: null, spacing: NO_SPACING, jc: null, bidi: null, suppressAutoHyphens: null, outlineLevel: null, keepNext: null, keepLines: null, contextualSpacing: null, widowControl: null, snapToGrid: null },
     defaultParagraphStyleId: null, byId: new Map(), nameToId: new Map(), tableById: new Map(),
   };
   if (!stylesXml) return table;
@@ -1469,7 +1482,9 @@ export function parseStyles(
     const pprDefault = first(docDefaults, "w:pPrDefault");
     const dpPr = pprDefault ? first(pprDefault, "w:pPr") : null;
     table.defaults = {
-      ...rPrProps(rpr, theme), spacing: spacingProps(dpPr), bidi: pPrFlag(dpPr, "w:bidi"),
+      ...rPrProps(rpr, theme), spacing: spacingProps(dpPr),
+      jc: findAttr(dpPr ?? [], "w:jc")?.["@w:val"] ?? null,
+      bidi: pPrFlag(dpPr, "w:bidi"),
       suppressAutoHyphens: pPrFlag(dpPr, "w:suppressAutoHyphens"),
       outlineLevel: findAttr(dpPr ?? [], "w:outlineLvl")?.["@w:val"] != null
         ? Number(findAttr(dpPr ?? [], "w:outlineLvl")!["@w:val"]) : null,
@@ -1507,7 +1522,7 @@ export function parseStyles(
         const font = rPrProps(rPr, theme);
         return { shdFill, borders: bordersNode ? parseBorders(bordersNode) : null,
           ...font, jc: pPr ? (findAttr(pPr, "w:jc")?.["@w:val"] ?? null) : null,
-          bidi: pPrFlag(pPr, "w:bidi"), look: rPrLook(rPr, theme) };
+          bidi: pPrFlag(pPr, "w:bidi"), look: rPrLook(rPr, theme), spacing: spacingProps(pPr) };
       };
       const regions = new Map<string, TableStyleRegion>();
       for (const child of body) {
@@ -1541,7 +1556,17 @@ export function parseStyles(
       basedOn: basedOnAttrs?.["@w:val"] ?? null,
     });
   }
+  for (const [id, style] of table.tableById) style.whole.spacing = resolveViaStyle(table, id, false).spacing;
   return table;
+}
+
+/** Attribute-wise style cascade; a zero spacing value is explicit, not absent. */
+function overlaySpacing(base: SpacingProps, higher: SpacingProps): SpacingProps {
+  return { ...base, present: base.present || higher.present,
+    line: higher.line ?? base.line, lineRule: higher.line != null ? higher.lineRule : base.lineRule,
+    lineSource: higher.line != null ? (higher.lineSource ?? "style") : base.lineSource ?? null,
+    before: higher.before ?? base.before, after: higher.after ?? base.after,
+    beforeAuto: higher.beforeAuto ?? base.beforeAuto ?? null, afterAuto: higher.afterAuto ?? base.afterAuto ?? null };
 }
 
 function tableLookFlag(attrs: Record<string, string> | null, name: string, dflt: boolean): boolean {
@@ -1565,8 +1590,8 @@ function tableStyleRegionForCell(
   const merged: TableStyleRegion = style ? {
     shdFill: style.whole.shdFill, borders: style.whole.borders,
     sz: style.whole.sz, family: style.whole.family, jc: style.whole.jc,
-    bidi: style.whole.bidi, look: { ...style.whole.look },
-  } : { shdFill: null, borders: null, sz: null, family: null, jc: null, bidi: null, look: {} };
+    bidi: style.whole.bidi, look: { ...style.whole.look }, spacing: { ...style.whole.spacing },
+  } : { shdFill: null, borders: null, sz: null, family: null, jc: null, bidi: null, look: {}, spacing: { ...NO_SPACING } };
   if (!style) return merged;
   const apply = (name: string) => {
     const region = style.regions.get(name); if (!region) return;
@@ -1576,6 +1601,7 @@ function tableStyleRegionForCell(
     if (region.family != null) merged.family = region.family;
     if (region.jc != null) merged.jc = region.jc;
     if (region.bidi != null) merged.bidi = region.bidi;
+    merged.spacing = overlaySpacing(merged.spacing, region.spacing);
     Object.assign(merged.look, region.look);
   };
   const hasFirstRow = tableLookFlag(look, "firstRow", true);
@@ -1597,7 +1623,7 @@ function tableStyleRegionForCell(
   return merged;
 }
 
-function resolveViaStyle(table: StyleTable, styleId: string | null) {
+function resolveViaStyle(table: StyleTable, styleId: string | null, includeDefaults = true) {
   let sz: number | null = null, family: string | null = null, jc: string | null = null;
   let bidi: boolean | null = null, suppressAutoHyphens: boolean | null = null, outlineLevel: number | null = null;
   let keepNext: boolean | null = null, keepLines: boolean | null = null;
@@ -1636,7 +1662,7 @@ function resolveViaStyle(table: StyleTable, styleId: string | null) {
     id = s.basedOn;
   }
   const dsp = table.defaults.spacing;
-  if (dsp.present) {
+  if (includeDefaults && dsp.present) {
     sp.present = true;
     if (sp.line == null && dsp.line != null) {
       sp.line = dsp.line; sp.lineRule = dsp.lineRule; sp.lineSource = "docDefaults";
@@ -1646,7 +1672,8 @@ function resolveViaStyle(table: StyleTable, styleId: string | null) {
     sp.afterAuto ??= dsp.afterAuto ?? null;
   }
   return {
-    sz: sz ?? table.defaults.sz, family: family ?? table.defaults.family, jc,
+    sz: sz ?? table.defaults.sz, family: family ?? table.defaults.family,
+    jc: jc ?? table.defaults.jc,
     bidi: bidi ?? table.defaults.bidi,
     suppressAutoHyphens: suppressAutoHyphens ?? table.defaults.suppressAutoHyphens,
     outlineLevel: outlineLevel ?? table.defaults.outlineLevel,
@@ -1815,6 +1842,16 @@ function parseVmlShapes(
   // فقراءةُ قيم الأبناء أطوالًا تعطي أرقامًا هذيانيّة (١٥٢٨٥٠tw في تذييل jalsa27).
   const groups = collectDeep(pict, "v:group");
   const inGroup = new Set<XNode[]>();
+  // أشكال w:txbxContent قصة Word مستقلة، ويعيد parseTextBox تحليلها داخل
+  // الصندوق. حصادها مرة أخرى من w:pict الخارجي كان يرسم شعار صفحة إبهاج
+  // مرتين: مرة داخل الجدول المؤلف، ومرة كصورة عائمة فوق الصندوق كله؛ بل كان
+  // collectDeep يورث rId الصورة الداخلية إلى v:roundrect الأب فيمدد الشعار
+  // إلى أبعاد الصندوق. نمنع فقط إعادة الحصاد الخارجي ونبقي القصة الداخلية.
+  const inTextBox = new Set<XNode[]>();
+  for (const { node: box } of collectDeep(pict, "v:textbox")) {
+    for (const tag of VML_SHAPE_TAGS)
+      for (const { node } of collectDeep(box, tag)) inTextBox.add(node);
+  }
   for (const { node: g, attrs: ga } of groups) {
     const gst = parseVmlStyle(ga["@style"]);
     const gw = vmlUnit(gst.get("width")), gh = vmlUnit(gst.get("height"));
@@ -1901,6 +1938,7 @@ function parseVmlShapes(
   for (const tag of VML_SHAPE_TAGS) {
     for (const { node: sh, attrs: a } of collectDeep(pict, tag)) {
       if (inGroup.has(sh)) continue;                 // عُولج ضمن مجموعته
+      if (inTextBox.has(sh)) continue;               // سيُرسم داخل قصة مربع النص
       const st = parseVmlStyle(a["@style"]);
       // VML لا يملك عنصرًا منفصلًا مماثلًا لـ wp:inline. في مستندات Word
       // القديمة يكون الشكل سطريًا ما لم تصرّح سمة style بالتموضع المطلق.
@@ -1915,9 +1953,11 @@ function parseVmlShapes(
       const tAttrs = tRef ? types.get(tRef) : undefined;
       const spt = a["@o:spt"] ?? a["@spt"] ?? tAttrs?.["@o:spt"] ?? tAttrs?.["@spt"];
       const local = tag.slice(2);
+      const directShapeContent = sh.filter(item => !("v:textbox" in item) && !("w:txbxContent" in item));
+      const imageData = collectDeep(directShapeContent, "v:imagedata")[0];
       let kind = spt && VML_SPT[spt] ? VML_SPT[spt]!
         : local !== "shape" ? local
-        : collectDeep(sh, "v:imagedata").length ? "picture" : "rect";
+        : imageData ? "picture" : "rect";
       if (hasBox && kind === "rect") kind = "rect";
       // القياسُ من style (لا wp:extent في VML)
       let w = vmlUnit(st.get("width")), h = vmlUnit(st.get("height"));
@@ -1966,7 +2006,11 @@ function parseVmlShapes(
       const isFilled = !offish(attrOf("@filled"));
       const isStroked = !offish(attrOf("@stroked"));
       const fillColor = isFilled ? vmlColor(attrOf("@fillcolor"), theme) : null;
-      const strokeColor = isStroked ? vmlColor(attrOf("@strokecolor"), theme) : null;
+      // VML's authored default stroke is black.  In particular, Word commonly
+      // omits `strokecolor` from footer rules (`v:line`) while still expecting
+      // the rule to be painted.  Treating an omitted colour as "no stroke"
+      // silently removed those footer rules from the browser rendering.
+      const strokeColor = isStroked ? (vmlColor(attrOf("@strokecolor"), theme) ?? "000000") : null;
       const strokeNode = collectDeep(sh, "v:stroke")[0];
       const strokeW = attrOf("@strokeweight") ? vmlUnit(attrOf("@strokeweight")) : 15;
       const dash = vmlDash(strokeNode?.attrs?.["@dashstyle"], strokeW);
@@ -1976,7 +2020,6 @@ function parseVmlShapes(
       const effFill = !isFilled ? null
         : fillColor ?? (kind === "picture" && !hasBox ? null : "FFFFFF");
       const tb = hasBox ? parseTextBox(sh, styles, numbering, theme) : undefined;
-      const imageData = collectDeep(sh, "v:imagedata")[0];
       const vmlCrop = (v: string | undefined) => {
         if (!v) return 0;
         const s = v.trim().toLowerCase();
@@ -2450,7 +2493,7 @@ export function parseDocument(
               firstInCell: false, firstInRow: ci === 0, lastInRow: ci === cells.length - 1,
               shdFill, tblStyleId, totalGridTwips: acc, tblWVal, tblWType, tblLayout, cantSplit, repeatHeader,
               conditionalStyle: { sz: styled.sz, family: styled.family, jc: styled.jc,
-                bidi: styled.bidi, look: { ...styled.look } },
+                bidi: styled.bidi, look: { ...styled.look }, spacing: { ...styled.spacing } },
               bidiVisual, tblIndTwips, tblJc: rowTblJc,
               vMerge, vAlign, textDirection, rowHeight, rowHeightRule,
               marTop: cellMar("top", 0), marBottom: cellMar("bottom", 0),
@@ -2482,8 +2525,8 @@ export function parseDocument(
     const conditionalStyle = tableCell?.conditionalStyle;
     const bidi = pPrFlag(pPr, "w:bidi") ?? conditionalStyle?.bidi ?? styleProps.bidi ?? false;
     // ‏w:jc: المباشر يتقدم وإلا فمن سلسلة النمط (درس tadris para87)
-    const jc = (pPr ? (findAttr(pPr, "w:jc")?.["@w:val"] ?? null) : null)
-      ?? conditionalStyle?.jc ?? styleProps.jc;
+    const directJc = pPr ? findAttr(pPr, "w:jc")?.["@w:val"] : undefined;
+    const jc = directJc ?? conditionalStyle?.jc ?? styleProps.jc;
     // ترقيم الفقرة: تقدمات مستوى الترقيم تتوسط الأسبقية (مباشر > ترقيم > نمط)
     const numPr = pPr ? first(pPr, "w:numPr") : null;
     const numId = numPr ? (findAttr(numPr, "w:numId")?.["@w:val"] ?? null) : null;
@@ -2499,13 +2542,19 @@ export function parseDocument(
     const pPrRPr = rPrProps(pPrRPrNode, theme);
     // خط علامة الترقيم بشريحة ASCII (أرقام «1.» لاتينية الشريحة!) — من
     // ‏rFonts ascii في rPr علامة الفقرة (حل لغز 586: ‏asc(Simplified)=1.18em)
-    const markAsciiFamily = (pPr
-      ? (findAttr(first(pPr, "w:rPr") ?? [], "w:rFonts")?.["@w:ascii"] ?? null)
-      : null) ?? numProps?.markerFamily ?? null;
+    const directMarkAsciiFamily = pPr
+      ? findAttr(first(pPr, "w:rPr") ?? [], "w:rFonts")?.["@w:ascii"]
+      : undefined;
+    const markAsciiFamily = directMarkAsciiFamily ?? numProps?.markerFamily ?? null;
     const markSz = pPrRPr.sz ?? conditionalStyle?.sz ?? styleProps.sz ?? null;
     // ملحوظة: طيّ lvl/rPr.sz هنا نتيجة سلبية مقيسة (tadris ‏96.1→93.7) —
     // الحقل مكشوف في NumberingTable لمن يحتاجه، بلا مشاركة في ارتفاع السطر.
     const markEmTwips = markSz != null ? markSz * 10 : null;
+    const markLook: RunLook = { ...styleProps.look, ...conditionalStyle?.look, ...rPrLook(pPrRPrNode, theme) };
+    const paragraphMark = {
+      family: pPrRPr.family ?? conditionalStyle?.family ?? styleProps.family,
+      emTwips: markEmTwips, bold: Boolean(markLook.bold), italic: Boolean(markLook.italic),
+    };
 
     let excluded: BodyParagraph["excluded"] = false;
     const runs: EffectiveRun[] = [];
@@ -2578,11 +2627,14 @@ export function parseDocument(
       const r = rNode["w:r"] as XNode[];
       const rpr = first(r, "w:rPr");
       const own = rPrProps(rpr, theme);
+      const runStyleId = rpr ? (findAttr(rpr, "w:rStyle")?.["@w:val"] ?? null) : null;
+      const runStyle = resolveViaStyle(styles, runStyleId);
       const hidden = rpr ? rpr.some((n) => "w:vanish" in n) : false;
       let text = "";
       const sourceSymbols: { at: number; raw: string }[] = [];
       let symFont: string | null = null; // خطُّ رمزٍ w:sym (يتقدّم على خطّ الرن)
       let noteRef: EffectiveRun["noteRef"] = null;
+      let noteBodyRef: EffectiveRun["noteBodyRef"] = null;
       let customMarkStart: number | null = null;
       for (const t of r) {
         if ("w:t" in t) {
@@ -2622,9 +2674,11 @@ export function parseDocument(
         // الخطّ الرمزيّ متوفّرٌ في subset-metrics فيُشكَّل بعرضه الصحيح.
         // ‏w:noBreakHyphen: شرطةٌ لا يُكسَر عندها السطر ⟵ شرطةٌ غيرُ فاصلة (U+2011)
         if ("w:noBreakHyphen" in t) { text += "\u2011"; if (!hidden) { sawText = true; lastPageBreakKind = null; } }
-        // ‏w:softHyphen: شرطةٌ اختياريّةٌ لا تظهر إلّا عند الكسر — لا نكسر عندها بعد،
-        // فنُسقِطها من النصّ المرئيّ (إظهارُها بلا كسرٍ خطأٌ صريح).
-        if ("w:softHyphen" in t) { /* تُتجاهَل حتّى نكسر عندها */ }
+        // Preserve the discretionary break and its one-character COM story slot.
+        if ("w:softHyphen" in t) {
+          sourceSymbols.push({ at: text.length, raw: "\u001f" });
+          text += "\u00ad";
+        }
         if ("w:sym" in t) {
           const a = (t[":@"] as Record<string, string> | undefined) ?? {};
           const ch = resolveSymChar(a["@w:font"], a["@w:char"]);
@@ -2648,6 +2702,8 @@ export function parseDocument(
           if (custom) customMarkStart = text.length;
           else { text += String(num); if (!hidden) { sawText = true; lastPageBreakKind = null; } }
         }
+        if ("w:footnoteRef" in t) noteBodyRef = "footnote";
+        if ("w:endnoteRef" in t) noteBodyRef = "endnote";
         // ‏w:tab: نسجّل موضعه في النصّ (لتقسيم صفّ TOC لاحقًا). الإقصاء يُحسَم بعد
         // الحلقة: صفوف الفهرس تُرصَّف، وبقيّة w:tab تُقصى (excluded=tab) مؤقّتًا.
         // الجدولةُ تفصل الكلمات: نُدخلها محرفَ جدولةٍ فعليًّا في نصّ الرنّ كي يبقى
@@ -3077,10 +3133,13 @@ export function parseDocument(
                 if (!tb) return {};
                 // ‏bodyPr: الرسوّ العموديّ والحشوات. الافتراضيّات في ECMA-376:
                 // ‏lIns/rIns=91440EMU=144tw، tIns/bIns=45720EMU=72tw، anchor=t.
-                const bp = collectDeep(anc, "wps:bodyPr")[0]?.attrs ?? {};
+                const bodyPr = collectDeep(anc, "wps:bodyPr")[0];
+                const bp = bodyPr?.attrs ?? {};
                 const ins = (k: string, dflt: number) =>
                   bp[k] != null ? Math.round(Number(bp[k]) / EMU) : dflt;
                 return { textBox: tb, boxAnchor: bp["@anchor"] ?? "t",
+                  ...(bodyPr && collectDeep(bodyPr.node, "a:noAutofit").length
+                    ? { boxNoAutofit: true } : {}),
                   boxIns: { t: ins("@tIns", 72), b: ins("@bIns", 72),
                     l: ins("@lIns", 144), r: ins("@rIns", 144) } };
               })(),
@@ -3113,7 +3172,9 @@ export function parseDocument(
         if (noteRef.customMark && !hidden) { sawText = true; lastPageBreakKind = null; }
       }
       if (!hidden) paraTextLen += text.length; // يوافق نصّ الفقرة (المرئيّ) لموضع w:tab
-      if (!text) continue;
+      // علامة رقم الحاشية داخل قصتها رنّ دلالي بلا w:t؛ إبقاؤه ضروري كي
+      // يضع العارض الرقم في موضعه المؤلف (مثل القوسين) بدل عمود منفصل.
+      if (!text && !noteBodyRef) continue;
       const vAlign = rpr ? (findAttr(rpr, "w:vertAlign")?.["@w:val"] ?? null) : null;
       const toggleOn = (nm: string): boolean | null => {
         if (!rpr || first(rpr, nm) === null) return null;
@@ -3126,12 +3187,12 @@ export function parseDocument(
         ? (rtl ? "rtl" : "ltr")
         : ltr !== null ? (ltr ? "ltr" : "rtl") : null;
       // المظهر: المباشرُ يتقدّم، ثمّ rPr الفقرة، ثمّ سلسلةُ النمط
-      const look: RunLook = { ...styleProps.look, ...conditionalStyle?.look,
+      const look: RunLook = { ...styleProps.look, ...conditionalStyle?.look, ...runStyle.look,
         ...rPrLook(pPrRPrNode, theme), ...rPrLook(rpr, theme) };
-      const effectiveEmTwips = (own.sz ?? pPrRPr.sz ?? conditionalStyle?.sz ?? styleProps.sz) != null
-        ? (own.sz ?? pPrRPr.sz ?? conditionalStyle?.sz ?? styleProps.sz)! * 10
+      const effectiveEmTwips = (own.sz ?? pPrRPr.sz ?? runStyle.sz ?? conditionalStyle?.sz ?? styleProps.sz) != null
+        ? (own.sz ?? pPrRPr.sz ?? runStyle.sz ?? conditionalStyle?.sz ?? styleProps.sz)! * 10
         : null;
-      const { legacyShadow, ...resolvedLook } = look;
+      const { legacyShadow, superscript: styledSuperscript, subscript: styledSubscript, ...resolvedLook } = look;
       if (legacyShadow && resolvedLook.textShadow == null && effectiveEmTwips != null) {
         const offset = effectiveEmTwips / 24;
         resolvedLook.textShadow = { xTwips: offset, yTwips: offset,
@@ -3152,10 +3213,12 @@ export function parseDocument(
         ...resolvedLook,
         fieldResult: dynamicField,
         noteRef,
+        noteBodyRef,
         href: currentHref ?? null,
-        superscript: vAlign === "superscript",
+        superscript: vAlign ? vAlign === "superscript" : (styledSuperscript ?? false),
+        subscript: vAlign ? vAlign === "subscript" : (styledSubscript ?? false),
         bold: directBold ?? resolvedLook.bold ?? false,
-        family: symFont ?? own.family ?? pPrRPr.family ?? conditionalStyle?.family ?? styleProps.family,
+        family: symFont ?? own.family ?? pPrRPr.family ?? runStyle.family ?? conditionalStyle?.family ?? styleProps.family,
         emTwips: effectiveEmTwips,
         hidden,
       });
@@ -3238,7 +3301,10 @@ export function parseDocument(
     }
     // ‏w:spacing: وراثة سمّية — سمات المباشر تتقدم وتُكمَّل من السلسلة
     const ownSp = spacingProps(pPr);
-    const chain = styleProps.spacing;
+    const chain = conditionalStyle?.spacing?.present
+      ? overlaySpacing(overlaySpacing(styles.defaults.spacing, conditionalStyle.spacing),
+        resolveViaStyle(styles, styleId ?? styles.defaultParagraphStyleId, false).spacing)
+      : styleProps.spacing;
     const beforeAuto = ownSp.beforeAuto ?? chain.beforeAuto;
     const afterAuto = ownSp.afterAuto ?? chain.afterAuto;
     const spacing: SpacingProps = {
@@ -3268,7 +3334,7 @@ export function parseDocument(
     paragraphs.push({
       index: idx, bookmarkIds, runs, text, styleId, jc, bidi,
       indLeft, indRight, indFirstLine, excluded, sectionIndex: -1, numbered, numId, ilvl, anchors,
-      spacing, markEmTwips, markAsciiFamily, pageBreakBefore: pageBreaksBefore > 0,
+      spacing, markEmTwips, markAsciiFamily, paragraphMark, pageBreakBefore: pageBreaksBefore > 0,
       pageBreaksBefore, widowControl, suppressAutoHyphens, outlineLevel, keepNext, keepLines,
       contextualSpacing,
       tabStops, toc, inlineImageHTwips, tableCell,
@@ -3312,6 +3378,28 @@ export function parseDocument(
     if (!firstParagraph) continue;
     firstParagraph.pageBreaksBefore = (firstParagraph.pageBreaksBefore ?? 0) + 1;
     firstParagraph.pageBreakBefore = true;
+  }
+  // الفهارس اليدوية قد تكون سلسلة صفوف tab+رقم بلا TOC style ولا leader
+  // مباشر (التوقف موروث/افتراضي). لا نرقّي سطرًا منفردًا؛ السلسلة الطويلة
+  // وحدها دلالة جدول محتويات يدوي، ونستعير موضع التوقف من أي صف TOC صريح فيها.
+  for (let start = 0; start < paragraphs.length;) {
+    const candidate = (paragraph: BodyParagraph) => !paragraph.tableCell
+      && paragraph.tabAt.length === 1
+      && /^.+\t\s*[0-9٠-٩]+\s*$/u.test(paragraph.text.trim());
+    if (!candidate(paragraphs[start]!)) { start++; continue; }
+    let end = start + 1;
+    while (end < paragraphs.length && candidate(paragraphs[end]!)) end++;
+    if (end - start >= 3) {
+      const explicit = paragraphs.slice(start, end).find(paragraph => paragraph.toc);
+      const rightTabTwips = explicit?.toc?.rightTabTwips ?? 0;
+      for (let i = start; i < end; i++) if (!paragraphs[i]!.toc) {
+        const paragraph = paragraphs[i]!;
+        const split = paragraph.text.lastIndexOf("\t");
+        paragraph.toc = { entry: paragraph.text.slice(0, split).trim(),
+          pageNum: paragraph.text.slice(split + 1).trim(), leader: "dot", rightTabTwips };
+      }
+    }
+    start = end;
   }
   const section = sections[sections.length - 1]!;
   const pageBackground = documentXml.match(/<w:background\b[^>]*\bw:color="([0-9A-Fa-f]{6})"/)?.[1]
