@@ -1,0 +1,44 @@
+name: Public book ingestion
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '7,37 * * * *'
+permissions:
+  contents: read
+concurrency:
+  group: public-book-ingestion-${{ github.repository }}
+  cancel-in-progress: false
+jobs:
+  ingest:
+    # Both gates stay false until isolated cloud AND consumer acceptance closes.
+    if: vars.PUBLIC_BOOK_INGESTION_ENABLED == 'true' && vars.PUBLIC_BOOK_INGESTION_ACCEPTED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4, verified official ref
+        with:
+          persist-credentials: false
+          lfs: false
+      - uses: pnpm/action-setup@f40ffcd9367d9f12939873eb1018b921a783ffaa # v4
+        with:
+          version: 10.12.1
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24'
+      - name: Install reviewed dependencies
+        run: |
+          pnpm install --frozen-lockfile --ignore-scripts
+          npm ci --prefix tools/public-book-index-runtime --ignore-scripts
+      - name: Build the existing Word parser
+        run: pnpm --filter @engine/ooxml-model build
+      - name: Restore tracked server lifecycle source
+        run: |
+          mkdir -p alpha-publish/functions/api
+          cp deployment/cloudflare/functions/api/_public-book-index-jobs.js alpha-publish/functions/api/
+          cp deployment/cloudflare/functions/api/_word-upload-safety.js alpha-publish/functions/api/
+      - name: Drain a bounded batch
+        env:
+          PUBLIC_BOOK_INGESTION_ENABLED: ${{ vars.PUBLIC_BOOK_INGESTION_ENABLED }}
+          PUBLIC_BOOK_INGESTION_ACCEPTED: ${{ vars.PUBLIC_BOOK_INGESTION_ACCEPTED }}
+          PUBLIC_BOOK_INDEX_RUNNER_TOKEN: ${{ secrets.PUBLIC_BOOK_INDEX_RUNNER_TOKEN }}
+        run: node tools/public-book-index-runner.mjs

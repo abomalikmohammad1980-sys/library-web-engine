@@ -1,6 +1,7 @@
 import {PUBLIC_PAGE_META,pageMetaFor,seoShard,SEO_ORIGIN} from '../../app/src/page_meta_model.ts'
 import {canonicalizePath} from '../../app/src/path_location.ts'
 import {readSeoToc} from './_seo-toc.js'
+import {readPublicSeoToc} from './_seo-public-toc.js'
 import {refreshPublicSeoRecord} from './_seo-live-record.js'
 import {publicSitemap,publicSitemapPages} from './_seo-public-sitemap.js'
 import {boundedBytes} from './_seo-toc.js'
@@ -57,6 +58,16 @@ export async function onRequest(context){
     if(start>0)body+=`<a href="/books/${record.id}?tocPage=${tocPage-1}">السابق من الفهرس</a>`
     if(start+200<rows.length)body+=`<a href="/books/${record.id}?tocPage=${tocPage+1}">التالي من الفهرس</a>`
     body+='</section>'
+   }
+   else if(path.startsWith('/books/public/')&&env.PUBLIC_BOOK_INGESTION_ENABLED==='true'){
+    const toc=await readPublicSeoToc(env,record.id)
+    if(toc){
+     const rawPage=url.searchParams.get('tocPage')??'1',tocPage=/^[1-9]\d{0,5}$/.test(rawPage)?Number(rawPage):1,start=(tocPage-1)*200,base=`/books/public/${encodeURIComponent(record.id)}`
+     body+=`<section aria-label="فهرس محتويات الكتاب"><h2>${toc.coverageMode==='pdf-bookmarks-only'?'العلامات المرجعية للنسخة المصورة':'فهرس المحتويات'}</h2><ol start="${start+1}">${toc.rows.slice(start,start+200).map(row=>`<li>${row.href?`<a href="${escape(row.href)}">${escape(row.title)}</a>`:escape(row.title)}</li>`).join('')}</ol>`
+     if(start>0)body+=`<a href="${base}?tocPage=${tocPage-1}">السابق من الفهرس</a>`
+     if(start+200<toc.rows.length)body+=`<a href="${base}?tocPage=${tocPage+1}">التالي من الفهرس</a>`
+     body+='</section>'
+    }
    }
   }else if(record?.name){
    body+=`<ul>${(record.books??[]).map(b=>`<li><a href="/books/${escape(b.id)}">${escape(b.title)}</a></li>`).join('')}</ul>`

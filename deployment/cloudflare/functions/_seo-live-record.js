@@ -5,7 +5,10 @@ export async function refreshPublicSeoRecord(db,kind,id,record){
  if(!db)return record
  if(kind==='books'){
   const publicId=/^\d+$/.test(id)?String(410000000+Number(id)):id
-  const override=await db.prepare('SELECT title,author,category,visibility,logically_deleted_at,updated_at FROM central_book_overrides WHERE book_id IN (?1,?2,?3) ORDER BY revision DESC LIMIT 1').bind(publicId,id,'shamela-'+id).first()
+  const overrideIds=/^\d+$/.test(id)?[publicId,id,'shamela-'+id]:[id,'central-submission:'+id,'account-book:'+id]
+  // Any private/deleted alias vetoes publication, matching ingestion eligibility.
+  // Revision ordering is meaningful only after this privacy fence.
+  const override=await db.prepare("SELECT title,author,category,visibility,logically_deleted_at,updated_at FROM central_book_overrides WHERE book_id IN (?1,?2,?3) ORDER BY CASE WHEN visibility<>'public' OR logically_deleted_at IS NOT NULL THEN 0 ELSE 1 END, revision DESC LIMIT 1").bind(...overrideIds).first()
   if(override&&(override.visibility!=='public'||override.logically_deleted_at))return undefined
   if(!record){
    const row=await db.prepare("SELECT id,title,author,category,updated_at FROM user_books WHERE id=?1 AND visibility='public' AND review_status='approved' AND deleted_at IS NULL LIMIT 1").bind(id).first()

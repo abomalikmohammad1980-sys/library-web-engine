@@ -4,10 +4,38 @@ import {createRequire} from 'node:module'
 import {readFile,mkdtemp,cp,mkdir,rm} from 'node:fs/promises'
 import {resolve} from 'node:path'
 import {tmpdir} from 'node:os'
+import {createHash} from 'node:crypto'
 import {buildSeoIndex} from './build-seo-index.mjs'
 const require=createRequire(new URL('../alpha-publish/package.json',import.meta.url))
 const {Miniflare}=require('miniflare'),{build}=require('esbuild')
 const root=resolve(import.meta.dirname,'..')
+
+test('real HTMLRewriter projects verified public upload headings, not body, and keeps missing/private noindex',async()=>{
+ const artifact={contract:'public-book-index/1',bookId:'upload',generation:1,sourceSha256:'a'.repeat(64),parserVersion:'bounded-account-v1',title:'كتاب جديد',author:'مؤلف',coverageMode:'text-and-headings',rows:[{text:'SECRET-BODY'}],headings:Array.from({length:201},(_,i)=>({value:i===0?'<unsafe> عنوان':`عنوان ${i}`,paragraphIndex:i}))}
+ const bytes=Buffer.from(JSON.stringify(artifact)),sha=createHash('sha256').update(bytes).digest('hex')
+ const receipt={generation:1,manifest_sha256:sha,artifact_key:`public-book-index/v1/${sha}.json`,parser_version:artifact.parserVersion,coverage_mode:artifact.coverageMode}
+ const compiled=await build({stdin:{contents:`import {onRequest} from './alpha-publish/functions/_middleware.js';export default {fetch(request,env){
+ const id=new URL(request.url).pathname.split('/')[3];
+ env.VISITORS_DB={prepare(sql){return{bind(){return{async first(){
+ if(sql.includes('public_book_index_eligible'))return id==='upload'?${JSON.stringify(receipt)}:null;
+ if(sql.includes('central_book_overrides'))return null;
+ return id==='private'?null:{id,title:'كتاب جديد',author:'مؤلف'};
+ }}}}}};
+ return onRequest({request,env,next:()=>new Response('passthrough')})}}`,resolveDir:root},bundle:true,write:false,format:'esm',platform:'browser',target:'es2022'})
+ const mf=new Miniflare({modules:true,script:compiled.outputFiles[0].text,compatibilityDate:'2026-05-22',bindings:{PUBLIC_BOOK_INGESTION_ENABLED:'true'},r2Buckets:['LIBRARY_R2'],serviceBindings:{ASSETS:async()=>new Response('<html><head><title>initial</title></head><body><div id="app"></div></body></html>',{headers:{'content-type':'text/html'}})}})
+ try{
+  const bucket=await mf.getR2Bucket('LIBRARY_R2');await bucket.put(receipt.artifact_key,bytes)
+  const response=await mf.dispatchFetch('https://khzanah.com/books/public/upload'),html=await response.text()
+  assert.equal(response.status,200);assert.equal((html.match(/<h1>/g)??[]).length,1)
+  assert.match(html,/\/books\/public\/upload\?para=0/);assert.match(html,/>عنوان<\/a>/);assert.doesNotMatch(html,/SECRET-BODY|<unsafe>/)
+  assert.match(html,/tocPage=2/);assert.doesNotMatch(html,/para=200/)
+  assert.match(await (await mf.dispatchFetch('https://khzanah.com/books/public/upload?tocPage=2')).text(),/para=200/)
+  const pending=await (await mf.dispatchFetch('https://khzanah.com/books/public/pending')).text()
+  assert.doesNotMatch(pending,/فهرس المحتويات|SECRET-BODY/)
+  const hidden=await mf.dispatchFetch('https://khzanah.com/books/public/private'),hiddenHtml=await hidden.text()
+  assert.equal(hidden.status,404);assert.match(hiddenHtml,/noindex/);assert.doesNotMatch(hiddenHtml,/rel="canonical"|SECRET-BODY/)
+ }finally{await mf.dispose()}
+})
 test('real HTMLRewriter: public identity, canonical, private and missing routes, sitemap counts',async()=>{
  const output=await mkdtemp(resolve(tmpdir(),'khizana-seo-test-'))
  let mf
@@ -43,7 +71,16 @@ test('real HTMLRewriter: public identity, canonical, private and missing routes,
     assert.equal(title,'الخزانة: المكتبة الإسلامية الذكية')
     assert.match(html,/<h1>الخزانة: المكتبة الإسلامية الذكية<\/h1>/)
     assert.match(html,/"@type":"WebSite","name":"الخزانة"/)
-    assert.doesNotMatch(html,/مرحبًا بك|display\s*:\s*none|visibility\s*:\s*hidden/)
+    assert.doesNotMatch(html,/مرحبًا بك/)
+    // Only the JavaScript-added, bounded boot state may hide SSR content.
+    // With scripts disabled the class is absent and the complete HTML is readable.
+    assert.doesNotMatch(html,/<html\b[^>]*class="[^"]*app-boot-pending/)
+    const presentation=html.match(/<style id="seo-presentation">([\s\S]*?)<\/style>/)?.[1]??''
+    for(const rule of presentation.matchAll(/([^{}]+)\{([^{}]*)\}/g)){
+     if(/display\s*:\s*none|visibility\s*:\s*hidden/.test(rule[2])){
+      assert.equal(rule[1].trim(),'.app-boot-pending #app>.seo-page')
+     }
+    }
     assert.match(html,/<a href="\/browse">تصفح الكتب<\/a>/)
    }
    if(path==='/authors/000020')assert.match(title,/الشافعي/)
