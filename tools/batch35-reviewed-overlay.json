@@ -1,5 +1,6 @@
 {
   "source": [
+    "app/src/shamela_biography.ts",
     "app/src/page_meta.ts",
     "app/src/page_meta_model.ts",
     "app/src/screens/reader.ts",
@@ -37,7 +38,7 @@
     "alpha-publish/functions/api/internal/public-book-index.js",
     "alpha-publish/functions/api/search/public-books.js"
   ],
-  "public": ["app/public/sw.js"],
+  "public": ["app/public/sw.js", "app/public/data/shamela-biographies.manifest.json"],
   "migrations": [
     "alpha-publish/migrations/0032_bok_release_pointer.sql",
     "alpha-publish/migrations/0033_public_book_index_jobs.sql",
@@ -45,12 +46,12 @@
     "alpha-publish/migrations/0035_public_book_search.sql"
   ],
   "reviewMetadata": {
-    "status": "proposal-only-not-built-or-deployed",
+    "status": "reviewed-local-candidate-not-production-ready",
     "baseline": "batch33",
     "baselineDeployFingerprint": "885d409c1ffca23258ba90ae5c5e6edfabb641ca73c8dbb9a921b75591828157",
     "baselineFunctionsFingerprint": "9c34bbf263598353a5d5689b4be33cd4189555274f0abc9729713cb6fa14284f",
     "candidateConfigSource": "tools/batch35-search-candidate-config.js",
-    "candidateConfigAction": "Pending explicit builder hook: copy to candidate-only asset, add script before app module, restamp service worker and regenerate integrity inventory. Never edit live or baseline config.",
+    "candidateConfigAction": "Builder hook installs reviewed candidate asset before app module, pairs server flags, restamps service worker and regenerates integrity inventory. Does not deploy or edit live baseline.",
     "candidatePublicUploadActivation": "Only together: __PUBLIC_BOOK_SEARCH_ENABLED__=true and server PUBLIC_BOOK_SEARCH_ENABLED=true plus PUBLIC_BOOK_INGESTION_ENABLED=true, reviewed migrations and isolated acceptance. Root must explicitly approve candidate hook; production flags unchanged by this proposal.",
     "bokFlags": "Keep __BOK_RELEASES_ENABLED__, BOK_RELEASE_ACTIVATION_ENABLED, BOK_TEXT_EDITING_ENABLED and BOK_PUBLICATION_JOBS_ENABLED absent/off in production. Durable jobs remain awaiting_operator; no completed automated BOK build/publish claim.",
     "sourceOwners": {"batch34":"root","BOK":"bok_cloud_complete","fieldAndPublicSearch":"search_complete","ingestion":"release_audit","SEO":"bok_cloud_complete"},

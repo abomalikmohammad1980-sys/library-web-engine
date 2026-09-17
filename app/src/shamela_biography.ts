@@ -1,6 +1,6 @@
 import {SHAMELA_AUTHOR_METADATA_SHA} from './shamela_author_metadata'
 import type {ShamelaAuthorIndexEntry} from './shamela_author_index'
-export const SHAMELA_BIOGRAPHY_MANIFEST_SHA='f3554cdbfca97dd9605a85b1c991b4e630a6be450fc0b49616ef05efe85b8127'
+export const SHAMELA_BIOGRAPHY_MANIFEST_SHA='e7c669fa5bb1f72ee5c13761a2cd18f57b3b750cda8c7533bfefd598bb16b2ac'
 type Asset={authorId:string;id:string;path:string;bytes:number;sha256:string}
 type Manifest={contract:string;metadataSha256:string;authorCount:number;biographyCount:number;assets:Asset[];unavailableAuthorIds:string[]}
 let manifestTask:Promise<Manifest>|undefined
