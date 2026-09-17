@@ -51,3 +51,23 @@ API was unavailable. The local fix shares the identity already approved by the
 reader's visibility checks with route metadata. It is restricted to public book
 paths, preserves private noindex, and lets richer server metadata take priority.
 Seven model/route tests and app typecheck passed. The fix is not yet published.
+
+## Offline reload root cause and local correction
+
+Repeated offline reload reproduced Chrome's error page, although direct offline
+navigation succeeded. Inspecting the isolated cache proved that `/index.html`
+held a response with `url=https://khzanah.com/`, `redirected=true`, status 200.
+Pages' index redirect was retained by Cache Storage. Such redirected responses
+cannot satisfy reload navigation's redirect mode.
+
+As a controlled browser experiment, only the cached shell in the disposable
+`reader-slow-20260917` context was reconstructed as a fresh Response with identical
+body/status/headers. The following offline reload succeeded at the original book
+URL rather than Chrome's error page. No site/server or user account was changed.
+
+`app/public/sw.js` now performs that reconstruction when returning a redirected
+offline shell; live redirects are unchanged. Nineteen service-worker path,
+recovery, update and contract tests passed, including a regression preserving
+HTML and release headers while removing redirect history. The worker correction
+is local pending the combined deployment; the browser experiment is causal
+evidence, not a claim that the live worker was changed.

@@ -42,6 +42,17 @@ function isHtmlResponse(response) {
   return response.headers.get('content-type')?.toLowerCase().includes('text/html') === true
 }
 
+async function offlineShellResponse() {
+  const cached = await caches.match('./index.html')
+  if (!cached) return Response.error()
+  // Pages redirects /index.html to /. Reload navigations use manual redirects
+  // and reject a cached response whose redirected flag is true. Reconstruct
+  // only the offline shell; live server redirects must keep their semantics.
+  return cached.redirected
+    ? new Response(cached.body, {status: cached.status, statusText: cached.statusText, headers: cached.headers})
+    : cached
+}
+
 function isBuiltAssetRequest(request, url) {
   return url.pathname.startsWith('/assets/') || ['script', 'style', 'worker'].includes(request.destination)
 }
@@ -101,7 +112,7 @@ self.addEventListener('fetch', event => {
     // هذا هو الفرق بين التحديث العادي وShift+Refresh. يقتصر reload على
     // تنقل HTML، أما الأصول ذات البصمة فتبقى immutable وكفؤة.
     const freshNavigation = new Request(request, { cache: 'reload' })
-    event.respondWith(fetch(freshNavigation).then(response => { if (response.ok&&shellPath) retain(event, './index.html', response); return response }).catch(() => caches.match('./index.html')))
+    event.respondWith(fetch(freshNavigation).then(response => { if (response.ok&&shellPath) retain(event, './index.html', response); return response }).catch(offlineShellResponse))
     return
   }
   // The complete author catalog is about 25 MB. Never block installation by
