@@ -1,0 +1,11 @@
+{
+  "source": [
+    "app/src/page_meta.ts",
+    "app/src/page_meta_model.ts",
+    "app/src/screens/reader.ts",
+    "app/src/router.ts"
+  ],
+  "functions": ["alpha-publish/functions/api/library/book-editions.js"],
+  "public": ["app/public/sw.js"],
+  "migrations": []
+}

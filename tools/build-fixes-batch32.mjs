@@ -1,4 +1,4 @@
-// Assemble reviewed deltas on the verified batch31 preview, never the dirty tree.
+// Assemble reviewed deltas on a verified frozen baseline, never the dirty tree.
 // This prepares a LOCAL candidate only; it does not deploy or migrate a database.
 import {execFileSync} from 'node:child_process'
 import {readFile,writeFile,mkdir,cp,stat} from 'node:fs/promises'
@@ -10,12 +10,22 @@ import {inventory,verifyPagesConfiguration} from '../alpha-publish/scripts/relea
 import {stampServiceWorkerRelease} from '../alpha-publish/scripts/service-worker-release.mjs'
 const candidate=process.env.KHIZANA_FIXES_CANDIDATE??'batch32'
 assert(/^batch\d+$/u.test(candidate),'invalid_candidate_name')
-const root=resolve(import.meta.dirname,'..'),base=resolve(root,'.artifacts/batch31'),work=resolve(root,'.artifacts',candidate),out=resolve(work,'deploy/pages-dist')
+const baselineName=process.env.KHIZANA_FIXES_BASELINE??'batch31'
+assert(/^batch\d+$/u.test(baselineName)&&baselineName!==candidate,'invalid_baseline_name')
+const root=resolve(import.meta.dirname,'..'),base=resolve(root,'.artifacts',baselineName),work=resolve(root,'.artifacts',candidate),out=resolve(work,'deploy/pages-dist')
 const read=async p=>JSON.parse(await readFile(p,'utf8')),sha=b=>createHash('sha256').update(b).digest('hex')
 const current=await read(resolve(root,'alpha-publish/ops/current-production.json'))
-assert.equal(current.deploymentId,'36a4eb26-f57a-48ce-9322-8b6785c2311e','production_changed_reconcile_first')
 const baseline=await read(resolve(base,'stage.json'))
-assert.equal(baseline.baselineDeploymentId,current.deploymentId)
+if(process.env.KHIZANA_FIXES_BASELINE){
+ const receipt=await read(resolve(base,'deployment.json'))
+ assert(receipt.published===true&&receipt.productionReady===true,'baseline_not_published')
+ assert.equal(receipt.deploymentId,current.deploymentId,'production_changed_reconcile_first')
+ assert.equal(receipt.deployFingerprint,baseline.deployFingerprint,'baseline_receipt_mismatch')
+ assert.equal(receipt.functionsFingerprint,baseline.functionsFingerprint,'baseline_functions_receipt_mismatch')
+}else{
+ assert.equal(current.deploymentId,'36a4eb26-f57a-48ce-9322-8b6785c2311e','production_changed_reconcile_first')
+ assert.equal(baseline.baselineDeploymentId,current.deploymentId)
+}
 assert.equal((await inventory(resolve(base,'deploy/pages-dist'))).fingerprint,baseline.deployFingerprint)
 assert.equal((await inventory(resolve(base,'deploy/functions'))).fingerprint,baseline.functionsFingerprint)
 try{await stat(work);throw Error('candidate_exists')}catch(error){if(error.code!=='ENOENT')throw error}
@@ -49,7 +59,7 @@ await writeFile(resolve(out,'sw.js'),stampServiceWorkerRelease(await readFile(re
 await cp(resolve(base,'deploy/functions'),resolve(work,'deploy/functions'),{recursive:true})
 await cp(resolve(base,'deploy/wrangler.toml'),resolve(work,'deploy/wrangler.toml'))
 for(const path of overlay.functions){assert(path.startsWith('alpha-publish/functions/'));const target=resolve(work,'deploy/functions',path.slice('alpha-publish/functions/'.length));await mkdir(resolve(target,'..'),{recursive:true});await writeFile(target,reviewedBytes.get(path))}
-for(const path of overlay.public){assert(path.startsWith('app/public/'));const target=resolve(out,path.slice('app/public/'.length));await mkdir(resolve(target,'..'),{recursive:true});await writeFile(target,reviewedBytes.get(path))}
+for(const path of overlay.public){assert(path.startsWith('app/public/'));const target=resolve(out,path.slice('app/public/'.length));await mkdir(resolve(target,'..'),{recursive:true});await writeFile(target,path==='app/public/sw.js'?stampServiceWorkerRelease(reviewedBytes.get(path).toString('utf8'),html):reviewedBytes.get(path))}
 for(const path of overlay.migrations){assert(path.startsWith('alpha-publish/migrations/'));const target=resolve(work,'deploy/migrations',path.slice('alpha-publish/migrations/'.length));await mkdir(resolve(target,'..'),{recursive:true});await writeFile(target,reviewedBytes.get(path))}
 await mkdir(resolve(work,'app/public/data'),{recursive:true});await cp(resolve(base,'app/public/data/heading-release.json'),resolve(work,'app/public/data/heading-release.json'))
 for(const [path,bytes] of reviewedBytes)assert.equal(sha(await readFile(resolve(root,path))),sha(bytes),'source_changed_during_build:'+path)
