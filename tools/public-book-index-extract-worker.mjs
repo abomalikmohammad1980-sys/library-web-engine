@@ -12,7 +12,10 @@ try{
  let rows,headings=[],coverageMode='text-and-headings'
  if(mime==='text/plain')rows=textParagraphs(decodeUtf8Text(bytes)).map((text,paragraphIndex)=>({text,paragraphIndex,volumeIndex:0}))
  else if(mime==='application/vnd.openxmlformats-officedocument.wordprocessingml.document'){
-  if(bytes.length>1024*1024)throw Error('word_source_bound')
+  // Use the same source ceiling as the bounded executor, not a 1 MiB
+  // compressed-file limit that rejects ordinary books with embedded images.
+  // safeWordUpload still enforces inflated XML, archive and expansion limits.
+  if(bytes.length>20*1024*1024)throw Error('word_source_bound')
   if(!map)throw Error('word_map_required')
   if(!await safeWordUpload(new File([bytes],'source.docx')))throw Error('unsafe_word_archive')
   const paragraphs=extractFromDocx(bytes).paragraphs

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import {DatabaseSync} from 'node:sqlite'
 import {readFileSync,readdirSync} from 'node:fs'
 import {createActionsExtractor} from './worker.js'
-function fixture(fetcher){
+function fixture(fetcher,workflow){
  const sql=new DatabaseSync(':memory:');sql.exec('PRAGMA foreign_keys=ON')
  const dir=new URL('../../migrations/',import.meta.url)
  for(const name of readdirSync(dir).filter(n=>n.endsWith('.sql')).sort())sql.exec(readFileSync(new URL(name,dir),'utf8'))
@@ -11,10 +11,21 @@ function fixture(fetcher){
  const db={prepare(query){let args=[];return{bind(...a){args=a;return this},async first(){return sql.prepare(query).get(...args)??null},async run(){return sql.prepare(query).run(...args)}}}}
  const env={VISITORS_DB:db,BOOK_INDEX_ACTIONS_ENABLED:'true',GITHUB_ACTIONS_TOKEN:'github_pat_'+'x'.repeat(30)}
  let time=100
- const handler=createActionsExtractor({fetcher,now:()=>time,nonce:()=> 'fixture_nonce_00001'})
+ const handler=createActionsExtractor({fetcher,now:()=>time,nonce:()=> 'fixture_nonce_00001',...(workflow?{workflow}:{})})
  const call=(payload={bookId:'book',contentVersion:1,action:'upsert'},settings=env,url='https://extractor.internal/internal/public-book-extract')=>handler(new Request(url,{method:'POST',body:JSON.stringify(payload)}),settings)
  return{sql,env,call,time(value){time=value}}
 }
+test('production release entrypoint dispatches only the separate fixed production workflow',async()=>{
+ let dispatched
+ const f=fixture(async(url,init)=>{dispatched={url,body:JSON.parse(init.body)};return Response.json({workflow_run_id:456})},'public-book-ingestion-production.yml')
+ try{
+  assert.equal((await f.call()).status,202)
+  assert.equal(dispatched.url,'https://api.github.com/repos/abomalikmohammad1980-sys/library-web-engine/actions/workflows/public-book-ingestion-production.yml/dispatches')
+  assert.equal(dispatched.body.ref,'main')
+  assert.equal((await f.call({bookId:'book',contentVersion:1,action:'upsert',workflow:'evil.yml'})).status,400)
+ }finally{f.sql.close()}
+})
+
 test('disabled/broad-token/invalid/stale/private requests never reach GitHub',async()=>{
  let calls=0;const f=fixture(async()=>{calls++;throw Error('must not call')});try{
   assert.equal((await f.call(undefined,{...f.env,BOOK_INDEX_ACTIONS_ENABLED:'false'})).status,503)

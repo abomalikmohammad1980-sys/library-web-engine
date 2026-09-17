@@ -18,7 +18,8 @@ async function eligible(db,event){
  JOIN public_book_index_eligible e ON e.id=j.book_id AND e.generation=j.generation
  WHERE s.book_id=?1 AND s.content_version=?2 AND s.visibility='public'`).bind(event.bookId,event.contentVersion).first()
 }
-export function createActionsExtractor({fetcher=fetch,now=()=>Math.floor(Date.now()/1000),nonce=()=>crypto.randomUUID()}={}){
+export function createActionsExtractor({fetcher=fetch,now=()=>Math.floor(Date.now()/1000),nonce=()=>crypto.randomUUID(),workflow=WORKFLOW}={}){
+ if(![WORKFLOW,'public-book-ingestion-production.yml'].includes(workflow))throw Error('dispatch_workflow_forbidden')
  return async(request,env)=>{
   const url=new URL(request.url)
   if(request.method!=='POST'||url.hostname!=='extractor.internal'||url.pathname!=='/internal/public-book-extract')return json({error:'not_found'},404)
@@ -66,7 +67,7 @@ export function createActionsExtractor({fetcher=fetch,now=()=>Math.floor(Date.no
    if(!await eligible(db,event))return json({error:'stale_event'},409)
    let response,runId=null,accepted=false,failureCode='dispatch_unavailable'
    try{
-    response=await fetcher(API+'/actions/workflows/'+WORKFLOW+'/dispatches',{method:'POST',headers,redirect:'manual',signal:AbortSignal.timeout(10000),body:JSON.stringify({ref:'main',inputs:{book_id:event.bookId,content_version:String(event.contentVersion)}})})
+    response=await fetcher(API+'/actions/workflows/'+workflow+'/dispatches',{method:'POST',headers,redirect:'manual',signal:AbortSignal.timeout(10000),body:JSON.stringify({ref:'main',inputs:{book_id:event.bookId,content_version:String(event.contentVersion)}})})
     failureCode='dispatch_http_'+response.status
     if(response.status===200){failureCode='dispatch_response_invalid';const result=await boundedJson(response,16384);if(Number.isSafeInteger(result.workflow_run_id)&&result.workflow_run_id>0){runId=result.workflow_run_id;accepted=true}}
     else if(response.status===204){await response.body?.cancel();accepted=true}

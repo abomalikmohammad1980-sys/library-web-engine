@@ -1,0 +1,20 @@
+{
+  "$schema": "../../../../alpha-publish/node_modules/wrangler/config-schema.json",
+  "name": "khizana-book-index-jobs-production",
+  "main": "worker.js",
+  "compatibility_date": "2026-09-17",
+  "workers_dev": false,
+  "preview_urls": false,
+  "vars": { "BOOK_INDEX_QUEUE_ENABLED": "false", "INDEXNOW_ENABLED": "false", "INDEXNOW_SUBMISSION_APPROVED": "false" },
+  "triggers": { "crons": ["* * * * *", "0 */6 * * *"] },
+  "d1_databases": [{ "binding": "VISITORS_DB", "database_name": "khezana-visitors", "database_id": "aeb2bf7d-bfc5-4ec1-9ef5-a81371efe800" }],
+  "queues": {
+    "producers": [
+      { "binding": "BOOK_INDEX_JOBS", "queue": "book-index-jobs" },
+      { "binding": "BOOK_INDEX_DLQ", "queue": "book-index-jobs-dlq" }
+    ],
+    "consumers": [{ "queue": "book-index-jobs", "max_batch_size": 5, "max_batch_timeout": 5, "max_retries": 4, "dead_letter_queue": "book-index-jobs-dlq", "max_concurrency": 1 }]
+  },
+  "services": [{ "binding": "EXTRACTOR", "service": "khizana-book-index-actions-production" }],
+  "observability": { "enabled": true }
+}
