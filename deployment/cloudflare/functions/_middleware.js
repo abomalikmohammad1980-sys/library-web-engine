@@ -104,7 +104,7 @@ export async function onRequest(context){
     }
    }
    if(record.toc){
-    const rows=await readSeoToc(env.ASSETS,url,record.toc,env.LIBRARY_R2),rawPage=url.searchParams.get('tocPage')??'1'
+    const rows=await readSeoToc(env.ASSETS,url,record.toc,env.PUBLIC_LIBRARY_R2??env.LIBRARY_R2),rawPage=url.searchParams.get('tocPage')??'1'
     const tocPage=/^[1-9]\d{0,5}$/.test(rawPage)?Number(rawPage):1,start=(tocPage-1)*200
     body+=`<section aria-label="فهرس محتويات الكتاب"><h2>فهرس المحتويات</h2><ol start="${start+1}">${rows.slice(start,start+200).map(row=>`<li>${row.pageIndex===null?escape(row.title):`<a href="/books/${record.id}?pageIndex=${row.pageIndex}">${escape(row.title)}</a>`}</li>`).join('')}</ol>`
     if(start>0)body+=`<a href="/books/${record.id}?tocPage=${tocPage-1}">السابق من الفهرس</a>`

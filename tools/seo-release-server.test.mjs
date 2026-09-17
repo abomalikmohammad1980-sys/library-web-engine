@@ -16,14 +16,15 @@ test('release-bound real HTML: complete pagination, related links, privacy veto 
  env.VISITORS_DB={prepare(){return{bind(...ids){return{first:async()=>{const state=await(await env.STATE.fetch('https://state.test')).json();if(ids.includes('1')&&(state.hidden||state.title))return{visibility:state.hidden?'private':'public',title:state.title,category:'قسم',updated_at:state.title};return null},all:async()=>({results:[{book_id:'shamela-2'}]})}}}}};
  return onRequest({request,env,next:()=>new Response('passthrough')})}}`,resolveDir:resolve(import.meta.dirname,'..')},bundle:true,write:false,format:'esm',platform:'browser',target:'es2022'})
  const reads=[];let state={hidden:false,title:null},primaryReads=0
- const mf=new Miniflare({modules:true,script:compiled.outputFiles[0].text,compatibilityDate:'2026-05-22',bindings:{SEO_DATA_RELEASE_SHA256:sha,SEO_HTML_CACHE_VERSION:'a'.repeat(40)},r2Buckets:['LIBRARY_R2'],serviceBindings:{STATE:async()=>{primaryReads++;return Response.json(state)},ASSETS:async request=>{
+ const mf=new Miniflare({modules:true,script:compiled.outputFiles[0].text,compatibilityDate:'2026-05-22',bindings:{SEO_DATA_RELEASE_SHA256:sha,SEO_HTML_CACHE_VERSION:'a'.repeat(40)},r2Buckets:['LIBRARY_R2','PUBLIC_LIBRARY_R2'],serviceBindings:{STATE:async()=>{primaryReads++;return Response.json(state)},ASSETS:async request=>{
   const path=new URL(request.url).pathname;reads.push(path)
   if(path==='/data/seo/release.json')return new Response(descriptor)
   if(path==='/index.html')return new Response('<html><head><title>x</title></head><body><div id="app"></div></body></html>',{headers:{'content-type':'text/html'}})
   return new Response('missing',{status:404})
  }}})
  try{
-  const bucket=await mf.getR2Bucket('LIBRARY_R2')
+  // Private upload storage deliberately contains no catalog data.
+  const bucket=await mf.getR2Bucket('PUBLIC_LIBRARY_R2')
   for(const [key,bytes] of identities.objects)await bucket.put(key,bytes)
   for(const [name,bytes] of listings.files)await bucket.put(`seo/listings/${listings.report.releaseId}/${name}`,bytes)
   for(const path of ['/browse','/new-books','/authors/000020','/categories/'+encodeURIComponent('قسم')]){

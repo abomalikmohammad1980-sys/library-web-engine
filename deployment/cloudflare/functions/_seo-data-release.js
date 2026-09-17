@@ -7,7 +7,8 @@ const hex = bytes => [...new Uint8Array(bytes)].map(b => b.toString(16).padStart
  * an older catalog. Omitted pin keeps the currently deployed legacy path. */
 export async function loadSeoDataRelease(env, origin, {cache=globalThis.caches?.default}={}) {
   if (!env.SEO_DATA_RELEASE_SHA256) return null
-  if (!/^[a-f0-9]{64}$/.test(env.SEO_DATA_RELEASE_SHA256) || !env.LIBRARY_R2) throw Error('seo_release_binding')
+  const publicBucket = env.PUBLIC_LIBRARY_R2 ?? env.LIBRARY_R2
+  if (!/^[a-f0-9]{64}$/.test(env.SEO_DATA_RELEASE_SHA256) || !publicBucket) throw Error('seo_release_binding')
   const response = await env.ASSETS.fetch(new URL('/data/seo/release.json', origin))
   if (!response.ok) throw Error('seo_release_missing')
   const bytes = await boundedBytes(response.body, 200000)
@@ -20,9 +21,9 @@ export async function loadSeoDataRelease(env, origin, {cache=globalThis.caches?.
   const immutable=(key,load)=>cachedSeoImmutable({cache,release:env.SEO_DATA_RELEASE_SHA256,key,load,origin:new URL(origin).origin})
   return {
     descriptor,
-    identity: (kind, id) => immutable(`identity:${kind}:${id}`,()=>readSeoIdentity(env.LIBRARY_R2, descriptor.identities, kind, id)),
+    identity: (kind, id) => immutable(`identity:${kind}:${id}`,()=>readSeoIdentity(publicBucket, descriptor.identities, kind, id)),
     async listing(list, page) {
-      const result = await readSeoListing(null, origin, list, page, {bucket:env.LIBRARY_R2,releaseId:descriptor.listings.releaseId,rawMemo,immutableLoad:(name,load)=>immutable(`listing:${name}`,load)})
+      const result = await readSeoListing(null, origin, list, page, {bucket:publicBucket,releaseId:descriptor.listings.releaseId,rawMemo,immutableLoad:(name,load)=>immutable(`listing:${name}`,load)})
       if (!result) return null
       const db = typeof env.VISITORS_DB?.withSession === 'function' ? env.VISITORS_DB.withSession('first-primary') : env.VISITORS_DB
       return {...result, rows:await visibleSeoListingRows(db, result.rows,{list})}
