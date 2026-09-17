@@ -1,6 +1,6 @@
 {
   "source": ["app/src/page_meta_model.ts", "app/src/path_location.ts", "app/src/http_route_policy.ts", "app/src/shamela_biography.ts"],
-  "functions": ["alpha-publish/functions/_middleware.js", "alpha-publish/functions/_seo-public-toc.js", "alpha-publish/functions/_seo-live-record.js"],
+  "functions": ["alpha-publish/functions/_middleware.js", "alpha-publish/functions/_seo-public-toc.js", "alpha-publish/functions/_seo-live-record.js", "alpha-publish/functions/api/_public-book-index-read.js", "alpha-publish/functions/api/_public-book-index-jobs.js"],
   "public": ["app/public/data/shamela-biographies.manifest.json"],
   "migrations": [],
   "reviewMetadata": {"scope":"SEO A2/A3/A4/A6 plus previously verified biography pin; A1/A5 and indexing not active", "baseline":"published batch34", "productionAuthorized":false}
