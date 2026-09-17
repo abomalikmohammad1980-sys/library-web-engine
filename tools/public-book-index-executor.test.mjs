@@ -42,6 +42,12 @@ test('real DOCX parser + integrity-bound Word map produces headings and source p
  try{const paragraphs=extractFromDocx(bytes).paragraphs.map(p=>({paragraphIndex:p.index,text:p.text,physicalPage:1}));const mapBytes=Buffer.from(JSON.stringify({totalPages:1,paragraphCount:paragraphs.length,paragraphs}));f.objects.set('private/map',mapBytes);const manifest={contract:'khizana-word-bundle/1',sourceSha256:hash(bytes),mapSha256:hash(mapBytes),totalPages:1};f.sql.prepare('INSERT INTO user_book_word_bundles VALUES(?,?,?,?,?)').run('a',JSON.stringify(manifest),'private/map',mapBytes.length,hash(mapBytes));const result=await f.run();assert.equal(result.ready,true,result.error);const out=JSON.parse(f.objects.get(result.artifactKey));assert.deepEqual(out.headings.map(h=>h.value),['عنوان أصيل']);assert.equal(out.rows[0].pageIndex,0)}finally{f.sql.close()}
 })
 test('actual worker enforces time bound',async()=>{await assert.rejects(extractPublicBookBounded({mime:'text/plain',bytes:new Uint8Array([65])},{timeoutMs:1}),/extraction_timeout/)})
+test('Word map rejects duplicate paragraph indices instead of silently reusing the first mapping',async()=>{
+ const bytes=zipSync({'[Content_Types].xml':strToU8('<Types/>'),'word/document.xml':strToU8('<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body><w:p><w:r><w:t>نص موثق</w:t></w:r></w:p></w:body></w:document>')})
+ const paragraph=extractFromDocx(bytes).paragraphs[0]
+ const entry={paragraphIndex:paragraph.index,text:paragraph.text,physicalPage:1}
+ await assert.rejects(extractPublicBookBounded({mime:'application/vnd.openxmlformats-officedocument.wordprocessingml.document',bytes,map:{totalPages:2,paragraphCount:2,paragraphs:[entry,{...entry,physicalPage:2}]}}),/invalid_word_map/)
+})
 test('actual PDF.js extracts only valid bookmarks and exact page destinations, never body',async()=>{
  const appRequire=createRequire(new URL('../app/package.json',import.meta.url)),{PDFDocument,PDFName,PDFString}=appRequire('pdf-lib')
  const pdf=await PDFDocument.create(),page=pdf.addPage();page.drawText('BODY_SECRET_NOT_INDEXED')

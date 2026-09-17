@@ -20,9 +20,16 @@ try{
   // Skipping tables/fields would falsely declare complete body coverage.
   if(paragraphs.some(p=>p.excluded&&p.excluded!=='empty'))throw Error('word_structure_unsupported')
   if(!Array.isArray(map.paragraphs)||!Number.isSafeInteger(map.totalPages)||map.totalPages<1||map.paragraphs.length!==map.paragraphCount)throw Error('invalid_word_map')
+  // Index once: long Word books must not scan the entire map per paragraph.
+  // Duplicate IDs are ambiguous anchors, even when their text happens to match.
+  const paragraphMap=new Map()
+  for(const entry of map.paragraphs){
+   if(!entry||!Number.isSafeInteger(entry.paragraphIndex)||entry.paragraphIndex<0||paragraphMap.has(entry.paragraphIndex))throw Error('invalid_word_map')
+   paragraphMap.set(entry.paragraphIndex,entry)
+  }
   const seen=new Set()
   rows=paragraphs.filter(p=>p.text?.trim()).map(p=>{
-   const mapped=map.paragraphs.find(m=>m.paragraphIndex===p.index)
+   const mapped=paragraphMap.get(p.index)
    if(!mapped||mapped.text!==p.text||!Number.isSafeInteger(mapped.physicalPage)||mapped.physicalPage<1||mapped.physicalPage>map.totalPages)throw Error('word_map_source_mismatch')
    seen.add(mapped.paragraphIndex)
    return {text:p.text,paragraphIndex:p.index,pageIndex:mapped.physicalPage-1,volumeIndex:0}

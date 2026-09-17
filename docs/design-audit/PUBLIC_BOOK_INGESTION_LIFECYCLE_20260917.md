@@ -278,3 +278,28 @@ installs only the isolated pinned jsdom manifest separately.
 Never commit `.artifacts/ingestion-acceptance` fixture/secrets/session files,
 node_modules, build dist, or the nested alpha-publish repository. No secret value
 is present in the listed source files.
+
+## Post-commit Word map and clean-runtime proof
+
+After backend commit `5b0876aac29c32634244d1dc067f6816d4ae25d5`, Word map
+lookup changed from a full array scan for every paragraph to one validated Map.
+Duplicate, negative or noninteger paragraph IDs are rejected. The duplicate-ID
+test was first observed failing (the old code silently accepted two page mappings
+for one paragraph), then passed with the fix. All 16 extractor tests passed;
+input/expansion/memory/time caps were not relaxed.
+
+A separate workflow_dispatch-only `runtime-validation` job now installs frozen
+dependencies on clean Ubuntu, explicitly builds the Word model, restores the two
+tracked server helpers, and runs generated text/Markdown/DOCX/PDF smoke fixtures.
+It receives no runner secret and invokes no Cloudflare endpoint. Scheduled
+ingestion remains behind both existing false gates. The new test source is
+`tools/public-book-index-runtime-smoke.test.mjs` (add to the next reviewed commit).
+Four smoke tests passed locally; actual clean GitHub/Linux execution remains to
+be dispatched and verified, and is not claimed by a local run.
+
+Static dependency audit found no additional ignored compiled dependency: the
+only compiled import is the explicitly built `packages/ooxml-model/dist/index.js`.
+Text/BOK/Markdown modules are tracked TypeScript loaded by Node24; their runtime
+packages are declared in app/package.json. jsdom resolves from the isolated
+manifest installed by npm ci. The ignored local .artifacts fallback is only for
+local acceptance and is absent/unnecessary on the workflow's clean checkout.
