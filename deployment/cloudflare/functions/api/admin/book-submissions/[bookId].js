@@ -17,12 +17,13 @@ export async function onRequestPatch(context){
   const title=metadata?metadata.title.trim():book.title,author=metadata?metadata.author.trim():book.author,category=metadata?(metadata.category.trim()||null):book.category
   if(book.review_status===status&&book.visibility===visibility&&(book.review_note??null)===note&&book.title===title&&book.author===author&&(book.category??null)===(category??null))return json({id:bookId,reviewStatus:status,visibility,reviewVersion:currentVersion,unchanged:true})
   const nextVersion=currentVersion+1
-  const update=context.env.VISITORS_DB.prepare('UPDATE user_books SET review_status=?1,visibility=?2,review_note=?3,reviewed_by=?4,review_version=?5,title=?8,author=?9,category=?10,updated_at=CURRENT_TIMESTAMP WHERE id=?6 AND review_version=?7 AND deleted_at IS NULL').bind(status,visibility,note,account.subject,nextVersion,bookId,currentVersion,title,author,category??null)
+  const update=context.env.VISITORS_DB.prepare('UPDATE user_books SET review_status=?1,visibility=?2,review_note=?3,reviewed_by=?4,review_version=?5,title=?8,author=?9,category=?10,updated_at=CURRENT_TIMESTAMP WHERE id=?6 AND review_version=?7 AND deleted_at IS NULL RETURNING id').bind(status,visibility,note,account.subject,nextVersion,bookId,currentVersion,title,author,category??null)
   const audit=context.env.VISITORS_DB.prepare('INSERT OR IGNORE INTO book_review_events(book_id,reviewer_subject,decision,note,review_version) SELECT ?1,?2,?3,?4,?5 FROM user_books WHERE id=?1 AND review_version=?5 AND reviewed_by=?2 AND review_status=?6 AND visibility=?7').bind(bookId,account.subject,decision,note,nextVersion,status,visibility)
   const statements=[update]
   if(metadata&&book.author!==author)statements.push(context.env.VISITORS_DB.prepare("UPDATE user_book_metadata SET central_author_id=NULL,metadata_json=json_remove(metadata_json,'$.authorId','$.centralAuthorId','$.authors','$.deathYearHijri','$.contemporary') WHERE book_id=?1 AND changes()=1").bind(bookId))
   statements.push(audit)
-  const [updated]=await context.env.VISITORS_DB.batch(statements);if(Number(updated?.meta?.changes??0)!==1)return json({error:'review_conflict'},409)
-  return json({id:bookId,reviewStatus:status,visibility,reviewVersion:nextVersion})
+  const [updated]=await context.env.VISITORS_DB.batch(statements);if(updated?.results?.[0]?.id!==bookId)return json({error:'review_conflict'},409)
+  return afterPublicBookMutation(context,json({id:bookId,reviewStatus:status,visibility,reviewVersion:nextVersion}))
 }
 export const onRequest=()=>json({error:'method_not_allowed'},405,{allow:'PATCH'})
+import {afterPublicBookMutation} from '../../_public-book-index-wake.js'

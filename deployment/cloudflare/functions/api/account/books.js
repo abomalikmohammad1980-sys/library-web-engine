@@ -107,10 +107,11 @@ export async function createBookSubmission(context,{publishNew=false}={}){
   }
   catch(error){if(!await cleanupAttempt(context.env,account.subject,totalBytes,uploaded))return json({error:'account_book_cleanup_pending'},503);throw error}
   if(Number(inserted?.meta?.changes)===0){if(!await cleanupAttempt(context.env,account.subject,totalBytes,uploaded))return json({error:'account_book_cleanup_pending'},503);const winner=await existingSource(context.env,account.subject,id,publishNew);return winner?.id===id?((publishNew||extras.wordBundle)&&(extras.metadata||extras.assets.length)?json({error:'existing_book_metadata_conflict'},409):existingResponse(winner)):json({error:'account_book_retry_required'},503)}
-  return json(publishNew?{id,visibility:'public',reviewStatus:'approved',reviewVersion:1}:{id,visibility:'private',reviewStatus:'pending'},201)
+  return afterPublicBookMutation(context,json(publishNew?{id,visibility:'public',reviewStatus:'approved',reviewVersion:1}:{id,visibility:'private',reviewStatus:'pending'},201))
 }
 export const onRequest=()=>json({error:'method_not_allowed'},405,{allow:'GET, POST'})
 function assetStatement(db,id,a,key,manifest){
  if(a.kind==='word-map')return db.prepare('INSERT INTO user_book_word_bundles(book_id,manifest_json,object_key,byte_length,sha256) SELECT ?1,?2,?3,?4,?5 WHERE EXISTS(SELECT 1 FROM user_books WHERE id=?1 AND object_key=?6)').bind(id,JSON.stringify(manifest),a.key,a.file.size,a.sha,key)
  return db.prepare('INSERT INTO user_book_assets(asset_id,book_id,kind,part_number,object_key,file_name,mime_type,byte_length,sha256) SELECT ?1,?2,?3,?4,?5,?6,?7,?8,?9 WHERE EXISTS(SELECT 1 FROM user_books WHERE id=?2 AND object_key=?10)').bind(a.id,id,a.kind,a.partNumber,a.key,a.name,a.mime,a.file.size,a.sha,key)
 }
+import {afterPublicBookMutation} from '../_public-book-index-wake.js'

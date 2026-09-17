@@ -35,11 +35,14 @@ jobs:
           mkdir -p alpha-publish/functions/api
           cp deployment/cloudflare/functions/api/_public-book-index-jobs.js alpha-publish/functions/api/
           cp deployment/cloudflare/functions/api/_word-upload-safety.js alpha-publish/functions/api/
+          cp deployment/cloudflare/functions/api/_public-book-pdf-policy.js alpha-publish/functions/api/
+          cp deployment/cloudflare/functions/api/_public-book-search.js alpha-publish/functions/api/
+          cp deployment/cloudflare/functions/api/_public-book-event-outbox.js alpha-publish/functions/api/
       - name: Verify generated fixtures without secrets or Cloudflare calls
         run: node --test tools/public-book-index-runtime-smoke.test.mjs
   ingest:
     # Both gates stay false until isolated cloud AND consumer acceptance closes.
-    if: vars.PUBLIC_BOOK_INGESTION_ENABLED == 'true' && vars.PUBLIC_BOOK_INGESTION_ACCEPTED == 'true'
+    if: vars.PUBLIC_BOOK_INGESTION_ENABLED == 'true' && vars.PUBLIC_BOOK_INGESTION_ACCEPTED == 'true' && vars.BOOK_INDEX_TARGETED_ACTIONS_ENABLED != 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 12
     steps:
@@ -64,6 +67,9 @@ jobs:
           mkdir -p alpha-publish/functions/api
           cp deployment/cloudflare/functions/api/_public-book-index-jobs.js alpha-publish/functions/api/
           cp deployment/cloudflare/functions/api/_word-upload-safety.js alpha-publish/functions/api/
+          cp deployment/cloudflare/functions/api/_public-book-pdf-policy.js alpha-publish/functions/api/
+          cp deployment/cloudflare/functions/api/_public-book-search.js alpha-publish/functions/api/
+          cp deployment/cloudflare/functions/api/_public-book-event-outbox.js alpha-publish/functions/api/
       - name: Drain a bounded batch
         env:
           PUBLIC_BOOK_INGESTION_ENABLED: ${{ vars.PUBLIC_BOOK_INGESTION_ENABLED }}

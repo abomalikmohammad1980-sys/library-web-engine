@@ -16,7 +16,7 @@ function fixture(mime='text/plain',bytes=Buffer.from('عنوان\n\nنص الك�
  for(const name of readdirSync(dir).filter(x=>x.endsWith('.sql')).sort())sql.exec(readFileSync(new URL(name,dir),'utf8'))
  sql.exec("INSERT INTO accounts(subject,email) VALUES('owner','isolated@example.test')")
  sql.prepare("INSERT INTO user_books(id,owner_subject,title,author,object_key,mime_type,byte_length,visibility,review_status) VALUES('a','owner','عنوان','مؤلف','private/a',?,?,'public','approved')").run(mime,bytes.length)
- const db={prepare(query){let args=[];return{bind(...v){args=v;return this},async first(){return sql.prepare(query).get(...args)??null},async run(){return{meta:{changes:Number(sql.prepare(query).run(...args).changes)}}}}}}
+ const db={prepare(query){let args=[];return{bind(...v){args=v;return this},async first(){return sql.prepare(query).get(...args)??null},async all(){return{results:sql.prepare(query).all(...args)}},async run(){return{meta:{changes:Number(sql.prepare(query).run(...args).changes)}}}}}}
  const objects=new Map([['private/a',Buffer.from(bytes)]])
  const r2={get:async key=>{const b=objects.get(key);return b?{size:b.length,body:new Blob([b]).stream()}:null},put:async(key,b)=>{objects.set(key,Buffer.from(b))}}
  return {sql,db,r2,objects,claim:()=>claimPublicBookIndex(db,{token:'isolated_worker_token',now:100}),run:async()=>executePublicBookIndex({db,r2,job:await claimPublicBookIndex(db,{token:'isolated_worker_token',now:100}),now:()=>101})}

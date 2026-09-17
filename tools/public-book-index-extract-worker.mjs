@@ -52,28 +52,15 @@ try{
     headings=rendered.toc.map(t=>({value:t.title,pageIndex:t.page-1,bookmark:t.bookmark}))
    }finally{for(const url of rendered.assetUrls)URL.revokeObjectURL(url)}
   }finally{dom.window.close()}
+ }else if(mime==='application/epub+zip'){
+  const {extractPublicEpub}=await import('./public-book-index-epub.mjs')
+  ;({rows,headings,coverageMode}=extractPublicEpub(bytes))
  }else if(mime==='application/pdf'){
-  const require=createRequire(new URL('../app/package.json',import.meta.url))
-  const pdfjs=await import(pathToFileURL(require.resolve('pdfjs-dist/legacy/build/pdf.mjs')).href)
-  const task=pdfjs.getDocument({data:new Uint8Array(bytes),isEvalSupported:false,useSystemFonts:false,disableFontFace:true,stopAtErrors:true})
-  try{
-   const pdf=await task.promise
-   if(pdf.numPages>100000)throw Error('pdf_page_bound')
-   const stack=(await pdf.getOutline()??[]).map(item=>({item,depth:0})).reverse();let visited=0
-   while(stack.length){
-    const {item,depth}=stack.pop()
-    if(++visited>100000||depth>128)throw Error('pdf_outline_bound')
-    const destination=typeof item.dest==='string'?await pdf.getDestination(item.dest):item.dest
-    if(item.title?.trim()&&Array.isArray(destination)&&destination.length){
-     const ref=destination[0],pageIndex=typeof ref==='number'?ref:await pdf.getPageIndex(ref)
-     if(Number.isInteger(pageIndex)&&pageIndex>=0&&pageIndex<pdf.numPages)headings.push({value:item.title.trim(),pageIndex})
-    }
-    for(let i=(item.items?.length??0)-1;i>=0;i--)stack.push({item:item.items[i],depth:depth+1})
-   }
-   // Deliberately no getPage/getTextContent/OCR: only the same bookmarks and
-   // destination semantics as the application's pdfHeadingIndex.
-   rows=[];coverageMode='pdf-bookmarks-only'
-  }finally{await task.destroy()}
+  const {extractPublicPdfBookmarks}=await import('./public-book-index-pdf.mjs')
+  const result=await extractPublicPdfBookmarks(new Uint8Array(bytes))
+  if(parentPort)parentPort.postMessage({result})
+  else await new Promise((resolve,reject)=>process.send({result},error=>error?reject(error):resolve()))
+  process.exit(0)
  }else if(['application/octet-stream','application/x-bok','application/x-shamela-bok'].includes(mime)){
   const parsed=parseBok(bytes,'source.bok')
   rows=parsed.pages.map((p,pageIndex)=>({text:p.text,pageIndex,pageId:p.id,pageLabel:String(p.page),partLabel:String(p.part),volumeIndex:0}))

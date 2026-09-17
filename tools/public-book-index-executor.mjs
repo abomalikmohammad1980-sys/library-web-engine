@@ -3,6 +3,9 @@ import {Worker} from 'node:worker_threads'
 import {fork} from 'node:child_process'
 import {createHash} from 'node:crypto'
 import {checkpointPublicBookIndex,activatePublicBookIndex,failPublicBookIndex} from '../alpha-publish/functions/api/_public-book-index-jobs.js'
+import {validatePdfClassification,attestPdfClassification} from '../alpha-publish/functions/api/_public-book-pdf-policy.js'
+import {preparePublicBookSearch} from '../alpha-publish/functions/api/_public-book-search.js'
+import {attestPublicBookExtraction} from '../alpha-publish/functions/api/_public-book-event-outbox.js'
 const digest=bytes=>createHash('sha256').update(bytes).digest('hex')
 async function readBounded(r2,key,limit){
  let object
@@ -32,7 +35,7 @@ export function extractPublicBookBounded(input,{timeoutMs=30000}={}){
   if(pdf)worker.send(input,error=>{if(error)finish(Error('extraction_worker_failed'))})
  })
 }
-export async function executePublicBookIndex({db,r2,job,now=()=>Math.floor(Date.now()/1000)}){
+export async function executePublicBookIndex({db,r2,job,env={},now=()=>Math.floor(Date.now()/1000)}){
  const fence=async()=>{if(!await checkpointPublicBookIndex(db,job,now(),job.checkpoint))throw Error('publication_changed')}
  try{
   await fence()
@@ -53,9 +56,11 @@ export async function executePublicBookIndex({db,r2,job,now=()=>Math.floor(Date.
    if(map.totalPages!==manifest.totalPages)throw Error('word_map_source_mismatch')
   }
   await fence()
-  const extracted=await extractPublicBookBounded({mime:job.source.mime_type,bytes:new Uint8Array(bytes),map})
+  let extracted=await extractPublicBookBounded({mime:job.source.mime_type,bytes:new Uint8Array(bytes),map,PDF_TEXT_INDEXING:env.PDF_TEXT_INDEXING})
+  if(extracted.pdfClassification)validatePdfClassification(extracted.pdfClassification,sourceSha256)
+  const parserVersion='bounded-account-v1'
   await fence()
-  const payload=Buffer.from(JSON.stringify({contract:'public-book-index/1',bookId:job.book_id,generation:job.generation,sourceSha256,parserVersion:'bounded-account-v1',title:job.source.title,author:job.source.author,...extracted}))
+  const payload=Buffer.from(JSON.stringify({...extracted,contract:'public-book-index/1',bookId:job.book_id,generation:job.generation,sourceSha256,parserVersion,title:job.source.title,author:job.source.author}))
   if(payload.length>16*1024*1024)throw Error('extraction_output_bound')
   const manifestSha256=digest(payload),artifactKey=`public-book-index/v1/${manifestSha256}.json`
   try{await r2.put(artifactKey,payload,{httpMetadata:{contentType:'application/json'}})}catch{throw Error('storage_unavailable')}
@@ -63,14 +68,15 @@ export async function executePublicBookIndex({db,r2,job,now=()=>Math.floor(Date.
   // Detect a same-key replacement, not merely a changed metadata generation.
   if(digest(await readBounded(r2,job.source.object_key,20*1024*1024))!==sourceSha256)throw Error('source_changed')
   await fence()
+  if(extracted.pdfClassification&&!await attestPdfClassification(db,job,now(),extracted.pdfClassification,sourceSha256))throw Error('publication_changed')
   const checkpoint=Math.max(1,job.checkpoint)
   if(!await checkpointPublicBookIndex(db,job,now(),checkpoint))throw Error('publication_changed')
-  const receipt={manifestSha256,sourceSha256,artifactKey,parserVersion:'bounded-account-v1',coverageMode:extracted.coverageMode,complete:true,checkpoint}
-  if(!await activatePublicBookIndex(db,job,now(),receipt))throw Error('publication_changed')
+  const receipt={manifestSha256,sourceSha256,artifactKey,parserVersion,coverageMode:extracted.coverageMode,complete:true,checkpoint}
+  if(!await activatePublicBookIndex(db,job,now(),receipt,env))throw Error('publication_changed')
   return {ready:true,...receipt}
  }catch(error){
   const code=/^[a-z][a-z0-9_]{0,79}$/.test(error.message)?error.message:'source_parse_failed'
-  const transient=['source_unavailable','storage_unavailable','artifact_digest_mismatch','extraction_timeout','extraction_worker_failed'].includes(code)
+  const transient=['source_unavailable','storage_unavailable','artifact_digest_mismatch','extraction_timeout','extraction_worker_failed','ocr_required'].includes(code)
   await failPublicBookIndex(db,job,now(),code,{permanent:!transient})
   return {ready:false,error:code}
  }

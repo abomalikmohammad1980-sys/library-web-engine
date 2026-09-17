@@ -8,10 +8,29 @@ const hashOk = value => typeof value==='string' && /^[a-f0-9]{64}$/.test(value)
 const changed = (result,job) => result?.book_id===job.book_id
 function clock(now){if(!Number.isSafeInteger(now)||now<0)throw Error('invalid_index_clock')}
 function lease(job,now){clock(now);if(!job||typeof job.book_id!=='string'||!Number.isSafeInteger(job.generation)||job.generation<1||!tokenOk(job.lease_token))throw Error('invalid_index_lease')}
+function targetSql(job){
+ if(!job.target)return ''
+ if(job.target.bookId!==job.book_id||!Number.isSafeInteger(job.target.contentVersion)||job.target.contentVersion<1)throw Error('invalid_index_target')
+ // Only a validated positive integer is interpolated; identifiers remain fixed.
+ return `AND EXISTS(SELECT 1 FROM public_book_event_state s WHERE s.book_id=public_book_index_jobs.book_id AND s.index_generation=public_book_index_jobs.generation AND s.content_version=${job.target.contentVersion} AND s.visibility='public')`
+}
 
-export async function claimPublicBookIndex(db,{token,now,leaseSeconds=60}){
+export async function claimPublicBookIndex(db,{token,now,leaseSeconds=60,target}){
  clock(now)
  if(!tokenOk(token)||!Number.isSafeInteger(leaseSeconds)||leaseSeconds<10||leaseSeconds>300)throw Error('invalid_index_lease')
+ if(target!==undefined){
+  if(!target||typeof target.bookId!=='string'||!target.bookId||target.bookId.length>200||!Number.isSafeInteger(target.contentVersion)||target.contentVersion<1)throw Error('invalid_index_target')
+  // Queue is the retry clock. This branch never scans or claims another book,
+  // and never runs the legacy eight-attempt sweeping update below.
+  const row=await db.prepare(`UPDATE public_book_index_jobs SET state='running',lease_token=?1,lease_until=?2,attempts=attempts+1,error_code=NULL
+   WHERE book_id=?4 AND attempts<5 AND ${eligible}
+   AND (state IN ('queued','failed') OR (state='running' AND lease_until<=?3))
+   AND EXISTS(SELECT 1 FROM public_book_event_state s WHERE s.book_id=?4 AND s.content_version=?5 AND s.index_generation=public_book_index_jobs.generation AND s.visibility='public') RETURNING *`).bind(token,now+leaseSeconds,now,target.bookId,target.contentVersion).first()
+  if(!row)return null
+  const source=await db.prepare('SELECT e.* FROM public_book_index_eligible e JOIN public_book_event_state s ON s.book_id=e.id AND s.index_generation=e.generation WHERE e.id=?1 AND e.generation=?2 AND s.content_version=?3 AND s.visibility=\'public\'').bind(row.book_id,row.generation,target.contentVersion).first()
+  if(!source)return null
+  return {...row,source,target,requiredCoverage:source.mime_type==='application/pdf'?'pdf-bookmarks-only':'text-and-headings'}
+ }
  await db.prepare("UPDATE public_book_index_jobs SET state='failed',lease_token=NULL,lease_until=0,error_code='lease_retries_exhausted' WHERE state='running' AND lease_until<=?1 AND attempts>=8").bind(now).run()
  // The select and lease acquisition are one statement: concurrent workers cannot
  // claim the same revision. Failed leases retain their monotone checkpoint.
@@ -26,26 +45,29 @@ export async function claimPublicBookIndex(db,{token,now,leaseSeconds=60}){
 }
 export async function checkpointPublicBookIndex(db,job,now,next){
  lease(job,now);if(!Number.isSafeInteger(next)||next<0)throw Error('invalid_index_checkpoint')
- return changed(await db.prepare(`UPDATE public_book_index_jobs SET checkpoint=?1 WHERE book_id=?2 AND generation=?3 AND lease_token=?4 AND state='running' AND lease_until>?5 AND checkpoint<=?1 AND ${eligible} RETURNING book_id`).bind(next,job.book_id,job.generation,job.lease_token,now).first(),job)
+ return changed(await db.prepare(`UPDATE public_book_index_jobs SET checkpoint=?1 WHERE book_id=?2 AND generation=?3 AND lease_token=?4 AND state='running' AND lease_until>?5 AND checkpoint<=?1 AND ${eligible} ${targetSql(job)} RETURNING book_id`).bind(next,job.book_id,job.generation,job.lease_token,now).first(),job)
 }
 export async function failPublicBookIndex(db,job,now,code,{permanent=false}={}){
  lease(job,now);if(typeof code!=='string'||!/^[a-z][a-z0-9_]{0,79}$/.test(code))throw Error('invalid_index_error')
  // Bounded exponential retry. Parser incompatibility/corruption is explicit,
  // never a ready result with zero rows. A new source revision resets attempts.
- return changed(await db.prepare(`UPDATE public_book_index_jobs SET state=CASE WHEN ?1=1 OR attempts>=8 THEN 'failed' ELSE 'queued' END,retry_at=?2+MIN(3600,30*(1<<MIN(attempts,7))),lease_token=NULL,lease_until=0,error_code=?3 WHERE book_id=?4 AND generation=?5 AND lease_token=?6 AND state='running' AND lease_until>?2 AND ${eligible} RETURNING book_id`).bind(permanent?1:0,now,code,job.book_id,job.generation,job.lease_token).first(),job)
+ return changed(await db.prepare(`UPDATE public_book_index_jobs SET state=CASE WHEN ?1=1 OR attempts>=8 THEN 'failed' ELSE 'queued' END,retry_at=?2+MIN(3600,30*(1<<MIN(attempts,7))),lease_token=NULL,lease_until=0,error_code=?3 WHERE book_id=?4 AND generation=?5 AND lease_token=?6 AND state='running' AND lease_until>?2 AND ${eligible} ${targetSql(job)} RETURNING book_id`).bind(permanent?1:0,now,code,job.book_id,job.generation,job.lease_token).first(),job)
 }
-export async function activatePublicBookIndex(db,job,now,receipt){
+export async function activatePublicBookIndex(db,job,now,receipt,env={}){
  lease(job,now)
  if(!receipt||!hashOk(receipt.manifestSha256)||!hashOk(receipt.sourceSha256)||receipt.artifactKey!==`public-book-index/v1/${receipt.manifestSha256}.json`||!/^[-A-Za-z0-9_.]{1,100}$/.test(receipt.parserVersion??'')||receipt.complete!==true||!Number.isSafeInteger(receipt.checkpoint)||receipt.checkpoint<1||!['text-and-headings','pdf-bookmarks-only'].includes(receipt.coverageMode))throw Error('invalid_index_receipt')
  // A PDF executor must never activate extracted page-body/OCR text under this
  // contract; user requested bookmarks only. Empty verified outlines are valid.
  return changed(await db.prepare(`UPDATE public_book_index_jobs SET state='ready',manifest_sha256=?1,source_sha256=?2,artifact_key=?3,parser_version=?4,coverage_mode=?5,lease_token=NULL,lease_until=0,error_code=NULL
  WHERE book_id=?6 AND generation=?7 AND lease_token=?8 AND state='running' AND lease_until>?9 AND checkpoint=?10 AND ${eligible}
- AND ?5=(SELECT CASE WHEN mime_type='application/pdf' THEN 'pdf-bookmarks-only' ELSE 'text-and-headings' END FROM public_book_index_eligible WHERE id=?6 AND generation=?7) RETURNING book_id`)
+ AND ?5=(SELECT CASE WHEN mime_type='application/pdf' THEN 'pdf-bookmarks-only' ELSE 'text-and-headings' END FROM public_book_index_eligible WHERE id=?6 AND generation=?7)
+ ${targetSql(job)} RETURNING book_id`)
  .bind(receipt.manifestSha256,receipt.sourceSha256,receipt.artifactKey,receipt.parserVersion,receipt.coverageMode,job.book_id,job.generation,job.lease_token,now,receipt.checkpoint).first(),job)
 }
-export async function readPublicBookIndexReceipt(db,id){
+export async function readPublicBookIndexReceipt(db,id,env={}){
  // Explicit safe projection: no owner, lease, source object key, private state or
  // stale artifact can escape through future public consumers of this helper.
- return db.prepare(`SELECT j.generation,j.manifest_sha256,j.artifact_key,j.parser_version,j.coverage_mode FROM public_book_index_jobs j JOIN public_book_index_eligible e ON e.id=j.book_id AND e.generation=j.generation WHERE j.book_id=?1 AND j.state='ready'`).bind(id).first()
+ const row=await db.prepare(`SELECT j.generation,j.manifest_sha256,j.artifact_key,j.parser_version,j.coverage_mode FROM public_book_index_jobs j JOIN public_book_index_eligible e ON e.id=j.book_id AND e.generation=j.generation WHERE j.book_id=?1 AND j.state='ready'`).bind(id).first()
+ if(row?.artifact_key?.startsWith('public-book-index/v2/'))return null
+ return row
 }

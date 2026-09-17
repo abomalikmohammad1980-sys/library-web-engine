@@ -1,0 +1,11 @@
+{
+  "$schema": "../../../../alpha-publish/node_modules/wrangler/config-schema.json",
+  "name": "khizana-book-index-actions-preview",
+  "main": "worker.js",
+  "compatibility_date": "2026-09-17",
+  "workers_dev": false,
+  "preview_urls": false,
+  "vars": { "BOOK_INDEX_ACTIONS_ENABLED": "false" },
+  "d1_databases": [{ "binding": "VISITORS_DB", "database_name": "khizana-bok-acceptance-20260917", "database_id": "9133fe99-c4e1-4a1e-84f3-127735883279" }],
+  "observability": { "enabled": true }
+}

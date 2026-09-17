@@ -1,0 +1,40 @@
+{
+  "scope": "EPUB, PDF bookmarks-only classification, targeted extraction runner; no deployment",
+  "reviewedFiles": [
+    ".github/workflows/public-book-ingestion.yml",
+    "tools/public-book-index-executor.mjs",
+    "tools/public-book-index-executor.test.mjs",
+    "tools/public-book-index-extract-worker.mjs",
+    "tools/public-book-index-runner.mjs",
+    "tools/public-book-index-gateway.test.mjs",
+    "tools/public-book-index-runtime-smoke.test.mjs",
+    "tools/public-book-index-epub.mjs",
+    "tools/public-book-index-epub.test.mjs",
+    "tools/public-book-index-pdf.mjs",
+    "deployment/cloudflare/functions/api/_public-book-pdf-policy.js",
+    "deployment/cloudflare/functions/api/_public-book-index-jobs.js",
+    "deployment/cloudflare/functions/api/_public-book-index-read.js",
+    "deployment/cloudflare/functions/api/_public-book-search.js",
+    "deployment/cloudflare/functions/api/internal/public-book-index.js",
+    "deployment/cloudflare/functions/api/search/public-books.js",
+    "deployment/cloudflare/migrations/0039_public_pdf_classification.sql",
+    "docs/adr/0015-versioned-public-pdf-text-indexing.md",
+    "docs/design-audit/EPUB_OCR_EXTRACTION_AUDIT_20260917.md",
+    "docs/design-audit/EXTRACTION_CLEAN_RUNTIME_20260917.md",
+    "tools/public-book-extraction-reviewed-files.json"
+  ],
+  "requiredCompanionChangesOwnedByOtherAgents": [
+    ".github/workflows/public-book-ingestion-targeted.yml",
+    "deployment/cloudflare/functions/api/_public-book-event-outbox.js",
+    "deployment/cloudflare/migrations/0036_public_book_event_outbox.sql"
+  ],
+  "baselineRuntimeDependencies": [
+    "package.json", "pnpm-lock.yaml", "pnpm-workspace.yaml", "tsconfig.base.json",
+    "app/package.json", "app/src/text_import.ts", "app/src/bok_import.ts", "app/src/epub_import.ts", "app/src/markdown_render.ts",
+    "packages/ooxml-model/package.json", "packages/ooxml-model/tsconfig.json", "packages/ooxml-model/src/",
+    "tools/public-book-index-runtime/package.json", "tools/public-book-index-runtime/package-lock.json",
+    "deployment/cloudflare/functions/api/_word-upload-safety.js"
+  ],
+  "excluded": [".artifacts/", "node_modules/", "tools/ocr-evaluation.mjs", "tools/ocr-evaluation.test.mjs", "removed uncommitted native-PDF-v2 adapter and receipt migration"],
+  "notes": ["alpha-publish mirrors match tracked deployment files; do not force-stage ignored deployment artifacts", "No new package dependency or lockfile change is required", "Fresh Linux Actions install still needs actual post-commit execution"]
+}

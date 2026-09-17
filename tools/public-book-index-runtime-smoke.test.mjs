@@ -2,10 +2,22 @@
 import {test} from 'node:test'
 import assert from 'node:assert/strict'
 import {createRequire} from 'node:module'
+import {readFileSync} from 'node:fs'
 import {extractPublicBookBounded} from './public-book-index-executor.mjs'
 import {extractFromDocx} from '../packages/ooxml-model/dist/index.js'
 const modelRequire=createRequire(new URL('../packages/ooxml-model/package.json',import.meta.url))
 const {zipSync,strToU8}=modelRequire('fflate')
+
+test('both workflow jobs restore every statically imported server helper',()=>{
+ const source=readFileSync(new URL('./public-book-index-executor.mjs',import.meta.url),'utf8')+readFileSync(new URL('./public-book-index-extract-worker.mjs',import.meta.url),'utf8')
+ const workflow=readFileSync(new URL('../.github/workflows/public-book-ingestion.yml',import.meta.url),'utf8')
+ const targeted=readFileSync(new URL('../.github/workflows/public-book-ingestion-targeted.yml',import.meta.url),'utf8')
+ for(const match of source.matchAll(/from ['"]\.\.\/alpha-publish\/functions\/api\/([^'"]+)['"]/g)){
+  const command=`cp deployment/cloudflare/functions/api/${match[1]} alpha-publish/functions/api/`
+  assert.equal(workflow.split(command).length-1,2,`Both jobs must restore ${match[1]}`)
+  assert.equal(targeted.split(command).length-1,1,`Targeted job must restore ${match[1]}`)
+ }
+})
 test('clean runtime imports and parses UTF8 text',async()=>{
  assert.equal(process.env.PUBLIC_BOOK_INDEX_RUNNER_TOKEN,undefined)
  const out=await extractPublicBookBounded({mime:'text/plain; charset=utf-8',bytes:Buffer.from('نص أول\n\nنص ثان')})
@@ -30,4 +42,11 @@ test('clean platform PDF runtime uses only generated bookmark, not page body',as
  outlines.set(PDFName.of('First'),ref);outlines.set(PDFName.of('Last'),ref);outlines.set(PDFName.of('Count'),pdf.context.obj(1));pdf.catalog.set(PDFName.of('Outlines'),root)
  const out=await extractPublicBookBounded({mime:'application/pdf',bytes:await pdf.save()})
  assert.deepEqual(out.rows,[]);assert.deepEqual(out.headings,[{value:'Bookmark',pageIndex:0}])
+})
+
+test('clean platform PDF ignores obsolete native flag and emits bookmarks plus classification only',async()=>{
+ const appRequire=createRequire(new URL('../app/package.json',import.meta.url)),{PDFDocument}=appRequire('pdf-lib')
+ const pdf=await PDFDocument.create();pdf.addPage().drawText('NATIVE_TEXT_WITH_MORE_THAN_TWENTY_CHARACTERS')
+ const out=await extractPublicBookBounded({mime:'application/pdf',bytes:await pdf.save(),PDF_TEXT_INDEXING:'true'})
+ assert.deepEqual(out.rows,[]);assert.equal(out.pdfClassification.kind,'text');assert.equal(out.coverageMode,'pdf-bookmarks-only');assert.deepEqual(out.headings,[])
 })

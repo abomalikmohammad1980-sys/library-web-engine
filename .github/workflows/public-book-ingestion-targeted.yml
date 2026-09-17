@@ -1,0 +1,56 @@
+name: Public book targeted extraction (preview)
+on:
+  workflow_dispatch:
+    inputs:
+      book_id:
+        description: Current public upload identity
+        required: true
+        type: string
+      content_version:
+        description: Fenced publication content version
+        required: true
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: public-book-targeted-${{ github.repository }}-${{ inputs.book_id }}
+  cancel-in-progress: false
+jobs:
+  extract:
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && vars.BOOK_INDEX_TARGETED_ACTIONS_ENABLED == 'true' && vars.PUBLIC_BOOK_INGESTION_ACCEPTED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+          lfs: false
+      - uses: pnpm/action-setup@f40ffcd9367d9f12939873eb1018b921a783ffaa
+        with:
+          version: 10.12.1
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+      - name: Install reviewed dependencies
+        run: |
+          pnpm install --frozen-lockfile --ignore-scripts
+          npm ci --prefix tools/public-book-index-runtime --ignore-scripts
+      - name: Build parser and restore reviewed helper closure
+        run: |
+          pnpm --filter @engine/ooxml-model build
+          mkdir -p alpha-publish/functions/api
+          cp deployment/cloudflare/functions/api/_public-book-index-jobs.js alpha-publish/functions/api/
+          cp deployment/cloudflare/functions/api/_word-upload-safety.js alpha-publish/functions/api/
+          cp deployment/cloudflare/functions/api/_public-book-pdf-policy.js alpha-publish/functions/api/
+          cp deployment/cloudflare/functions/api/_public-book-search.js alpha-publish/functions/api/
+          cp deployment/cloudflare/functions/api/_public-book-event-outbox.js alpha-publish/functions/api/
+      - name: Extract exactly one current public book through restricted gateway
+        env:
+          PUBLIC_BOOK_INGESTION_ENABLED: 'true'
+          PUBLIC_BOOK_INGESTION_ACCEPTED: ${{ vars.PUBLIC_BOOK_INGESTION_ACCEPTED }}
+          PUBLIC_BOOK_INDEX_RUNNER_TOKEN: ${{ secrets.PUBLIC_BOOK_INDEX_RUNNER_TOKEN }}
+          PUBLIC_BOOK_INDEX_GATEWAY_ORIGIN: https://khizana-bok-acceptance-20260917.pages.dev
+          PUBLIC_BOOK_TARGET_ID: ${{ inputs.book_id }}
+          PUBLIC_BOOK_TARGET_VERSION: ${{ inputs.content_version }}
+          PUBLIC_BOOK_INDEX_MAX_JOBS: '1'
+        run: node tools/public-book-index-runner.mjs

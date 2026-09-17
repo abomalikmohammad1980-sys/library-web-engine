@@ -15,8 +15,9 @@ export function publicSearchOffsets(value){
 }
 const encoder=new TextEncoder()
 const leaseSql=`EXISTS(SELECT 1 FROM public_book_index_jobs j JOIN public_book_index_eligible e ON e.id=j.book_id AND e.generation=j.generation WHERE j.book_id=?1 AND j.generation=?2 AND j.lease_token=?3 AND j.state='running' AND j.lease_until>MAX(?4,unixepoch()))`
-export async function preparePublicBookSearch(db,job,artifact,manifestSha256,now){
+export async function preparePublicBookSearch(db,job,artifact,manifestSha256,now,env={}){
  if(!artifact||artifact.contract!=='public-book-index/1'||artifact.bookId!==job.book_id||artifact.generation!==job.generation||! /^[a-f0-9]{64}$/.test(manifestSha256)||!Array.isArray(artifact.rows)||!Array.isArray(artifact.headings)||!Number.isSafeInteger(now))throw Error('public_search_artifact_invalid')
+ if(artifact.coverageMode==='pdf-native-text')throw Error('public_search_pdf_body_forbidden')
  if(artifact.coverageMode==='pdf-bookmarks-only'&&artifact.rows.length)throw Error('public_search_pdf_body_forbidden')
  const identity=[job.book_id,job.generation,job.lease_token,now]
  const rows=[...artifact.rows.map((row,i)=>({field:'body',ordinal:i,text:row.text,anchor:row})),...artifact.headings.map((row,i)=>({field:'heading',ordinal:i,text:row.value,anchor:row})),{field:'card',ordinal:0,text:artifact.title,anchor:{}},{field:'card',ordinal:1,text:artifact.author,anchor:{}}]
