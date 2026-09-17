@@ -21,3 +21,14 @@ test('upload probes do not reuse negative-cache keys; normal verification is can
  assert.notEqual(urls[0],urls[1]);assert.equal(new URL(urls[0]).pathname,'/'+key)
  assert.equal(urls[2],'https://khzanah.com/'+key)
 })
+test('large metadata uses exact bounded ranges without accepting whole-file fallback',async()=>{
+ const size=1024**2+7,source=Buffer.alloc(size,65),ranges=[]
+ const result=await readPublicFieldObject(key,size,{prefix,fetchImpl:async(url,options)=>{
+  const match=options.headers.Range.match(/^bytes=(\d+)-(\d+)$/),start=Number(match[1]),end=Number(match[2]);ranges.push([start,end])
+  assert(end-start+1<=512*1024)
+  return new Response(source.subarray(start,end+1),{status:206,headers:{'content-range':`bytes ${start}-${end}/${size}`}})
+ }})
+ assert.deepEqual(result,source);assert.equal(ranges.length,3)
+ await assert.rejects(readPublicFieldObject(key,size,{prefix,fetchImpl:async()=>new Response('abc')}),/public_http_200/)
+ await assert.rejects(readPublicFieldObject(key,size,{prefix,fetchImpl:async()=>new Response('abc',{status:206})}),/public_verify_range/)
+})

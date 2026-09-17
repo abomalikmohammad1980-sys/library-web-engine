@@ -47,6 +47,10 @@ ownership by subtracting an observed length difference.
   `15779caae0e075ce03c584148ca50b3182addb396fc55af7526c8ea3f76479ce`.
   Preview deployed at `https://4d9cbc59.khezana.pages.dev`.
   No production activation is claimed.
+- Batch43 SEO/HTTP acceptance passed (canonical, unique titles,404,301,
+  noindex preview and11,776 core sitemap URLs). In-app browser confirmed the
+  three text scopes render and “الحاشية فقط” can be selected. This is control
+  acceptance, NOT successful full cloud search acceptance.
 - A second transport issue was proven: canonical book98 metadata returned a
   cached404 (`cf-cache-status:HIT`,age75), while a fresh query returned200 and
   the exact25,317byte SHA. Upload probes now use distinct query keys so they
@@ -54,6 +58,10 @@ ownership by subtracting an observed length difference.
 - Public transport and range/uploader regression tests:15 passed. Six client
   release/raw-source regression tests passed again. Public fresh
   verification resumes independently from upload receipts and is incomplete.
+- Large book333 metadata (3,718,053bytes) exceeded the whole-response timeout.
+  Bounded512KiB reads returned strict206 ranges and reconstructed its exact
+  SHA in30,531ms. New regression rejects wrong ranges and200 fallback. Upload
+  resumed using this transport; no integrity or completion gate was relaxed.
 
 An abandoned local row-copy prototype was stopped after about1,000 books. Its
 ignored temporary artifacts are preserved under `.artifacts/field-source-rows-*`;
