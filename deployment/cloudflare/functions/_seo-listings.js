@@ -21,11 +21,11 @@ async function loadListingBucket(assets,origin,name,bucket,releaseId){
  if(data.contract!=='seo-listings/1')throw Error('seo_listing_contract')
  return data
 }
-export async function readSeoListing(assets,origin,list,page=1,{bucket,releaseId,rawMemo}={}){
+export async function readSeoListing(assets,origin,list,page=1,{bucket,releaseId,rawMemo,immutableLoad}={}){
  const key=listingPageKey(list,page),name=`lists-${listingBucket(key)}.json`
  const memoKey=`${releaseId??origin}:${name}`
  let pending=rawMemo?.get(memoKey)
- if(!pending){pending=loadListingBucket(assets,origin,name,bucket,releaseId);rawMemo?.set(memoKey,pending)}
+ if(!pending){const load=()=>loadListingBucket(assets,origin,name,bucket,releaseId);pending=immutableLoad?immutableLoad(name,load):load();rawMemo?.set(memoKey,pending)}
  let data
  try{data=await pending}catch(error){rawMemo?.delete(memoKey);throw error}
  const record=data?.records?.[key]

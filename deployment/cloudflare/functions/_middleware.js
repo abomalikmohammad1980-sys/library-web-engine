@@ -9,7 +9,10 @@ import {boundedBytes} from './_seo-toc.js'
 import {seoPresentation,seoNavLabels} from './_seo-presentation.js'
 import {loadSeoDataRelease,seoListingPage} from './_seo-data-release.js'
 import {renderSeoListing,relatedSeoRows} from './_seo-listings.js'
+import {readMergedPublicSeoListing,publicUploadAuthorId} from './_seo-public-listings.js'
 import {serveVersionedPublicHtml} from './_seo-edge-cache.js'
+import {publicBookRemovalStatus} from './_seo-removal.js'
+import {indexNowKeyResponse} from './api/_public-book-indexnow.js'
 const escape=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))
 async function smallJson(response){
  if(!response.ok)throw Error('seo_data_unavailable')
@@ -20,13 +23,16 @@ async function smallJson(response){
 export async function onRequest(context){
  const {request,env}=context,url=new URL(request.url),path=url.pathname,preview=url.hostname!=='khzanah.com'
  if(url.hostname==='www.khzanah.com'){url.hostname='khzanah.com';url.protocol='https:';return Response.redirect(url.href,301)}
+ const keyResponse=indexNowKeyResponse(request,env)
+ if(keyResponse)return keyResponse
  if(['GET','HEAD'].includes(request.method)&&env.VISITORS_DB&&['/sitemap.xml','/sitemap-public.xml'].includes(path)){
   try{
    let response
-   if(path==='/sitemap-public.xml')response=await publicSitemap(env.VISITORS_DB,url)
+   const sitemapOptions={indexedOnly:env.PUBLIC_BOOK_INDEX_EVENTS_ENABLED==='true',cache:caches.default,...(context.waitUntil?{waitUntil:promise=>context.waitUntil(promise)}:{})}
+   if(path==='/sitemap-public.xml')response=await publicSitemap(env.VISITORS_DB,url,sitemapOptions)
    else{
     const source=await env.ASSETS.fetch(new URL('/sitemap.xml',url));if(!source.ok)throw Error('sitemap_unavailable')
-    const content=new TextDecoder().decode(await boundedBytes(source.body,1048576)),pages=await publicSitemapPages(env.VISITORS_DB)
+    const content=new TextDecoder().decode(await boundedBytes(source.body,1048576)),pages=await publicSitemapPages(env.VISITORS_DB,sitemapOptions)
     const additions=Array.from({length:pages},(_,index)=>`<sitemap><loc>https://khzanah.com/sitemap-public.xml?page=${index+1}</loc></sitemap>`).join('')
     response=new Response(content.replace('</sitemapindex>',additions+'</sitemapindex>'),{headers:{'content-type':'application/xml; charset=utf-8','cache-control':'no-store',...(preview?{'x-robots-tag':'noindex'}:{})}})
    }
@@ -57,11 +63,17 @@ export async function onRequest(context){
  const categoryPath=path==='/categories'||path.startsWith('/categories/')
  const categoryName=path.startsWith('/categories/')?decodeURIComponent(path.slice('/categories/'.length)):undefined
  try{
-  const release=match||PUBLIC_PAGE_META[path]||categoryPath?await loadSeoDataRelease(env,url):null
+  const uploadPath=/^\/books\/public\/[A-Za-z0-9_-]{1,200}$/.test(path)
+  const release=match||PUBLIC_PAGE_META[path]||categoryPath||uploadPath?await loadSeoDataRelease(env,url):null
+  if(release&&env.PUBLIC_BOOK_INDEX_EVENTS_ENABLED==='true'){
+   const immutableListing=release.listing.bind(release)
+   release.listing=(list,page)=>readMergedPublicSeoListing(env.VISITORS_DB,immutableListing,list,page)
+  }
   if(categoryPath&&!release)throw Error('seo_categories_release_required')
   if(match){const kind=match[1],id=kind==='authors'?match[2].padStart(6,'0'):String(Number(match[2]));baseRecord=release?await release.identity(kind,id):(await smallJson(await env.ASSETS.fetch(new URL(`/data/seo/${kind}-${seoShard(id)}.json`,url)))).records[id];record=await refreshPublicSeoRecord(env.VISITORS_DB,kind,id,baseRecord);if(!record)status=404;else if(path!==`/${kind}/${id}`){url.pathname=`/${kind}/${id}`;return Response.redirect(url.href,301)}}
-  else if(/^\/books\/public\/[A-Za-z0-9_-]{1,200}$/.test(path)){record=await refreshPublicSeoRecord(env.VISITORS_DB,'books',path.split('/')[3],undefined,{publicUpload:true});if(!record)status=404}
+  else if(/^\/books\/public\/[A-Za-z0-9_-]{1,200}$/.test(path)){record=await refreshPublicSeoRecord(env.VISITORS_DB,'books',path.split('/')[3],undefined,{publicUpload:true});if(!record)status=env.PUBLIC_BOOK_INDEX_EVENTS_ENABLED==='true'?await publicBookRemovalStatus(env.VISITORS_DB,path.split('/')[3]):404}
   else if(/^\/authors\//.test(path))status=404
+  if(uploadPath&&record&&env.PUBLIC_BOOK_INDEX_EVENTS_ENABLED==='true')record={...record,authorId:await publicUploadAuthorId(env.VISITORS_DB,record.id)}
   const listKey=categoryPath?(categoryName?'category:'+categoryName:'categories'):record?.name?'author:'+record.id:['/authors','/browse','/new-books'].includes(path)?path.slice(1):null
   let listing
   if(release&&listKey&&status===200){const page=seoListingPage(url);listing=page===null?null:await release.listing(listKey,page);if(!listing){status=404;record=undefined}}
@@ -77,10 +89,11 @@ export async function onRequest(context){
   }
   const renderPage=async(record,status,listing,related=[])=>{
   // Opaque local/account book identities belong to the private SPA, never public SEO.
-  const meta=status===404?{title:'الصفحة غير موجودة | الخِزانة',description:'لم يُعثر على الكتاب أو المؤلف المطلوب.',robots:'noindex, follow'}:pageMetaFor(path+url.search,record??(categoryName?{id:'',category:categoryName}:undefined))
+  const unavailable=status===404||status===410
+  const meta=unavailable?{title:status===410?'الكتاب غير متاح | الخِزانة':'الصفحة غير موجودة | الخِزانة',description:status===410?'لم يعد هذا الكتاب منشورًا للعامة.':'لم يُعثر على الكتاب أو المؤلف المطلوب.',robots:'noindex, follow'}:pageMetaFor(path+url.search,record??(categoryName?{id:'',category:categoryName}:undefined))
   const schema=[{'@context':'https://schema.org','@type':'BreadcrumbList',itemListElement:[{'@type':'ListItem',position:1,name:'الخِزانة',item:SEO_ORIGIN+'/'},...(path==='/'?[]:[{'@type':'ListItem',position:2,name:record?.title??record?.name??meta.title,item:SEO_ORIGIN+path}])]}]
   if(path==='/')schema.push({'@context':'https://schema.org','@type':'WebSite',name:'الخزانة',alternateName:'الخزانة: المكتبة الإسلامية الذكية',url:SEO_ORIGIN+'/',inLanguage:'ar'})
-  const heading=status===404?meta.title:record?.title??record?.name??categoryName??publicPageHeading(path)??meta.title
+  const heading=unavailable?(status===410?'الكتاب غير متاح':'الصفحة غير موجودة'):record?.title??record?.name??categoryName??publicPageHeading(path)??meta.title
   let body=`<main id="main-content" class="seo-page${path==='/'?' seo-page--home':''}"><h1>${escape(heading)}</h1><p>${escape(meta.description)}</p>`
   if(record?.title){
    body+=`<p>${record.authorId?`<a href="/authors/${escape(record.authorId)}">${escape(record.author)}</a>`:escape(record.author)}${record.deathYearHijri?` (ت ${record.deathYearHijri} هـ)`:''}</p><p>${release&&record.category?`<a href="/categories/${encodeURIComponent(record.category)}">${escape(record.category)}</a>`:escape(record.category)}</p><a href="/browse">تصفح الأقسام</a>`

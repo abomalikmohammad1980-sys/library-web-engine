@@ -20,6 +20,7 @@ import { REVIEWED_ACCOUNT_DEVICES_ALL_UI } from './i18n/account_devices_all.revi
 import { REVIEWED_ACCOUNT_LOGIN_ERRORS_ALL_UI } from './i18n/account_login_errors_all.reviewed'
 import { REVIEWED_ACCOUNT_ACCESS_ERRORS_ALL_UI } from './i18n/account_access_errors_all.reviewed'
 import { REVIEWED_EN_UI } from './i18n/en.reviewed'
+import { ADMIN_INDEXING_EN } from './i18n/admin_indexing.en'
 import { GENERATED_FR_UI } from './i18n/fr.generated'
 import { REVIEWED_FR_UI } from './i18n/fr.reviewed'
 import { REVIEWED_CKB_UI } from './i18n/ckb.reviewed'
@@ -279,7 +280,7 @@ export const UI_LOCALE_CATALOGS = {
  * المفاتيح العربية هي النصوص المصدرية نفسها كي يكشف الاختبار أي تغيير غير مترجم.
  */
 export const UI_TRANSLATIONS: Record<string, Record<string, string>> = {
-  en: { ...GENERATED_EN_UI, ...REVIEWED_EN_UI },
+  en: { ...GENERATED_EN_UI, ...REVIEWED_EN_UI, ...ADMIN_INDEXING_EN },
   fr: { ...GENERATED_FR_UI, ...REVIEWED_FR_UI },
   ckb: { ...UI_LOCALE_CATALOGS.ckb.reviewed },
   ku: { ...UI_LOCALE_CATALOGS.ku.reviewed },

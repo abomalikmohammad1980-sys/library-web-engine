@@ -65,7 +65,10 @@ test('release-bound real HTML: complete pagination, related links, privacy veto 
   assert.equal(preview.status,200);assert.match(preview.headers.get('x-robots-tag'),/noindex/)
   assert(reads.every(path=>['/data/seo/release.json','/index.html'].includes(path)))
   await bucket.delete(identities.descriptor.index.objectKey)
-  assert.equal((await mf.dispatchFetch('https://khzanah.com/books/1')).status,503)
+  // Warm immutable metadata remains valid during an R2 outage; a genuinely
+  // cold identity must fail closed instead of silently using another catalog.
+  assert.equal((await mf.dispatchFetch('https://khzanah.com/books/1')).status,200)
+  assert.equal((await mf.dispatchFetch('https://khzanah.com/books/251')).status,503)
   // A data release outage must not prevent private/search SPA boot.
   const privateResponse=await mf.dispatchFetch('https://khzanah.com/search?q=x')
   assert.equal(privateResponse.status,200);assert.match(await privateResponse.text(),/noindex/)

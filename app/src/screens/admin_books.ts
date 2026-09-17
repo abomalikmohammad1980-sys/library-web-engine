@@ -28,6 +28,7 @@ import {accountReportsControl} from '../admin_book_reports'
 import {editorialRecommendationsPanel} from '../editorial_recommendations_panel'
 import {createSubmissionFilterCache,type SubmissionPage} from '../submission_filter_cache'
 import {appendBokEditorLaunch} from '../bok_editor_launch'
+import {adminIndexingPanel} from '../admin_indexing_panel'
 
 export function adminBooksScreen(): HTMLElement {
   const claims = currentAccountClaims()
@@ -68,6 +69,7 @@ export function adminBooksScreen(): HTMLElement {
     })
   }
   if(claims?.role==='super-admin')root.append(adminAudiencePanel(),oversightPanel(changed))
+  if(claims?.role==='super-admin'||claims?.role==='admin')root.append(adminIndexingPanel())
   if(canEditPublished)root.append(subjectCategoryPanel())
   if (canReview) { root.append(submissions); void hydrateAdminStats(stats); void hydrateSubmissions(submissions) }
   if (canEditPublished) root.append(adminPublishedLibrary())
