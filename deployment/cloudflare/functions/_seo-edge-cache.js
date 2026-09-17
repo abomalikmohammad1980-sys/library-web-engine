@@ -28,11 +28,13 @@ export async function publicHtmlCacheKey(request,deploymentVersion,snapshot){
  const url=new URL(request.url);url.hash='';url.searchParams.sort();url.searchParams.set('__seo_v',sha)
  return new Request(url,{method:'GET'})
 }
-function externalResponse(response,request){
+function externalResponse(response,request,cacheState='bypass'){
  const headers=new Headers(response.headers)
  headers.set('cache-control',NO_STORE)
  headers.delete('cdn-cache-control');headers.delete('cloudflare-cdn-cache-control')
  headers.delete('age');headers.delete('etag');headers.delete('last-modified')
+ // Fixed diagnostic enum only: never a cache key, book revision or account ID.
+ headers.set('x-khizana-seo-cache',cacheState)
  if(new URL(request.url).hostname!=='khzanah.com')headers.set('x-robots-tag','noindex, follow')
  return new Response(request.method==='HEAD'?null:response.body,{status:response.status,statusText:response.statusText,headers})
 }
@@ -61,22 +63,22 @@ export async function serveVersionedPublicHtml({request,cache,deploymentVersion,
    if(cached){
     const current=await readPublic()
     const currentKey=await publicHtmlCacheKey(request,deploymentVersion,current)
-    if(currentKey?.url===key.url)return externalResponse(cached,request)
+    if(currentKey?.url===key.url)return externalResponse(cached,request,'hit')
     // Re-render the current state after a deletion/edit racing the cache read.
-    return externalResponse(await render(current),request)
+    return externalResponse(await render(current),request,'changed')
    }
   }
   const response=await render(snapshot)
   if(key&&request.method==='GET'&&mayStore(response,request)){
    const current=await readPublic()
    const currentKey=await publicHtmlCacheKey(request,deploymentVersion,current)
-   if(currentKey?.url!==key.url)return externalResponse(await render(current),request)
+   if(currentKey?.url!==key.url)return externalResponse(await render(current),request,'changed')
    const stored=response.clone(),headers=new Headers(stored.headers)
    headers.set('cache-control','public, max-age=86400')
    headers.delete('cdn-cache-control');headers.delete('cloudflare-cdn-cache-control')
    const put=cache.put(key,new Response(stored.body,{status:200,headers})).catch(()=>{})
    if(waitUntil)waitUntil(put);else await put
   }
-  return externalResponse(response,request)
- }catch{return externalResponse(unavailable(),request)}
+  return externalResponse(response,request,key?'miss':'bypass')
+ }catch{return externalResponse(unavailable(),request,'error')}
 }

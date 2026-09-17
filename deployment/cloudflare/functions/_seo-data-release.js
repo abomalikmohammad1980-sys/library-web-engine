@@ -13,14 +13,17 @@ export async function loadSeoDataRelease(env, origin) {
   if (hex(await crypto.subtle.digest('SHA-256', bytes)) !== env.SEO_DATA_RELEASE_SHA256) throw Error('seo_release_checksum')
   const descriptor = JSON.parse(new TextDecoder('utf-8', {fatal:true}).decode(bytes))
   if (descriptor.contract !== 'seo-data-release/1' || !/^[a-f0-9]{64}$/.test(descriptor.listings?.releaseId)) throw Error('seo_release_contract')
+  // Closure lifetime is one load/request. Only immutable raw buckets are shared;
+  // every listing invocation still opens a fresh first-primary visibility read.
+  const rawMemo = new Map()
   return {
     descriptor,
     identity: (kind, id) => readSeoIdentity(env.LIBRARY_R2, descriptor.identities, kind, id),
     async listing(list, page) {
-      const result = await readSeoListing(null, origin, list, page, {bucket:env.LIBRARY_R2,releaseId:descriptor.listings.releaseId})
+      const result = await readSeoListing(null, origin, list, page, {bucket:env.LIBRARY_R2,releaseId:descriptor.listings.releaseId,rawMemo})
       if (!result) return null
       const db = typeof env.VISITORS_DB?.withSession === 'function' ? env.VISITORS_DB.withSession('first-primary') : env.VISITORS_DB
-      return {...result, rows:await visibleSeoListingRows(db, result.rows)}
+      return {...result, rows:await visibleSeoListingRows(db, result.rows,{list})}
     },
   }
 }

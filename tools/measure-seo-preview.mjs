@@ -31,12 +31,13 @@ export async function measureSeoPreview(origin){
    const ttfbMs=performance.now()-start,html=await response.text(),totalMs=performance.now()-start
    assert.equal(response.status,200,path);assert.match(response.headers.get('x-robots-tag')??'',/noindex/)
    assert.equal((html.match(/<h1(?:\s|>)/g)??[]).length,1,path)
-   samples.push({ttfbMs,totalMs,bytes:Buffer.byteLength(html)})
+   samples.push({ttfbMs,totalMs,bytes:Buffer.byteLength(html),cacheState:response.headers.get('x-khizana-seo-cache')})
   }
   rows.push({path,first:samples[0],repeat:samples[1]})
  }
  const firstP95=percentile95(rows.map(row=>row.first.ttfbMs)),repeatP95=percentile95(rows.map(row=>row.repeat.ttfbMs))
- return{origin:base.origin,checkedAt:new Date().toISOString(),count:rows.length,firstP95,repeatP95,targetFirst800ms:firstP95<800,targetRepeat300ms:repeatP95<300,coldCacheProven:false,note:'Client-observed TTFB. First pass may already be cached at the edge; not a guaranteed cold-cache benchmark. No cache purge performed.',rows}
+ const coldCacheProven=rows.every(row=>row.first.cacheState==='miss'),warmCacheProven=rows.every(row=>row.repeat.cacheState==='hit')
+ return{origin:base.origin,checkedAt:new Date().toISOString(),count:rows.length,firstP95,repeatP95,targetFirst800ms:coldCacheProven&&firstP95<800,targetRepeat300ms:warmCacheProven&&repeatP95<300,coldCacheProven,warmCacheProven,note:'Client-observed network TTFB. Cold/warm classification requires the server Cache API branch marker on every sampled response. No cache purge performed.',rows}
 }
 if(process.argv[1]&&import.meta.url===pathToFileURL(resolve(process.argv[1])).href){
  assert(process.argv[2]&&process.argv[3],'preview_origin_and_output_required')

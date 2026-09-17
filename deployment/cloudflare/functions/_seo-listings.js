@@ -1,9 +1,9 @@
+import {plainSeoText} from '../../app/src/page_meta_model.ts'
 export const SEO_LISTING_BUCKETS=512,SEO_LISTING_MAX_BYTES=200000,SEO_LISTING_PAGE_SIZE=100
 export function listingBucket(key){let hash=2166136261;for(const char of key){hash^=char.codePointAt(0);hash=Math.imul(hash,16777619)}return String((hash>>>0)%SEO_LISTING_BUCKETS).padStart(3,'0')}
 export function listingPageKey(list,page){if(typeof list!=='string'||list.length>1000||!Number.isSafeInteger(page)||page<1||page>1000000)throw Error('seo_listing_key');return `${list}|${page}`}
 export function listingPageUrl(path,page){if(!path.startsWith('/')||path.startsWith('//')||/[?#]/.test(path)||!Number.isSafeInteger(page)||page<1)throw Error('seo_listing_url');return path+(page===1?'':`?page=${page}`)}
-export async function readSeoListing(assets,origin,list,page=1,{bucket,releaseId}={}){
- const key=listingPageKey(list,page),name=`lists-${listingBucket(key)}.json`
+async function loadListingBucket(assets,origin,name,bucket,releaseId){
  let response
  if(bucket){
   if(!/^[a-f0-9]{64}$/.test(releaseId??''))throw Error('seo_listing_release')
@@ -17,8 +17,18 @@ export async function readSeoListing(assets,origin,list,page=1,{bucket,releaseId
  const reader=response.body.getReader(),chunks=[];let size=0
  try{for(;;){const {done,value}=await reader.read();if(done)break;size+=value.byteLength;if(size>SEO_LISTING_MAX_BYTES)throw Error('seo_listing_size');chunks.push(value)}}finally{await reader.cancel().catch(()=>{})}
  const bytes=new Uint8Array(size);let offset=0;for(const chunk of chunks){bytes.set(chunk,offset);offset+=chunk.byteLength}
- const data=JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(bytes)),record=data.records?.[key]
+ const data=JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(bytes))
  if(data.contract!=='seo-listings/1')throw Error('seo_listing_contract')
+ return data
+}
+export async function readSeoListing(assets,origin,list,page=1,{bucket,releaseId,rawMemo}={}){
+ const key=listingPageKey(list,page),name=`lists-${listingBucket(key)}.json`
+ const memoKey=`${releaseId??origin}:${name}`
+ let pending=rawMemo?.get(memoKey)
+ if(!pending){pending=loadListingBucket(assets,origin,name,bucket,releaseId);rawMemo?.set(memoKey,pending)}
+ let data
+ try{data=await pending}catch(error){rawMemo?.delete(memoKey);throw error}
+ const record=data?.records?.[key]
  if(!record)return null
  if(record.page!==page||!Number.isSafeInteger(record.pages)||record.pages<page||!Number.isSafeInteger(record.total)||record.total<0||!Array.isArray(record.rows)||record.rows.length>SEO_LISTING_PAGE_SIZE)throw Error('seo_listing_record')
  for(const row of record.rows)if(typeof row.title!=='string'||typeof row.href!=='string'||!/^\/(?:books\/\d+|authors\/\d{6,12}|categories\/[^/?#]+)$/.test(row.href))throw Error('seo_listing_link')
@@ -26,18 +36,25 @@ export async function readSeoListing(assets,origin,list,page=1,{bucket,releaseId
 }
 /** Metadata visibility must be refreshed before this projection is rendered.
  * This filter uses the same conservative alias veto as public book metadata. */
-export async function visibleSeoListingRows(db,rows){
+export async function visibleSeoListingRows(db,rows,{list}={}){
  if(!db)return rows
  const ids=rows.filter(row=>row.kind==='book').map(row=>row.id)
  if(!ids.length)return rows
- const hidden=new Set()
- // Keep each D1 statement well under the parameter limit (3 aliases/book).
- for(let start=0;start<ids.length;start+=25){
-  const group=ids.slice(start,start+25),aliases=group.flatMap(id=>[id,String(410000000+Number(id)),'shamela-'+id])
-  const result=await db.prepare(`SELECT book_id FROM central_book_overrides WHERE book_id IN (${aliases.map(()=>'?').join(',')}) AND (visibility<>'public' OR logically_deleted_at IS NOT NULL)`).bind(...aliases).all()
-  for(const row of result.results??[])for(const id of group)if([id,String(410000000+Number(id)),'shamela-'+id].includes(row.book_id))hidden.add(id)
- }
- return rows.filter(row=>row.kind!=='book'||!hidden.has(row.id))
+ if(ids.length>SEO_LISTING_PAGE_SIZE||ids.some(id=>!/^\d{1,12}$/.test(id)))throw Error('seo_listing_identity')
+ const aliases=[...new Set(ids.flatMap(id=>[id,String(410000000+Number(id)),'shamela-'+id]))]
+ // One parameter and one fresh primary round trip, not four serial queries.
+ const result=await db.prepare(`SELECT book_id,title,author,category,visibility,logically_deleted_at,updated_at,revision FROM central_book_overrides WHERE book_id IN (SELECT value FROM json_each(?1)) ORDER BY CASE WHEN visibility<>'public' OR logically_deleted_at IS NOT NULL THEN 0 ELSE 1 END, revision DESC`).bind(JSON.stringify(aliases)).all()
+ const byAlias=new Map((result.results??[]).map(row=>[row.book_id,row]))
+ return rows.flatMap(row=>{
+  if(row.kind!=='book')return[row]
+  const overrides=[row.id,String(410000000+Number(row.id)),'shamela-'+row.id].map(id=>byAlias.get(id)).filter(Boolean)
+  if(overrides.some(value=>value.visibility!=='public'||value.logically_deleted_at!=null))return[]
+  const override=overrides.sort((a,b)=>(b.revision??0)-(a.revision??0))[0]
+  if(!override)return[row]
+  const category=plainSeoText(override.category??'')
+  if(list?.startsWith('category:')&&category!==list.slice(9))return[]
+  return[{...row,...(override.title?{title:plainSeoText(override.title)}:{}),...(override.author?{author:plainSeoText(override.author)}:{}),category,updatedAt:override.updated_at}]
+ })
 }
 const escape=value=>String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))
 export function renderSeoListing(record,path,visibleRows){

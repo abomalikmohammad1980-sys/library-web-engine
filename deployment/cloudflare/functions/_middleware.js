@@ -67,11 +67,13 @@ export async function onRequest(context){
   if(release&&listKey&&status===200){const page=seoListingPage(url);listing=page===null?null:await release.listing(listKey,page);if(!listing){status=404;record=undefined}}
   const loadRelated=async current=>{
    if(!release||!current?.title)return []
-   const groups=[]
-   for(const [key,label] of [[current.authorId?'author:'+current.authorId:null,'كتب أخرى للمؤلف'],[current.category?'category:'+current.category:null,'من القسم نفسه']]){
-    if(key){const group=await release.listing(key,1);groups.push({label,rows:relatedSeoRows(group?.rows??[],current.id)})}
-   }
-   return groups
+   const groups=[[current.authorId?'author:'+current.authorId:null,'كتب أخرى للمؤلف'],[current.category?'category:'+current.category:null,'من القسم نفسه']]
+   // Independent immutable lists can load concurrently; listing() still checks
+   // current visibility for every call, including the second cache fence.
+   return Promise.all(groups.filter(([key])=>key).map(async([key,label])=>{
+    const group=await release.listing(key,1)
+    return {label,rows:relatedSeoRows(group?.rows??[],current.id)}
+   }))
   }
   const renderPage=async(record,status,listing,related=[])=>{
   // Opaque local/account book identities belong to the private SPA, never public SEO.
@@ -130,14 +132,21 @@ export async function onRequest(context){
   // visibility checks. Public uploads have a separate generation pipeline.
   if(release&&match&&env.SEO_HTML_CACHE_VERSION){
    if(!/^[a-f0-9]{40,64}$/.test(env.SEO_HTML_CACHE_VERSION))throw Error('seo_cache_version')
+   // The initial route resolution already performed a fresh primary check.
+   // Consume it once rather than issuing an identical query before cache.match.
+   // Subsequent snapshots MUST recheck the record and all dependent visibility.
+   let firstSnapshot=true
    return await serveVersionedPublicHtml({request,cache:caches.default,deploymentVersion:env.SEO_HTML_CACHE_VERSION,
     loadSnapshot:async()=>{
      if(status!==200||!baseRecord)return null
-     const current=await refreshPublicSeoRecord(env.VISITORS_DB,match[1],baseRecord.id,baseRecord)
+     const initial=firstSnapshot;firstSnapshot=false
+     const current=initial?record:await refreshPublicSeoRecord(env.VISITORS_DB,match[1],baseRecord.id,baseRecord)
      if(!current)return null
-     const currentListing=listKey?await release.listing(listKey,seoListingPage(url)):undefined
+     const [currentListing,related]=await Promise.all([
+      listKey?(initial?listing:release.listing(listKey,seoListingPage(url))):undefined,
+      loadRelated(current)
+     ])
      if(listKey&&!currentListing)return null
-     const related=await loadRelated(current)
      return{public:true,versionMaterial:{release:env.SEO_DATA_RELEASE_SHA256,record:current,listing:currentListing,related},record:current,listing:currentListing,related}
     },render:snapshot=>renderPage(snapshot?.record,snapshot?200:404,snapshot?.listing,snapshot?.related),
     ...(context.waitUntil?{waitUntil:promise=>context.waitUntil(promise)}:{})})
