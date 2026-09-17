@@ -1,0 +1,735 @@
+{
+  "schemaVersion": 1,
+  "datasetVersion": "2026.08.10-complete-28-tafsir4-metadata1",
+  "generatedAt": "2026-08-10",
+  "sourceFileCount": 33,
+  "workCount": 27,
+  "readyCount": 27,
+  "works": [
+    {
+      "id": "alpha-8714fd3287040b0f",
+      "title": "إبهاج أهل الصناعة بدراسة حديث بعثت بالسيف بين يدي الساعة",
+      "author": "أبو ذر السمهري اليماني",
+      "status": "ready",
+      "security": {
+        "verdict": "allow",
+        "reasons": []
+      },
+      "sources": [
+        {
+          "format": "pdf",
+          "role": "alternate",
+          "path": "./library/published/assets/1710eb407ee9587a.pdf",
+          "fileName": "إبهاج أهل الصناعة بدراسة حديث بعثت بالسيف بين يدي الساعة - أبو ذر السمهري اليماني.pdf",
+          "bytes": 642026,
+          "sha256": "1710eb407ee9587a5d05d0c6409bf7ded33c90534ae69c19ff65bcb4cfac490c"
+        },
+        {
+          "format": "word",
+          "role": "primary",
+          "path": "./library/published/assets/7c464cf9b0b1ceb3.docx",
+          "fileName": "إبهاج أهل الصناعة بدراسة حديث بعثت بالسيف بين يدي الساعة - أبو ذر السمهري اليماني.docx",
+          "bytes": 167665,
+          "sha256": "7c464cf9b0b1ceb3560dd2c1d44c816eb5e682490abdc5d9b7dda03d71b1598f"
+        }
+      ],
+      "metadata": {
+        "category": "الحديث وعلومه",
+        "tags": [
+          { "name": "تخريج الحديث", "source": "manual" },
+          { "name": "نقد الأسانيد", "source": "manual" },
+          { "name": "بعثت بالسيف", "source": "manual" }
+        ]
+      },
+      "coverStrategy": "pdf-page-1",
+      "wordArtifact": {
+        "path": "./library/published/assets/7c464cf9b0b1ceb3.word-page-map.json",
+        "totalPages": 22,
+        "paragraphCount": 190
+      }
+    },
+    {
+      "id": "alpha-78eec595075a0585",
+      "title": "الإسلام والحكم",
+      "author": "أبو الحسن الندوي",
+      "status": "ready",
+      "security": {
+        "verdict": "allow",
+        "reasons": []
+      },
+      "sources": [
+        {
+          "format": "shamela-bok",
+          "role": "primary",
+          "path": "./library/published/assets/c5e3fd5ebc3f2a51.bok",
+          "fileName": "الإسلام والحكم - أبو الحسن الندوي.bok",
+          "bytes": 178176,
+          "sha256": "c5e3fd5ebc3f2a51aae5759cbb52e266c99d3471f8bb7ea4e49e0344920b5165"
+        }
+      ],
+      "metadata": {
+        "publisher": "المختار الإسلامي للطباعة والنشر والتوزيع، القاهرة",
+        "edition": "الأولى، 1398 هـ - 1978 م",
+        "description": "[ترقيم الكتاب موافق للمطبوع]"
+      },
+      "coverStrategy": "generated"
+    },
+    {
+      "id": "alpha-bf59830a46a39d46",
+      "title": "الإلجام",
+      "author": "أبو عبد الله محمد المنصور",
+      "status": "ready",
+      "security": {
+        "verdict": "allow",
+        "reasons": []
+      },
+      "sources": [
+        {
+          "format": "pdf",
+          "role": "primary",
+          "path": "./library/published/assets/5c3e930068234f9a.pdf",
+          "fileName": "الإلجام - أبو عبد الله محمد المنصور.pdf",
+          "bytes": 8551696,
+          "sha256": "5c3e930068234f9a1ca7a89267ae9efb745592fdc13a9567f8ae66a9f19e60e4"
+        }
+      ],
+      "metadata": {},
+      "coverStrategy": "pdf-page-1"
+    },
+    {
+      "id": "alpha-5ec549919e3efe5f",
+      "title": "الأمة الإسلامية، وحدتها ووسطيتها وآفاق المستقبل",
+      "author": "أبو الحسن الندوي",
+      "status": "ready",
+      "security": {
+        "verdict": "allow",
+        "reasons": []
+      },
+      "sources": [
+        {
+          "format": "shamela-bok",
+          "role": "primary",
+          "path": "./library/published/assets/96082605f832cff3.bok",
+          "fileName": "الأمة الإسلامية، وحدتها ووسطيتها وآفاق المستقبل - أبو الحسن الندوي.bok",
+          "bytes": 174080,
+          "sha256": "96082605f832cff33c8ceda99807a5feb22d6d33def13e83f2843d0b14c6474c"
+        }
+      ],
+      "metadata": {
+        "publisher": "دار الصحوة للنشر والتوزيع - القاهرة",
+        "edition": "الأولى 1409 هـ- 1989 م",
+        "description": "المصدر: الشاملة الذهبية\n[ملاحظات] موافق للمطبوع"
+      },
+      "coverStrategy": "generated"
+    },
+    {
+      "id": "alpha-40bb151ae8e8a5f4",
+      "title": "الجواب الكافي لمن نوى الهدنة مع العدو ظاهراً أو خافي.. أو وصفة الصياد",
+      "author": "أبو عبد الله محمد المنصور",
+      "status": "ready",
+      "security": {
+        "verdict": "allow",
+        "reasons": []
+      },
+      "sources": [
+        {
+          "format": "pdf",
+          "role": "primary",
+          "path": "./library/published/assets/e1b7c62a605c2d0d.pdf",
+          "fileName": "الجواب الكافي لمن نوى الهدنة مع العدو ظاهراً أو خافي.. أو وصفة الصياد - أبو عبد الله محمد المنصور.pdf",
+          "bytes": 1730172,
+          "sha256": "e1b7c62a605c2d0d8b981bd71b8d73633242460163956557fd68d1294762664c"
+        }
+      ],
+      "metadata": {},
+      "coverStrategy": "pdf-page-1"
+    },
+    {
+      "id": "alpha-8f4f79c5ea4ee883",
+      "title": "الحاسم.. دراسة شرعية حول مشاركة الإسلاميين في البرلمان والوزارة؛ في ظل حكومات لا تحكم بشرع الله",
+      "author": "أبو عبد الله محمد المنصور",
+      "status": "ready",
+      "security": {
+        "verdict": "allow",
+        "reasons": []
+      },
+      "sources": [
+        {
+          "format": "word",
+          "role": "primary",
+          "path": "./library/published/assets/b7fe0ed20f1105a3.docx",
+          "fileName": "الحاسم.. دراسة شرعية حول مشاركة الإسلاميين في البرلمان والوزارة؛ في ظل حكومات لا تحكم بشرع الله - أبو عبد الله محمد المنصور.docx",
+          "bytes": 650863,
+          "sha256": "b7fe0ed20f1105a32e957dc523a2de7417b1e5626fa7dbde99f129eeeef11514"
+        },
+        {
+          "format": "pdf",
+          "role": "alternate",
+          "path": "./library/published/assets/19b1314c816495a0.pdf",
+          "fileName": "الحاسم.. دراسة شرعية حول مشاركة الإسلاميين في البرلمان والوزارة؛ في ظل حكومات لا تحكم بشرع الله - أبو عبد الله محمد المنصور.pdf",
+          "bytes": 2688758,
+          "sha256": "19b1314c816495a01d8016346912a939373f349d9bd66586a1b632afee090782"
+        }
+      ],
+      "metadata": {},
+      "coverStrategy": "pdf-page-1",
+      "wordArtifact": {
+        "path": "./library/published/word-page-maps/b7fe0ed20f11.json",
+        "totalPages": 357,
+        "paragraphCount": 2789
+      }
+    },
+    {
+      "id": "alpha-042b73f48357cdb9",
+      "title": "الخلافة والملك",
+      "author": "أبو الأعلى المودوي",
+      "status": "ready",
+      "security": {
+        "verdict": "allow",
+        "reasons": []
+      },
+      "sources": [
+        {
+          "format": "pdf",
+          "role": "primary",
+          "path": "./library/published/assets/150cb6d96c708cbd.pdf",
+          "fileName": "الخلافة والملك - أبو الأعلى المودوي.pdf",
+          "bytes": 4619737,
+          "sha256": "150cb6d96c708cbd58b50c049b98ce73bfa73642e6d111340dea5f4d71b4dbe8"
+        }
+      ],
+      "metadata": {},
+      "coverStrategy": "pdf-page-1"
+    },
+    {
+      "id": "alpha-447d7d11289f8d28",
+      "title": "الدولة الإسلامية بين الحقيقة والوهم",
+      "author": "أبو عبد الله محمد المنصور",
+      "status": "ready",
+      "security": {
+        "verdict": "allow",
+        "reasons": []
+      },
+      "sources": [
+        {
+          "format": "word",
+          "role": "primary",
+          "path": "./library/published/assets/f26188c3c7831ca6.docx",
+          "fileName": "الدولة الإسلامية بين الحقيقة والوهم - أبو عبد الله محمد المنصور.docx",
+          "bytes": 370317,
+          "sha256": "f26188c3c7831ca6de5167e8b6972a35f7fcc698cfbbcf8e80643339b30e2079"
+        },
+        {
+          "format": "pdf",
+          "role": "alternate",
+          "path": "./library/published/assets/3a2b6f4b237e1679.pdf",
+          "fileName": "الدولة الإسلامية بين الحقيقة والوهم - أبو عبد الله محمد المنصور.pdf",
+          "bytes": 3954901,
+          "sha256": "3a2b6f4b237e167974fc318b60f7afb4b75a83d8239c654f205d8495ec5eff30"
+        }
+      ],
+      "metadata": {},
+      "coverStrategy": "pdf-page-1",
+      "wordArtifact": {
+        "path": "./library/published/assets/f26188c3c7831ca6.word-page-map.json",
+        "totalPages": 162,
+        "paragraphCount": 1166
+      }
+    },
+    {
+      "id": "alpha-cb7075a9dcc13863",
+      "title": "السيرة النبوية",
+      "author": "أبو الحسن الندوي",
+      "status": "ready",
+      "security": {
+        "verdict": "allow",
+        "reasons": []
+      },
+      "sources": [
+        {
+          "format": "shamela-bok",
+          "role": "primary",
+          "path": "./library/published/assets/e19846ea199bdc9d.bok",
+          "fileName": "السيرة النبوية - أبو الحسن الندوي.bok",
+          "bytes": 1460224,
+          "sha256": "e19846ea199bdc9d7f21adca319eaff8875fcbd5d3a404e92953f8438c878922"
+        }
+      ],
+      "metadata": {
+        "publisher": "دار ابن كثير - دمشق",
+        "edition": "الثانية عشرة - 1425 هـ",
+        "description": "[ترقيم الكتاب موافق للمطبوع]"
+      },
+      "coverStrategy": "generated"
+    },
+    {
+      "id": "alpha-263653dac59bd35b",
+      "title": "الشوك والقرنفل.. مذكرات",
+      "author": "يحيى السنوار",
+      "status": "ready",
+      "security": {
+        "verdict": "allow",
+        "reasons": []
+      },
+      "sources": [
+        {
+          "format": "epub",
+          "role": "primary",
+          "path": "./library/published/assets/050bb835f0743cda.epub",
+          "fileName": "الشوك والقرنفل.. مذكرات - يحيى السنوار.epub",
+          "bytes": 850554,
+          "sha256": "050bb835f0743cda57898015da6aadb512dc628e0adcbe93abb5fbc480c3792d"
+        }
+      ],
+      "metadata": {},
+      "coverStrategy": "generated"
+    },
+    {
+      "id": "alpha-c0eafe2f2823a26c",
+      "title": "الماجريات",
+      "author": "إبراهيم السكران",
+      "status": "ready",
+      "security": {
+        "verdict": "allow",
+        "reasons": []
+      },
+      "sources": [
+        {
+          "format": "epub",
+          "role": "primary",
+          "path": "./library/published/assets/6f5adf08a2cee1cc.epub",
+          "fileName": "الماجريات - إبراهيم السكران.epub",
+          "bytes": 272496,
+          "sha256": "6f5adf08a2cee1ccd2ae0a59e70c4c932407db9681fb99427444b0e22420e180"
+        }
+      ],
+      "metadata": {},
+      "coverStrategy": "generated"
+    },
+    {
+      "id": "alpha-777a5910c6c39e15",
+      "title": "تمجيس الجذور",
+      "author": "أبو عبد الله محمد المنصور",
+      "status": "ready",
+      "security": {
+        "verdict": "allow",
+        "reasons": []
+      },
+      "sources": [
+        {
+          "format": "word",
+          "role": "primary",
+          "path": "./library/published/assets/da729285c9a32db8.docx",
+          "fileName": "تمجيس الجذور - أبو عبد الله محمد المنصور.docx",
+          "bytes": 86631,
+          "sha256": "da729285c9a32db8f1971c5c608055d6ffdd37a758681ea77ce31b8dbb9e2c78"
+        },
+        {
+          "format": "pdf",
+          "role": "alternate",
+          "path": "./library/published/assets/4ff05121cf90017f.pdf",
+          "fileName": "تمجيس الجذور  - أبو عبد الله محمد المنصور.pdf",
+          "bytes": 803468,
+          "sha256": "4ff05121cf90017f41cec9d0a77d0c5f9ffc78eeadc5408e57fdae9dee7f04c3"
+        }
+      ],
+      "metadata": {},
+      "coverStrategy": "pdf-page-1",
+      "wordArtifact": {
+        "path": "./library/published/assets/da729285c9a32db8.word-page-map.json",
+        "totalPages": 48,
+        "paragraphCount": 345
+      }
+    },
+    {
+      "id": "alpha-210aea5d64050234",
+      "title": "حم لا يُنصرون.. واجبنا بعد الانسحاب الصليبي",
+      "author": "أبو عبد الله محمد المنصور",
+      "status": "ready",
+      "security": {
+        "verdict": "allow",
+        "reasons": []
+      },
+      "sources": [
+        {
+          "format": "word",
+          "role": "primary",
+          "path": "./library/published/assets/bad4959d0ff0157e.docx",
+          "fileName": "حم لا يُنصرون.. واجبنا بعد الانسحاب الصليبي - أبو عبد الله محمد المنصور.docx",
+          "bytes": 73874,
+          "sha256": "bad4959d0ff0157ebc0b655a841ae27915667356ea4c363e8352d189bb167ecd"
+        },
+        {
+          "format": "pdf",
+          "role": "alternate",
+          "path": "./library/published/assets/97278e8c8914db28.pdf",
+          "fileName": "حم لا يُنصرون.. واجبنا بعد الانسحاب الصليبي - أبو عبد الله محمد المنصور.pdf",
+          "bytes": 1755063,
+          "sha256": "97278e8c8914db281fa36d8f74f4151e58749cae41d886a39a83feb32b43049e"
+        }
+      ],
+      "metadata": {},
+      "coverStrategy": "pdf-page-1",
+      "wordArtifact": {
+        "path": "./library/published/assets/bad4959d0ff0157e.word-page-map.json",
+        "totalPages": 40,
+        "paragraphCount": 322
+      }
+    },
+    {
+      "id": "alpha-984dfc3988a18335",
+      "title": "خالعة القلوب",
+      "author": "أبو عبد الله محمد المنصور",
+      "status": "ready",
+      "security": {
+        "verdict": "allow",
+        "reasons": []
+      },
+      "sources": [
+        {
+          "format": "word",
+          "role": "primary",
+          "path": "./library/published/assets/a592a55b410742fc.docx",
+          "fileName": "خالعة القلوب - أبو عبد الله محمد المنصور.docx",
+          "bytes": 92799,
+          "sha256": "a592a55b410742fc9b8c86433e44d18fdce35cbfa9dba13d92e44bff45a936e8"
+        },
+        {
+          "format": "pdf",
+          "role": "alternate",
+          "path": "./library/published/assets/4e65734ea25c44fd.pdf",
+          "fileName": "خالعة القلوب - أبو عبد الله محمد المنصور.pdf",
+          "bytes": 1546445,
+          "sha256": "4e65734ea25c44fdf0572999d155cf0a8f390d2246d49a8d5d762e4ca47c99db"
+        }
+      ],
+      "metadata": {},
+      "coverStrategy": "pdf-page-1",
+      "wordArtifact": {
+        "path": "./library/published/assets/a592a55b410742fc.word-page-map.json",
+        "totalPages": 34,
+        "paragraphCount": 263
+      }
+    },
+    {
+      "id": "alpha-bce48da20ef53a21",
+      "title": "ردة ولا أبا بكر لها",
+      "author": "أبو الحسن الندوي",
+      "status": "ready",
+      "security": {
+        "verdict": "allow",
+        "reasons": []
+      },
+      "sources": [
+        {
+          "format": "shamela-bok",
+          "role": "primary",
+          "path": "./library/published/assets/4d54e918e9e74d39.bok",
+          "fileName": "ردة ولا أبا بكر لها - أبو الحسن الندوي.bok",
+          "bytes": 186368,
+          "sha256": "4d54e918e9e74d39b370fca9929af50bf4ffff5bb11fd4bf257f048c5f7321d7"
+        }
+      ],
+      "metadata": {
+        "publisher": "مكتبة السداوي للنشر والتوزيع - القاهرة، المكتبة المكية. حي الهجرة - مكة المكرمة.",
+        "edition": "الثانية، 1413 هـ - 1992 م، مطبعة المدني - المؤسسة السعودية بمصر.",
+        "description": "توزيع: مكتبة ابن حجر - مكة المكرمة\nأعده للمكتبة الشاملة / توفيق بن محمد القريشي، - غفر الله له ولوالديه -.\n[ترقيم الكتاب موافق للمطبوع وهو مذيل بالحواشي]."
+      },
+      "coverStrategy": "generated"
+    },
+    {
+      "id": "alpha-afc619f9dccfbe2e",
+      "title": "شهادة الحق",
+      "author": "أبو الأعلى المودودي",
+      "status": "ready",
+      "security": {
+        "verdict": "allow",
+        "reasons": []
+      },
+      "sources": [
+        {
+          "format": "pdf",
+          "role": "primary",
+          "path": "./library/published/assets/c72b223f7f5de5af.pdf",
+          "fileName": "شهادة الحق - أبو الأعلى المودودي.pdf",
+          "bytes": 793784,
+          "sha256": "c72b223f7f5de5af90720e816a5499f10c1bbe84a5fdfca936ec6b823907e9ea"
+        }
+      ],
+      "metadata": {},
+      "coverStrategy": "pdf-page-1"
+    },
+    {
+      "id": "alpha-8c03d4de0f483882",
+      "title": "طائفة من قضايا الأمة الإسلامية في القرن الحاضر",
+      "author": "أبو الأعلى المودودي",
+      "status": "ready",
+      "security": {
+        "verdict": "allow",
+        "reasons": []
+      },
+      "sources": [
+        {
+          "format": "pdf",
+          "role": "primary",
+          "path": "./library/published/assets/f6d6ac1e5967feec.pdf",
+          "fileName": "طائفة من قضايا الأمة الإسلامية في القرن الحاضر - أبو الأعلى المودودي.pdf",
+          "bytes": 4226816,
+          "sha256": "f6d6ac1e5967feecb87eb2241ca3a0b01a715b7bc38886f4aba0ed4dd7080464"
+        }
+      ],
+      "metadata": {},
+      "coverStrategy": "pdf-page-1"
+    },
+    {
+      "id": "alpha-99021053199d596e",
+      "title": "فرعون في القرآن",
+      "author": "أبو الأعلى المودودي",
+      "status": "ready",
+      "security": {
+        "verdict": "allow",
+        "reasons": []
+      },
+      "sources": [
+        {
+          "format": "pdf",
+          "role": "primary",
+          "path": "./library/published/assets/bd01ab76e85b6fa8.pdf",
+          "fileName": "فرعون في القرآن - أبو الأعلى المودودي.pdf",
+          "bytes": 3423360,
+          "sha256": "bd01ab76e85b6fa87f09b3a3d7e668c54f74c6df71d80770438d854355f40f6b"
+        }
+      ],
+      "metadata": {},
+      "coverStrategy": "pdf-page-1"
+    },
+    {
+      "id": "alpha-0d870b17d0249818",
+      "title": "ماذا خسر العالم بانحطاط المسلمين",
+      "author": "أبو الحسن الندوي",
+      "status": "ready",
+      "security": {
+        "verdict": "allow",
+        "reasons": []
+      },
+      "sources": [
+        {
+          "format": "shamela-bok",
+          "role": "primary",
+          "path": "./library/published/assets/a716b2f850d97d08.bok",
+          "fileName": "ماذا خسر العالم بانحطاط المسلمين - أبو الحسن الندوي.bok",
+          "bytes": 681984,
+          "sha256": "a716b2f850d97d08d9d01ab4711a7b8f38a89c2522b32bfb977c054dbd3ede7c"
+        }
+      ],
+      "metadata": {
+        "publisher": "مكتبة الإيمان، المنصورة - مصر",
+        "description": "طبعة شرعية جديدة منقحة ومحققه ومزيدة\n[ترقيم الكتاب موافق للمطبوع]"
+      },
+      "coverStrategy": "generated"
+    },
+    {
+      "id": "alpha-067895ae38a2f0f4",
+      "title": "مسألة ملكية الأرض في الإسلام",
+      "author": "أبو الأعلى المودودي",
+      "status": "ready",
+      "security": {
+        "verdict": "allow",
+        "reasons": []
+      },
+      "sources": [
+        {
+          "format": "pdf",
+          "role": "primary",
+          "path": "./library/published/assets/0465f8c1602ec253.pdf",
+          "fileName": "مسألة ملكية الأرض في الإسلام - أبو الأعلى المودودي.pdf",
+          "bytes": 2474453,
+          "sha256": "0465f8c1602ec253b17a85254606fec9f385af7d68be761a75f214ac47fb9ae6"
+        }
+      ],
+      "metadata": {},
+      "coverStrategy": "pdf-page-1"
+    },
+    {
+      "id": "alpha-0adb26c41fa5e773",
+      "title": "مسلكيات",
+      "author": "إبراهيم السكران",
+      "status": "ready",
+      "security": {
+        "verdict": "allow",
+        "reasons": []
+      },
+      "sources": [
+        {
+          "format": "epub",
+          "role": "primary",
+          "path": "./library/published/assets/bb8f2129fbadf19d.epub",
+          "fileName": "مسلكيات - إبراهيم السكران.epub",
+          "bytes": 260275,
+          "sha256": "bb8f2129fbadf19deb4b018905184fc7a79a42fe8aeb2d22796cca83dd562533"
+        }
+      ],
+      "metadata": {
+        "publisher": "دار الحضارة",
+        "description": "<p>حصيلة تمعّنات وتفحّصات في بعض مسالك ( العلم ) ، وبعض مسالك ( الإيمان ) ، دونها الباحث في ازمان مختلفة ، وأحبب موافقة الآية في الترتيب ، فجعل في هذا الكتاب القسم الأول لتأملات مسالك العلم ، والقسم الثاني لتأملات مسالك الإيمان ..</p>"
+      },
+      "coverStrategy": "generated"
+    },
+    {
+      "id": "alpha-563d7c4e1648f29a",
+      "title": "مفاهيم إسلامية حول الدين والدولة",
+      "author": "أبو الأعلى المودودي",
+      "status": "ready",
+      "security": {
+        "verdict": "allow",
+        "reasons": []
+      },
+      "sources": [
+        {
+          "format": "pdf",
+          "role": "primary",
+          "path": "./library/published/assets/466e08d68c25b8d3.pdf",
+          "fileName": "مفاهيم إسلامية حول الدين والدولة - أبو الأعلى المودودي.pdf",
+          "bytes": 14646275,
+          "sha256": "466e08d68c25b8d35da935163e9a52c8d830b750f456a206446b5415368ddb10"
+        }
+      ],
+      "metadata": {},
+      "coverStrategy": "pdf-page-1"
+    },
+    {
+      "id": "alpha-ec8286d2e7a4b0c5",
+      "title": "نحن والحضارة الغربية",
+      "author": "أبو الأعلى المودودي",
+      "status": "ready",
+      "security": {
+        "verdict": "allow",
+        "reasons": []
+      },
+      "sources": [
+        {
+          "format": "pdf",
+          "role": "primary",
+          "path": "./library/published/assets/681b335cc1b59fc1.pdf",
+          "fileName": "نحن والحضارة الغربية - أبو الأعلى المودودي.pdf",
+          "bytes": 12863354,
+          "sha256": "681b335cc1b59fc189bfaf427c797bc39a0cfd9024a1a97b4bda19c415a1b756"
+        }
+      ],
+      "metadata": {},
+      "coverStrategy": "pdf-page-1"
+    },
+    {
+      "id": "tafsir-saadi",
+      "title": "تفسير السعدي",
+      "author": "عبد الرحمن بن ناصر السعدي",
+      "status": "ready",
+      "security": {
+        "verdict": "allow",
+        "reasons": []
+      },
+      "sources": [
+        {
+          "format": "markdown",
+          "role": "primary",
+          "compression": "gzip",
+          "path": "./library/published/assets/0b493aef04dae724.md.gz",
+          "fileName": "تفسير السعدي - عبد الرحمن بن ناصر السعدي.md",
+          "bytes": 1874160,
+          "contentBytes": 7245416,
+          "sha256": "0b493aef04dae72486524a97124ad1147766063ce56755f58b3c17a7c7303d6e"
+        }
+      ],
+      "metadata": {
+        "category": "التفاسير",
+        "description": "كتاب تفسير محلي مرتبط بآيات المصحف، ويُقرأ ويُبحث فيه كأي كتاب آخر في الخِزانة.",
+        "sourceCitation": "الموسوعة القرآنية — الكتاب 3؛ نسخة محلية موثقة البصمة"
+      },
+      "coverStrategy": "generated"
+    },
+    {
+      "id": "tafsir-baghawi",
+      "title": "معالم التنزيل",
+      "author": "الحسين بن مسعود البغوي",
+      "status": "ready",
+      "security": {
+        "verdict": "allow",
+        "reasons": []
+      },
+      "sources": [
+        {
+          "format": "markdown",
+          "role": "primary",
+          "compression": "gzip",
+          "path": "./library/published/assets/e33ce655e9d2e8ea.md.gz",
+          "fileName": "معالم التنزيل - الحسين بن مسعود البغوي.md",
+          "bytes": 3361457,
+          "contentBytes": 16193444,
+          "sha256": "e33ce655e9d2e8eae37dcb145b04fc2e6c33f1aaba25781a07c2587fd4052a84"
+        }
+      ],
+      "metadata": {
+        "category": "التفاسير",
+        "description": "كتاب تفسير محلي مرتبط بآيات المصحف، ويُقرأ ويُبحث فيه كأي كتاب آخر في الخِزانة.",
+        "sourceCitation": "الموسوعة القرآنية — الكتاب 2؛ نسخة محلية موثقة البصمة"
+      },
+      "coverStrategy": "generated"
+    },
+    {
+      "id": "tafsir-tabari",
+      "title": "جامع البيان",
+      "author": "محمد بن جرير الطبري",
+      "status": "ready",
+      "security": {
+        "verdict": "allow",
+        "reasons": []
+      },
+      "sources": [
+        {
+          "format": "markdown",
+          "role": "primary",
+          "compression": "gzip",
+          "path": "./library/published/assets/d1259a47ee20b7eb.md.gz",
+          "fileName": "جامع البيان - محمد بن جرير الطبري.md",
+          "bytes": 8383892,
+          "contentBytes": 37815916,
+          "sha256": "d1259a47ee20b7ebfd73bd122991b66a07fade60bf1ecd8f539dfa3a5ca46b1a"
+        }
+      ],
+      "metadata": {
+        "category": "التفاسير",
+        "description": "كتاب تفسير محلي مرتبط بآيات المصحف، ويُقرأ ويُبحث فيه كأي كتاب آخر في الخِزانة.",
+        "sourceCitation": "الموسوعة القرآنية — الكتاب 4؛ نسخة محلية موثقة البصمة"
+      },
+      "coverStrategy": "generated"
+    },
+    {
+      "id": "tafsir-mokhtasar-tafsir",
+      "title": "المختصر في تفسير القرآن الكريم",
+      "author": "مركز تفسير للدراسات القرآنية",
+      "status": "ready",
+      "security": {
+        "verdict": "allow",
+        "reasons": []
+      },
+      "sources": [
+        {
+          "format": "markdown",
+          "role": "primary",
+          "compression": "gzip",
+          "path": "./library/published/assets/6398d70015b98ed1.md.gz",
+          "fileName": "المختصر في تفسير القرآن الكريم - مركز تفسير.md",
+          "bytes": 527327,
+          "contentBytes": 2035307,
+          "sha256": "6398d70015b98ed1fbdb98cf54cf8c1251f7975ed8f35125c0fedb55c52a9772"
+        }
+      ],
+      "metadata": {
+        "category": "التفاسير",
+        "description": "تفسير ميسر مرتبط بآيات المصحف، ويُقرأ ويُبحث فيه كأي كتاب آخر في الخِزانة.",
+        "sourceCitation": "الموسوعة القرآنية — الكتاب 2003؛ نسخة محلية موثقة البصمة"
+      },
+      "coverStrategy": "generated"
+    }
+  ]
+}
