@@ -418,6 +418,10 @@ export function readerScreen(id: string): HTMLElement {
         if (!identity.isCurrent()) return
         const resolvedTitle = storedReaderTitle(stored)
         citationBook = { title: resolvedTitle, author: stored.author, ...(stored.authorId ? { authorId: stored.authorId } : {}) }
+        // Publish only the identity that has passed the reader's visibility
+        // checks, so offline metadata need not depend on an unavailable API.
+        reader.dataset.readerTitle = resolvedTitle
+        reader.dataset.readerAuthor = stored.author
         rememberReaderReturnPoint({
           bookId: id,
           title: resolvedTitle,

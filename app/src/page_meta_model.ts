@@ -12,6 +12,12 @@ export const PUBLIC_PAGE_META:Readonly<Record<string,readonly [string,string]>>=
 }
 export interface PublicSeoRecord{id:string;name?:string;title?:string;author?:string;authorId?:string;category?:string;deathYearHijri?:number;biography?:string;books?:Array<{id:string;title:string}>}
 export interface PageMeta{title:string;description:string;canonicalPath?:string;robots?:string}
+/** Only public canonical reader routes may acquire indexable cached metadata. */
+export function loadedReaderPageMeta(path:string,title:string,author:string):PageMeta|undefined{
+ const pathname=path.split(/[?#]/)[0]||'/'
+ if(!/^\/books\/(?:\d{1,12}|public\/[A-Za-z0-9_-]{1,200})$/.test(pathname)||!title.trim()||!author.trim())return undefined
+ return pageMetaFor(path,{id:pathname.split('/').at(-1)!,title,author})
+}
 export const plainSeoText=(value:string)=>value.replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').trim()
 export function pageMetaFor(path:string,record?:PublicSeoRecord):PageMeta{
  const canonicalPath=path.split(/[?#]/)[0]||'/'
