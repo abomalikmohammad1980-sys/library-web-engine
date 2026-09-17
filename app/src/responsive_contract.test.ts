@@ -9,6 +9,7 @@ describe('responsive shell contract', () => {
   it('keeps primary tap targets at least 44px and mobile navigation larger', () => {
     expect(components).toMatch(/\.btn\s*\{[^}]*min-height:\s*44px/s)
     expect(components).toMatch(/\.btn--icon\s*\{[^}]*width:\s*44px;[^}]*height:\s*44px/s)
+    expect(components).toMatch(/\.pager-btn\s*\{[^}]*width:\s*44px;[^}]*height:\s*44px/s)
     expect(components).toMatch(/\.bottom-nav button\s*\{[^}]*min-height:\s*56px/s)
   })
 
@@ -27,12 +28,16 @@ describe('responsive shell contract', () => {
     expect(components).toMatch(/\.reading__identity\s*\{[^}]*overflow:\s*hidden/s)
     expect(components).toMatch(/\.reading__author-link\s*\{[^}]*display:\s*inline-block/s)
     expect(components).toMatch(/@media \(max-width:\s*560px\)[^{]*\{[\s\S]*?\.reading__identity\s*\{[^}]*flex:\s*1 1 122px;[^}]*max-width:\s*142px/s)
-    expect(components).toMatch(/@media \(max-width:\s*560px\)[^{]*\{[\s\S]*?\.reading__page-jump::before\s*\{[^}]*display:\s*none/s)
+    expect(components).not.toContain("content: 'انتقال سريع'")
   })
 
-  it('keeps the PDF comparison beside the text instead of overlaying it on mobile', () => {
-    expect(components).toMatch(/@media \(max-width:\s*1024px\)[^{]*\{[\s\S]*?\.reader__body--pdf\s*\{[^}]*grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/s)
+  it('keeps companion comparison beside text on tablets and non-overlapping on narrow phones', () => {
+    expect(components).toMatch(/@media \(max-width:\s*1024px\)[^{]*\{[\s\S]*?\.reader__body--pdf-companion\s*\{[^}]*grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/s)
     expect(components).toMatch(/@media \(max-width:\s*1024px\)[^{]*\{[\s\S]*?\.reader__body--pdf \.reader__info--pdf\s*\{[^}]*position:\s*sticky;[^}]*inset-block:\s*65px auto;[^}]*inset-inline:\s*auto;[^}]*width:\s*100%;[^}]*height:\s*calc\(100dvh - 122px\)/s)
+    const phone=components.lastIndexOf('@media (max-width: 768px)')
+    expect(phone).toBeGreaterThan(components.indexOf('@media (max-width: 1024px)'))
+    expect(components.slice(phone)).toMatch(/\.reader__body--pdf\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\)/s)
+    expect(components.slice(phone)).toMatch(/\.reader__body--pdf \.reader__info--pdf\s*\{[^}]*position:\s*relative;[^}]*inset:\s*auto;[^}]*inline-size:\s*100%/s)
   })
 
   it('keeps multi-part page jump controls on the single phone status line', () => {
@@ -42,8 +47,8 @@ describe('responsive shell contract', () => {
   })
 
   it('gives the in-book search field a full phone row without hiding navigation', () => {
-    expect(components).toMatch(/@media \(max-width:\s*480px\)[^{]*\{[\s\S]*?\.reader__search-bar\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\) auto auto auto;[^}]*display:\s*grid/s)
-    expect(components).toMatch(/@media \(max-width:\s*480px\)[^{]*\{[\s\S]*?\.reader__search-bar input\s*\{[^}]*grid-column:\s*1 \/ -1;[^}]*width:\s*100%/s)
+    expect(components).toMatch(/@media \(max-width:\s*640px\)[^{]*\{[\s\S]*?\.reader__search-head\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\) auto/s)
+    expect(components).toMatch(/@media \(max-width:\s*640px\)[^{]*\{[\s\S]*?\.reader__search-bar input\s*\{[^}]*grid-column:\s*1 \/ -1;[^}]*width:\s*100%/s)
     expect(components).toMatch(/\.reader__search-close\s*\{[^}]*width:\s*44px;[^}]*height:\s*44px/s)
   })
 
