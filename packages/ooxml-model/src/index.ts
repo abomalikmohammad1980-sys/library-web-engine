@@ -2610,6 +2610,10 @@ export function parseDocument(
         const kind = pageFieldKind(instruction) ?? styleRefField(instruction, styles);
         collectInlineNodes(rNode["w:fldSimple"] as XNode[], inheritedHref, kind);
         excluded = excluded || "field";
+      } else if ("w:smartTag" in rNode) {
+        // Legacy semantic annotations wrap ordinary visible runs, including
+        // nested smart tags. Their properties are metadata, not displayed text.
+        collectInlineNodes(rNode["w:smartTag"] as XNode[], inheritedHref, inheritedField);
       } else if ("w:sdt" in rNode) {
         // Inline content controls are transparent too (date/property controls,
         // author metadata, and fields embedded in a paragraph).

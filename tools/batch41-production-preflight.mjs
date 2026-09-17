@@ -1,0 +1,16 @@
+import {readFile,writeFile,mkdir} from 'node:fs/promises';
+import assert from 'node:assert/strict';
+const account='db956e5187111b69e796e4a8e4c3fe36';
+const cfg=await readFile('C:/Users/Windows_OS/AppData/Roaming/xdg.config/.wrangler/config/default.toml','utf8');
+const token=/^oauth_token\s*=\s*"([^"]+)"/m.exec(cfg)?.[1]; assert(token);
+const r=await fetch(`https://api.cloudflare.com/client/v4/accounts/${account}/pages/projects/khezana`,{headers:{Authorization:`Bearer ${token}`},signal:AbortSignal.timeout(30000)});
+const body=await r.json();assert(body.success,'project read failed');
+const p=body.result, current=JSON.parse(await readFile('alpha-publish/ops/current-production.json','utf8'));
+assert.equal(p.canonical_deployment.id,current.deploymentId,'production advanced');
+const c=p.deployment_configs.production;
+const report={checkedAt:new Date().toISOString(),deploymentId:p.canonical_deployment.id,productionBranch:p.production_branch,r2:c.r2_buckets,d1:c.d1_databases,services:c.services,bookmark:'000003ce-00000000-000050e9-5bcb747dc653d03b1d4c12a800a94bb4',automaticIndexingEnabled:false};
+assert.equal(c.r2_buckets.LIBRARY_R2.name,'khzanah-library');
+assert.equal(c.d1_databases.VISITORS_DB.id,'aeb2bf7d-bfc5-4ec1-9ef5-a81371efe800');
+await mkdir('.artifacts/batch41',{recursive:true});
+await writeFile('.artifacts/batch41/production-preflight.json',JSON.stringify(report,null,2));
+console.log(JSON.stringify(report));

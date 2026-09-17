@@ -1,6 +1,7 @@
 import {unzipSync} from 'fflate'
 import type {WordPageMap} from './engine/library_store'
 import {fingerprintBytes} from './word_import_authority'
+import {wordMapImportFailure} from './word_import_diagnostic'
 
 export interface WordCompanionPackage {source:Uint8Array;pdf:Uint8Array;map:WordPageMap;fileName:string}
 const names=['manifest.json','source.docx','reference.pdf','pages.json']
@@ -28,6 +29,7 @@ export async function readWordCompanionPackage(bytes:Uint8Array):Promise<WordCom
 
 export async function validateWordCompanionPackage(bundle:WordCompanionPackage):Promise<void>{
  const [{loadBookFromBuffer},{requireWordPageGroups},{assertConvertedPdfPageCardinality}]=await Promise.all([import('./engine/bridge'),import('./engine/dom_render'),import('./engine/word_pdf')])
- requireWordPageGroups(loadBookFromBuffer(bundle.source).model,bundle.map)
+ const model=loadBookFromBuffer(bundle.source).model
+ try{requireWordPageGroups(model,bundle.map)}catch(error){throw wordMapImportFailure(error,model.paragraphs.length,bundle.map.paragraphs?.length??bundle.map.paragraphCount)}
  await assertConvertedPdfPageCardinality(bundle.pdf,bundle.map)
 }

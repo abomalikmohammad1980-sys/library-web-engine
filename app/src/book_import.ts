@@ -36,6 +36,7 @@ import {readWordCompanionPackage,validateWordCompanionPackage,type WordCompanion
 import {wordCompanionHelp} from './word_companion_help'
 import {ensureWordUploadSetup} from './word_upload_setup'
 import {convertWithConnectedWord} from './word_connected_client'
+import {wordImportProgressPanel} from './word_import_progress'
 // Connected conversion is available in the upload dialog, not only in Vite.
 const wordCompanionEnabled=true
 import {saveBookPdf} from './engine/library_store'
@@ -118,9 +119,11 @@ export function bookImportManager(onSaved: () => void, options: BookImportManage
         }
         const legacy = /\.(doc|rtf)$/i.test(file.name)
         if(needsConnectedWord){
-          const bytes=await convertWithConnectedWord(file,()=>{workspace.textContent=`يعالج Word ملف «${file.name}» في الخلفية. لم يبدأ الرفع بعد؛ يمكنك متابعة العمل في مستنداتك.`})
+          const progress=wordImportProgressPanel(file.name);workspace.replaceChildren(progress.root)
+          const bytes=await convertWithConnectedWord(file,progress.update)
           centralGuard?.()
           if(centralLauncherController.signal.aborted)return
+          progress.update({stage:'validating'})
           const companion=await readWordCompanionPackage(bytes)
           await validateWordCompanionPackage(companion)
           const normalizedName=file.name.replace(/\.(docx|doc|rtf)$/i,'.docx')
