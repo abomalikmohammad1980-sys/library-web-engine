@@ -1,0 +1,192 @@
+{
+  "published": true,
+  "productionReady": true,
+  "deploymentId": "151af741-5955-4c77-aafb-43189c8d51b0",
+  "url": "https://151af741.khezana.pages.dev",
+  "deployFingerprint": "ed01acf352b2fc11d451a3e850bf060917995e7e5c7af130dee8e671f9bb5a42",
+  "functionsFingerprint": "af12ba45a5f8d790ff8fd14e5a81e131e626cd78e8311998b08d1fcd0803c605",
+  "payloadFingerprint": "94fff6cd8c98e682e4aeb46bad35946ed6ab877c61eb85787b16acc363476d40",
+  "sourceCommit": "a82c49ca33020d733d37e8a6beb3a1e5e70592e7",
+  "previousDeploymentId": "214d9565-f244-41d5-af51-e86309c463ce",
+  "scope": "Unified verified fixes including Word smartTag import and measured progress, SEO, and indexing configuration",
+  "liveChecks": {
+    "passed": true,
+    "base": "https://khzanah.com",
+    "checkedAt": "2026-09-17T16:47:40.098Z",
+    "results": [
+      {
+        "path": "/",
+        "status": 200,
+        "title": "الخزانة: المكتبة الإسلامية الذكية",
+        "robots": null,
+        "h1": 1
+      },
+      {
+        "path": "/features",
+        "status": 200,
+        "title": "ميزات الخِزانة | مكتبة إسلامية للبحث والقراءة",
+        "robots": null,
+        "h1": 1
+      },
+      {
+        "path": "/authors",
+        "status": 200,
+        "title": "مؤلفو المكتبة الإسلامية | الخِزانة",
+        "robots": null,
+        "h1": 1
+      },
+      {
+        "path": "/authors/000020",
+        "status": 200,
+        "title": "الشافعي: سيرته وكتبه | الخِزانة",
+        "robots": null,
+        "h1": 1
+      },
+      {
+        "path": "/books/21633",
+        "status": 200,
+        "title": "الكلام على حديث الإستلقاء لأبي موسى المديني — أبو موسى المديني | الخِزانة",
+        "robots": null,
+        "h1": 1
+      },
+      {
+        "path": "/books/999999999",
+        "status": 404,
+        "title": "الصفحة غير موجودة | الخِزانة",
+        "robots": "noindex, follow",
+        "h1": 1
+      },
+      {
+        "path": "/settings",
+        "status": 200,
+        "title": "الخِزانة",
+        "robots": "noindex, follow",
+        "h1": 1
+      },
+      {
+        "path": "/search?q=x",
+        "status": 200,
+        "title": "الخِزانة",
+        "robots": "noindex, follow",
+        "h1": 1
+      },
+      {
+        "path": "/authors/20",
+        "status": 301,
+        "target": "/authors/000020"
+      },
+      {
+        "path": "/books/410021633",
+        "status": 301,
+        "target": "/books/21633"
+      }
+    ],
+    "staticSitemapUrls": 11776,
+    "sitemap": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<sitemapindex xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\"><sitemap><loc>https://khzanah.com/sitemap-static.xml</loc><lastmod>2026-09-02T00:52:28.037Z</lastmod></sitemap><sitemap><loc>https://khzanah.com/sitemap-authors.xml</loc><lastmod>2026-09-02T00:52:28.037Z</lastmod></sitemap><sitemap><loc>https://khzanah.com/sitemap-books-001.xml</loc><lastmod>2026-09-02T00:52:28.037Z</lastmod></sitemap><sitemap><loc>https://khzanah.com/sitemap-books-002.xml</loc><lastmod>2026-09-02T00:52:28.037Z</lastmod></sitemap><sitemap><loc>https://khzanah.com/sitemap-categories.xml</loc><lastmod>2026-09-02T00:52:28.037Z</lastmod></sitemap></sitemapindex>",
+    "head": {
+      "status": 200,
+      "robots": null
+    },
+    "payloadMatches": true,
+    "payloadFingerprint": "94fff6cd8c98e682e4aeb46bad35946ed6ab877c61eb85787b16acc363476d40",
+    "assetHashesVerified": 126,
+    "publicSearchStatus": 200
+  },
+  "browser": "Preview reader verified; final live HTTP and asset hashes verified. Full live interaction not repeated.",
+  "previewChecks": {
+    "passed": true,
+    "base": "https://1c77603c.khezana.pages.dev",
+    "checkedAt": "2026-09-17T16:44:22.484Z",
+    "results": [
+      {
+        "path": "/",
+        "status": 200,
+        "title": "الخزانة: المكتبة الإسلامية الذكية",
+        "robots": "noindex, follow",
+        "h1": 1
+      },
+      {
+        "path": "/features",
+        "status": 200,
+        "title": "ميزات الخِزانة | مكتبة إسلامية للبحث والقراءة",
+        "robots": "noindex, follow",
+        "h1": 1
+      },
+      {
+        "path": "/authors",
+        "status": 200,
+        "title": "مؤلفو المكتبة الإسلامية | الخِزانة",
+        "robots": "noindex, follow",
+        "h1": 1
+      },
+      {
+        "path": "/authors/000020",
+        "status": 200,
+        "title": "الشافعي: سيرته وكتبه | الخِزانة",
+        "robots": "noindex, follow",
+        "h1": 1
+      },
+      {
+        "path": "/books/21633",
+        "status": 200,
+        "title": "الكلام على حديث الإستلقاء لأبي موسى المديني — أبو موسى المديني | الخِزانة",
+        "robots": "noindex, follow",
+        "h1": 1
+      },
+      {
+        "path": "/books/999999999",
+        "status": 404,
+        "title": "الصفحة غير موجودة | الخِزانة",
+        "robots": "noindex, follow",
+        "h1": 1
+      },
+      {
+        "path": "/settings",
+        "status": 200,
+        "title": "الخِزانة",
+        "robots": "noindex, follow",
+        "h1": 1
+      },
+      {
+        "path": "/search?q=x",
+        "status": 200,
+        "title": "الخِزانة",
+        "robots": "noindex, follow",
+        "h1": 1
+      },
+      {
+        "path": "/authors/20",
+        "status": 301,
+        "target": "/authors/000020"
+      },
+      {
+        "path": "/books/410021633",
+        "status": 301,
+        "target": "/books/21633"
+      }
+    ],
+    "staticSitemapUrls": 11776,
+    "sitemap": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<sitemapindex xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\"><sitemap><loc>https://khzanah.com/sitemap-static.xml</loc><lastmod>2026-09-02T00:52:28.037Z</lastmod></sitemap><sitemap><loc>https://khzanah.com/sitemap-authors.xml</loc><lastmod>2026-09-02T00:52:28.037Z</lastmod></sitemap><sitemap><loc>https://khzanah.com/sitemap-books-001.xml</loc><lastmod>2026-09-02T00:52:28.037Z</lastmod></sitemap><sitemap><loc>https://khzanah.com/sitemap-books-002.xml</loc><lastmod>2026-09-02T00:52:28.037Z</lastmod></sitemap><sitemap><loc>https://khzanah.com/sitemap-categories.xml</loc><lastmod>2026-09-02T00:52:28.037Z</lastmod></sitemap><sitemap><loc>https://khzanah.com/sitemap-public.xml?page=1</loc></sitemap></sitemapindex>",
+    "head": {
+      "status": 200,
+      "robots": "noindex, follow"
+    },
+    "payloadFingerprint": "94fff6cd8c98e682e4aeb46bad35946ed6ab877c61eb85787b16acc363476d40",
+    "functionsFingerprint": "d8605f86805d24d87b477415437a96e1c71729d32079e02ffd45c70e99a85fb5"
+  },
+  "staticFileManifest": "static-source-manifest.json",
+  "functionsFileManifest": "functions-manifest.json",
+  "configSha256": "244c20eb479fd25d089c529d037f94b329b700137ab54522f05d0240d966c729",
+  "recordedAt": "2026-09-17T16:55:56.195Z",
+  "combinedReleaseFingerprint": "e41c9f8bcbdcd72cb6429c8902e3f5e2ee463f124cbe2f0dbb11e86a45b69715",
+  "compiledClosureFingerprint": "d8605f86805d24d87b477415437a96e1c71729d32079e02ffd45c70e99a85fb5",
+  "version": "batch-20260917-41",
+  "functionsSnapshot": "../.artifacts/batch41/deploy/functions",
+  "sourceSnapshot": "../.artifacts/batch41/source-snapshot.json",
+  "fullAcceptanceClosed": false,
+  "caveats": [
+    "Scheduled Cron not proven; automatic publication wake passed isolated tests.",
+    "No eligible public production uploads for end-to-end live ingestion test.",
+    "BOK release activation and full prior test suite remain open."
+  ]
+}
