@@ -48,3 +48,11 @@ Read-only heading transport diagnostic against59 initially timed out after dicti
 Further paint lead: .app-main::before animated background-position indefinitely across the page with a gradient mask. Removed only the decorative motion, keeping the ornament/colors/mask, to avoid continuous full-page paints. Ten theme/paint tests pass. Build pass5(session71657) includes this and the pack cache; next immutable candidate60 must be measured before publication.
 
 Remaining: comparable measurements of the paint change, functional acceptance including mobile/print/offline and search, then live publication of the accepted frozen candidate. All-report completion is not claimed.
+
+## Batch60 paint measurement and next transport candidate
+
+Batch60 https://b4b405c9.khezana.pages.dev passed20000 local files,143 remote assets and SEO/HTTP checks. In-app DOM confirmed home heading, no horizontal overflow and computed ornament animation:none. Quran checks on59 (same relevant client code) confirmed all3 mode buttons at identical y and the requested Mathoor label.
+
+PageSpeed report https://pagespeed.web.dev/analysis/https-b4b405c9-khezana-pages-dev/grb8n5wzvd: desktop65,FCP1.0s,LCP1.2s,TBT1160ms,main-thread4.0s,9long tasks; mobile49,FCP5.1s,LCP6.0s,TBT640ms,main-thread7.8s,16long tasks. The large reduction in main-thread duration from59 (desktop27.9s/mobile25.1s) supports the full-page repaint diagnosis; initial mobile rendering remains slow.32 focused tests pass; updated the old hero test to require preserved static ornament rather than the removed animation.
+
+New61 candidate under preparation: same-origin read-only dictionary-partition endpoint, pinned to the existing descriptor. It streams from env.ASSETS, selects at most1MiB from the approved <=25MiB pack, verifies the selected gzip SHA and sends only that shard. No catalog changes, uploads, credentials or new services. Four server tests cover ignored Range, valid206, corrupt/misplaced/truncated input, cancellation and path/budget rejection. Eight client cache/transport tests and TypeScript pass. This endpoint is not live or accepted until preview transport/browser checks complete. Build pass6(session19753) contains its client call; frozen61 must include the three explicit server/descriptor additions.

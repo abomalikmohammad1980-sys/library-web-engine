@@ -15,10 +15,11 @@ describe('هوية بطل الرئيسية والزخرفة العامة', () =>
     expect(screens).toContain('font-family: var(--font-quran)')
   })
 
-  it('يستعمل مشهد الخزانة وزخرفة هادئة قابلة لتعطيل الحركة', () => {
+  it('يستعمل مشهد الخزانة وزخرفة ثابتة دون إعادة رسم مستمرة', () => {
     expect(screens).toContain('.home-hero__landscape')
     expect(screens).toContain('clip-path: polygon')
-    expect(components).toContain('@keyframes khizana-motif-drift')
-    expect(components).toContain('animation: khizana-motif-drift')
+    expect(components).toContain('.app-main::before')
+    expect(components).toContain('mask-image: linear-gradient')
+    expect(components).not.toContain('animation: khizana-motif-drift')
   })
 })

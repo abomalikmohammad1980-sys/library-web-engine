@@ -47,6 +47,9 @@ export async function headingDictionaryOptions(baseURI:string,batchRanges=true){
   if(!paths.has(path))return batchedFetch(headingRangeTransportURL(url,baseURI,init),init)
   const location=(release as unknown as {locations:Record<string,PartitionLocation>}).locations[path]
   if(!location)throw Error('heading_partition_location_missing')
+  // Pages static hosting can ignore Range and send multi-megabyte packs.
+  // The same-origin endpoint streams/verifies just this approved public shard.
+  if(!new Headers(init?.headers).has('Range'))return fetch(new URL(`/api/search/heading-partitions/${release.parts.sourceManifestSha256}/${path.slice('dictionary/'.length)}`,baseURI),init)
   return fetchPackedHeadingPartition(new URL(location.path,new URL(release.baseURL,baseURI)),location,init,batchedFetch,packCache)
  }
  return {dictionaryPartitions:{...release.parts,contract:'khizana-heading-trigrams/2' as const},fetch:fetcher}
