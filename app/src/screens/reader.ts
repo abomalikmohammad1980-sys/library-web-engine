@@ -59,7 +59,6 @@ import { rememberReaderReturnPoint } from '../reader_return_bar'
 import { migrateReadingThemeDataset, type ReadingTheme } from '../reader_theme'
 import { initialPdfCompanionIndex, pdfPersistedReaderIndex, pdfReaderEventSyncTarget, pdfTextSyncIndex } from '../pdf_scroll_sync'
 import { bokLocalPageNumbers } from '../bok_page_numbering'
-import { openFormattedBookPdf } from '../formatted_book_pdf'
 import { ORIGINAL_PDF_MISSING_TOOLTIP, hasOriginalBookPdf, pdfButtonAction } from '../pdf_button_policy'
 import { withExtractedEditionMetadata } from '../edition_metadata'
 import { createBookIssueReportButton } from '../book_issue_report'
@@ -2741,7 +2740,11 @@ async function downloadConvertedPdf(id: string, preferOffice = false): Promise<v
     return
   }
   if (action === 'formatted') {
-    try { toast('جارٍ تجهيز PDF المنسق…'); await openFormattedBookPdf(stored) }
+    try {
+      toast('جارٍ تجهيز PDF المنسق…')
+      const { openFormattedBookPdf } = await import('../formatted_book_pdf')
+      await openFormattedBookPdf(stored)
+    }
     catch (error) { toast(error instanceof Error && error.message === 'formatted_pdf_text_unavailable' ? 'لا يتوفر نص صالح لإنشاء PDF لهذا الكتاب' : 'تعذّر إنشاء PDF المنسق الآن') }
     return
   }

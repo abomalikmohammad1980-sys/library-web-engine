@@ -4,7 +4,8 @@ import { h } from './ui'
 import type { StoredBook } from './engine/library_store'
 export { discoverWordCover, selectCoverCandidate } from '@library/word-cover'
 import { discoverWordCover } from '@library/word-cover'
-import { createTrackedObjectURL, revokeTrackedObjectURL, routeObserver, routeEventListener } from './resource_lifecycle'
+import { createTrackedObjectURL, revokeTrackedObjectURL, routeObserver, routeEventListener, routeAnimationFrame } from './resource_lifecycle'
+import { coalesceCoverFit } from './cover_fit_scheduler'
 import { brandMark } from './brand'
 
 export function deterministicCoverHue(seed: string): number {
@@ -67,10 +68,11 @@ function fitCoverText(cover: HTMLElement): void {
       node.style.fontSize = `${low}px`
     }
   }
-  if (typeof ResizeObserver !== 'undefined') routeObserver(new ResizeObserver(fit)).observe(cover)
-  routeObserver(new MutationObserver(fit)).observe(cover, {childList:true,subtree:true,characterData:true})
-  void document.fonts?.ready.then(fit)
-  if (document.fonts) routeEventListener(document.fonts, 'loadingdone', fit)
+  const schedule=coalesceCoverFit(callback=>routeAnimationFrame(callback),fit)
+  if (typeof ResizeObserver !== 'undefined') routeObserver(new ResizeObserver(schedule)).observe(cover)
+  routeObserver(new MutationObserver(schedule)).observe(cover, {childList:true,subtree:true,characterData:true})
+  void document.fonts?.ready.then(schedule)
+  if (document.fonts) routeEventListener(document.fonts, 'loadingdone', schedule)
 }
 const MAX_COVER_URLS = 128
 
