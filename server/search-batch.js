@@ -33,5 +33,5 @@ export async function onRequest({request,env}){
   const frame=new Uint8Array(4+meta.length+total);new DataView(frame.buffer).setUint32(0,meta.length);frame.set(meta,4);let offset=4+meta.length
   for(const row of rows){frame.set(row.bytes,offset);offset+=row.bytes.length}
   return new Response(new Blob([frame]).stream().pipeThrough(new CompressionStream('gzip')),{headers:{'content-type':'application/octet-stream','content-encoding':'gzip','cache-control':'no-store','x-search-batch':'1','x-content-type-options':'nosniff'},encodeBody:'manual'})
- }catch{return fail(503)}
+ }catch(error){const response=fail(503);response.headers.set('x-search-batch-failure',['batch_size','batch_length'].includes(error?.message)?error.message:'storage');return response}
 }

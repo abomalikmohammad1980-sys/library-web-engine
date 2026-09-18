@@ -2,7 +2,10 @@
 export function searchBatchFetch(fetcher:typeof fetch,origin:string):typeof fetch{
  type Job={input:RequestInfo|URL;init:RequestInit|undefined;path:string;range:string|undefined;resolve:(r:Response)=>void;reject:(e:unknown)=>void}
  let queue:Job[]=[],timer:ReturnType<typeof setTimeout>|undefined
- const flush=()=>{timer=undefined;const pending=queue;queue=[];for(let i=0;i<pending.length;i+=24)void send(pending.slice(i,i+24))}
+ // Streamed directory downloads have their own idle-progress watchdog. Holding
+ // those responses behind a complete batch hides progress and causes false
+ // timeouts on a slow connection; only archive/index traffic is coalesced.
+ const flush=()=>{timer=undefined;const pending=queue;queue=[];let batch:Job[]=[],bytes=0;for(const job of pending){const match=job.range&&/^bytes=(\d+)-(\d+)$/.exec(job.range),size=match?Number(match[2])-Number(match[1])+1:2*1024*1024;if(batch.length&&(batch.length===24||bytes+size>8*1024*1024)){void send(batch);batch=[];bytes=0}batch.push(job);bytes+=size}if(batch.length)void send(batch)}
  async function send(jobs:Job[]){
   let responses:Response[]
   try{
@@ -24,7 +27,7 @@ export function searchBatchFetch(fetcher:typeof fetch,origin:string):typeof fetc
  return ((input,init)=>{
   const url=new URL(typeof input==='string'?input:input instanceof URL?input.href:input.url,origin),headers=new Headers(init?.headers),range=headers.get('range')??undefined
   const eligible=url.origin===origin&&(!init?.method||init.method==='GET')&&(/^\/r2\/khezana-search-v2-0[0-7]\/control\/(?:manifest\.json|(?:indexes|term-indexes)\/\d{4}\.json)$/.test(url.pathname)||/^\/r2\/khezana-search-v2-0[0-7]\/archives\/\d{6}\.bin$/.test(url.pathname)&&!!range&&Number(range.split('-')[1])-Number(range.slice(6).split('-')[0])+1<=2*1024*1024)
-  if(!eligible||init?.signal?.aborted)return fetcher(input,init)
-  return new Promise<Response>((resolve,reject)=>{queue.push({input,init,path:url.pathname,range,resolve,reject});timer??=setTimeout(flush,4)})
+  if(!eligible||url.pathname.includes('/control/term-indexes/')||init?.signal?.aborted)return fetcher(input,init)
+  return new Promise<Response>((resolve,reject)=>{queue.push({input,init,path:url.pathname,range,resolve,reject});timer??=setTimeout(flush,20)})
  }) as typeof fetch
 }

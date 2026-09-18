@@ -21,6 +21,11 @@ it('does not intercept private or unrelated resources',async()=>{
  const fetcher=vi.fn(async()=>new Response('untouched')),fetch=searchBatchFetch(fetcher as typeof globalThis.fetch,origin)
  await fetch('/api/account');expect(fetcher).toHaveBeenCalledWith('/api/account',undefined)
 })
+it('preserves streaming progress and cancellation for term directories',async()=>{
+ const fetcher=vi.fn(async()=>new Response('directory')),fetch=searchBatchFetch(fetcher as typeof globalThis.fetch,origin),signal=new AbortController().signal
+ const url=origin+'/r2/khezana-search-v2-00/control/term-indexes/0001.json'
+ await fetch(url,{signal});expect(fetcher).toHaveBeenCalledExactlyOnceWith(url,{signal})
+})
 it('splits a large wave into bounded batches and falls back on a malformed frame',async()=>{
  const sizes:number[]=[]
  const fetcher=vi.fn(async(input:RequestInfo|URL,init?:RequestInit)=>{
@@ -28,7 +33,14 @@ it('splits a large wave into bounded batches and falls back on a malformed frame
   return new Response(String(input))
  })
  const fetch=searchBatchFetch(fetcher as typeof globalThis.fetch,origin)
- const urls=Array.from({length:49},(_,i)=>origin+'/r2/khezana-search-v2-00/control/indexes/'+String(i).padStart(4,'0')+'.json')
- const responses=await Promise.all(urls.map(url=>fetch(url)))
+ const urls=Array.from({length:49},(_,i)=>origin+'/r2/khezana-search-v2-00/archives/'+String(i).padStart(6,'0')+'.bin')
+ const responses=await Promise.all(urls.map(url=>fetch(url,{headers:{range:'bytes=0-1'}})))
  expect(sizes).toEqual([24,24,1]);expect(await Promise.all(responses.map(r=>r.text()))).toEqual(urls)
+})
+it('bounds aggregate bytes as well as request count',async()=>{
+ const sizes:number[]=[]
+ const fetcher=vi.fn(async(input:RequestInfo|URL,init?:RequestInit)=>{if(String(input).endsWith('/batch'))sizes.push(JSON.parse(init!.body as string).length);return new Response(null,{status:404})})
+ const fetch=searchBatchFetch(fetcher as typeof globalThis.fetch,origin)
+ await Promise.all(Array.from({length:10},()=>fetch(origin+'/r2/khezana-search-v2-00/archives/000001.bin',{headers:{range:'bytes=0-2097151'}})))
+ expect(sizes).toEqual([4,4,2])
 })

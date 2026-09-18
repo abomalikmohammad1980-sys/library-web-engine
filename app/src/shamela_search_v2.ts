@@ -17,6 +17,7 @@ import { loadFieldRawRows } from './search_field_raw_rows'
 import { snippetPhraseOffsets } from './search_phrase_snippet_matches'
 import { searchProgressDownload } from './search_progress_download'
 import { searchBatchFetch } from './search_batch_fetch'
+import {SearchPositionFilters,mayContainPosition} from './search_position_filter'
 
 export type SeparatedV2SearchBinding = { manifestUrl: string; manifestSha256: string; sourceIndexSha256: string; packedReleaseId: string; packedManifestSha256: string; expectedBooks: number; expectedSegments: number; sourceRows?: {manifestUrl:string;manifestSha256:string} }
 
@@ -28,7 +29,7 @@ type PackedPart={archive:string;project:number;offset:number;length:number;sha25
 type PackedEntry={byteLength:number;sha256:string;parts:PackedPart[]}
 type LiteDirectoryState={key:string;reader:PackedTermDirectoryLite;accountedBytes:number}
 type PackedManifest={contract:string;releaseId:string;coverageComplete:boolean;counts:{segments:number;expectedSegments:number;books:number;documents:number;positions:number};indexBucketCount:number;indexPattern:string;termIndexBucketCount?:number;termIndexPattern?:string;termCount?:number;termIndexFiles?:Array<{id:string;path:string;entries:number;byteLength:number;sha256:string}>;source:{postingBucketCount:number;postingPattern:string;segmentSnippetPattern:string;bucketCount:number}}
-type PackedConfig={controlBaseUrl:string;projectBaseUrls:string[];compressedParts?:boolean;batchRequests?:boolean;termDirectoryMerkle?:unknown;sourceRecovery?:unknown}
+type PackedConfig={controlBaseUrl:string;projectBaseUrls:string[];compressedParts?:boolean;batchRequests?:boolean;termDirectoryMerkle?:unknown;sourceRecovery?:unknown;positionFilters?:unknown}
 export function packedSearchConfigAllowedOnHost(config:PackedConfig,host=globalThis.location?.hostname):boolean{const local=host==='localhost'||host==='127.0.0.1'||host==='[::1]';return !local||[config.controlBaseUrl,...config.projectBaseUrls].every(url=>/^https?:\/\/(?:localhost|127\.0\.0\.1|\[::1\])(?::|\/)/u.test(url))}
 const ROOT='./library/shamela-search-v2/'
 const localPackedConfig=(host=globalThis.location?.hostname):PackedConfig|undefined=>host==='localhost'||host==='127.0.0.1'||host==='[::1]'?{controlBaseUrl:'http://127.0.0.1:4200/control',projectBaseUrls:Array.from({length:8},(_,index)=>`http://127.0.0.1:${4200+index}`)}:undefined
@@ -212,6 +213,7 @@ private loadPackedManifest(){return this.packedManifest??=(async()=>{await pinBo
     const full=await this.search(query,0,Number.MAX_SAFE_INTEGER,bookIds,true)
     return{...full,hits:full.hits.slice(Math.max(0,offset),Math.max(0,offset)+Math.max(0,Math.min(500,limit)))}
   }
+  private positionFilters=new SearchPositionFilters()
   private async selectivePackedPhrase(query:string,words:string[],manifest:Manifest,allowed:(id:string)=>boolean,offset:number,limit:number,before:number,completeResults=false):Promise<{total:number;hits:SearchHit[];networkBytes:number;indexedBooks:number}|null>{
     const packed=await this.getPackedManifest();if(!packed||words.length<1||!manifest.postingPattern||!manifest.postingBucketCount)return null
     // Prefer exact-word postings whenever the release provides them. Fetching
@@ -259,6 +261,14 @@ private loadPackedManifest(){return this.packedManifest??=(async()=>{await pinBo
     // أسرع من فتح مئات/آلاف snippet buckets (مثل «الحج عرفة»). أما المرساة
     // الضيقة فتبقى انتقائية حتى لا ننزّل مئات الميغابايت لعبارة نادرة.
     if(!usesTermDirectory&&totalBytes<64*1024*1024&&candidate.size>256)return null
+    if(usesTermDirectory&&candidate.size>64){
+      for(let index=0;index<words.length;index++){
+        if(index===anchor)continue
+        const filter=await this.positionFilters.get(this.packedConfig()?.positionFilters,words[index]!,packed.releaseId,this.packedManifestSha256??'',entries[index]!.sha256,this.fetcher,b=>this.sha256(b),n=>{this.bytesFetched+=n})
+        if(!filter)continue
+        for(const [id,row]of candidate){const surviving=row[1].filter(position=>mayContainPosition(filter,id,position+index-anchor));if(!surviving.length)candidate.delete(id);else candidate.set(id,[row[0],surviving,row[2],row[3]])}
+      }
+    }
     for(const index of entries.map((entry,index)=>({entry,index})).filter(x=>x.index!==anchor).sort((a,b)=>a.entry.byteLength-b.entry.byteLength).map(x=>x.index)){
       if(usesTermDirectory?(candidate.size===0||(candidate.size<=64&&entries[index]!.byteLength>64*1024)||entries[index]!.byteLength>16*1024*1024):!shouldLoadAdditionalPackedPosting(candidate.size,entries[index]!.byteLength))break
       const rows=usesTermDirectory?new Map((await this.packedTermValue(words[index]!,packed,entries[index]!))[1].map(row=>[row[0],row] as const)):new Map(((await this.get<{entries:Array<[string,GlobalPosting[]]>}>(paths[index]!)).entries.find(x=>x[0]===words[index])?.[1]??[]).map(row=>[row[0],row] as const)),delta=index-anchor
@@ -274,7 +284,10 @@ private loadPackedManifest(){return this.packedManifest??=(async()=>{await pinBo
     if(globalThis.location?.hostname==='localhost'||globalThis.location?.hostname==='127.0.0.1')console.debug(`shamela_v2_selective ${JSON.stringify({phase:'candidates',count:candidate.size})}`);if(!candidate.size)return{total:0,hits:[],networkBytes:this.bytesFetched-before,indexedBooks:manifest.counts?.books??0}
     const snippetPattern=manifest.segmentSnippetPattern??manifest.batchSnippetPattern!.replace('{batch}','{segment}'),matches:Array<{row:Snippet;death:number;id:string;matchOffset:number}>=[],target=Math.max(1,Math.max(0,offset)+Math.max(0,Math.min(completeResults?Number.MAX_SAFE_INTEGER:500,limit))),ordered=[...candidate].sort((a,b)=>(a[1][2]??Number.POSITIVE_INFINITY)-(b[1][2]??Number.POSITIVE_INFINITY)||a[0].localeCompare(b[0]));let cursor=0,loadedPaths=0
     while(cursor<ordered.length&&matches.length<target){
-      const cohort=ordered.slice(cursor,cursor+Math.min(64,target-matches.length)),byPath=new Map<string,Set<string>>()
+      // Candidates are not matches. Near a full page, shrinking this to the
+      // remaining hit count serializes potentially thousands of non-matches.
+      // Keep a bounded 64-candidate wave; slice verified hits only afterwards.
+      const cohort=ordered.slice(cursor,cursor+64),byPath=new Map<string,Set<string>>()
       for(const[id,row]of cohort){const path=snippetPattern.replace('{segment}',row[3]).replace('{bucket}',bucketFor(id,manifest.bucketCount??manifest.buckets??512)),ids=byPath.get(path)??new Set<string>();ids.add(id);byPath.set(path,ids)}
       loadedPaths+=byPath.size
       await Promise.all([...byPath].map(async([path,wanted])=>{

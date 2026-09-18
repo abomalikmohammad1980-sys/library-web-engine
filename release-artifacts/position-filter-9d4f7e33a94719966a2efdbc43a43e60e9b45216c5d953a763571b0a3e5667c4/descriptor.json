@@ -1,0 +1,60 @@
+{
+  "word": "الا",
+  "releaseId": "shamela-search-v2-packed-a88f1f13ac8f8fd6-p8-l26213376-t1-r1",
+  "sourceManifestSha256": "b1815eeec97468f791b5a155f43b4f9d85f2d783926d0162bef896397b03f54b",
+  "termSha256": "a09c63ba114a0a563ee4b8a15d06aab2a2313b4516ceb371b10d35900e96dbe4",
+  "sha256": "9d4f7e33a94719966a2efdbc43a43e60e9b45216c5d953a763571b0a3e5667c4",
+  "byteLength": 10049114,
+  "parts": [
+    {
+      "path": "000.bin",
+      "byteLength": 1048576,
+      "sha256": "29ad82824e36f251ffa18f6dc5ee028dc0b50c98b5cacce8ba86551d40341570"
+    },
+    {
+      "path": "001.bin",
+      "byteLength": 1048576,
+      "sha256": "d781eb519a7f2da06852db5c49d1309940fe0dcdd952151c1532a2643ebb851f"
+    },
+    {
+      "path": "002.bin",
+      "byteLength": 1048576,
+      "sha256": "e30f7b1418d5da1aa7a8c8aa1342d5d855f39da1e1075f1311a4028ad85d5f69"
+    },
+    {
+      "path": "003.bin",
+      "byteLength": 1048576,
+      "sha256": "c44c11611ae2fc5cf4858323d764474c3b2198b2ae54d9dcdc48c18f9db4661f"
+    },
+    {
+      "path": "004.bin",
+      "byteLength": 1048576,
+      "sha256": "678bec30ff782e845018fa2a741fdcae66494d8a394a055794f8e2ce92dd3b60"
+    },
+    {
+      "path": "005.bin",
+      "byteLength": 1048576,
+      "sha256": "00c32cace1f2f80bb63b10a8dc2dbb30c25fd5f2eab90c550b0e53f27fd3ac73"
+    },
+    {
+      "path": "006.bin",
+      "byteLength": 1048576,
+      "sha256": "c53f4223fe00b8ba034f17eb2f5f149541ea490bda4e35ae89edd440a0bed86d"
+    },
+    {
+      "path": "007.bin",
+      "byteLength": 1048576,
+      "sha256": "e23e629e26ad7b3cd4239080afe5766d23caad51a069296724183e8ec8111c52"
+    },
+    {
+      "path": "008.bin",
+      "byteLength": 1048576,
+      "sha256": "73fa3c870aa73bbefa838426a9c049815ea871701e375e87cb6531c732cb07a8"
+    },
+    {
+      "path": "009.bin",
+      "byteLength": 611930,
+      "sha256": "f946b5ce3afeb9a3bf57f6727a2932c4fe2c399a30e4f9b01f73f99dc679c365"
+    }
+  ]
+}
