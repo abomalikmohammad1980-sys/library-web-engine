@@ -37,11 +37,11 @@ if(next.length>20000)throw Error('file_budget');next.sort((a,b)=>a.path.localeCo
 for(const entry of snapshot.files){if(seen.has(entry.path))continue;seen.add(entry.path);let bytes=await readFile(resolve(base,entry.path));if(sha(bytes)!==entry.sha256)throw Error('function_changed');if(batch==='54'&&entry.path==='deploy/functions/api/search/headings/[[path]].js'){bytes=Buffer.from(usePublicHeadingBucket(bytes.toString()));entry.sha256=sha(bytes);if('bytes' in entry)entry.bytes=bytes.length;if('byteLength' in entry)entry.byteLength=bytes.length}const target=resolve(out,entry.path);await mkdir(dirname(target),{recursive:true});await writeFile(target,bytes,{flag:'wx'})}
 const config=JSON.parse(await readFile(base+'/deploy/wrangler.jsonc'));config.vars.SEO_HTML_CACHE_VERSION=payloadFingerprint;config.env.preview.vars.SEO_HTML_CACHE_VERSION=payloadFingerprint
 if(batch==='61'){
- const additions=[['server/heading-static-partition.mjs','deploy/server/heading-static-partition.mjs'],['app/src/heading_dictionary_release.generated.json','deploy/functions/api/search/heading-partitions/descriptor.json'],['alpha-publish/functions/api/search/heading-partitions/[[path]].js','deploy/functions/api/search/heading-partitions/[[path]].js']]
+ const additions=[['server/heading-static-partition.mjs','deploy/server/heading-static-partition.mjs'],['app/src/heading_dictionary_release.generated.json','deploy/functions/api/search/heading-partitions/descriptor.json'],['server/heading-partition-function.js','deploy/functions/api/search/heading-partitions/[[path]].js']]
  for(const [source,path]of additions){
   if(seen.has(path))throw Error('new_partition_snapshot_collision')
   let bytes=await readFile(source)
-  if(path.endsWith('[[path]].js'))bytes=Buffer.from(bytes.toString().replace('../../../../../app/src/heading_dictionary_release.generated.json','./descriptor.json').replace('../../../../../server/heading-static-partition.mjs','../../../../server/heading-static-partition.mjs'))
+  if(path.endsWith('[[path]].js'))bytes=Buffer.from(bytes.toString().replace('../app/src/heading_dictionary_release.generated.json','./descriptor.json').replace('./heading-static-partition.mjs','../../../../server/heading-static-partition.mjs'))
   await mkdir(dirname(resolve(out,path)),{recursive:true});await writeFile(resolve(out,path),bytes,{flag:'wx'});snapshot.files.push({path,sha256:sha(bytes),bytes:bytes.length});seen.add(path)
  }
 }
