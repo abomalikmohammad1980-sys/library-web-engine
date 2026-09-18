@@ -8,7 +8,7 @@ const memory = () => {
 }
 
 describe('Quran view persistence and scale isolation', () => {
-  it('keeps all three script choices on one row',()=>{const css=readFileSync(new URL('./styles/screens.css',import.meta.url),'utf8');expect(css).toMatch(/\.quran-selected > \.quran-reading-modes--compact\s*\{[^}]*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\)/)})
+  it('keeps all three script choices on one row',()=>{const css=readFileSync(new URL('./styles/screens.css',import.meta.url),'utf8');for(const selector of ['.quran-reading-modes--compact','.quran-selected > .quran-reading-modes--compact']){const start=css.indexOf(selector+' {'),rule=css.slice(start,css.indexOf('}',start));expect(rule).toContain('grid-template-columns: repeat(3, minmax(0, 1fr))')}})
   it('persists three distinct views',()=>{const storage=memory();for(const mode of ['reading','uthmani','imlai'] as const){saveQuranReadingMode(mode,storage);expect(loadQuranReadingMode(storage)).toBe(mode)}})
   it('persists the selected script and reciter across reload/back', () => {
     const storage = memory()
