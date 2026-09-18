@@ -4,8 +4,8 @@ import { h } from './ui'
 import type { StoredBook } from './engine/library_store'
 export { discoverWordCover, selectCoverCandidate } from '@library/word-cover'
 import { discoverWordCover } from '@library/word-cover'
-import { createTrackedObjectURL, revokeTrackedObjectURL, routeObserver, routeEventListener, routeAnimationFrame } from './resource_lifecycle'
-import { coalesceCoverFit } from './cover_fit_scheduler'
+import { createTrackedObjectURL, revokeTrackedObjectURL, routeObserver, routeEventListener, routeAnimationFrame, captureRouteResourceScope, type ResourceScope } from './resource_lifecycle'
+import { fitCoverTextBatch, type CoverFitTarget } from './cover_text_fit'
 import { brandMark } from './brand'
 
 export function deterministicCoverHue(seed: string): number {
@@ -52,23 +52,43 @@ export function coverTitleFit(title: string): number {
 }
 
 const coverUrlCache = new Map<string, string>()
+const coverFitQueues = new WeakMap<ResourceScope, Set<HTMLElement>>()
 /** Measure the actual shaped text after layout/font loading, not character count. */
 function fitCoverText(cover: HTMLElement): void {
-  const fit = () => {
-    if (!cover.isConnected || !cover.clientWidth) return
-    for (const node of cover.querySelectorAll<HTMLElement>('.book-cover__title, .book-cover__author')) {
-      let low = 0.25, high = cover.clientWidth * (node.classList.contains('book-cover__title') ? .17 : .10)
-      const range = document.createRange(); range.selectNodeContents(node)
-      for (let i = 0; i < 16; i++) {
-        const size = (low + high) / 2; node.style.fontSize = `${size}px`
-        const text = range.getBoundingClientRect()
-        if (text.height <= node.clientHeight - 2 && text.width <= node.clientWidth + .5) low = size
-        else high = size
-      }
-      node.style.fontSize = `${low}px`
+  const scope = captureRouteResourceScope()
+  const schedule = () => {
+    if (scope.disposed) return
+    let queue = coverFitQueues.get(scope)
+    if (!queue) {
+      queue = new Set()
+      coverFitQueues.set(scope, queue)
+      scope.add(() => { queue!.clear(); coverFitQueues.delete(scope) })
     }
+    const pending = queue.size > 0
+    queue.add(cover)
+    if (pending) return
+    routeAnimationFrame(() => {
+      const covers = [...queue!]
+      queue!.clear()
+      const targets: CoverFitTarget[] = []
+      for (const item of covers) {
+        if (!item.isConnected || !item.clientWidth) continue
+        const width = item.clientWidth
+        for (const node of item.querySelectorAll<HTMLElement>('.book-cover__title, .book-cover__author')) {
+          const range = document.createRange(); range.selectNodeContents(node)
+          targets.push({
+            maximum: width * (node.classList.contains('book-cover__title') ? .17 : .10),
+            write: size => { node.style.fontSize = `${size}px` },
+            fits: () => {
+              const text = range.getBoundingClientRect()
+              return text.height <= node.clientHeight - 2 && text.width <= node.clientWidth + .5
+            },
+          })
+        }
+      }
+      fitCoverTextBatch(targets)
+    }, scope)
   }
-  const schedule=coalesceCoverFit(callback=>routeAnimationFrame(callback),fit)
   if (typeof ResizeObserver !== 'undefined') routeObserver(new ResizeObserver(schedule)).observe(cover)
   routeObserver(new MutationObserver(schedule)).observe(cover, {childList:true,subtree:true,characterData:true})
   void document.fonts?.ready.then(schedule)

@@ -24,6 +24,8 @@ import {createPublishedBooksCatalogClient,type PublishedCatalogBook} from '../pu
 import {captureRouteResourceScope} from '../resource_lifecycle'
 import {currentAccountClaims} from '../account_authority'
 import {activeEditorialIds,loadEditorialRecommendations} from '../editorial_recommendations'
+import { homeQuoteCandidates } from '../home_quote_candidates'
+import { whenNearViewport } from '../near_viewport'
 
 type PublicHomeCard=Pick<StoredBook,'id'|'title'|'author'|'authorId'|'category'>&{publicSource:true;addedAt:number}
 export type HomeCardDisplay=StoredBook|PublicHomeCard
@@ -56,7 +58,7 @@ export function homeScreen(): HTMLElement {
   const gateways = libraryGatewaysSection(snapshot)
   const popular = popularBooksSection(snapshot)
   const recommendations = h('section', { class: 'home-section', 'aria-labelledby': 'recommendations-heading' }, linkedHomeHeader('مقترح لك من خزانتك','recommendations-heading','#/recommendations'), initialRecommendations(snapshot))
-  void hydrateRecommendations(recommendations)
+  whenNearViewport(recommendations, () => { void hydrateRecommendations(recommendations) })
 
   const page = pageContent(
     hero(),
@@ -327,7 +329,7 @@ try{const {quotes}=await loadPublicQuotes(0,20);if(!identity.isCurrent())return;
   const custom = getReaderQuotes(identity)
   const candidates = [
     ...custom.map(quote => ({ text: quote.text, bookId: quote.bookId })),
-    ...books.flatMap(book => (book.readerModel?.paragraphs ?? []).map(paragraph => ({ text: paragraph.text.replace(/\s+/g, ' ').trim(), bookId: book.id })).filter(item => item.text.length >= 55 && item.text.length <= 240).slice(0, 18)),
+    ...homeQuoteCandidates(books),
   ]
   const dailyIndex = Math.floor(Date.now() / 86_400_000)
   const selected = candidates.length ? candidates[dailyIndex % candidates.length] : undefined

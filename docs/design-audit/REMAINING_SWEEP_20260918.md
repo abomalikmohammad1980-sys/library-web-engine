@@ -1,5 +1,7 @@
 # Remaining sweep — incomplete, not a release receipt
 
+Latest user priority: work on the homepage performance reports now while complementary source data is transferred. Publish accepted fixes after source transfer and independent verification. See PERFORMANCE_REPORTS_20260918.md for measured baseline and local candidates. Do not silently include untested performance candidates in a release.
+
 Full Vitest report `.artifacts/remaining-suite-20260918.json`: 4748 total, 4563 passed, 101 failed, 84 pending. No claim of a green full suite. Do not confuse failed source-string expectations with confirmed runtime faults.
 
 Resolved and rerun:

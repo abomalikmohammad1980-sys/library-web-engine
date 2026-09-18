@@ -91,6 +91,7 @@
 }
 
 .brand-mark { position: relative; display: inline-grid; place-items: center; flex: 0 0 auto; overflow: hidden; }
+.brand-mark__picture { grid-area: 1 / 1; display: grid; width: 100%; height: 100%; }
 .brand-mark img { grid-area: 1 / 1; width: 100%; height: 100%; object-fit: contain; }
 .brand-mark__mono { display: none; }
 .app-logo__mark img { width: 32px; height: 32px; }
@@ -761,8 +762,8 @@
 .book-cover__ornament { color: #b58b32; font-size: clamp(24px, 3vw, 40px); line-height: 1; margin-block-end: 10px; }
 .book-cover__category { order: -1; color: hsl(var(--cover-hue) 38% 30%); font-size: 10px; font-weight: 700; letter-spacing: .02em; margin-block-end: 8px; }
 .book-cover__format { position: absolute; inset-block-start: 11px; inset-inline-end: 11px; padding: 3px 7px; border-radius: 999px; color: #fff; background: hsl(var(--cover-hue) 42% 24%); font-size: 9px; font-weight: 800; }
-.book-cover__brand { position:absolute; inset-block-start:54%; inset-inline-start:38%; width:24%; height:20%; margin:0; padding:0; color:var(--cover-accent); background:currentColor; mask:url('/brand-logo-mono.png') center / contain no-repeat; }
-.book-cover__brand > img { visibility:hidden; }
+.book-cover__brand { position:absolute; inset-block-start:54%; inset-inline-start:38%; width:24%; height:20%; margin:0; padding:0; color:var(--cover-accent); background:currentColor; mask:url('../assets/brand-logo-mono-small.webp?inline') center / contain no-repeat; }
+.book-cover__brand > img, .book-cover__brand > picture { visibility:hidden; }
 
 .book-cover:hover {
   transform: translateY(-3px);

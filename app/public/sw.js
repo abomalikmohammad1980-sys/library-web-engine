@@ -1,4 +1,5 @@
 const CACHE = 'alkhizana-shell-v18'
+const FONT_ALIASES = {} // Populated from verified font bytes by the build.
 const LARGE_CATALOG_PATH = '/data/shamela-authors.json'
 const LIGHTWEIGHT_AUTHOR_INDEX_PATH = '/data/shamela-author-index.json'
 const TARAJM_DATA_PREFIX = '/data/tarajm-'
@@ -97,6 +98,17 @@ self.addEventListener('fetch', event => {
   if (request.method !== 'GET') return
   const url = new URL(request.url)
   if (url.origin !== self.location.origin || url.pathname.startsWith('/api/')) return
+  const fontAlias = FONT_ALIASES[url.pathname]
+  if (fontAlias) {
+    const target = new URL(fontAlias, self.location.origin).href
+    event.respondWith(caches.match(target).then(async cached => {
+      if (cached && !isHtmlResponse(cached)) return cached
+      const response = await fetch(target)
+      if (response.ok && !isHtmlResponse(response)) retain(event, target, response)
+      return response
+    }))
+    return
+  }
   // Explicit recovery must reach the network, not return the same old Cache
   // Storage entry again. Keep ordinary offline book/shell fallback unchanged.
   if (request.cache === 'no-store' && url.pathname.startsWith('/library/')) {

@@ -19,10 +19,12 @@ import headingDictionaryRelease from './src/heading_dictionary_release.generated
 import {homeLibraryStatistics} from '../tools/home-library-statistics.mjs'
 import {wordConversionMultipart} from '../tools/word-conversion-response.mjs'
 import {interfaceFontScale} from '../tools/interface-font-scale.mjs'
+import {versionedUiFonts} from '../tools/versioned-ui-fonts.mjs'
 import sourceEditionPacks from './src/quran_source_packs.generated.json'
 import {copySourceEditionAsset} from '../tools/source-edition-packs.mjs'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
+const uiFontAssets = versionedUiFonts(resolve(__dirname, 'public'))
 const PROJECT_ROOT = resolve(__dirname, '../../..')
 const SHAMELA_CORPUS_ROOT = resolve(PROJECT_ROOT, 'بيانات-المشروع/shamela/published-corpus-v1')
 const SHAMELA_CHECKPOINT = resolve(SHAMELA_CORPUS_ROOT, 'orchestration.checkpoint.json')
@@ -61,13 +63,17 @@ function emitEssentialPublicAssets(): Plugin {
         const source = resolve(publicRoot, relative)
         const destination = resolve(outputRoot, relative)
         await mkdir(dirname(destination), { recursive: true })
-        if ((await stat(source)).isDirectory()) await cp(source, destination, { recursive: true, force: true, filter: path=>copySourceEditionAsset(path,sourceEditionPacks) })
+        if ((await stat(source)).isDirectory()) await cp(source, destination, { recursive: true, force: true, filter: path=>!uiFontAssets.originalPaths.has('/'+path.slice(publicRoot.length+1).replaceAll('\\','/'))&&copySourceEditionAsset(path,sourceEditionPacks) })
         else await copyFile(source, destination)
       }
       if (isolatedAssets) await buildTarajmPersonAssets(outputRoot)
       await stageOptionalHeadingRelease(publicRoot,outputRoot)
       await stageShamelaBiographies(publicRoot,outputRoot)
       await writeFile(resolve(outputRoot,'data/home-library-statistics.json'),JSON.stringify(await homeLibraryStatistics(__dirname)))
+      const swPath = resolve(outputRoot, 'sw.js')
+      const swSource = await readFile(swPath, 'utf8')
+      if (!swSource.includes('const FONT_ALIASES = {}')) throw new Error('font_alias_injection_marker_missing')
+      await writeFile(swPath, swSource.replace('const FONT_ALIASES = {}', 'const FONT_ALIASES = '+JSON.stringify(Object.fromEntries([...uiFontAssets.originalPaths].map(([original,target])=>[original,'/'+target])))))
     },
   }
 }
@@ -535,7 +541,7 @@ export default defineConfig(({mode}) => {
   // Our pre-middleware above serves individual files without a startup crawl.
   publicDir: false,
   base: '/',
-  plugins: [satellitePlugin, serveReaderPublicAssets(), disableServiceWorkerInDev(), emitEssentialPublicAssets(), serveHarfbuzzWasm(), serveLocalShamelaBatches(), localTranslationBridge(), wordPdfConversion(), wordBokConversion()],
+  plugins: [uiFontAssets, satellitePlugin, serveReaderPublicAssets(), disableServiceWorkerInDev(), emitEssentialPublicAssets(), serveHarfbuzzWasm(), serveLocalShamelaBatches(), localTranslationBridge(), wordPdfConversion(), wordBokConversion()],
   optimizeDeps: {
     // The application owns a very large local corpus and many lazy reader routes.
     // Vite's automatic dependency discovery walks that whole graph on a cold

@@ -18,8 +18,8 @@ describe('official Alkhizana brand artwork', () => {
   })
 
   it('uses the official mark in header, welcome, install, forced colors and print', () => {
-    expect(source('./brand.ts')).toContain("'./brand-logo-color.png'")
-    expect(source('./brand.ts')).toContain("'./brand-logo-mono.png'")
+    expect(source('./brand.ts')).toContain("'/brand-logo-color.webp'")
+    expect(source('./brand.ts')).toContain("'/brand-logo-mono.png'")
     expect(source('./shell.ts')).toContain("brandMark('app-logo__mark brand-mark')")
     expect(source('./screens/welcome.ts')).toContain("brandMark('welcome__brand-mark brand-mark')")
     expect(source('./screens/welcome.ts')).toContain("brandMark('welcome__hero-mark brand-mark')")
@@ -39,8 +39,8 @@ describe('official Alkhizana brand artwork', () => {
     const html = source('../index.html')
     const manifest = JSON.parse(readFileSync(resolve(root, 'manifest.webmanifest'), 'utf8')) as { icons: Array<{ src: string }> }
     const sw = readFileSync(resolve(root, 'sw.js'), 'utf8')
-    expect(html).toContain('./favicon-64.png')
-    expect(html).toContain('./icons/apple-touch-icon.png')
+    expect(html).toContain('/favicon-64.png')
+    expect(html).toContain('/icons/apple-touch-icon.png')
     expect(manifest.icons).toHaveLength(4)
     for (const icon of manifest.icons) expect(png(icon.src.replace('./', '')).length).toBeGreaterThan(1_000)
     for (const asset of ['brand-logo-color.png', 'brand-logo-mono.png', 'favicon-64.png', 'icons/apple-touch-icon.png']) expect(sw).toContain(asset)
