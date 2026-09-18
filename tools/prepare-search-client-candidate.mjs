@@ -3,8 +3,9 @@ import {readFile,writeFile,mkdir,copyFile,link,readdir} from 'node:fs/promises'
 import {resolve,dirname} from 'node:path'
 import {createHash} from 'node:crypto'
 import {positionFilterConfig} from './position-filter-config.mjs'
-const batch=process.argv[2];if(!['51','52','53'].includes(batch))throw Error('reviewed_batch_required')
-const base='.artifacts/batch49',out='.artifacts/batch'+batch,app='.artifacts/batch'+batch+'-final-app',sha=b=>createHash('sha256').update(b).digest('hex')
+import {usePublicHeadingBucket} from '../server/public-heading-preview.mjs'
+const batch=process.argv[2];if(!['51','52','53','54'].includes(batch))throw Error('reviewed_batch_required')
+const base='.artifacts/batch49',out='.artifacts/batch'+batch,app='.artifacts/batch'+(batch==='54'?'53':batch)+'-final-app',sha=b=>createHash('sha256').update(b).digest('hex')
 const manifest=JSON.parse(await readFile(base+'/static-source-manifest.json')),stage=JSON.parse(await readFile(base+'/stage.json')),snapshot=JSON.parse(await readFile(base+'/source-snapshot.json')),current=JSON.parse(await readFile('alpha-publish/ops/current-production.json'))
 if(stage.payloadFingerprint!==sha(JSON.stringify(manifest))||stage.baselineDeploymentId!==current.deploymentId)throw Error('baseline_changed')
 const replacements=new Map()
@@ -19,8 +20,8 @@ await mkdir(out);const next=[]
 for(const entry of manifest){if(entry.path.startsWith('assets/')||replacements.has(entry.path))continue;if(entry.path.includes('..')||entry.path.startsWith('/'))throw Error('unsafe_path');const target=resolve(out,'deploy/pages-dist',entry.path);await mkdir(dirname(target),{recursive:true});await link(resolve(base,'deploy/pages-dist',entry.path),target);next.push(entry)}
 for(const [path,bytes]of replacements){const target=resolve(out,'deploy/pages-dist',path);await mkdir(dirname(target),{recursive:true});await writeFile(target,bytes,{flag:'wx'});next.push({path,bytes:bytes.length,sha256:sha(bytes)})}
 if(next.length>20000)throw Error('file_budget');next.sort((a,b)=>a.path.localeCompare(b.path));const payloadFingerprint=sha(JSON.stringify(next)),seen=new Set()
-for(const entry of snapshot.files){if(seen.has(entry.path))continue;seen.add(entry.path);const bytes=await readFile(resolve(base,entry.path));if(sha(bytes)!==entry.sha256)throw Error('function_changed');const target=resolve(out,entry.path);await mkdir(dirname(target),{recursive:true});await writeFile(target,bytes,{flag:'wx'})}
+for(const entry of snapshot.files){if(seen.has(entry.path))continue;seen.add(entry.path);let bytes=await readFile(resolve(base,entry.path));if(sha(bytes)!==entry.sha256)throw Error('function_changed');if(batch==='54'&&entry.path==='deploy/functions/api/search/headings/[[path]].js'){bytes=Buffer.from(usePublicHeadingBucket(bytes.toString()));entry.sha256=sha(bytes);if('bytes' in entry)entry.bytes=bytes.length;if('byteLength' in entry)entry.byteLength=bytes.length}const target=resolve(out,entry.path);await mkdir(dirname(target),{recursive:true});await writeFile(target,bytes,{flag:'wx'})}
 const config=JSON.parse(await readFile(base+'/deploy/wrangler.jsonc'));config.vars.SEO_HTML_CACHE_VERSION=payloadFingerprint;config.env.preview.vars.SEO_HTML_CACHE_VERSION=payloadFingerprint
-await writeFile(out+'/deploy/wrangler.jsonc',JSON.stringify(config,null,2),{flag:'wx'});await copyFile(base+'/source-snapshot.json',out+'/source-snapshot.json');await copyFile(base+'/rollback.json',out+'/rollback.json')
+await writeFile(out+'/deploy/wrangler.jsonc',JSON.stringify(config,null,2),{flag:'wx'});await writeFile(out+'/source-snapshot.json',JSON.stringify(snapshot,null,2),{flag:'wx'});await copyFile(base+'/rollback.json',out+'/rollback.json')
 await writeFile(out+'/static-source-manifest.json',JSON.stringify(next,null,2),{flag:'wx'});await writeFile(out+'/stage.json',JSON.stringify({...stage,version:'batch-20260918-'+batch,files:next.length,payloadFingerprint,productionReady:false,published:false},null,2),{flag:'wx'})
 console.log(JSON.stringify({batch,files:next.length,payloadFingerprint}))

@@ -57,6 +57,23 @@ pages 100/100/58, summed occurrence counts 521, no duplicate/lost paragraphs.
 34 tests across 11 affected search/store/table suites pass. Batch53 is the
 browser candidate for this correction; not an admission record.
 
+Batch53 actual in-app browser eventually displayed the complete count 521,
+paragraph ranges 1–100 / 101–200 / 201–258 and three pages. Next, direct jump
+to page three, and Previous back to page two succeeded; DOM row count on page
+two was 100. No partial-coverage warning remained. The first cold attempt
+logged `search_state_changed` then `search_ui_timeout`; existing automatic
+recovery completed without a manual retry. Cold-start speed is NOT closed.
+Book 151179 opened with its text, author, 1,350 headings and reader toolbar.
+
+The heading-only browser check found preview HTTP503: the immutable heading
+GET handler used isolated LIBRARY_R2 instead of PUBLIC_LIBRARY_R2. Batch54
+changes that handler only, using the public binding locally without mutating
+env or any account/upload route. A test checks GET binding selection, rejected
+POST and unchanged original env. All batch53/batch54 asset SHAs are identical
+except sw.js; the only function difference is that read-only heading handler.
+Thus paragraph/browser evidence transfers by exact unchanged client/server
+bytes; the heading route requires its own fresh browser check before admission.
+
 Evidence: `.artifacts/position-filter-audit.json`,
 `.artifacts/position-filter-upload.json`, `release-artifacts/position-filter-9d4f7e33a94719966a2efdbc43a43e60e9b45216c5d953a763571b0a3e5667c4/proof.json`,
 `.artifacts/batch51/preview-assets.json`, `.artifacts/batch51/preview-http.json`.
