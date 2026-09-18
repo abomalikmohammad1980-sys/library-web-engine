@@ -26,7 +26,6 @@ export interface TafsirAuthorChronology {
   deathYearHijri?: number
   contemporaryInstitution?: true
   contemporaryCollective?: true
-  contemporaryAuthor?: true
   evidence: string
 }
 
@@ -35,12 +34,6 @@ export interface TafsirAuthorChronology {
  * وتبقى المؤسسة المعاصرة معلّمة بوضوح بدل اختلاق سنة وفاة لها.
  */
 export const TAFSIR_AUTHOR_CHRONOLOGY: Readonly<Record<LinkedTafsirDefinition['slug'], TafsirAuthorChronology>> = {
-  'mawardi': {deathYearHijri:450,evidence:'بيانات مؤلف المصدر المحلي 8346؛ الوفاة 450 هـ'},
-  'ibn-arabi-ahkam': {deathYearHijri:543,evidence:'بيانات مؤلف المصدر المحلي 1464؛ الوفاة 543 هـ'},
-  'durr-masun': {deathYearHijri:756,evidence:'بيانات مؤلف المصدر المحلي 9057؛ الوفاة 756 هـ'},
-  'nazm-durar': {deathYearHijri:885,evidence:'بيانات مؤلف المصدر المحلي 9098؛ الوفاة 885 هـ'},
-  'abu-saud': {deathYearHijri:982,evidence:'بيانات مؤلف المصدر المحلي 1429؛ الوفاة 982 هـ'},
-  'tarifi': {contemporaryAuthor:true,evidence:'بيانات مؤلف المصدر المحلي 151179؛ معاصر، 99999 قيمة فهرسة اصطناعية لا تاريخ وفاة'},
   tabari: { deathYearHijri: 310, evidence: 'ترجمة محمد بن جرير الطبري في فهرس المؤلفين المحلي' },
   baghawi: { deathYearHijri: 516, evidence: 'ترجمة الحسين بن مسعود البغوي في فهرس المؤلفين المحلي' },
   'ibn-kathir': { deathYearHijri: 774, evidence: 'ترجمة إسماعيل بن عمر ابن كثير في فهرس المؤلفين المحلي' },
@@ -82,12 +75,6 @@ export const LINKED_TAFSIRS: readonly LinkedTafsirDefinition[] = [
 ] as const
 
 const TAFSIR_SHORT_AUTHORS:Readonly<Record<string,string>>={
- 'mawardi':'الماوردي',
- 'ibn-arabi-ahkam':'ابن العربي',
- 'durr-masun':'السمين الحلبي',
- 'nazm-durar':'البقاعي',
- 'abu-saud':'أبو السعود',
- 'tarifi':'الطريفي',
  'mokhtasar-tafsir':'مركز تفسير',
  tabari:'الطبري',baghawi:'البغوي','ibn-kathir':'ابن كثير',saadi:'السعدي',qurtubi:'القرطبي',
  'adwa-al-bayan':'الشنقيطي','fi-zilal':'سيد قطب','tahrir-tanwir':'ابن عاشور',manar:'رشيد رضا',
@@ -99,6 +86,8 @@ const TAFSIR_SHORT_AUTHORS:Readonly<Record<string,string>>={
 }
 export function tafsirTitleWithAuthor(definition:TafsirDefinition|ReadyBokDefinition|IndexedVerseBookDefinition):string{
  if(!('author' in definition)||!('slug' in definition))return definition.name
+ const shortTitles:Readonly<Record<string,string>>={kashshaf:'الكشاف - الزمخشري','muharrar-wajiz':'المحرر الوجيز - ابن عطية','fath-al-qadir':'فتح القدير - الشوكاني','tahrir-tanwir':'التحرير والتنوير - ابن عاشور'}
+ if(shortTitles[definition.slug])return shortTitles[definition.slug]
  const author=TAFSIR_SHORT_AUTHORS[definition.slug]??definition.author
  const normalize=(value:string)=>value.normalize('NFKD').replace(/[\u064B-\u065F\u0670\u0640]/gu,'').replace(/[أإآٱ]/gu,'ا').replace(/\s+/gu,' ').trim()
  return author&&!normalize(definition.name).includes(normalize(author))?`${definition.name} - ${author}`:definition.name
@@ -111,7 +100,6 @@ export function tafsirDisplayName(definition: TafsirDefinition|ReadyBokDefinitio
   const title=tafsirTitleWithAuthor(definition)
   const chronology = TAFSIR_AUTHOR_CHRONOLOGY[definition.slug]
   if (chronology?.deathYearHijri) return `${title} (ت ${chronology.deathYearHijri} هـ)`
-  if (chronology?.contemporaryAuthor) return `${title} (معاصر)`
   if (chronology?.contemporaryInstitution) return `${title} (معاصر)`
   if (chronology?.contemporaryCollective) return `${title} (عمل جماعي معاصر)`
   return title
