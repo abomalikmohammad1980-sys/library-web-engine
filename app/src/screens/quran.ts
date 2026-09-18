@@ -104,8 +104,8 @@ async function renderQuran(reader: HTMLElement, details: HTMLElement, tafsirDeta
     let pageZoom = Math.min(180, Math.max(100, Number(localStorage.getItem('khizana-quran-page-zoom') ?? 100) || 100))
     const zoomValue = h('output', { class: 'quran-page-zoom__value', 'aria-live': 'polite' }, `${pageZoom}٪`)
     const applyPageZoom = () => {
-      sheet.style.setProperty('--quran-page-zoom', readingMode === 'imlai' ? '1' : String(pageZoom / 100))
-      sheet.style.setProperty('--quran-text-zoom', readingMode === 'imlai' ? String(pageZoom / 100) : '1')
+      sheet.style.setProperty('--quran-page-zoom', readingMode === 'reading' ? String(pageZoom / 100) : '1')
+      sheet.style.setProperty('--quran-text-zoom', readingMode === 'reading' ? '1' : String(pageZoom / 100))
       zoomValue.textContent = `${pageZoom}٪`
       localStorage.setItem('khizana-quran-page-zoom', String(pageZoom))
     }
@@ -118,7 +118,9 @@ async function renderQuran(reader: HTMLElement, details: HTMLElement, tafsirDeta
     const uthmaniMode = h('button', { type: 'button', class: `quran-reading-mode${readingMode === 'uthmani' ? ' is-active' : ''}`, 'aria-label': 'عرض المصحف بالرسم العثماني', title: 'الرسم العثماني' }, 'عثماني') as HTMLButtonElement
     const imlaiMode = h('button', { type: 'button', class: `quran-reading-mode${readingMode === 'imlai' ? ' is-active' : ''}`, 'aria-label': 'عرض المصحف بالرسم الإملائي', title: 'الرسم الإملائي' }, 'إملائي') as HTMLButtonElement
     uthmaniMode.setAttribute('aria-pressed', String(readingMode === 'uthmani')); imlaiMode.setAttribute('aria-pressed', String(readingMode === 'imlai'))
-    const modeSwitch = h('section', { class: 'quran-reading-modes quran-reading-modes--compact', 'aria-label': 'اختيار رسم نص المصحف' }, uthmaniMode, imlaiMode)
+    const readingButton = h('button', {type:'button',class:`quran-reading-mode${readingMode==='reading'?' is-active':''}`,'aria-label':'عرض صفحة المصحف المطبوعة'}, 'قراءة') as HTMLButtonElement
+    readingButton.setAttribute('aria-pressed',String(readingMode==='reading'))
+    const modeSwitch = h('section', { class: 'quran-reading-modes quran-reading-modes--compact', 'aria-label': 'اختيار رسم نص المصحف' }, readingButton, uthmaniMode, imlaiMode)
     let drawRevision=0
     const draw = async (focusAyah?: number, highlightSearchTarget = false) => {
       const revision=++drawRevision,isCurrent=()=>reader.isConnected&&revision===drawRevision
@@ -129,7 +131,8 @@ async function renderQuran(reader: HTMLElement, details: HTMLElement, tafsirDeta
       if (mapped) { state.page = mapped.page; page.select.value = String(mapped.page); juz.select.value=String(Math.max(1,navigationIndex.juz.filter(target=>target.page<=mapped.page).length));hizb.select.value=String(Math.max(1,navigationIndex.hizb.filter(target=>target.page<=mapped.page).length)) }
       title.replaceChildren(uiTemplateText('cbb0a0ac906682d3',{p1:uiLabelParameter(SURAH_NAMES[state.surah - 1] ?? String(state.surah)),p2:state.page}))
       const openSelection = (surahNumber: number, ayahNumber: number, word?: string) => { const picked = uthmani.get(`${surahNumber}:${ayahNumber}`), imlai = byId.get(`${surahNumber}:${ayahNumber}`); if (!picked || !imlai) return; state.surah = surahNumber; state.selected = picked; surah.select.value = String(surahNumber); ayah.setOptions((groups.get(surahNumber) ?? []).map(item => ({ value: String(item.ayah), label: String(item.ayah) }))); ayah.select.value = String(ayahNumber); renderInspector(details, tafsirDetails, picked, imlai.imlai, audioState, modeSwitch, tafsirSession, word) }
-      if (readingMode === 'uthmani') {
+      activeQuranCopyCleanup?.(); activeQuranCopyCleanup=undefined
+      if (readingMode === 'reading') {
         // لا يجوز أن يسقط قسم القرآن كله إذا تعذّر رسم صورة صفحة واحدة.
         // النص العثماني المحلي محمّل أصلًا، وهو بديل قراءة كامل لا رسالة خطأ.
         try { await drawOriginalSelectablePage(sheet, state.page, pageMap.records, uthmani, openSelection,isCurrent) }
@@ -158,6 +161,8 @@ async function renderQuran(reader: HTMLElement, details: HTMLElement, tafsirDeta
     mushaf.select.addEventListener('change', () => { if (mushaf.select.value !== 'hafs-uthmani') { toast('هذا المصحف قيد الإضافة؛ بقي مصحف حفص ظاهرًا'); mushaf.select.value = 'hafs-uthmani' } })
     const setReadingMode = (mode: QuranReadingMode) => { readingMode = mode; saveQuranReadingMode(mode); applyPageZoom(); uthmaniMode.classList.toggle('is-active', mode === 'uthmani'); imlaiMode.classList.toggle('is-active', mode === 'imlai'); uthmaniMode.setAttribute('aria-pressed', String(mode === 'uthmani')); imlaiMode.setAttribute('aria-pressed', String(mode === 'imlai')); void draw(Number(ayah.select.value || 1)) }
     uthmaniMode.addEventListener('click', () => setReadingMode('uthmani')); imlaiMode.addEventListener('click', () => setReadingMode('imlai'))
+    modeSwitch.addEventListener('click',()=>{readingButton.classList.toggle('is-active',readingMode==='reading');readingButton.setAttribute('aria-pressed',String(readingMode==='reading'))})
+    readingButton.addEventListener('click',()=>setReadingMode('reading'))
     const audioState: AudioState = { entries: [] }
     quranAudioAdvance = (current, segmentation) => {
       const nextRecord = nextQuranAudioRecord(payload.records, current, segmentation)
@@ -577,7 +582,7 @@ function renderInspector(root: HTMLElement, tafsirRoot: HTMLElement, record: Ful
     action('الإعراب', () => { void showLocalResource('irab') }, 'quran-word-service quran-word-service--ready'),
   )
   root.replaceChildren(
-    h('section', { class: 'quran-selected', 'aria-label': 'خدمات الآية المحددة' }, modeSwitch, h('p', { class: 'eyebrow' }, uiTemplateText('fa15a1673672cd10',{p1:uiLabelParameter(SURAH_NAMES[record.surah - 1] ?? String(record.surah)),p2:record.ayah})), h('div', { class: 'quran-word-panel' }, wordServices, wordServiceStatus)),
+    h('section', { class: 'quran-selected', 'aria-label': 'خدمات الآية المحددة' }, modeSwitch, h('h2', { class: 'quran-selected-reference' }, `سورة ${SURAH_NAMES[record.surah - 1] ?? record.surah} · الآية ${record.ayah}`), h('div', { class: 'quran-word-panel' }, wordServices, wordServiceStatus)),
     audioPlayer(record, audio.entries),
   )
   tafsirRoot.replaceChildren(h('section', { class: 'quran-service quran-tafsir-panel' }, h('div', { class: 'quran-tafsir-selector' }, tafsir, tafsirTools), tafsirStatus, bookNavigation))

@@ -8,6 +8,7 @@ const memory = () => {
 }
 
 describe('Quran view persistence and scale isolation', () => {
+  it('persists three distinct views',()=>{const storage=memory();for(const mode of ['reading','uthmani','imlai'] as const){saveQuranReadingMode(mode,storage);expect(loadQuranReadingMode(storage)).toBe(mode)}})
   it('persists the selected script and reciter across reload/back', () => {
     const storage = memory()
     saveQuranReadingMode('imlai', storage); saveQuranAudioReader('القارئ|ورش', storage)
@@ -27,7 +28,7 @@ describe('Quran view persistence and scale isolation', () => {
     expect(screen).toContain('page: mapped.page, mushaf: mushaf.select.value')
     expect(screen).toContain("sheet.style.setProperty('--quran-page-zoom'")
     expect(screen).toContain("sheet.style.setProperty('--quran-text-zoom'")
-    expect(screen).toContain("readingMode === 'imlai' ? '1' : String(pageZoom / 100)")
+    expect(screen).toContain("readingMode === 'reading' ? String(pageZoom / 100) : '1'")
     expect(screen).not.toContain("details.style.setProperty('--quran-page-zoom'")
     expect(screen).not.toContain("tafsirDetails.style.setProperty('--quran-page-zoom'")
   })

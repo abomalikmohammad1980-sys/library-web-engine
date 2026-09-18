@@ -1,4 +1,4 @@
-export type QuranReadingMode = 'uthmani' | 'imlai'
+export type QuranReadingMode = 'reading' | 'uthmani' | 'imlai'
 export const QURAN_READING_MODE_KEY = 'khizana:quran-reading-mode:v1'
 export const QURAN_AUDIO_READER_KEY = 'khizana:quran-audio-reader:v1'
 
@@ -6,7 +6,7 @@ type StorageReader = Pick<Storage, 'getItem'>
 type StorageWriter = Pick<Storage, 'setItem'>
 
 export function loadQuranReadingMode(storage: StorageReader = localStorage): QuranReadingMode {
-  try { return storage.getItem(QURAN_READING_MODE_KEY) === 'imlai' ? 'imlai' : 'uthmani' } catch { return 'uthmani' }
+  try { const value=storage.getItem(QURAN_READING_MODE_KEY); return value==='reading'||value==='imlai'?value:'uthmani' } catch { return 'uthmani' }
 }
 
 export function saveQuranReadingMode(mode: QuranReadingMode, storage: StorageWriter = localStorage): void {

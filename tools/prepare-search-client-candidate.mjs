@@ -4,13 +4,14 @@ import {resolve,dirname} from 'node:path'
 import {createHash} from 'node:crypto'
 import {positionFilterConfig} from './position-filter-config.mjs'
 import {usePublicHeadingBucket} from '../server/public-heading-preview.mjs'
-const batch=process.argv[2];if(!['51','52','53','54'].includes(batch))throw Error('reviewed_batch_required')
-const base='.artifacts/batch49',out='.artifacts/batch'+batch,app='.artifacts/batch'+(batch==='54'?'53':batch)+'-final-app',sha=b=>createHash('sha256').update(b).digest('hex')
+const batch=process.argv[2];if(!['51','52','53','54','55'].includes(batch))throw Error('reviewed_batch_required')
+const base='.artifacts/batch'+(batch==='55'?'54':'49'),out='.artifacts/batch'+batch,app='.artifacts/batch'+(batch==='54'?'53':batch)+'-final-app',sha=b=>createHash('sha256').update(b).digest('hex')
 const manifest=JSON.parse(await readFile(base+'/static-source-manifest.json')),stage=JSON.parse(await readFile(base+'/stage.json')),snapshot=JSON.parse(await readFile(base+'/source-snapshot.json')),current=JSON.parse(await readFile('alpha-publish/ops/current-production.json'))
+if(batch==='55'){const receipt=JSON.parse(await readFile(base+'/deployment.json'));if(receipt.deploymentId!==current.deploymentId)throw Error('baseline_changed');stage.baselineDeploymentId=current.deploymentId}
 if(stage.payloadFingerprint!==sha(JSON.stringify(manifest))||stage.baselineDeploymentId!==current.deploymentId)throw Error('baseline_changed')
 const replacements=new Map()
 const packedScript=await readFile(base+'/deploy/pages-dist/data/shamela-search-v2-packed.js','utf8'),filters=JSON.stringify(await positionFilterConfig('https://position.invalid')).replace(/"https:\/\/position\.invalid([^\"]*)"/g,(_,path)=>'location.origin+'+JSON.stringify(path))
-replacements.set('data/shamela-search-v2-packed.js',Buffer.from(packedScript+'\nglobalThis.__SHAMELA_SEARCH_V2_PACKED__=Object.freeze({...globalThis.__SHAMELA_SEARCH_V2_PACKED__,positionFilters:'+filters+'});\n'))
+if(batch!=='55')replacements.set('data/shamela-search-v2-packed.js',Buffer.from(packedScript+'\nglobalThis.__SHAMELA_SEARCH_V2_PACKED__=Object.freeze({...globalThis.__SHAMELA_SEARCH_V2_PACKED__,positionFilters:'+filters+'});\n'))
 for(const name of await readdir(app+'/assets')){if(name.includes('/')||name.includes('\\'))throw Error('asset_path');replacements.set('assets/'+name,await readFile(app+'/assets/'+name))}
 for(const name of ['index.html','sw.js','manifest.webmanifest','theme-init.js'])replacements.set(name,await readFile(app+'/'+name))
 const html=replacements.get('index.html').toString();if(html.includes('shamela-search-v2-packed.js')||!html.includes('<script type="module"'))throw Error('html_changed')
