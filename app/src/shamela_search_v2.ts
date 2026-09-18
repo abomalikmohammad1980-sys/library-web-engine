@@ -116,7 +116,7 @@ export class ShamelaSearchV2Client{
     }
     const value=await this.get<{entries:Snippet[]}>(path)
     const rows=value.entries.filter(row=>wanted.has(row[0])),found=new Set(rows.map(row=>row[0]))
-    if(found.size!==wanted.size||rows.length!==found.size)throw Error('shamela_search_snippet_rows_missing_or_duplicate')
+    if(found.size!==wanted.size||rows.length!==found.size)throw Error('shamela_search_snippet_rows_missing_or_duplicate',{cause:{path,missing:[...wanted].filter(id=>!found.has(id)),duplicates:rows.length-found.size}})
     return rows
   }
   private liteDirectoryState?:LiteDirectoryState
@@ -188,7 +188,20 @@ private loadPackedManifest(){return this.packedManifest??=(async()=>{await pinBo
   private async rawJson<T>(url:string):Promise<T>{let cached=this.cache.get(url);if(!cached){cached=(async()=>{let networkError:unknown;for(const cache of ['force-cache','reload'] as const){let response:Response;try{response=await this.fetcher(url,{cache})}catch(error){networkError=error;continue}if(!response.ok){if(cache==='reload')throw new Error(`shamela_search_v2_http_${response.status}:${url}`);continue}const mime=response.headers.get('content-type')?.toLowerCase()??'',declaredLength=Number(response.headers.get('content-length')??NaN);if(mime.includes('json')&&Number.isFinite(declaredLength)&&declaredLength>=0){try{const value=await response.json() as T;this.bytesFetched+=declaredLength;return value}catch(error){if(cache==='reload')throw new Error(`shamela_search_v2_json_invalid:${url}`,{cause:error});continue}}const bytes=new Uint8Array(await response.arrayBuffer()),text=new TextDecoder().decode(bytes);this.bytesFetched+=bytes.byteLength;if(mime.includes('text/html')||/^\s*<!doctype\s+html/i.test(text)||/^\s*<html/i.test(text)){if(cache==='reload')throw new Error(`shamela_search_v2_spa_fallback:${url}`);continue}try{return JSON.parse(text) as T}catch(error){if(cache==='reload')throw new Error(`shamela_search_v2_json_invalid:${url}`,{cause:error})}}throw new Error(`shamela_search_v2_unavailable:${url}`,networkError===undefined?undefined:{cause:networkError})})().catch(error=>{this.cache.delete(url);throw error});this.cache.set(url,cached)}return cached as Promise<T>}
   private async staticJsonSize(path:string,maxBytes=8*1024*1024):Promise<number|null>{const url=`${ROOT}${path}`;try{const head=await this.fetcher(url,{method:'HEAD',cache:'force-cache'}),length=Number(head.headers.get('content-length')??NaN);if(!head.ok||!Number.isFinite(length)||length<=0||length>maxBytes)return null;return length}catch{return null}}
   private async get<T>(path:string):Promise<T>{let cached=this.cache.get(path);if(!cached){cached=(async()=>{const packed=await this.getPackedManifest();if(packed){if(path==='manifest.json')return{contract:'shamela-search-v2/manifest-3',coverageComplete:true,counts:packed.counts,...packed.source};try{const value=JSON.parse(new TextDecoder().decode(await this.packedBytes(path,packed)));this.packedMissingPaths.delete(path);return value}catch(error){if(error instanceof Error&&error.message==='shamela_search_v2_packed_archive_missing'){this.packedMissingPaths.add(path);this.packedMissingRevision++;this.cache.delete(path);return{entries:[]} as T}if(!(error instanceof Error&&error.message==='shamela_search_v2_packed_range_ignored'))throw error;return this.rawJson<T>(`${ROOT}${path}`)}}return this.rawJson<T>(`${ROOT}${path}`)})();this.cache.set(path,cached)}return cached as Promise<T>}
-  private getManifest(){return this.manifest??=(async()=>{const packed=await this.getPackedManifest();if(packed)return this.get<Manifest>('manifest.json');return this.get<Manifest>('manifest-lite.json').catch(()=>this.get<Manifest>('manifest.json'))})()}
+  private async getManifest(){
+    this.manifest??=(async()=>{const packed=await this.getPackedManifest();if(packed)return this.get<Manifest>('manifest.json');return this.get<Manifest>('manifest-lite.json').catch(()=>this.get<Manifest>('manifest.json'))})()
+    const pending=this.manifest
+    try{return await pending}catch(error){
+      if(this.manifest===pending){
+        delete this.manifest
+        // A temporary startup failure must not poison every subsequent retry.
+        delete this.packedManifest
+        this.cache.delete('manifest-lite.json')
+        this.cache.delete('manifest.json')
+      }
+      throw error
+    }
+  }
   search(query:string,offset=0,limit=40,bookIds?:string[],completeResults=false):Promise<{total:number;hits:SearchHit[];networkBytes:number;indexedBooks:number;coverageComplete:boolean}>{this.searchPages??=new Map;let scopeKey=0;if(bookIds){this.scopeKeys??=new WeakMap<string[],number>();this.nextScopeKey??=0;scopeKey=this.scopeKeys.get(bookIds)??++this.nextScopeKey;this.scopeKeys.set(bookIds,scopeKey)}const key=`${normalizeArabicSearch(query)}\u0000${offset}\u0000${limit}\u0000${scopeKey}\u0000${completeResults}`;let cached=this.searchPages.get(key);if(!cached){const missingRevision=this.packedMissingRevision;cached=this.searchUncached(query,offset,limit,bookIds,completeResults).then(page=>{const coverageComplete=this.packedMissingPaths.size===0&&missingRevision===this.packedMissingRevision;if(!coverageComplete)this.searchPages.delete(key);return{...page,coverageComplete}}).catch(error=>{this.searchPages.delete(key);delete this.manifest;delete this.packedManifest;delete this.merkleDirectoryTask;delete this.liteDirectoryState;this.cache.clear();throw error});this.searchPages.set(key,cached)}return cached}
   async searchComplete(query:string,offset=0,limit=40,bookIds?:string[]){
     // A single-token posting already carries the complete count. Loading every
