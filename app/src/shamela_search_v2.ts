@@ -16,6 +16,7 @@ import { searchFieldTokenSourceRange } from './search_field_source_snippet'
 import { loadFieldRawRows } from './search_field_raw_rows'
 import { snippetPhraseOffsets } from './search_phrase_snippet_matches'
 import { searchProgressDownload } from './search_progress_download'
+import { searchBatchFetch } from './search_batch_fetch'
 
 export type SeparatedV2SearchBinding = { manifestUrl: string; manifestSha256: string; sourceIndexSha256: string; packedReleaseId: string; packedManifestSha256: string; expectedBooks: number; expectedSegments: number; sourceRows?: {manifestUrl:string;manifestSha256:string} }
 
@@ -27,7 +28,7 @@ type PackedPart={archive:string;project:number;offset:number;length:number;sha25
 type PackedEntry={byteLength:number;sha256:string;parts:PackedPart[]}
 type LiteDirectoryState={key:string;reader:PackedTermDirectoryLite;accountedBytes:number}
 type PackedManifest={contract:string;releaseId:string;coverageComplete:boolean;counts:{segments:number;expectedSegments:number;books:number;documents:number;positions:number};indexBucketCount:number;indexPattern:string;termIndexBucketCount?:number;termIndexPattern?:string;termCount?:number;termIndexFiles?:Array<{id:string;path:string;entries:number;byteLength:number;sha256:string}>;source:{postingBucketCount:number;postingPattern:string;segmentSnippetPattern:string;bucketCount:number}}
-type PackedConfig={controlBaseUrl:string;projectBaseUrls:string[];compressedParts?:boolean;termDirectoryMerkle?:unknown;sourceRecovery?:unknown}
+type PackedConfig={controlBaseUrl:string;projectBaseUrls:string[];compressedParts?:boolean;batchRequests?:boolean;termDirectoryMerkle?:unknown;sourceRecovery?:unknown}
 export function packedSearchConfigAllowedOnHost(config:PackedConfig,host=globalThis.location?.hostname):boolean{const local=host==='localhost'||host==='127.0.0.1'||host==='[::1]';return !local||[config.controlBaseUrl,...config.projectBaseUrls].every(url=>/^https?:\/\/(?:localhost|127\.0\.0\.1|\[::1\])(?::|\/)/u.test(url))}
 const ROOT='./library/shamela-search-v2/'
 const localPackedConfig=(host=globalThis.location?.hostname):PackedConfig|undefined=>host==='localhost'||host==='127.0.0.1'||host==='[::1]'?{controlBaseUrl:'http://127.0.0.1:4200/control',projectBaseUrls:Array.from({length:8},(_,index)=>`http://127.0.0.1:${4200+index}`)}:undefined
@@ -127,7 +128,7 @@ export class ShamelaSearchV2Client{
   private packedTransport = new PackedPartTransport((input,init)=>this.fetcher(input,init))
   private packedTerms = new PackedTermCache<[string, GlobalPosting[]]>()
   private manifest?:Promise<Manifest>;private cache=new Map<string,Promise<unknown>>;private scopeKeys=new WeakMap<string[],number>();private nextScopeKey=0;private searchPages=new Map<string,Promise<{total:number;hits:SearchHit[];networkBytes:number;indexedBooks:number;coverageComplete:boolean}>>;private packedManifest?:Promise<PackedManifest|null>;private packedArchives=new Map<string,Promise<Uint8Array>>;private packedMissingPaths=new Set<string>();private packedMissingRevision=0;public bytesFetched=0
-  constructor(private readonly fetcher:typeof fetch=(input,init)=>globalThis.fetch(input,init),recovery?:SearchRecoveryConfig){this.recoveryConfig=snapshotSearchRecovery(recovery??this.packedConfig()?.sourceRecovery)}
+  constructor(private readonly fetcher:typeof fetch=(input,init)=>globalThis.fetch(input,init),recovery?:SearchRecoveryConfig){this.recoveryConfig=snapshotSearchRecovery(recovery??this.packedConfig()?.sourceRecovery);if(this.packedConfig()?.batchRequests===true&&globalThis.location?.origin)this.fetcher=searchBatchFetch(fetcher,globalThis.location.origin)}
   private async ensureRecovery(){
     if(!this.recoveryConfig)return undefined
     if(!this.recoveryTask){
