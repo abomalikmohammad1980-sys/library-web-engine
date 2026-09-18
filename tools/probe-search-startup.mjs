@@ -10,7 +10,7 @@ const {ShamelaSearchV2Client}=await import('../.artifacts/search-startup-probe.m
 if(process.argv.includes('--recovery'))globalThis.__SHAMELA_SEARCH_V2_PACKED__.sourceRecovery=await snippetRecoveryConfig(origin)
 if(process.argv.includes('--batch'))globalThis.__SHAMELA_SEARCH_V2_PACKED__.batchRequests=true
 const start=Date.now()
-let requests=0
-const fetcher=async(input,init)=>{const url=new URL(String(input),origin);requests++;try{const r=await fetch(url,{...init,signal:init?.signal??AbortSignal.timeout(60000)});if(!r.ok)console.log(JSON.stringify({ms:Date.now()-start,status:r.status,path:url.pathname}));return r}catch(e){console.log(JSON.stringify({ms:Date.now()-start,path:url.pathname,error:e.message}));throw e}}
+let requests=0,batches=0;const deadline=AbortSignal.timeout(110000)
+const fetcher=async(input,init)=>{const url=new URL(String(input),origin);requests++;if(init?.method==='POST')batches++;if(requests%25===0)console.log(JSON.stringify({ms:Date.now()-start,requests,batches}));try{const r=await fetch(url,{...init,signal:AbortSignal.any([deadline,init?.signal??AbortSignal.timeout(60000)])});if(!r.ok)console.log(JSON.stringify({ms:Date.now()-start,status:r.status,path:url.pathname}));return r}catch(e){console.log(JSON.stringify({ms:Date.now()-start,path:url.pathname,error:e.message}));throw e}}
 const result=await new ShamelaSearchV2Client(fetcher).search('ألا إن سلعة الله',0,100)
-console.log(JSON.stringify({ms:Date.now()-start,requests,total:result.total,hits:result.hits.length}))
+console.log(JSON.stringify({ms:Date.now()-start,requests,batches,total:result.total,hits:result.hits.length}))

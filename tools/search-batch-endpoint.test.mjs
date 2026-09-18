@@ -1,6 +1,12 @@
 import {test} from 'node:test'
 import assert from 'node:assert/strict'
-import {onRequest} from '../alpha-publish/functions/api/search/batch.js'
+import {onRequest} from '../server/search-batch.js'
+import {preserveSearchBatchEncoding} from '../server/search-batch-preview.mjs'
+test('preview preserves already compressed batches without changing ordinary responses',()=>{
+ const source='return new Response(response.body,{status:response.status,statusText:response.statusText,headers})'
+ assert.match(preserveSearchBatchEncoding(source),/encodeBody:response.headers.get\('x-search-batch'\)==='1'\?'manual':'automatic'/)
+ assert.throws(()=>preserveSearchBatchEncoding('changed middleware'),/unreviewed/)
+})
 test('rejects private paths, external origins and oversized batches before storage',async()=>{
  const env={LIBRARY_R2:{get(){throw Error('must not read')}}}
  for(const input of [[{path:'/library/private/book'}],Array(25).fill({path:'/r2/khezana-search-v2-00/control/manifest.json'})])assert.equal((await onRequest({env,request:new Request('https://x.test/api/search/batch',{method:'POST',body:JSON.stringify(input)})})).status,400)
