@@ -1,0 +1,229 @@
+{
+  "version": "batch-20260918-55",
+  "baselineDeploymentId": "dde8ad90-a115-4c74-97c9-00160d7299bb",
+  "files": 19999,
+  "payloadFingerprint": "1273cf47352e63ff1c1f2daabdc8a9563cbd0091d3870dc1568af2a99919da99",
+  "boundaryPin": "a81347caaabbdb907b29fe2b4f8309be801c47d41cd051cc99c438e043eb1613",
+  "sourcePin": "22f94a61c287f256af8ddca967140b831c73f56bd9e00d5d062cf7dc26121bb3",
+  "fieldsActivated": false,
+  "functionsUnchanged": false,
+  "productionReady": true,
+  "published": true,
+  "deploymentId": "a987cf23-902b-45b4-9f28-8a3864c71230",
+  "url": "https://a987cf23.khezana.pages.dev",
+  "sourceCommit": "21a2a2540e200102580c7582e7fd82ea1018c38b",
+  "previousDeploymentId": "dde8ad90-a115-4c74-97c9-00160d7299bb",
+  "checks": {
+    "preview": {
+      "assets": {
+        "passed": true,
+        "base": "https://fc3dc753.khezana.pages.dev",
+        "phase": "preview",
+        "payloadFingerprint": "1273cf47352e63ff1c1f2daabdc8a9563cbd0091d3870dc1568af2a99919da99",
+        "checked": 126,
+        "fieldsActivated": false,
+        "checkedAt": "2026-09-18T14:42:18.041Z"
+      },
+      "http": {
+        "passed": true,
+        "base": "https://fc3dc753.khezana.pages.dev",
+        "checkedAt": "2026-09-18T14:42:31.861Z",
+        "results": [
+          {
+            "path": "/",
+            "status": 200,
+            "title": "الخزانة: المكتبة الإسلامية الذكية",
+            "robots": "noindex, follow",
+            "h1": 1
+          },
+          {
+            "path": "/features",
+            "status": 200,
+            "title": "ميزات الخِزانة | مكتبة إسلامية للبحث والقراءة",
+            "robots": "noindex, follow",
+            "h1": 1
+          },
+          {
+            "path": "/authors",
+            "status": 200,
+            "title": "مؤلفو المكتبة الإسلامية | الخِزانة",
+            "robots": "noindex, follow",
+            "h1": 1
+          },
+          {
+            "path": "/authors/000020",
+            "status": 200,
+            "title": "الشافعي: سيرته وكتبه | الخِزانة",
+            "robots": "noindex, follow",
+            "h1": 1
+          },
+          {
+            "path": "/books/21633",
+            "status": 200,
+            "title": "الكلام على حديث الإستلقاء لأبي موسى المديني — أبو موسى المديني | الخِزانة",
+            "robots": "noindex, follow",
+            "h1": 1
+          },
+          {
+            "path": "/books/999999999",
+            "status": 404,
+            "title": "الصفحة غير موجودة | الخِزانة",
+            "robots": "noindex, follow",
+            "h1": 1
+          },
+          {
+            "path": "/settings",
+            "status": 200,
+            "title": "الخِزانة",
+            "robots": "noindex, follow",
+            "h1": 1
+          },
+          {
+            "path": "/search?q=x",
+            "status": 200,
+            "title": "الخِزانة",
+            "robots": "noindex, follow",
+            "h1": 1
+          },
+          {
+            "path": "/authors/20",
+            "status": 301,
+            "target": "/authors/000020"
+          },
+          {
+            "path": "/books/410021633",
+            "status": 301,
+            "target": "/books/21633"
+          }
+        ],
+        "staticSitemapUrls": 11776,
+        "sitemap": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<sitemapindex xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\"><sitemap><loc>https://khzanah.com/sitemap-static.xml</loc><lastmod>2026-09-02T00:52:28.037Z</lastmod></sitemap><sitemap><loc>https://khzanah.com/sitemap-authors.xml</loc><lastmod>2026-09-02T00:52:28.037Z</lastmod></sitemap><sitemap><loc>https://khzanah.com/sitemap-books-001.xml</loc><lastmod>2026-09-02T00:52:28.037Z</lastmod></sitemap><sitemap><loc>https://khzanah.com/sitemap-books-002.xml</loc><lastmod>2026-09-02T00:52:28.037Z</lastmod></sitemap><sitemap><loc>https://khzanah.com/sitemap-categories.xml</loc><lastmod>2026-09-02T00:52:28.037Z</lastmod></sitemap><sitemap><loc>https://khzanah.com/sitemap-public.xml?page=1</loc></sitemap></sitemapindex>",
+        "head": {
+          "status": 200,
+          "robots": "noindex, follow"
+        }
+      }
+    },
+    "live": {
+      "assets": {
+        "passed": true,
+        "base": "https://khzanah.com",
+        "phase": "live",
+        "payloadFingerprint": "1273cf47352e63ff1c1f2daabdc8a9563cbd0091d3870dc1568af2a99919da99",
+        "checked": 126,
+        "fieldsActivated": false,
+        "checkedAt": "2026-09-18T14:48:24.888Z"
+      },
+      "http": {
+        "passed": true,
+        "base": "https://khzanah.com",
+        "checkedAt": "2026-09-18T14:48:33.881Z",
+        "results": [
+          {
+            "path": "/",
+            "status": 200,
+            "title": "الخزانة: المكتبة الإسلامية الذكية",
+            "robots": null,
+            "h1": 1
+          },
+          {
+            "path": "/features",
+            "status": 200,
+            "title": "ميزات الخِزانة | مكتبة إسلامية للبحث والقراءة",
+            "robots": null,
+            "h1": 1
+          },
+          {
+            "path": "/authors",
+            "status": 200,
+            "title": "مؤلفو المكتبة الإسلامية | الخِزانة",
+            "robots": null,
+            "h1": 1
+          },
+          {
+            "path": "/authors/000020",
+            "status": 200,
+            "title": "الشافعي: سيرته وكتبه | الخِزانة",
+            "robots": null,
+            "h1": 1
+          },
+          {
+            "path": "/books/21633",
+            "status": 200,
+            "title": "الكلام على حديث الإستلقاء لأبي موسى المديني — أبو موسى المديني | الخِزانة",
+            "robots": null,
+            "h1": 1
+          },
+          {
+            "path": "/books/999999999",
+            "status": 404,
+            "title": "الصفحة غير موجودة | الخِزانة",
+            "robots": "noindex, follow",
+            "h1": 1
+          },
+          {
+            "path": "/settings",
+            "status": 200,
+            "title": "الخِزانة",
+            "robots": "noindex, follow",
+            "h1": 1
+          },
+          {
+            "path": "/search?q=x",
+            "status": 200,
+            "title": "الخِزانة",
+            "robots": "noindex, follow",
+            "h1": 1
+          },
+          {
+            "path": "/authors/20",
+            "status": 301,
+            "target": "/authors/000020"
+          },
+          {
+            "path": "/books/410021633",
+            "status": 301,
+            "target": "/books/21633"
+          }
+        ],
+        "staticSitemapUrls": 11776,
+        "sitemap": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<sitemapindex xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\"><sitemap><loc>https://khzanah.com/sitemap-static.xml</loc><lastmod>2026-09-02T00:52:28.037Z</lastmod></sitemap><sitemap><loc>https://khzanah.com/sitemap-authors.xml</loc><lastmod>2026-09-02T00:52:28.037Z</lastmod></sitemap><sitemap><loc>https://khzanah.com/sitemap-books-001.xml</loc><lastmod>2026-09-02T00:52:28.037Z</lastmod></sitemap><sitemap><loc>https://khzanah.com/sitemap-books-002.xml</loc><lastmod>2026-09-02T00:52:28.037Z</lastmod></sitemap><sitemap><loc>https://khzanah.com/sitemap-categories.xml</loc><lastmod>2026-09-02T00:52:28.037Z</lastmod></sitemap></sitemapindex>",
+        "head": {
+          "status": 200,
+          "robots": null
+        }
+      }
+    }
+  },
+  "browser": {
+    "passed": true,
+    "origin": "https://fc3dc753.khezana.pages.dev",
+    "tafsirOptions": 35,
+    "restored": [
+      "shuoun-mathoor",
+      "abu-saud",
+      "durr-masun",
+      "nazm-durar",
+      "mawardi",
+      "ibn-arabi-ahkam",
+      "tarifi"
+    ],
+    "mawardi3152": {
+      "commentaryLoaded": true,
+      "unverifiedLibraryLinkInactive": true
+    },
+    "quran": {
+      "reference": "سورة آل عمران · الآية 152",
+      "referenceUserSelect": "text",
+      "wordToolsSameRow": true,
+      "uthmaniTextWords": 103,
+      "audioHeading": "استماع القرآن الكريم"
+    },
+    "limitations": [
+      "Native clipboard interaction not independently verified; real selectable Uthmani text verified in DOM.",
+      "Cold search latency remains open."
+    ]
+  },
+  "scope": "Verified search transport and pinned snippet recovery; separated field overlay remains inactive",
+  "recordedAt": "2026-09-18T14:49:48.281Z"
+}
