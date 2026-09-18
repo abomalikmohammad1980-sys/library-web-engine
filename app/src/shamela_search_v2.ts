@@ -14,6 +14,7 @@ import {pinBokActiveRelease,pinnedBokSearchConfig,pinnedBokSearchManifestHash} f
 import { searchFieldPostingPage } from './search_field_posting_page'
 import { searchFieldTokenSourceRange } from './search_field_source_snippet'
 import { loadFieldRawRows } from './search_field_raw_rows'
+import { snippetPhraseOffsets } from './search_phrase_snippet_matches'
 
 export type SeparatedV2SearchBinding = { manifestUrl: string; manifestSha256: string; sourceIndexSha256: string; packedReleaseId: string; packedManifestSha256: string; expectedBooks: number; expectedSegments: number; sourceRows?: {manifestUrl:string;manifestSha256:string} }
 
@@ -262,9 +263,20 @@ private loadPackedManifest(){return this.packedManifest??=(async()=>{await pinBo
       }
     }
     if(globalThis.location?.hostname==='localhost'||globalThis.location?.hostname==='127.0.0.1')console.debug(`shamela_v2_selective ${JSON.stringify({phase:'candidates',count:candidate.size})}`);if(!candidate.size)return{total:0,hits:[],networkBytes:this.bytesFetched-before,indexedBooks:manifest.counts?.books??0}
-    const snippetPattern=manifest.segmentSnippetPattern??manifest.batchSnippetPattern!.replace('{batch}','{segment}'),wantedWords=normalizeArabicSearch(query).split(' ').filter(Boolean),matches:Array<{row:Snippet;death:number;id:string}>=[],note=/^[\d٠-٩۰-۹]+$/u,target=Math.max(1,Math.max(0,offset)+Math.max(0,Math.min(completeResults?Number.MAX_SAFE_INTEGER:500,limit))),ordered=[...candidate].sort((a,b)=>(a[1][2]??Number.POSITIVE_INFINITY)-(b[1][2]??Number.POSITIVE_INFINITY)||a[0].localeCompare(b[0]));let cursor=0,loadedPaths=0
-    while(cursor<ordered.length&&matches.length<target){const cohort=ordered.slice(cursor,cursor+Math.min(64,target-matches.length)),byPath=new Map<string,Set<string>>();for(const[id,row]of cohort){const path=snippetPattern.replace('{segment}',row[3]).replace('{bucket}',bucketFor(id,manifest.bucketCount??manifest.buckets??512)),ids=byPath.get(path)??new Set<string>();ids.add(id);byPath.set(path,ids)}loadedPaths+=byPath.size;await Promise.all([...byPath].map(async([path,wanted])=>{for(const row of await this.snippetRows(path,wanted)){const posting=candidate.get(row[0])!,tokens=normalizeArabicSearch(cleanShamelaPlainText(row[3])).split(' ').filter(Boolean);for(let start=0;start<tokens.length;start++){if(tokens[start]!==wantedWords[0])continue;let tokenCursor=start,word=1;for(;word<wantedWords.length;word++){tokenCursor++;while(tokenCursor<tokens.length&&note.test(tokens[tokenCursor]!))tokenCursor++;if(tokens[tokenCursor]!==wantedWords[word])break}if(word===wantedWords.length){matches.push({row,death:posting[2]??Number.POSITIVE_INFINITY,id:row[0]});break}}}}));cursor+=cohort.length}
-    if(globalThis.location?.hostname==='localhost'||globalThis.location?.hostname==='127.0.0.1')console.debug(`shamela_v2_selective ${JSON.stringify({phase:'progressive-snippets',paths:loadedPaths,candidates:cursor,matches:matches.length})}`);matches.sort((a,b)=>a.death-b.death||a.id.localeCompare(b.id));const selected=matches.slice(Math.max(0,offset),Math.max(0,offset)+Math.max(0,Math.min(completeResults?Number.MAX_SAFE_INTEGER:500,limit))),hits=selected.map(match=>snippetHit(match.row,query)),partial=cursor<ordered.length;return{total:partial?Math.max(matches.length,candidate.size):matches.length,hits,networkBytes:this.bytesFetched-before,indexedBooks:Math.max(0,(manifest.counts?.books??0)-(partial?1:0))}
+    const snippetPattern=manifest.segmentSnippetPattern??manifest.batchSnippetPattern!.replace('{batch}','{segment}'),matches:Array<{row:Snippet;death:number;id:string;matchOffset:number}>=[],target=Math.max(1,Math.max(0,offset)+Math.max(0,Math.min(completeResults?Number.MAX_SAFE_INTEGER:500,limit))),ordered=[...candidate].sort((a,b)=>(a[1][2]??Number.POSITIVE_INFINITY)-(b[1][2]??Number.POSITIVE_INFINITY)||a[0].localeCompare(b[0]));let cursor=0,loadedPaths=0
+    while(cursor<ordered.length&&matches.length<target){
+      const cohort=ordered.slice(cursor,cursor+Math.min(64,target-matches.length)),byPath=new Map<string,Set<string>>()
+      for(const[id,row]of cohort){const path=snippetPattern.replace('{segment}',row[3]).replace('{bucket}',bucketFor(id,manifest.bucketCount??manifest.buckets??512)),ids=byPath.get(path)??new Set<string>();ids.add(id);byPath.set(path,ids)}
+      loadedPaths+=byPath.size
+      await Promise.all([...byPath].map(async([path,wanted])=>{
+        for(const row of await this.snippetRows(path,wanted)){
+          const posting=candidate.get(row[0])!
+          for(const matchOffset of snippetPhraseOffsets(row[3],query))matches.push({row,death:posting[2]??Number.POSITIVE_INFINITY,id:row[0],matchOffset})
+        }
+      }))
+      cursor+=cohort.length
+    }
+    if(globalThis.location?.hostname==='localhost'||globalThis.location?.hostname==='127.0.0.1')console.debug(`shamela_v2_selective ${JSON.stringify({phase:'progressive-snippets',paths:loadedPaths,candidates:cursor,matches:matches.length})}`);matches.sort((a,b)=>a.death-b.death||a.id.localeCompare(b.id)||a.matchOffset-b.matchOffset);const selected=matches.slice(Math.max(0,offset),Math.max(0,offset)+Math.max(0,Math.min(completeResults?Number.MAX_SAFE_INTEGER:500,limit))),hits=selected.map(match=>({...snippetHit(match.row,query),matchOffset:match.matchOffset})),partial=cursor<ordered.length;return{total:partial?Math.max(matches.length,candidate.size):matches.length,hits,networkBytes:this.bytesFetched-before,indexedBooks:Math.max(0,(manifest.counts?.books??0)-(partial?1:0))}
   }
   private async selectiveSmallStaticPhrase(query:string,words:string[],manifest:Manifest,allowed:(id:string)=>boolean,offset:number,limit:number,before:number,completeResults=false):Promise<{total:number;hits:SearchHit[];networkBytes:number;indexedBooks:number}|null>{
     const started=performance.now(),trace=(phase:string,extra:Record<string,unknown>={})=>{if(globalThis.location?.hostname==='localhost'||globalThis.location?.hostname==='127.0.0.1')console.debug(`shamela_v2_static ${JSON.stringify({phase,ms:Math.round(performance.now()-started),...extra})}`)}

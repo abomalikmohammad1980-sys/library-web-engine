@@ -3,9 +3,10 @@ import {readFile,writeFile,mkdir,stat,readdir,link,copyFile} from 'node:fs/promi
 import {resolve,dirname} from 'node:path'
 import {createHash} from 'node:crypto'
 import {PIN} from './field-overlay-upload-plan.mjs'
-const root=resolve(import.meta.dirname,'..'),base=resolve(root,'.artifacts/batch41'),app=resolve(root,'.artifacts/batch43-final-app'),out=resolve(root,'.artifacts/batch43')
+const safeSearch=process.argv[2]==='--prepare-safe-search',batch=safeSearch?'44':'43'
+const root=resolve(import.meta.dirname,'..'),base=resolve(root,'.artifacts/batch41'),app=resolve(root,`.artifacts/batch${batch}-final-app`),out=resolve(root,`.artifacts/batch${batch}`)
 const sha=b=>createHash('sha256').update(b).digest('hex')
-if(process.argv[2]!=='--prepare')throw Error('explicit_prepare_required')
+if(!safeSearch&&process.argv[2]!=='--prepare')throw Error('explicit_prepare_required')
 try{await stat(out);throw Error('candidate_exists')}catch(e){if(e.code!=='ENOENT')throw e}
 const current=JSON.parse(await readFile(resolve(root,'alpha-publish/ops/current-production.json'),'utf8'))
 if(current.deploymentId!=='151af741-5955-4c77-aafb-43189c8d51b0')throw Error('production_baseline_changed')
@@ -21,14 +22,14 @@ const packed=await readFile(resolve(base,'deploy/pages-dist/data/shamela-search-
 if(packed.includes('__KHIZANA_SEARCH_FIELDS__'))throw Error('baseline_already_activated')
 const binding={complete:true,manifestSha256:PIN,sourceIndexSha256:'a88f1f13ac8f8fd62162b1fa631fd7652874408ac639ab7976984eb034b73381',packedManifestSha256:'b1815eeec97468f791b5a155f43b4f9d85f2d783926d0162bef896397b03f54b',packedReleaseId:'shamela-search-v2-packed-a88f1f13ac8f8fd6-p8-l26213376-t1-r1',expectedBooks:8594,expectedSegments:860}
 const activation=`\nglobalThis.__KHIZANA_SEARCH_FIELDS__=Object.freeze({...${JSON.stringify(binding)},manifestUrl:location.origin+'/library/search-fields/${PIN}/manifest.json',sourceRows:Object.freeze({manifestUrl:location.origin+'/library/search-field-source-ranges/${sourcePin}/manifest.json',manifestSha256:'${sourcePin}'})});\n`
-replacements.set('data/shamela-search-v2-packed.js',Buffer.from(packed+activation))
+replacements.set('data/shamela-search-v2-packed.js',Buffer.from(packed+(safeSearch?'':activation)))
 let html=replacements.get('index.html').toString()
 if(html.includes('shamela-search-v2-packed.js'))throw Error('unexpected_app_packed_config')
 html=html.replace(/(<script type="module")/,'<script src="/data/shamela-search-v2-packed.js"></script>\n    $1')
 if(!html.includes('shamela-search-v2-packed.js'))throw Error('missing_module')
 replacements.set('index.html',Buffer.from(html))
 const sw=replacements.get('sw.js').toString();if(!sw.startsWith("const CACHE = 'alkhizana-shell-v18'"))throw Error('unreviewed_sw')
-replacements.set('sw.js',Buffer.from(sw.replace("const CACHE = 'alkhizana-shell-v18'",`const CACHE = 'alkhizana-shell-fields-${sourcePin.slice(0,8)}'`)))
+replacements.set('sw.js',Buffer.from(sw.replace("const CACHE = 'alkhizana-shell-v18'",`const CACHE = 'alkhizana-shell-${safeSearch?'search44':'fields-'+sourcePin.slice(0,8)}'`)))
 await mkdir(out,{recursive:true});const next=[]
 for(const entry of manifest){
  const original=resolve(base,'deploy/pages-dist',entry.path),bytes=await readFile(original)
@@ -48,5 +49,5 @@ await writeFile(resolve(out,'deploy/wrangler.jsonc'),JSON.stringify(config,null,
 await writeFile(resolve(out,'static-source-manifest.json'),JSON.stringify(next,null,2),{flag:'wx'})
 await writeFile(resolve(out,'source-snapshot.json'),JSON.stringify({files:sources},null,2),{flag:'wx'})
 await writeFile(resolve(out,'rollback.json'),JSON.stringify(current,null,2),{flag:'wx'})
-const result={version:'batch-20260917-43',baselineDeploymentId:current.deploymentId,files:next.length,payloadFingerprint,boundaryPin:PIN,sourcePin,functionsUnchanged:true,productionReady:false,published:false}
+const result={version:`batch-20260918-${batch}`,baselineDeploymentId:current.deploymentId,files:next.length,payloadFingerprint,boundaryPin:PIN,sourcePin,fieldsActivated:!safeSearch,functionsUnchanged:true,productionReady:false,published:false}
 await writeFile(resolve(out,'stage.json'),JSON.stringify(result,null,2),{flag:'wx'});console.log(JSON.stringify(result))
