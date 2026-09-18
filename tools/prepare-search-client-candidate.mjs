@@ -6,15 +6,15 @@ import {positionFilterConfig} from './position-filter-config.mjs'
 import {usePublicHeadingBucket} from '../server/public-heading-preview.mjs'
 import {injectSearchBootstrap} from './search-bootstrap-html.mjs'
 import {scopeStaticCacheHeaders} from './static-cache-headers.mjs'
-const batch=process.argv[2];if(!['51','52','53','54','55','56','57','58'].includes(batch))throw Error('reviewed_batch_required')
-const performanceBatch=['56','57','58'].includes(batch)
-const base='.artifacts/batch'+(performanceBatch?'55':batch==='55'?'54':'49'),out='.artifacts/batch'+batch,app=performanceBatch?'.artifacts/performance-20260918/client-pass3':'.artifacts/batch'+(batch==='54'?'53':batch)+'-final-app',sha=b=>createHash('sha256').update(b).digest('hex')
+const batch=process.argv[2];if(!['51','52','53','54','55','56','57','58','59'].includes(batch))throw Error('reviewed_batch_required')
+const performanceBatch=['56','57','58','59'].includes(batch)
+const base='.artifacts/batch'+(performanceBatch?'55':batch==='55'?'54':'49'),out='.artifacts/batch'+batch,app=performanceBatch?'.artifacts/performance-20260918/client-pass'+(batch==='59'?'4':'3'):'.artifacts/batch'+(batch==='54'?'53':batch)+'-final-app',sha=b=>createHash('sha256').update(b).digest('hex')
 const manifest=JSON.parse(await readFile(base+'/static-source-manifest.json')),stage=JSON.parse(await readFile(base+'/stage.json')),snapshot=JSON.parse(await readFile(base+'/source-snapshot.json')),current=JSON.parse(await readFile('alpha-publish/ops/current-production.json'))
-if(['55','56','57','58'].includes(batch)){const receipt=JSON.parse(await readFile(base+'/deployment.json'));if(receipt.deploymentId!==current.deploymentId)throw Error('baseline_changed');stage.baselineDeploymentId=current.deploymentId}
+if(batch==='55'||performanceBatch){const receipt=JSON.parse(await readFile(base+'/deployment.json'));if(receipt.deploymentId!==current.deploymentId)throw Error('baseline_changed');stage.baselineDeploymentId=current.deploymentId}
 if(stage.payloadFingerprint!==sha(JSON.stringify(manifest))||stage.baselineDeploymentId!==current.deploymentId)throw Error('baseline_changed')
 const replacements=new Map()
 const packedScript=await readFile(base+'/deploy/pages-dist/data/shamela-search-v2-packed.js','utf8'),filters=JSON.stringify(await positionFilterConfig('https://position.invalid')).replace(/"https:\/\/position\.invalid([^\"]*)"/g,(_,path)=>'location.origin+'+JSON.stringify(path))
-if(!['55','56','57','58'].includes(batch))replacements.set('data/shamela-search-v2-packed.js',Buffer.from(packedScript+'\nglobalThis.__SHAMELA_SEARCH_V2_PACKED__=Object.freeze({...globalThis.__SHAMELA_SEARCH_V2_PACKED__,positionFilters:'+filters+'});\n'))
+if(batch!=='55'&&!performanceBatch)replacements.set('data/shamela-search-v2-packed.js',Buffer.from(packedScript+'\nglobalThis.__SHAMELA_SEARCH_V2_PACKED__=Object.freeze({...globalThis.__SHAMELA_SEARCH_V2_PACKED__,positionFilters:'+filters+'});\n'))
 async function collectAssets(relative){for(const entry of await readdir(app+'/'+relative,{withFileTypes:true})){const path=relative+'/'+entry.name;if(entry.isDirectory())await collectAssets(path);else if(entry.isFile())replacements.set(path,await readFile(app+'/'+path));else throw Error('asset_type')}}
 await collectAssets('assets')
 const retired=new Set()
@@ -27,8 +27,8 @@ if(performanceBatch){
 }
 for(const name of ['index.html','sw.js','manifest.webmanifest','theme-init.js'])replacements.set(name,await readFile(app+'/'+name))
 const html=replacements.get('index.html').toString();if(html.includes('shamela-search-v2-packed.js')||!html.includes('<script type="module"'))throw Error('html_changed')
-replacements.set('index.html',Buffer.from(injectSearchBootstrap(html,{defer:['57','58'].includes(batch)})))
-if(batch==='58')replacements.set('_headers',Buffer.from(scopeStaticCacheHeaders(await readFile(base+'/deploy/pages-dist/_headers','utf8'),manifest.map(row=>row.path))))
+replacements.set('index.html',Buffer.from(injectSearchBootstrap(html,{defer:['57','58','59'].includes(batch)})))
+if(['58','59'].includes(batch))replacements.set('_headers',Buffer.from(scopeStaticCacheHeaders(await readFile(base+'/deploy/pages-dist/_headers','utf8'),manifest.map(row=>row.path))))
 const sw=replacements.get('sw.js').toString();if(!sw.startsWith("const CACHE = 'alkhizana-shell-v18'"))throw Error('sw_changed');replacements.set('sw.js',Buffer.from(sw.replace("const CACHE = 'alkhizana-shell-v18'",`const CACHE = 'alkhizana-shell-search${batch}'`)))
 await mkdir(out);const next=[]
 for(const entry of manifest){if(entry.path.startsWith('assets/')||replacements.has(entry.path)||retired.has(entry.path))continue;if(entry.path.includes('..')||entry.path.startsWith('/'))throw Error('unsafe_path');const target=resolve(out,'deploy/pages-dist',entry.path);await mkdir(dirname(target),{recursive:true});await link(resolve(base,'deploy/pages-dist',entry.path),target);next.push(entry)}

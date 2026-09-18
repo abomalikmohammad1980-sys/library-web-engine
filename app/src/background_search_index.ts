@@ -1,7 +1,5 @@
 import {currentLibraryIdentityScope,listBooks} from './engine/library_store'
-import {headingIndex} from './engine/heading_index'
 import {inferBookFormat} from './book_format'
-import {prepareLocalBookSearchIndex} from './engine/search_store'
 
 /** Serial, local-only warmup. Never download the public corpus at startup. */
 export function installBackgroundSearchIndex():()=>void{
@@ -28,9 +26,17 @@ export function installBackgroundSearchIndex():()=>void{
     const key=JSON.stringify([identity,book.id,book.originalSha256,book.textToc,book.bokToc])
     if(attempted.has(key)||(failures.get(key)??0)>=3)continue
     try{
+     // Keep parser/search chunks off the startup path, including libraries
+     // containing only remote placeholders. Listeners are installed immediately.
+     const {headingIndex}=await import('./engine/heading_index')
+     if(disposed||signal.aborted||currentLibraryIdentityScope()!==identity)break
      const headings=await headingIndex(book)
      if(signal.aborted||currentLibraryIdentityScope()!==identity)break
-     if(inferBookFormat(book)!=='pdf')await prepareLocalBookSearchIndex(book.id,{signal})
+     if(inferBookFormat(book)!=='pdf'){
+      const {prepareLocalBookSearchIndex}=await import('./engine/search_store')
+      if(disposed||signal.aborted||currentLibraryIdentityScope()!==identity)break
+      await prepareLocalBookSearchIndex(book.id,{signal})
+     }
      // Parsers may return incomplete instead of throwing on a transient failure.
      // Never stamp that revision as ready merely because body indexing succeeded.
      if(!headings.complete)throw Error('heading_index_incomplete')

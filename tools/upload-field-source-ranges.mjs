@@ -6,6 +6,7 @@ import {PIN} from './field-overlay-upload-plan.mjs'
 import {createFieldS3Transport} from './field-overlay-s3-transport.mjs'
 import {parseR2Config,journalWriter,safeFailure} from './field-overlay-upload-state.mjs'
 import {readPublicFieldObject} from './field-public-read.mjs'
+import {fieldSourceExecutionPolicy} from './field-source-execution-policy.mjs'
 const sha=b=>createHash('sha256').update(b).digest('hex'),root=resolve(`.artifacts/field-source-ranges-${PIN}`)
 const args=process.argv.slice(2),mode=args[0]
 if(!['--plan','--execute'].includes(mode)||args.slice(1).some(x=>x!=='--fresh'))throw Error('source_range_arguments')
@@ -22,12 +23,17 @@ const totalBytes=jobs.reduce((n,j)=>n+j.bytes,0)
 if(new Set(jobs.map(j=>j.file)).size!==8595||totalBytes>1024**3)throw Error('source_range_budget')
 if(mode==='--plan'){console.log(JSON.stringify({pin,prefix,objects:jobs.length,bytes:totalBytes,activated:false}));process.exit(0)}
 const state=resolve(`.artifacts/field-source-transfer-${pin}`);await mkdir(state,{recursive:true})
-const configPath='C:/Users/Windows_OS/AppData/Roaming/rclone/rclone.conf'
-if((await stat(configPath)).size>1024**2)throw Error('credential_config_size')
-const config=parseR2Config(await readFile(configPath,'utf8')),signal=AbortSignal.timeout(3600000),transport=createFieldS3Transport({...config,sourceRangesPin:pin,signal,requestTimeoutMs:30000,runTimeoutMs:3600000})
+const fresh=args.includes('--fresh'),policy=fieldSourceExecutionPolicy(fresh),signal=AbortSignal.timeout(policy.runTimeoutMs)
+let transport={close(){}}
+if(policy.needsWriteTransport){
+ const configPath='C:/Users/Windows_OS/AppData/Roaming/rclone/rclone.conf'
+ if((await stat(configPath)).size>1024**2)throw Error('credential_config_size')
+ const config=parseR2Config(await readFile(configPath,'utf8'))
+ transport=createFieldS3Transport({...config,sourceRangesPin:pin,signal,requestTimeoutMs:30000,runTimeoutMs:policy.runTimeoutMs})
+}
 let journal={};try{journal=JSON.parse(await readFile(resolve(state,'journal.json'),'utf8'))}catch(e){if(e.code!=='ENOENT')throw e}
 const matches=j=>journal[j.file]?.sha256===j.sha256&&journal[j.file]?.bytes===j.bytes
-const fresh=args.includes('--fresh');if(fresh&&!jobs.every(matches))throw Error('source_range_fresh_requires_complete_transfer')
+if(fresh&&!jobs.every(matches))throw Error('source_range_fresh_requires_complete_transfer')
 let count=0,cursor=0,failed=false,checkpoint=Promise.resolve()
 const selected=fresh?jobs:jobs.slice(0,-1).filter(j=>!matches(j))
 async function one(job){
@@ -40,7 +46,7 @@ async function one(job){
  }catch(error){if(!error.transient||attempt>=2){error.objectFile=job.file;throw error}await new Promise(done=>setTimeout(done,250*(attempt+1)))}
 }
 try{
- const results=await Promise.allSettled(Array.from({length:2},async()=>{while(!failed&&cursor<selected.length)try{await one(selected[cursor++])}catch(error){failed=true;throw error}}))
+ const results=await Promise.allSettled(Array.from({length:policy.workers},async()=>{while(!failed&&cursor<selected.length)try{await one(selected[cursor++])}catch(error){failed=true;throw error}}))
  await checkpoint;const failure=results.find(r=>r.status==='rejected');if(failure)throw failure.reason
  if(!fresh){if(!jobs.slice(0,-1).every(matches))throw Error('source_range_manifest_before_books');await one(jobs.at(-1))}
  const receipt={complete:fresh,transferred:jobs.every(matches),activated:false,pin,objects:jobs.length,bytes:totalBytes,checkedAt:new Date().toISOString()}
