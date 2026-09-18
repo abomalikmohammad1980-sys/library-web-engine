@@ -18,6 +18,7 @@ import { snippetPhraseOffsets } from './search_phrase_snippet_matches'
 import { searchProgressDownload } from './search_progress_download'
 import { searchBatchFetch } from './search_batch_fetch'
 import {SearchPositionFilters,mayContainPosition} from './search_position_filter'
+import {searchDocumentPage} from './search_document_page'
 
 export type SeparatedV2SearchBinding = { manifestUrl: string; manifestSha256: string; sourceIndexSha256: string; packedReleaseId: string; packedManifestSha256: string; expectedBooks: number; expectedSegments: number; sourceRows?: {manifestUrl:string;manifestSha256:string} }
 
@@ -212,6 +213,12 @@ private loadPackedManifest(){return this.packedManifest??=(async()=>{await pinBo
     if(normalizeArabicSearch(query).split(' ').filter(Boolean).length<2)return this.search(query,Math.max(0,offset),Math.max(0,Math.min(500,limit)),bookIds,true)
     const full=await this.search(query,0,Number.MAX_SAFE_INTEGER,bookIds,true)
     return{...full,hits:full.hits.slice(Math.max(0,offset),Math.max(0,offset)+Math.max(0,Math.min(500,limit)))}
+  }
+  async searchDocuments(query:string,offset=0,limit=100,bookIds?:string[]):Promise<{total:number;totalDocuments?:number;hits:Array<SearchHit&{occurrenceCount?:number}>;networkBytes:number;indexedBooks:number;coverageComplete:boolean}>{
+    // Keep the bounded single-word posting path: common words must never load
+    // millions of page texts merely to count them. Phrase totals need a scan.
+    if(normalizeArabicSearch(query).split(' ').filter(Boolean).length<2)return this.searchComplete(query,offset,limit,bookIds)
+    return searchDocumentPage(await this.search(query,0,Number.MAX_SAFE_INTEGER,bookIds,true),offset,limit)
   }
   private positionFilters=new SearchPositionFilters()
   private async selectivePackedPhrase(query:string,words:string[],manifest:Manifest,allowed:(id:string)=>boolean,offset:number,limit:number,before:number,completeResults=false):Promise<{total:number;hits:SearchHit[];networkBytes:number;indexedBooks:number}|null>{

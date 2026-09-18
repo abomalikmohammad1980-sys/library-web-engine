@@ -21,4 +21,8 @@ console.log(JSON.stringify({exact,probable,falseNegatives:0}))
 const client=new ShamelaSearchV2Client(fetcher),start=Date.now(),query='ألا إن سلعة الله',first=await client.searchComplete(query,0,100),second=await client.searchComplete(query,100,100),last=await client.searchComplete(query,Math.max(0,first.total-1),100)
 assert(first.coverageComplete);assert.equal(first.hits.length,Math.min(100,first.total));assert.equal(second.total,first.total);assert.equal(last.hits.length,1)
 const report={exact,probable,falseNegatives:0,localOnly:true,query,total:first.total,first:first.hits.length,second:second.hits.length,last:last.hits.length,coverageComplete:first.coverageComplete,ms:Date.now()-start,networkBytes:first.networkBytes}
+const docs=await client.searchDocuments(query,0,100),docs2=await client.searchDocuments(query,100,100),tail=await client.searchDocuments(query,200,100)
+assert.equal(docs.hits.length,100);assert.equal(docs2.hits.length,100)
+const all=[...docs.hits,...docs2.hits,...tail.hits];assert.equal(all.length,docs.totalDocuments);assert.equal(new Set(all.map(h=>h.id)).size,all.length);assert.equal(all.reduce((n,h)=>n+h.occurrenceCount,0),first.total)
+report.paragraphPagination={documents:docs.totalDocuments,pages:[docs.hits.length,docs2.hits.length,tail.hits.length],allDistinct:true,occurrences:all.reduce((n,h)=>n+h.occurrenceCount,0)}
 await writeFile('.artifacts/position-filter-audit.json',JSON.stringify(report,null,2));console.log(JSON.stringify(report))

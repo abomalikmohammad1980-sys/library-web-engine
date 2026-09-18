@@ -44,6 +44,19 @@ completed the native internet full-result probe in 69,701 ms: total 521, first
 page 100, 260 requests including 176 transport batches. Batch52 rebuild is for
 the subsequent actual-browser gate; this probe alone does not admit production.
 
+Batch52 browser revealed the remaining unit mismatch: the store requested a
+progressive occurrence page (100 hits), then grouped it into only 52 paragraphs,
+while presenting the candidate count 356 as the pagination boundary. This is
+not accepted. Phrase searches now finish the scan before computing the exact
+occurrence total and group paragraphs BEFORE pagination. `totalDocuments`
+drives page boundaries; `total` remains the occurrence count. Sunnah exhaustive
+occurrence paging and the bounded single-word path are unchanged.
+
+Actual local client paragraph audit: 521 occurrences in 258 unique paragraphs,
+pages 100/100/58, summed occurrence counts 521, no duplicate/lost paragraphs.
+34 tests across 11 affected search/store/table suites pass. Batch53 is the
+browser candidate for this correction; not an admission record.
+
 Evidence: `.artifacts/position-filter-audit.json`,
 `.artifacts/position-filter-upload.json`, `release-artifacts/position-filter-9d4f7e33a94719966a2efdbc43a43e60e9b45216c5d953a763571b0a3e5667c4/proof.json`,
 `.artifacts/batch51/preview-assets.json`, `.artifacts/batch51/preview-http.json`.

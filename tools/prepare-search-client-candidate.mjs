@@ -3,7 +3,7 @@ import {readFile,writeFile,mkdir,copyFile,link,readdir} from 'node:fs/promises'
 import {resolve,dirname} from 'node:path'
 import {createHash} from 'node:crypto'
 import {positionFilterConfig} from './position-filter-config.mjs'
-const batch=process.argv[2];if(!['51','52'].includes(batch))throw Error('reviewed_batch_required')
+const batch=process.argv[2];if(!['51','52','53'].includes(batch))throw Error('reviewed_batch_required')
 const base='.artifacts/batch49',out='.artifacts/batch'+batch,app='.artifacts/batch'+batch+'-final-app',sha=b=>createHash('sha256').update(b).digest('hex')
 const manifest=JSON.parse(await readFile(base+'/static-source-manifest.json')),stage=JSON.parse(await readFile(base+'/stage.json')),snapshot=JSON.parse(await readFile(base+'/source-snapshot.json')),current=JSON.parse(await readFile('alpha-publish/ops/current-production.json'))
 if(stage.payloadFingerprint!==sha(JSON.stringify(manifest))||stage.baselineDeploymentId!==current.deploymentId)throw Error('baseline_changed')
