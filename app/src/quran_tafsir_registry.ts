@@ -103,6 +103,7 @@ export function tafsirTitleWithAuthor(definition:TafsirDefinition|ReadyBokDefini
 }
 
 export function tafsirDisplayName(definition: TafsirDefinition|ReadyBokDefinition|IndexedVerseBookDefinition): string {
+  if ('slug' in definition && definition.slug==='shuoun-mathoor') return 'موسوعة التفسير بالمأثور - مركز الشاطبي (معاصر)'
   if(isIndexedVerseBook(definition))return `${definition.name} (معاصر)`
   if(isReadyBokTafsir(definition))return definition.slug==='jalalayn'?`${definition.name} (المحلي ت864؛ السيوطي ت911 هـ)`:`${definition.name} (ت ${definition.deathYearHijri} هـ)`
   if (!('slug' in definition)) return definition.name

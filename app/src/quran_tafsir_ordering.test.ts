@@ -25,7 +25,7 @@ describe('Quran tafsir selector chronology', () => {
   })
   it('never displays the collective author placeholder99999 as a death year',()=>{
     const definition={...LINKED_TAFSIRS[0]!,slug:'shuoun-mathoor',name:'موسوعة التفسير المأثور',author:'مجموعة من المؤلفين'}
-    expect(tafsirDisplayName(definition)).toBe('موسوعة التفسير المأثور - مجموعة من المؤلفين (عمل جماعي معاصر)')
+    expect(tafsirDisplayName(definition)).toBe('موسوعة التفسير بالمأثور - مركز الشاطبي (معاصر)')
     expect(tafsirDeathYear(definition)).toBe(Infinity)
     expect(TAFSIR_AUTHOR_CHRONOLOGY['shuoun-mathoor']?.deathYearHijri).toBeUndefined()
   })
@@ -35,7 +35,7 @@ describe('Quran tafsir selector chronology', () => {
       expect(years).toEqual([...years].sort((a,b)=>a-b))
       for(const item of definitions.filter(d=>'kind' in d&&d.kind==='source-edition-tafsir')){
         const chronology='slug'in item?TAFSIR_AUTHOR_CHRONOLOGY[item.slug]:undefined
-        if(chronology?.contemporaryCollective)expect(tafsirDisplayName(item)).toContain('(عمل جماعي معاصر)')
+        if(chronology?.contemporaryCollective)expect(tafsirDisplayName(item)).toContain('(معاصر)')
         else if(chronology?.contemporaryAuthor)expect(tafsirDisplayName(item)).toContain('(معاصر)')
         else expect(tafsirDisplayName(item)).toMatch(/ت [0-9]+ هـ/)
       }
