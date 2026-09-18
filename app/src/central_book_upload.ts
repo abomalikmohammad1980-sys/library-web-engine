@@ -1,4 +1,5 @@
 import type {BookIntakeFields,StoredBook} from './engine/library_store'
+import {localOriginalAsset} from './library_card_state'
 import {createWordBundleUpload,type WordBundleProof} from './word_bundle_transfer'
 export type CentralBookPublicMetadata=Pick<BookIntakeFields,'publisher'|'edition'|'investigator'|'publicationYearHijri'|'description'|'rawSourceMetadata'|'volumeCount'|'deathYearHijri'|'contemporary'|'tags'|'coverHue'|'coverTemplate'|'authors'|'authorId'>&{schemaVersion:1;centralAuthorId?:string;parts?:StoredBook['parts']}
 export interface CentralBookUploadInput {file:File;title:string;author:string;category?:string;metadata?:CentralBookPublicMetadata;volumeFiles?:File[];pdfFile?:File;coverFile?:File;wordMapFile?:File;wordBundle?:WordBundleProof}
@@ -19,8 +20,15 @@ export function centralBookUploadInput(input:CentralReviewedBook):CentralBookUpl
  if(reviewed.authors?.length)metadata.authors=reviewed.authors.map(({name,id})=>({name,...(id?{id}:{})}))
  if(reviewed.tags?.length)metadata.tags=reviewed.tags.map(({name,source,confidence,paragraphIndex,pageId})=>({name,source,...(confidence!==undefined?{confidence}:{}),...(paragraphIndex!==undefined?{paragraphIndex}:{}),...(pageId!==undefined?{pageId}:{})}))
  if(book.parts?.length)metadata.parts=book.parts.map(({number,title,startPage,endPage,wordStartPage})=>({number,startPage,endPage,...(title?{title}:{}),...(wordStartPage!==undefined?{wordStartPage}:{})}))
- const sources=book.volumes?.length?book.volumes:[{fileName:book.fileName,mimeType:book.mimeType,data:book.data}]
- const files=sources.map(source=>binaryFile(source.data,wordName(source.fileName,book.sourceFormat),book.sourceFormat==='word'?'application/vnd.openxmlformats-officedocument.wordprocessingml.document':source.mimeType))
+ const sources=book.volumes?.length?book.volumes:[book]
+ const files=sources.map(source=>{
+  if(book.sourceFormat==='shamela-bok'){
+   const original=localOriginalAsset({...source,sourceFormat:book.sourceFormat})
+   if(!original)throw Error('bok_original_source_unavailable')
+   return binaryFile(original.bytes,original.fileName,original.mimeType)
+  }
+  return binaryFile(source.data,wordName(source.fileName,book.sourceFormat),book.sourceFormat==='word'?'application/vnd.openxmlformats-officedocument.wordprocessingml.document':source.mimeType)
+ })
  if(!files[0])throw Error('account_book_file_invalid')
  const result:CentralBookUploadInput={file:files[0],title:reviewed.title,author:reviewed.author,...(reviewed.category?{category:reviewed.category}:{}),metadata}
  if(files.length>1)result.volumeFiles=files.slice(1)
