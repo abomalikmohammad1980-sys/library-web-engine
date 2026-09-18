@@ -39,4 +39,12 @@ Batch58 preview https://3e46d61e.khezana.pages.dev, fingerprint a4e5cedf6ef3c1ca
 
 Further local change: background indexing retains immediate event listeners but imports outline/body indexing engines only after finding an eligible local revision. PDF never loads the body-index engine. Identity/abort checks surround asynchronous imports. Six focused tests pass, including retries and account isolation. This change is not in batch58; it requires a new build/frozen candidate before publication.
 
-Remaining: independent source verification (session67019; transfer itself complete8595 objects), additional performance/functional acceptance including mobile/print/offline, and live publication of the accepted frozen candidate. All-report completion is not claimed.
+Source verification completed: session67019 exited0,8595 objects,638884725bytes, complete:true at2026-09-18T19:57:12.924Z. No activation implied.
+
+Batch59 https://2ccaffcf.khezana.pages.dev includes deferred background engines;20000 local files and143 remote assets plus SEO/HTTP checks passed. Its PageSpeed report https://pagespeed.web.dev/analysis/https-2ccaffcf-khezana-pages-dev/cmh7y5cfd2 has mobile36 (FCP5.2s,LCP6.4s,TBT2240ms,CLS0), desktop62 (FCP1.0s,LCP1.2s,TBT11630ms,CLS0.007). This variability invalidates any claim that the earlier830ms result closed performance. Desktop main thread27.9s and continuous unattributed origin tasks require further work.
+
+Read-only heading transport diagnostic against59 initially timed out after dictionary reads consumed79s. HTTP confirms static pack Range requests return200 with complete7–10MB files, not requested small slices. The three sampled partitions belong to three different packs: a same-pack cache alone cannot fix their first query. Added bounded32MiB per-client complete-pack cache with SHA-256 filename verification for repeated partitions/queries;16 transport/cache tests and TypeScript pass. A later local-client/live-assets diagnostic returns the expected4 hits in74621ms, still slow and not browser acceptance. Receipts heading-transport.json and heading-cache-check.json. Do not claim below-second search.
+
+Further paint lead: .app-main::before animated background-position indefinitely across the page with a gradient mask. Removed only the decorative motion, keeping the ornament/colors/mask, to avoid continuous full-page paints. Ten theme/paint tests pass. Build pass5(session71657) includes this and the pack cache; next immutable candidate60 must be measured before publication.
+
+Remaining: comparable measurements of the paint change, functional acceptance including mobile/print/offline and search, then live publication of the accepted frozen candidate. All-report completion is not claimed.

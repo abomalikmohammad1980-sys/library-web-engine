@@ -1220,11 +1220,8 @@
   background-size: 92px 54px, 92px 54px, 46px 54px;
   -webkit-mask-image: linear-gradient(to bottom, #000, rgba(0,0,0,.35) 48%, transparent 92%);
   mask-image: linear-gradient(to bottom, #000, rgba(0,0,0,.35) 48%, transparent 92%);
-  animation: khizana-motif-drift 32s linear infinite alternate;
-}
-
-@keyframes khizana-motif-drift {
-  to { background-position: 46px 27px, -46px 27px, 23px 27px; }
+  /* Keep the same ornament without repainting the entire page every frame. */
+  background-position: 0 0;
 }
 
 .app-main__inner {

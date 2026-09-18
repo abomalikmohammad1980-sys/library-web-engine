@@ -1,4 +1,5 @@
 import {batchHeadingRanges} from './heading_range_batch'
+import {HeadingPackCache} from './heading_pack_cache'
 interface PartitionLocation {path:string;offset:number;bytes:number;packBytes:number}
 /** Version only same-origin, bounded API ranges; static packs and unrelated
  * requests keep their existing URL. Integrity checks remain in the consumer. */
@@ -11,12 +12,16 @@ export function headingRangeTransportURL(url:URL,baseURI:string,init?:RequestIni
 }
 /** Range transport only; the search client still verifies each original gzip
  * shard's SHA-256. Packing never changes dictionary contents or coverage. */
-export async function fetchPackedHeadingPartition(url:URL,location:PartitionLocation,init:RequestInit|undefined,fetcher:typeof fetch=fetch):Promise<Response>{
+export async function fetchPackedHeadingPartition(url:URL,location:PartitionLocation,init:RequestInit|undefined,fetcher:typeof fetch=fetch,cache?:HeadingPackCache):Promise<Response>{
  const headers=new Headers(init?.headers),requested=headers.get('Range'),match=requested?.match(/^bytes=(\d+)-(\d+)$/)
  if(requested&&!match)throw Error('heading_partition_range_invalid')
  const from=match?Number(match[1]):0,to=match?Number(match[2]):location.bytes-1
  if(from<0||to<from||to>=location.bytes)throw Error('heading_partition_range_invalid')
+ init?.signal?.throwIfAborted()
  const start=location.offset+from,end=location.offset+to
+ const result=(body:Uint8Array)=>new Response(body.slice().buffer,{status:requested?206:200,headers:{'content-type':'application/octet-stream','content-length':String(body.length),...(requested?{'content-range':`bytes ${from}-${to}/${location.bytes}`}:{})}})
+ const retained=cache?.get(url,location.packBytes)
+ if(retained)return result(retained.slice(start,end+1))
  headers.set('Range',`bytes=${start}-${end}`)
  const response=await fetcher(url,{...init,headers})
  if(response.status===206&&response.headers.get('content-range')!==`bytes ${start}-${end}/${location.packBytes}`)throw Error('heading_partition_range_mismatch')
@@ -24,13 +29,17 @@ export async function fetchPackedHeadingPartition(url:URL,location:PartitionLoca
  // Some local/static servers ignore Range. Accept only the complete expected
  // pack and isolate the requested bytes before the client's hash verification.
  const bytes=new Uint8Array(await response.arrayBuffer())
+ init?.signal?.throwIfAborted()
  if(bytes.length!==(response.status===206?end-start+1:location.packBytes))throw Error('heading_partition_pack_size')
+ if(response.status===200)await cache?.remember(url,bytes)
+ init?.signal?.throwIfAborted()
  const body=response.status===206?bytes:bytes.slice(start,end+1)
- return new Response(body,{status:requested?206:200,headers:{'content-type':'application/octet-stream','content-length':String(body.length),...(requested?{'content-range':`bytes ${from}-${to}/${location.bytes}`}:{})}})
+ return result(body)
 }
 /** Only dictionary partitions use static assets; rows/postings retain the verified API. */
 export async function headingDictionaryOptions(baseURI:string,batchRanges=true){
  const batchedFetch=batchRanges?batchHeadingRanges(fetch):fetch
+ const packCache=new HeadingPackCache()
  const {default:release}=await import('./heading_dictionary_release.generated.json')
  const paths=new Set(release.parts.shards.map(shard=>shard.path))
  const fetcher:typeof fetch=(input,init)=>{
@@ -38,7 +47,7 @@ export async function headingDictionaryOptions(baseURI:string,batchRanges=true){
   if(!paths.has(path))return batchedFetch(headingRangeTransportURL(url,baseURI,init),init)
   const location=(release as unknown as {locations:Record<string,PartitionLocation>}).locations[path]
   if(!location)throw Error('heading_partition_location_missing')
-  return fetchPackedHeadingPartition(new URL(location.path,new URL(release.baseURL,baseURI)),location,init,batchedFetch)
+  return fetchPackedHeadingPartition(new URL(location.path,new URL(release.baseURL,baseURI)),location,init,batchedFetch,packCache)
  }
  return {dictionaryPartitions:{...release.parts,contract:'khizana-heading-trigrams/2' as const},fetch:fetcher}
 }
