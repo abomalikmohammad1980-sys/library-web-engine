@@ -12,7 +12,7 @@ describe("documented Quran tafsir pack", () => {
     expect(manifest).toMatchObject({ schemaVersion: 2, datasetId: "quranpedia-exact-tafsir-segments" });
     expect(manifest.attribution).toContain("Quranpedia");
     expect(manifest.permissionBasis).toBe("USER-ATTESTED-WAQF-REUSE");
-    expect(manifest.books.map((book: { id: number }) => book.id)).toEqual([2, 3, 4]);
+    expect(manifest.books.map((book: { id: number }) => book.id)).toEqual([2, 3, 4, 136, 308, 66703, 2556]);
     for (const book of manifest.books) {
       expect(book.files).toHaveLength(book.surahs);
       expect(book.files.reduce((sum: number, file: { segments: number }) => sum + file.segments, 0)).toBe(book.segments);

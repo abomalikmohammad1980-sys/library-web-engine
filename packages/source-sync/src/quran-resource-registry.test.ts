@@ -12,7 +12,7 @@ describe("Quran verse resource registry", () => {
     const registry = validateQuranResourceRegistry(JSON.parse(await readFile(resolve(root, "resources/manifest.json"), "utf8")));
     const installed = registry.entries.filter((entry) => entry.status === "installed");
     expect(installed.map((entry) => entry.resourceKey)).toEqual([
-      "quranpedia-tafsir-pack", "mokhtasar-tafsir", "quran-gharib", "quran-qiraat", "quran-tasrif", "quran-irab",
+      "quranpedia-tafsir-pack", "mokhtasar-tafsir", "fi-zilal-al-quran", "quran-gharib", "quran-qiraat", "quran-tasrif", "quran-irab",
     ]);
     for (const entry of installed) {
       const bytes = await readFile(resolve(root, entry.packManifestPath!));
@@ -24,9 +24,7 @@ describe("Quran verse resource registry", () => {
   it("never exposes a fabricated pack for requested resources whose text source is absent", async () => {
     const registry = validateQuranResourceRegistry(JSON.parse(await readFile(resolve(root, "resources/manifest.json"), "utf8")));
     const pending = registry.entries.filter((entry) => entry.status === "source-required");
-    expect(pending.map((entry) => entry.resourceKey)).toEqual([
-      "fi-zilal-al-quran",
-    ]);
+    expect(pending.map((entry) => entry.resourceKey)).toEqual([]);
     expect(pending.every((entry) => entry.packManifestPath === null && entry.mapping === null)).toBe(true);
   });
 

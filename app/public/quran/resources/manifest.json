@@ -6,14 +6,14 @@
     {
       "resourceKey": "quranpedia-tafsir-pack",
       "kind": "tafsir",
-      "title": "حزمة التفاسير المرتبطة بالآيات: البغوي والسعدي والطبري",
+      "title": "حزمة التفاسير المرتبطة بالآيات: البغوي والسعدي والطبري وابن كثير وأضواء البيان وفي ظلال القرآن والقرطبي",
       "author": null,
       "status": "installed",
       "sourceUrl": "https://api.quranpedia.net/books-contents/",
       "permissionBasis": "USER-ATTESTED-WAQF-REUSE",
       "packManifestPath": "tafsir/manifest.json",
-      "packManifestChecksumSha256": "27932a76704880077e6a2b7ec397dcdaa7a44c494eb0dcbef0130ab1e8032710",
-      "mapping": { "contentPath": "contents[].text", "ayahRangePath": "contents[].related_ayahs", "rangeMode": "exact" }
+      "packManifestChecksumSha256": "1a24258e356088cc99c26ec27ca7a7caf5720a214cbb03b8c5a0e263ff58879a",
+      "mapping": { "contentPath": "segments[].text", "ayahRangePath": "segments[].from + segments[].to", "rangeMode": "exact" }
     },
     {
       "resourceKey": "mokhtasar-tafsir", "kind": "tafsir", "title": "المختصر في التفسير", "author": "مركز تفسير للدراسات القرآنية",
@@ -24,16 +24,16 @@
     },
     {
       "resourceKey": "fi-zilal-al-quran", "kind": "tafsir", "title": "في ظلال القرآن", "author": "سيد قطب",
-      "status": "source-required", "sourceUrl": "https://quranpedia.net/surah/1/{surah}/book/27795", "permissionBasis": "USER-ATTESTED-WAQF-REUSE; source payload unavailable at audit time",
-      "packManifestPath": null, "packManifestChecksumSha256": null, "mapping": null,
-      "note": "تدقيق 2026-08-10: الفهرس الرسمي llms-full.txt (SHA-256 ed6fa7a4dcf3efcd3819e22a4819e7519afd02dea5f34648799b7a03697266f6) يسجل الكتاب 27795 وتعريفًا لكل السور 1-114، بخلاف 14492 و15648 اللذين لا يسجل لهما سوى تعريف الكتاب. لكن HTML وMarkdown وAPI ومخزن books-contents للمعرفات الثلاثة أعادت 404؛ لذلك لم تُنشأ حزمة ناقصة. الكتاب 14434 دراسة منهجية وليس متن الظلال ومستبعد صراحة."
+      "status": "installed", "sourceUrl": "https://khzanah.com/quran/tafsir/manifest.json", "permissionBasis": "USER-ATTESTED-WAQF-REUSE",
+      "packManifestPath": "tafsir/manifest.json", "packManifestChecksumSha256": "1a24258e356088cc99c26ec27ca7a7caf5720a214cbb03b8c5a0e263ff58879a", "mapping": { "contentPath": "segments[].text", "ayahRangePath": "segments[].from + segments[].to", "rangeMode": "exact" },
+      "note": "الحزمة المنشورة المثبتة: fi-zilal، معرف 66703، 114 سورة و314 مقطعًا. تحقق 2026-09-18 من بصمات جميع ملفات الحزمة المنشورة؛ حالة غياب المصدر المؤرخة 2026-08-10 أصبحت تاريخية."
     },
     {
-      "resourceKey": "quran-gharib", "kind": "gharib", "title": "غريب القرآن", "author": null,
-      "status": "installed", "sourceUrl": "https://quranpedia.net/surah/1/1/book/341", "permissionBasis": "USER-ATTESTED-WAQF-REUSE",
-      "packManifestPath": "resources/packs/gharib-ibn-qutaybah/manifest.json", "packManifestChecksumSha256": "124a5a2ed7611e2b6947f3eb4fcaf2422ba29e46757b7b3fcda33910f7d4aa00",
-      "mapping": { "contentPath": "records[].text", "ayahRangePath": "records[].from + records[].to", "rangeMode": "exact" },
-      "note": "غريب القرآن لابن قتيبة؛ 386 آية ذات مدخل صريح، ولا تُملأ الآيات الأخرى تخمينًا."
+      "resourceKey": "quran-gharib", "kind": "gharib", "title": "الميسر في غريب القرآن الكريم", "author": "مجمع الملك فهد لطباعة المصحف الشريف",
+      "status": "installed", "sourceUrl": "https://download.qurancomplex.gov.sa/resources_dev/MuyassarGhareeb.docx", "permissionBasis": "Official developer resource: approved KFGQPC content for desktop, mobile, browser, publishing and research use",
+      "packManifestPath": "resources/packs/kfgqpc-muyassar-gharib/manifest.json", "packManifestChecksumSha256": "b3f91835aba712d95a8b5d1a4a1319e91b5caa51d366b868d66c7464e2fcd318",
+      "mapping": { "contentPath": "records[].meaning", "wordPath": "records[].word", "meaningPath": "records[].meaning", "ayahRangePath": "records[].ayah", "rangeMode": "exact-single-ayah-word" },
+      "note": "114 سورة و11377 مدخل كلمة. استرجع payload من أرشيف رابط التنزيل الرسمي لتعذر المضيف المباشر؛ SHA-256 المرصود 8a7af5decb94ee465b77c0eded05e018c6bf813fc544455bd0faebfcc84a8cb2. تختلف بصمته عن metadata القديمة المنشورة في البوابة، والفارق موثق داخل manifest الحزمة. ملف مركز تفسير السابق مرفوض وغير مربوط ولا يعاد تنزيله."
     },
     {
       "resourceKey": "quran-qiraat", "kind": "qiraat", "title": "بيان القراءات على مستوى الكلمة", "author": "الفريق العلمي بمركز تفسير للدراسات القرآنية",
@@ -50,11 +50,11 @@
       "note": "موسوعة سورة: 114 سورة و6236 آية و77432 مدخل كلمة؛ فهرس الجذور المحلي يضم 1726 مادة و51332 كلمة ذات مادة صريحة، ولا يستنتج جذورًا غير منصوصة."
     },
     {
-      "resourceKey": "quran-irab", "kind": "irab", "title": "إعراب القرآن", "author": null,
-      "status": "installed", "sourceUrl": "https://quranpedia.net/surah/1/1/book/64", "permissionBasis": "USER-ATTESTED-WAQF-REUSE",
-      "packManifestPath": "resources/packs/irab-darwish/manifest.json", "packManifestChecksumSha256": "894e2a72f0500914de9a17d17edbad15ffac2ec81917cf9298c8d23cad59c3d1",
-      "mapping": { "contentPath": "records[].text", "ayahRangePath": "records[].from + records[].to", "rangeMode": "exact" },
-      "note": "إعراب القرآن وبيانه للدرويش؛ 1377 آية ذات مدخل صريح، ولا تُملأ الآيات الأخرى تخمينًا."
+      "resourceKey": "quran-irab", "kind": "irab", "title": "إعراب القرآن الكريم على مستوى الكلمة", "author": "الفريق العلمي بمركز تفسير للدراسات القرآنية",
+      "status": "installed", "sourceUrl": "https://surahpedia.com/ar/projects/22/{page}", "permissionBasis": "USER-ATTESTED-WAQF-REUSE (2026-08-10)",
+      "packManifestPath": "resources/packs/surahpedia-irab-word/manifest.json", "packManifestChecksumSha256": "893de6ac61ef27bbb00a944e59031eda008d5184569f21b60a956857121d4c67",
+      "mapping": { "contentPath": "records[].words[].text", "ayahRangePath": "records[].ayah", "rangeMode": "exact-single-ayah-word" },
+      "note": "موسوعة سورة: 114 سورة و6236 آية و77432 مدخل كلمة؛ لا يقبل التطبيق موردًا احتياطيًا من مزود آخر."
     }
   ]
 }
