@@ -15,6 +15,7 @@ import { searchFieldPostingPage } from './search_field_posting_page'
 import { searchFieldTokenSourceRange } from './search_field_source_snippet'
 import { loadFieldRawRows } from './search_field_raw_rows'
 import { snippetPhraseOffsets } from './search_phrase_snippet_matches'
+import { searchProgressDownload } from './search_progress_download'
 
 export type SeparatedV2SearchBinding = { manifestUrl: string; manifestSha256: string; sourceIndexSha256: string; packedReleaseId: string; packedManifestSha256: string; expectedBooks: number; expectedSegments: number; sourceRows?: {manifestUrl:string;manifestSha256:string} }
 
@@ -168,13 +169,7 @@ export class ShamelaSearchV2Client{
     if(!file)throw Error('shamela_search_v2_term_inventory_invalid');
     const key=`verified-term:${url}:${file.sha256}`;let cached=this.cache.get(key);
     if(!cached){cached=(async()=>{
-      const response=await this.fetcher(url,{cache:'force-cache',signal:AbortSignal.timeout(15000)});
-      if(!response.ok)throw Error(`shamela_search_v2_term_http_${response.status}`);
-      if(file.byteLength>32*1024*1024)throw Error('shamela_search_v2_term_directory_oversized');
-      const reader=response.body?.getReader();if(!reader)throw Error('shamela_search_v2_term_directory_empty');
-      const chunks:Uint8Array[]=[];let length=0;
-      try{for(;;){const chunk=await reader.read();if(chunk.done)break;length+=chunk.value.length;this.bytesFetched+=chunk.value.length;if(length>file.byteLength){await reader.cancel();throw Error('shamela_search_v2_term_directory_oversized')}chunks.push(chunk.value)}}finally{reader.releaseLock()}
-      const bytes=new Uint8Array(length);let cursor=0;for(const chunk of chunks){bytes.set(chunk,cursor);cursor+=chunk.length}
+      const bytes=await searchProgressDownload((input,init)=>this.fetcher(input,init),url,file.byteLength);this.bytesFetched+=bytes.byteLength
       if(bytes.length!==file.byteLength||await this.sha256(bytes)!==file.sha256)throw Error('shamela_search_v2_term_directory_integrity');
       const index=JSON.parse(new TextDecoder().decode(bytes)) as {contract:string;entries:Array<[string,PackedEntry]>};
       if(index.contract!=='shamela-search-v2/packed-term-index-1'||!Array.isArray(index.entries)||index.entries.length!==file.entries||index.entries.some(row=>!Array.isArray(row)||row.length!==2||typeof row[0]!=='string'||bucketFor(row[0],manifest.termIndexBucketCount!)!==indexId||!row[1]||!Number.isSafeInteger(row[1].byteLength)||row[1].byteLength<=0||!Array.isArray(row[1].parts)||!row[1].parts.length)||new Set(index.entries.map(row=>row[0])).size!==index.entries.length)throw Error('shamela_search_v2_term_directory_invalid');

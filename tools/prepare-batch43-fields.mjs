@@ -3,7 +3,7 @@ import {readFile,writeFile,mkdir,stat,readdir,link,copyFile} from 'node:fs/promi
 import {resolve,dirname} from 'node:path'
 import {createHash} from 'node:crypto'
 import {PIN} from './field-overlay-upload-plan.mjs'
-const safeSearch=process.argv[2]==='--prepare-safe-search',batch=safeSearch?'44':'43'
+const safeSearch=['--prepare-safe-search','--prepare-safe-search45'].includes(process.argv[2]),batch=process.argv[2]==='--prepare-safe-search45'?'45':safeSearch?'44':'43'
 const root=resolve(import.meta.dirname,'..'),base=resolve(root,'.artifacts/batch41'),app=resolve(root,`.artifacts/batch${batch}-final-app`),out=resolve(root,`.artifacts/batch${batch}`)
 const sha=b=>createHash('sha256').update(b).digest('hex')
 if(!safeSearch&&process.argv[2]!=='--prepare')throw Error('explicit_prepare_required')
@@ -29,7 +29,7 @@ html=html.replace(/(<script type="module")/,'<script src="/data/shamela-search-v
 if(!html.includes('shamela-search-v2-packed.js'))throw Error('missing_module')
 replacements.set('index.html',Buffer.from(html))
 const sw=replacements.get('sw.js').toString();if(!sw.startsWith("const CACHE = 'alkhizana-shell-v18'"))throw Error('unreviewed_sw')
-replacements.set('sw.js',Buffer.from(sw.replace("const CACHE = 'alkhizana-shell-v18'",`const CACHE = 'alkhizana-shell-${safeSearch?'search44':'fields-'+sourcePin.slice(0,8)}'`)))
+replacements.set('sw.js',Buffer.from(sw.replace("const CACHE = 'alkhizana-shell-v18'",`const CACHE = 'alkhizana-shell-${safeSearch?'search'+batch:'fields-'+sourcePin.slice(0,8)}'`)))
 await mkdir(out,{recursive:true});const next=[]
 for(const entry of manifest){
  const original=resolve(base,'deploy/pages-dist',entry.path),bytes=await readFile(original)
