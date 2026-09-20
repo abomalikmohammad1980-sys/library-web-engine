@@ -1753,7 +1753,7 @@ body.reader-book-card-open { overflow: hidden; }
 .reader__edition-disclosure { position: relative; flex: 0 0 auto !important; }
 .reader__edition-disclosure > summary { display: flex; align-items: center; gap: 4px; min-height: 40px; padding: 4px 8px; cursor: pointer; border: 1px solid var(--border-default); border-radius: 10px; list-style: none; }
 .reader__edition-disclosure > summary::-webkit-details-marker { display: none; }
-.reader__edition-disclosure > .book-profile__section { position: absolute; z-index: 5; inset-inline-end: 0; width: min(300px, 75vw); background: var(--paper-surface); box-shadow: 0 8px 24px #0002; text-align: start; }
+.reader__edition-disclosure > .book-profile__section { position: absolute; z-index: 5; inset-inline-start: 0; inset-block-end: calc(100% + 8px); width: min(300px, 65vw); max-height: 45vh; overflow-y: auto; background: var(--paper-surface); box-shadow: 0 8px 24px #0002; text-align: start; }
 .reader__edition-disclosure:not([open]) > .book-profile__section { display: none; }
 .reader__metadata-download:focus-visible, .reader__edition-disclosure > summary:focus-visible { outline: 2px solid var(--read-accent); outline-offset: 3px; }
 .reader__pdf-loading { height: 100%; display: grid; place-items: center; color: var(--read-muted); }
