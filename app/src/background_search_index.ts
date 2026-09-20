@@ -1,4 +1,4 @@
-import {currentLibraryIdentityScope,listBooks} from './engine/library_store'
+import {currentLibraryIdentityScope,listStoredBooks} from './engine/library_store'
 import {inferBookFormat} from './book_format'
 
 /** Serial, local-only warmup. Never download the public corpus at startup. */
@@ -18,7 +18,7 @@ export function installBackgroundSearchIndex():()=>void{
   running=true;controller=new AbortController()
   const signal=controller.signal,identity=currentLibraryIdentityScope()
   try{
-   const books=await listBooks()
+   const books=await listStoredBooks()
    for(const book of books){
     if(disposed||signal.aborted||currentLibraryIdentityScope()!==identity)break
     // Remote placeholders are handled by server indexing or demand repair.

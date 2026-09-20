@@ -3,17 +3,23 @@ import {resolve,dirname} from 'node:path'
 import {createHash} from 'node:crypto'
 import {inlineThemeBootstrap} from './inline-theme-bootstrap.mjs'
 import {injectSearchBootstrap} from './search-bootstrap-html.mjs'
+import {inlineEntryCss} from './inline-entry-css.mjs'
+import {inlineRoutePreloads} from './route-preload-hints.mjs'
 import {stampServiceWorkerRelease} from '../alpha-publish/scripts/service-worker-release.mjs'
-const batch=process.argv[2]??'64';if(!['64','65'].includes(batch))throw Error('reviewed_batch_required')
-const root=resolve(import.meta.dirname,'..'),base=resolve(root,'.artifacts/batch63'),out=resolve(root,'.artifacts/batch'+batch),app=resolve(root,'.artifacts/performance-20260920/client-pass'+(batch==='65'?'9':'8'))
+const batch=process.argv[2]??'64';if(!['64','65','66','67','68','69','70'].includes(batch))throw Error('reviewed_batch_required')
+const root=resolve(import.meta.dirname,'..'),base=resolve(root,'.artifacts/batch63'),out=resolve(root,'.artifacts/batch'+batch),app=resolve(root,'.artifacts/performance-20260920/client-pass'+({'64':'8','65':'9','66':'11','67':'11','68':'12','69':'12','70':'13'}[batch]))
 const sha=b=>createHash('sha256').update(b).digest('hex'),json=async p=>JSON.parse(await readFile(p))
 const manifest=await json(resolve(base,'static-source-manifest.json')),stage=await json(resolve(base,'stage.json')),snapshot=await json(resolve(base,'source-snapshot.json'))
 if(!stage.published||sha(JSON.stringify(manifest))!==stage.payloadFingerprint)throw Error('published_baseline_required')
+const finalSw=await readFile(resolve(app,'sw.js'),'utf8')
+for(const row of await json(resolve(app,'font-cache-map.json')))if(!finalSw.includes(row.target))throw Error('build_not_finalized_font_aliases')
 const replacements=new Map()
 async function collect(dir){for(const entry of await readdir(resolve(app,dir),{withFileTypes:true})){const p=dir+'/'+entry.name;if(entry.isDirectory())await collect(p);else replacements.set(p,await readFile(resolve(app,p)))}}
 await collect('assets')
 for(const p of ['theme-init.js','manifest.webmanifest','quran/resources/manifest.json'])replacements.set(p,await readFile(resolve(app,p)))
 const optimized=inlineThemeBootstrap(injectSearchBootstrap(await readFile(resolve(app,'index.html'),'utf8'),{defer:true}),await readFile(resolve(base,'deploy/pages-dist/_headers'),'utf8'),replacements.get('theme-init.js').toString())
+if(batch==='67')optimized.index=await inlineEntryCss(optimized.index,path=>readFile(resolve(app,path),'utf8'))
+if(['68','69','70'].includes(batch))Object.assign(optimized,inlineRoutePreloads(optimized.index,optimized.headers,await json(resolve(app,'route-preload-hints.json'))))
 replacements.set('index.html',Buffer.from(optimized.index));replacements.set('_headers',Buffer.from(optimized.headers))
 replacements.set('sw.js',Buffer.from(stampServiceWorkerRelease((await readFile(resolve(app,'sw.js'),'utf8')).replace("const CACHE = 'alkhizana-shell-v18'",`const CACHE = 'alkhizana-shell-search${batch}'`),optimized.index)))
 // Two morphology files have identical verified bytes. Preserve both request

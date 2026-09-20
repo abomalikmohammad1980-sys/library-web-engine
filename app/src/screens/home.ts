@@ -50,11 +50,11 @@ if (typeof window !== 'undefined') window.addEventListener('library-changed', ()
 export function homeScreen(): HTMLElement {
   const snapshot = readHomeBookSnapshot()
   const recent = h('section', { class: 'home-recent', 'aria-labelledby': 'recent-heading' }, initialRecent(snapshot))
-  void hydrateRecent(recent)
+  whenNearViewport(recent, () => { void hydrateRecent(recent) })
 
   const newForYou = h('section', { class: 'home-section', 'aria-labelledby': 'new-for-you-heading' })
   newForYou.append(linkedHomeHeader('جديد المكتبة','new-for-you-heading','#/new-books'), initialNewForYou(snapshot))
-  void hydrateNewForYou(newForYou)
+  whenNearViewport(newForYou, () => { void hydrateNewForYou(newForYou) })
   const gateways = libraryGatewaysSection(snapshot)
   const popular = popularBooksSection(snapshot)
   const recommendations = h('section', { class: 'home-section', 'aria-labelledby': 'recommendations-heading' }, linkedHomeHeader('مقترح لك من خزانتك','recommendations-heading','#/recommendations'), initialRecommendations(snapshot))
@@ -150,7 +150,7 @@ export function libraryGatewaysSection(snapshot: HomeBookSnapshot[] = readHomeBo
     gatewayPanel('التصنيفات الموضوعية', 'انتقل إلى الفن الذي تريد القراءة فيه', 'compass', categories, value => categoryHref(value), '#/library'),
     gatewayPanel('المؤلفون', 'تصفح المؤلفين الذين توجد كتبهم في خزانتك', 'person', authors, id => `#/author/${encodeURIComponent(id)}`, '#/authors?owners=books', 100),
   )
-  void hydrateGateways(gateways)
+  whenNearViewport(gateways, () => { void hydrateGateways(gateways) })
   return gateways
 }
 
@@ -160,7 +160,7 @@ export function popularBooksSection(snapshot: HomeBookSnapshot[] = readHomeBookS
   const books = snapshot.map(snapshotBook).filter(book => (counts[book.id] ?? 0) > 0).sort(compareBooksByMetric(book => counts[book.id] ?? 0)).slice(0, 50)
   body.append(h('p', { class: 'home-popular__summary', 'aria-live': 'polite' }, books.length ? uiTemplateText('d2589a932736c84a',{p1:books.length}) : 'افتح كتابًا ليظهر ترتيبه هنا.'), h('div', { class: 'home-popular__grid' }, ...(books.length ? books.map((book, index) => homePopularCard(book, counts[book.id] ?? 0, index)) : [usefulHomeCard('افتح مكتبتك', 'اختر كتابًا وابدأ القراءة الآن.', '#/library')])))
   const popular = h('section', { class: 'home-section home-popular', 'aria-labelledby': 'popular-heading' }, sectionHeader('الكتب الأكثر استعمالًا', undefined, 'popular-heading'), body)
-  void hydratePopular(popular)
+  whenNearViewport(popular, () => { void hydratePopular(popular) })
   return popular
 }
 
@@ -207,7 +207,7 @@ async function hydrateGateways(root: HTMLElement): Promise<void> {
     for(const category of index.categories){const name=effectiveBookCategory({category:category.name});categoryCounts.set(name,(categoryCounts.get(name)??0)+category.count)}
     const categories: Array<[string, number, string?]> = BOOK_CATEGORIES
       .map((name): [string, number, string?] => [name, Number(categoryCounts.get(name) ?? 0), name])
-    const authors: Array<[string, number, string?]> = index.authors.map((author): [string, number, string?] => [author.name, Number(author.bookCount), author.id])
+    const authors: Array<[string, number, string?]> = index.authors.map((author): [string, number, string?] => [author.name, Number(author.bookCount), author.id]).filter(([, count]) => count > 0)
     root.replaceChildren(
       gatewayPanel('التصنيفات الموضوعية', 'انتقل إلى الفن الذي تريد القراءة فيه', 'compass', categories, (value) => value === UNCATEGORIZED_CATEGORY ? categoryHref() : categoryHref(value), '#/library'),
       gatewayPanel('المؤلفون', 'تصفح المؤلفين الذين توجد كتبهم في خزانتك', 'person', authors, (id) => `#/author/${encodeURIComponent(id)}`, '#/authors?owners=books', 100),
@@ -301,7 +301,7 @@ function dailyDashboard(): HTMLElement {
   const review = reviewCard(dueReviewCount([...annotations.notes.map(item => item.id), ...annotations.highlights.map(item => item.id)]))
   const customQuote = getReaderQuotes()[0]
 const quote = h('article', { class: 'daily-card daily-card--quote' }, h('div', { class: 'daily-quote__head' }, h('a', { class: 'home-kicker', href:'#/quotes' }, 'اقتباس اليوم')), h('p', { class: 'daily-quote__text', ...(customQuote ? { dataset: { noTranslate: '' } } : {}) }, customQuote ? `«${customQuote.text}»` : 'افتح كتابًا أو أضف اقتباسك، وسيظهر اقتباس من خزانتك هنا.'))
-  void hydrateDailyQuote(quote)
+  whenNearViewport(quote, () => { void hydrateDailyQuote(quote) })
   grid.append(
     dailyCard(
       'clock',

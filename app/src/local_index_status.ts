@@ -13,6 +13,7 @@ localBookIndexJobs.subscribe(()=>{try{checkpointWordJobs(checkpointStorage(),cur
 if(typeof window!=='undefined')window.addEventListener('library-changed',()=>{void resumeImportedWordIndexing()});
 export const resumeImportedWordIndexing=createWordResumeRunner({scope:currentLibraryIdentityScope,run:async(scope)=>{
  try{const storage=checkpointStorage();const known=new Set(pendingWordIds(storage,scope));const metadata=readPrivateLibrarySnapshot().filter(book=>inferBookFormat(book)==='word'&&!/^(?:shamela|published)/.test(book.id));for(const book of metadata)known.add(book.id);
+ if(!known.size)return;
  try{checkpointWordJobs(storage,scope,[...known].map(bookId=>({bookId,title:'',ownerScope:scope,state:'queued',etaMs:null,completedUnits:0,totalUnits:1})))}catch{warnCheckpoint()}
  const [{isLocalBookSearchIndexReady},{localSearchBookFingerprint}]=await Promise.all([import('./engine/search_store'),import('./engine/word_volume_identity')]);if(currentLibraryIdentityScope()!==scope)return;
  await resumeWordCheckpoint({storage,scope:currentLibraryIdentityScope,getBook,isWord:book=>inferBookFormat(book)==='word'&&book.managedSource!=='published',ready:isLocalBookSearchIndexReady,fingerprint:localSearchBookFingerprint,enqueue:(id,title,owner,revision)=>localBookIndexJobs.enqueue(id,title,owner,{revision,recheck:true})});

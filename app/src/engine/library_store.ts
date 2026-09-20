@@ -707,6 +707,8 @@ let booksListMemory: StoredBook[] | undefined
 let booksListInflight: Promise<{books:StoredBook[];centralComplete:boolean}> | undefined
 let booksListScope: string | undefined
 let catalogRetryTimer: ReturnType<typeof setTimeout> | undefined
+let catalogRetryAttempt=0
+import {catalogRetryDelay} from '../catalog_retry'
 if (typeof window !== 'undefined') window.addEventListener('library-changed', () => { booksListMemory = undefined })
 
 export async function listBooks(options:{requireCompleteCatalog?:boolean}={}): Promise<StoredBook[]> {
@@ -719,13 +721,22 @@ export async function listBooks(options:{requireCompleteCatalog?:boolean}={}): P
     if(options.requireCompleteCatalog&&!result.centralComplete)throw new Error('search_catalog_unavailable')
     return result.books.map(projectBookAuthorNames)
   }
-  if(booksListScope!==scope){booksListScope=scope;booksListMemory=undefined;booksListInflight=undefined}
+  if(booksListScope!==scope){booksListScope=scope;booksListMemory=undefined;booksListInflight=undefined;clearTimeout(catalogRetryTimer);catalogRetryTimer=undefined;catalogRetryAttempt=0}
   if (booksListMemory) return booksListMemory.map(projectBookAuthorNames)
   if (booksListInflight) return booksListInflight.then(consume)
   const task = listBooksUncached(scope).then(result => {
     if(scope!==currentLibraryIdentityScope()||scope!==booksListScope)return {books:[],centralComplete:false}
-    if(result.centralComplete)booksListMemory=result.books
-    else if(typeof window!=='undefined'&&catalogRetryTimer===undefined)catalogRetryTimer=setTimeout(()=>{catalogRetryTimer=undefined;void listBooks().then(()=>window.dispatchEvent(new Event('library-changed'))).catch(()=>undefined)},1500)
+    if(result.centralComplete){booksListMemory=result.books;catalogRetryAttempt=0;clearTimeout(catalogRetryTimer);catalogRetryTimer=undefined}
+    else if(typeof window!=='undefined'&&catalogRetryTimer===undefined){
+      const delay=catalogRetryDelay(catalogRetryAttempt)
+      if(delay!==undefined){catalogRetryAttempt++;catalogRetryTimer=setTimeout(()=>{
+        catalogRetryTimer=undefined
+        if(scope!==currentLibraryIdentityScope())return
+        void listBooks({requireCompleteCatalog:true}).then(()=>{
+          if(scope===currentLibraryIdentityScope())window.dispatchEvent(new Event('library-changed'))
+        }).catch(()=>undefined)
+      },delay)}
+    }
     return result
   }).finally(() => { if(booksListInflight===task)booksListInflight = undefined })
   booksListInflight=task
@@ -799,8 +810,14 @@ async function listBooksUncached(scope=currentLibraryIdentityScope()): Promise<{
         resolve({books:applyVisibility(mergeCentralLibraryBooks(publicBooks,canonical.books)),centralComplete:true})
       } catch(error) {
         console.warn('central_library_catalog_unavailable',error)
-        await visibilityReady
-        resolve({books:applyVisibility(canonical.books),centralComplete:false})
+        try {
+          await visibilityReady
+          resolve({books:applyVisibility(canonical.books),centralComplete:false})
+        } catch(visibilityError) {
+          // An async IndexedDB success handler cannot reject the outer Promise
+          // by throwing. Fail closed explicitly instead of hanging forever.
+          reject(visibilityError)
+        }
       }
     }
     req.onerror = () => reject(req.error)

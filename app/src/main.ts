@@ -35,10 +35,8 @@ const startBackgroundData = async (): Promise<void> => {
   try {
     const { ensurePublishedLibrarySeeded } = await import('./published_library_seed')
     await ensurePublishedLibrarySeeded()
-    const [{ listBooks }, { loadShamelaAuthorMetadata }] = await Promise.all([
-      import('./engine/library_store'), import('./shamela_author_metadata'),
-    ])
-    await Promise.allSettled([listBooks(), loadShamelaAuthorMetadata()])
+    // Screens load author metadata when needed; speculative download competes
+    // with the first paint even when no author details are visible.
   } catch (error) { console.warn('published_library_seed_failed', error) }
 }
 // نفحص الحالة مرة عند الجدولة ومرة عند التنفيذ، فلا ينفذ مؤقت قديم

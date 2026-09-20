@@ -4,6 +4,7 @@ import {satelliteCspSources} from './satellite-build-config.mjs'
 import {stampServiceWorkerRelease,assertServiceWorkerRelease} from './service-worker-release.mjs'
 import {prepareSeoIndex} from '../../tools/prepare-seo-index.mjs'
 import {inlineThemeBootstrap} from '../../tools/inline-theme-bootstrap.mjs'
+import {inlineRoutePreloads} from '../../tools/route-preload-hints.mjs'
 
 const root = resolve(import.meta.dirname, '..')
 const source = resolve(root, 'public/khizana')
@@ -50,6 +51,8 @@ await writeFile(resolve(output, '_headers'), `/*
   Cache-Control: public, max-age=86400
 `, 'utf8')
 const prepaint = inlineThemeBootstrap(index, await readFile(resolve(output,'_headers'),'utf8'), await readFile(resolve(output,'theme-init.js'),'utf8'))
+const hints = await readFile(resolve(output,'route-preload-hints.json'),'utf8').catch(error=>{if(error.code==='ENOENT')return null;throw error})
+if(hints)Object.assign(prepaint,inlineRoutePreloads(prepaint.index,prepaint.headers,JSON.parse(hints)))
 await writeFile(resolve(output,'index.html'),prepaint.index)
 await writeFile(resolve(output,'_headers'),prepaint.headers)
 await writeFile(resolve(output,'sw.js'),stampServiceWorkerRelease(worker,prepaint.index))

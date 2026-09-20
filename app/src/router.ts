@@ -20,6 +20,7 @@ import {hydrateSubjectCategories} from './subject_categories'
 import {hydrateAuthorDisplayNames} from './author_display_names'
 import {validRouteShape} from './route_shape'
 import {bindPageMeta} from './page_meta'
+import {routeNeedsMetadataBeforeRender} from './route_metadata_policy'
 
 export {WELCOME_SEEN_KEY} from './account_landing'
 
@@ -210,9 +211,10 @@ export function render(focusMain = false): void {
   const titleRoute = route.name === 'quran-tafsir' ? 'quran' : route.name === 'sunnah-source' ? 'sunnah' : route.name
   setSourceDocumentTitle(routeDocumentTitle(titleRoute))
   const metadataReady=Promise.allSettled([hydrateSubjectCategories(),hydrateAuthorDisplayNames()])
-  if (route.name === 'reader' && route.param) { void metadataReady.then(()=>renderReader(route, root, generation, focusMain)).then(()=>{if(generation===renderGeneration)finishScroll()}); return }
+  const beforeRender=routeNeedsMetadataBeforeRender(route.name)?metadataReady:Promise.resolve()
+  if (route.name === 'reader' && route.param) { void beforeRender.then(()=>renderReader(route, root, generation, focusMain)).then(()=>{if(generation===renderGeneration)finishScroll()}); return }
   const loader = routeLoaders[route.name as Exclude<Route['name'], 'reader' | 'book'>]
-  void metadataReady.then(()=>loader(route)).then(({ content, activeHash }) => {
+  void beforeRender.then(()=>loader(route)).then(({ content, activeHash }) => {
     if (generation !== renderGeneration) return
     try { markModuleLoaded(sessionStorage) } catch { /* التخزين قد يكون معطلاً */ }
     finishRoute(root, content, activeHash, focusMain, readerPrewarmRouteEligible(route.name))
