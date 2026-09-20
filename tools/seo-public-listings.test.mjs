@@ -20,6 +20,8 @@ test('related projection matches first13 merged candidates without COUNT or redu
   let staticReads=0
   assert.deepEqual((await readMergedPublicSeoRelated(f.db,async()=>{staticReads++;return null},'browse')).rows,expected)
   assert.equal(staticReads,0);assert.equal(queries.length,2);assert.ok(queries.every(q=>!q.includes('COUNT(')&&q.endsWith('LIMIT 13')))
+  const plan=f.sql.prepare('EXPLAIN QUERY PLAN '+queries[0]).all().map(r=>r.detail).join('\n')
+  assert.doesNotMatch(plan,/MATERIALIZE current_uploads|SCAN current_uploads/)
   f.sql.exec("UPDATE user_books SET visibility='private' WHERE id>='u02'")
   const related=await readMergedPublicSeoRelated(f.db,staticReader(rows),'browse')
   assert.equal(related.rows.length,13);assert.equal(related.rows[2].id,'0')
