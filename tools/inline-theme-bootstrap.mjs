@@ -12,7 +12,7 @@ export function inlineThemeBootstrap(index, headers, source) {
   if ((headers.match(/script-src [^;\r\n]+/g) ?? []).length !== 1) throw Error('theme_bootstrap_csp_count')
   headers = headers.replace(/script-src ([^;\r\n]+)/, (all, policy) => {
     if (policy.includes("'unsafe-inline'")) throw Error('theme_bootstrap_csp_unsafe')
-    return all + ' ' + hash
+    return policy.includes(hash) ? all : all + ' ' + hash
   })
   return {index: index.replace(tag, '<script data-theme-bootstrap>' + script + '</script>'), headers, hash}
 }

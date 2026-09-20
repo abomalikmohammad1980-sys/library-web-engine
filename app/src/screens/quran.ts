@@ -1,7 +1,7 @@
 import {isSourceEditionTafsir, loadSourceEditionTafsir, type SourceEditionTafsirDefinition} from '../quran_source_editions'
 import {sanitizedTafsirFragment} from '../tafsir_html'
 import {tafsirVerseExcerpt} from '../tafsir_verse_excerpt'
-import {getSourceEditionBookLink} from '../quran_source_book_links'
+import type {SourceEditionBookLink} from '../quran_source_book_links'
 import {uiTemplateText,uiTemplateAttribute,uiLabelParameter,renderBoundUiTemplate} from '../ui_template_binding'
 import { pageContent } from '../components'
 import {fetchQuranResource} from '../quran_fetch'
@@ -122,6 +122,16 @@ async function renderQuran(reader: HTMLElement, details: HTMLElement, tafsirDeta
     readingButton.setAttribute('aria-pressed',String(readingMode==='reading'))
     const modeSwitch = h('section', { class: 'quran-reading-modes quran-reading-modes--compact', 'aria-label': 'اختيار رسم نص المصحف' }, readingButton, uthmaniMode, imlaiMode)
     let drawRevision=0
+    // Script choice changes only the page, not the selected verse, commentary,
+    // navigation controls or audio player. Keep async page races fenced.
+    const paintPage = async (isCurrent:()=>boolean) => {
+      const openSelection = (surahNumber: number, ayahNumber: number, word?: string) => { const picked = uthmani.get(`${surahNumber}:${ayahNumber}`), imlai = byId.get(`${surahNumber}:${ayahNumber}`); if (!picked || !imlai) return; state.surah = surahNumber; state.selected = picked; surah.select.value = String(surahNumber); ayah.setOptions((groups.get(surahNumber) ?? []).map(item => ({ value: String(item.ayah), label: String(item.ayah) }))); ayah.select.value = String(ayahNumber); renderInspector(details, tafsirDetails, picked, imlai.imlai, audioState, modeSwitch, tafsirSession, word) }
+      activeQuranCopyCleanup?.(); activeQuranCopyCleanup=undefined
+      if (readingMode === 'reading') {
+        try { await drawOriginalSelectablePage(sheet, state.page, pageMap.records, uthmani, openSelection,isCurrent) }
+        catch { if(isCurrent())drawSelectablePage(sheet, state.page, pageMap.records, uthmani, 'uthmani', openSelection) }
+      } else drawSelectablePage(sheet, state.page, pageMap.records, uthmani, readingMode, openSelection)
+    }
     const draw = async (focusAyah?: number, highlightSearchTarget = false) => {
       const revision=++drawRevision,isCurrent=()=>reader.isConnected&&revision===drawRevision
       state.surah = Number(surah.select.value); const records = groups.get(state.surah) ?? []
@@ -130,14 +140,7 @@ async function renderQuran(reader: HTMLElement, details: HTMLElement, tafsirDeta
       const target = Number(ayah.select.value || focusAyah || 1), selected = records.find(item => item.ayah === target) ?? records[0], mapped = selected ? byId.get(selected.ayahId) : undefined
       if (mapped) { state.page = mapped.page; page.select.value = String(mapped.page); juz.select.value=String(Math.max(1,navigationIndex.juz.filter(target=>target.page<=mapped.page).length));hizb.select.value=String(Math.max(1,navigationIndex.hizb.filter(target=>target.page<=mapped.page).length)) }
       title.replaceChildren(uiTemplateText('cbb0a0ac906682d3',{p1:uiLabelParameter(SURAH_NAMES[state.surah - 1] ?? String(state.surah)),p2:state.page}))
-      const openSelection = (surahNumber: number, ayahNumber: number, word?: string) => { const picked = uthmani.get(`${surahNumber}:${ayahNumber}`), imlai = byId.get(`${surahNumber}:${ayahNumber}`); if (!picked || !imlai) return; state.surah = surahNumber; state.selected = picked; surah.select.value = String(surahNumber); ayah.setOptions((groups.get(surahNumber) ?? []).map(item => ({ value: String(item.ayah), label: String(item.ayah) }))); ayah.select.value = String(ayahNumber); renderInspector(details, tafsirDetails, picked, imlai.imlai, audioState, modeSwitch, tafsirSession, word) }
-      activeQuranCopyCleanup?.(); activeQuranCopyCleanup=undefined
-      if (readingMode === 'reading') {
-        // لا يجوز أن يسقط قسم القرآن كله إذا تعذّر رسم صورة صفحة واحدة.
-        // النص العثماني المحلي محمّل أصلًا، وهو بديل قراءة كامل لا رسالة خطأ.
-        try { await drawOriginalSelectablePage(sheet, state.page, pageMap.records, uthmani, openSelection,isCurrent) }
-        catch { if(isCurrent())drawSelectablePage(sheet, state.page, pageMap.records, uthmani, 'uthmani', openSelection) }
-      } else drawSelectablePage(sheet, state.page, pageMap.records, uthmani, readingMode, openSelection)
+      await paintPage(isCurrent)
       if(!isCurrent())return
       if (highlightSearchTarget && selected) {
         const targetVerse = [...sheet.querySelectorAll<HTMLElement>('[data-ayah-id]')].find(element => element.dataset.ayahId === selected.ayahId)
@@ -159,9 +162,14 @@ async function renderQuran(reader: HTMLElement, details: HTMLElement, tafsirDeta
     juz.select.addEventListener('change',()=>jumpToNavigationTarget(quranNavigationTarget(navigationIndex,'juz',Number(juz.select.value))))
     hizb.select.addEventListener('change',()=>jumpToNavigationTarget(quranNavigationTarget(navigationIndex,'hizb',Number(hizb.select.value))))
     mushaf.select.addEventListener('change', () => { if (mushaf.select.value !== 'hafs-uthmani') { toast('هذا المصحف قيد الإضافة؛ بقي مصحف حفص ظاهرًا'); mushaf.select.value = 'hafs-uthmani' } })
-    const setReadingMode = (mode: QuranReadingMode) => { readingMode = mode; saveQuranReadingMode(mode); applyPageZoom(); uthmaniMode.classList.toggle('is-active', mode === 'uthmani'); imlaiMode.classList.toggle('is-active', mode === 'imlai'); uthmaniMode.setAttribute('aria-pressed', String(mode === 'uthmani')); imlaiMode.setAttribute('aria-pressed', String(mode === 'imlai')); void draw(Number(ayah.select.value || 1)) }
+    const setReadingMode = (mode: QuranReadingMode) => {
+      if(mode===readingMode)return
+      readingMode = mode; saveQuranReadingMode(mode); applyPageZoom()
+      for(const [button,value] of [[readingButton,'reading'],[uthmaniMode,'uthmani'],[imlaiMode,'imlai']] as const){button.classList.toggle('is-active',mode===value);button.setAttribute('aria-pressed',String(mode===value))}
+      const revision=++drawRevision
+      void paintPage(()=>reader.isConnected&&revision===drawRevision)
+    }
     uthmaniMode.addEventListener('click', () => setReadingMode('uthmani')); imlaiMode.addEventListener('click', () => setReadingMode('imlai'))
-    modeSwitch.addEventListener('click',()=>{readingButton.classList.toggle('is-active',readingMode==='reading');readingButton.setAttribute('aria-pressed',String(readingMode==='reading'))})
     readingButton.addEventListener('click',()=>setReadingMode('reading'))
     const audioState: AudioState = { entries: [] }
     quranAudioAdvance = (current, segmentation) => {
@@ -625,15 +633,22 @@ function renderTafsirReading(root: HTMLElement, value: { title: string; html: st
   const minus = action('−', () => { size = Math.max(.85, size - .1); body.style.setProperty('--tafsir-size', `${size.toFixed(2)}rem`) }, 'quran-tafsir-zoom')
   const plus = action('+', () => { size = Math.min(1.8, size + .1); body.style.setProperty('--tafsir-size', `${size.toFixed(2)}rem`) }, 'quran-tafsir-zoom')
   minus.setAttribute('aria-label', 'تصغير نص التفسير'); plus.setAttribute('aria-label', 'تكبير نص التفسير')
-  const sourceBookLink=isSourceEditionTafsir(definition)?getSourceEditionBookLink(definition.slug,record.surah,record.ayah):undefined
-  const bookHref=isSourceEditionTafsir(definition)?sourceBookLink?.href:tafsirReaderHref(definition, record.surah, record.ayah)
-  const tools = [minus, plus, ...(bookHref?[h('a',{class:'btn btn--ghost quran-tafsir-open',href:bookHref},'افتحه ككتاب')]:[h('span',{class:'muted',title:'لم يثبت موضع هذه الآية في نسخة المكتبة بعد'},'موضع الكتاب غير موثّق')])]
-  if(value.sharedSourceRange){const {from,to}=value.sharedSourceRange;tools.push(h('small',{class:'muted quran-tafsir-source-range'},uiTemplateText('quran-shared-source-range',{p1:from,p2:to})))}
-  if(sourceBookLink?.sharedRange){
-    const {from,to}=sourceBookLink.sharedRange
-    tools.push(h('small',{class:'muted quran-tafsir-shared-range'},uiTemplateText('quran-shared-book-range',{p1:from,p2:to})))
+  const bookTools=h('span',{class:'quran-tafsir-book-link'})
+  const renderBookTools=(sourceBookLink?:SourceEditionBookLink)=>{
+    const bookHref=isSourceEditionTafsir(definition)?sourceBookLink?.href:tafsirReaderHref(definition, record.surah, record.ayah)
+    bookTools.replaceChildren(bookHref?h('a',{class:'btn btn--ghost quran-tafsir-open',href:bookHref},'افتحه ككتاب'):h('span',{class:'muted',title:'لم يثبت موضع هذه الآية في نسخة المكتبة بعد'},'موضع الكتاب غير موثّق'))
+    if(sourceBookLink?.sharedRange){const {from,to}=sourceBookLink.sharedRange;bookTools.append(h('small',{class:'muted quran-tafsir-shared-range'},uiTemplateText('quran-shared-book-range',{p1:from,p2:to})))}
+    if(sourceBookLink&&'destinationNote' in sourceBookLink)bookTools.append(h('small',{class:'muted quran-tafsir-destination-note'},sourceBookLink.destinationNote))
   }
-  if(sourceBookLink&&'destinationNote' in sourceBookLink)tools.push(h('small',{class:'muted quran-tafsir-destination-note'},sourceBookLink.destinationNote))
+  // The multi-MB reviewed link map is not needed to read the Quran. Resolve it
+  // only for a source-edition commentary, without delaying the verse or text.
+  if(isSourceEditionTafsir(definition)){
+    void import('../quran_source_book_links').then(({getSourceEditionBookLink})=>{
+      if(bookTools.isConnected&&root.contains(body))renderBookTools(getSourceEditionBookLink(definition.slug,record.surah,record.ayah))
+    }).catch(()=>{if(bookTools.isConnected)bookTools.replaceChildren(action('إعادة المحاولة',()=>renderTafsirReading(root,value,definition,record,toolsRoot)))})
+  }else renderBookTools()
+  const tools = [minus, plus, bookTools]
+  if(value.sharedSourceRange){const {from,to}=value.sharedSourceRange;tools.push(h('small',{class:'muted quran-tafsir-source-range'},uiTemplateText('quran-shared-source-range',{p1:from,p2:to})))}
   if (toolsRoot) { toolsRoot.replaceChildren(...tools); root.replaceChildren(body) }
   else root.replaceChildren(h('div', { class: 'quran-tafsir-toolbar' }, h('div', { class: 'quran-tafsir-tools' }, ...tools)), body)
 }

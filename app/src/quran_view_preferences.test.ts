@@ -21,7 +21,28 @@ describe('Quran view persistence and scale isolation', () => {
 
   it('falls back safely when persisted values are invalid', () => {
     const storage = memory(); storage.setItem(QURAN_READING_MODE_KEY, 'other')
-    expect(loadQuranReadingMode(storage)).toBe('uthmani')
+    expect(loadQuranReadingMode(storage)).toBe('reading')
+  })
+
+  it('defaults to printed reading for new visitors or unavailable storage',()=>{
+    expect(loadQuranReadingMode(memory())).toBe('reading')
+    expect(loadQuranReadingMode({getItem(){throw Error('unavailable')}})).toBe('reading')
+  })
+
+  it('switches only the page and skips an already active choice',()=>{
+    const screen=readFileSync(new URL('./screens/quran.ts',import.meta.url),'utf8')
+    const handler=screen.slice(screen.indexOf('const setReadingMode ='),screen.indexOf("uthmaniMode.addEventListener('click'"))
+    expect(handler).toContain('if(mode===readingMode)return')
+    expect(handler).toContain('paintPage(')
+    expect(handler).toContain('revision===drawRevision')
+    expect(handler).not.toMatch(/\bdraw\(|renderInspector\(|\.setOptions\(/)
+  })
+
+  it('keeps the reviewed source link map outside the initial Quran module',()=>{
+    const screen=readFileSync(new URL('./screens/quran.ts',import.meta.url),'utf8')
+    expect(screen).not.toMatch(/import\s*\{[^}]*getSourceEditionBookLink[^}]*\}\s*from/)
+    expect(screen).toContain("import('../quran_source_book_links')")
+    expect(screen).toContain('bookTools.isConnected&&root.contains(body)')
   })
 
   it('keeps position/mushaf persisted and gives the imlai text its own zoom instead of scaling the page box', () => {

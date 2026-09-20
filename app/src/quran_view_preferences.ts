@@ -6,7 +6,7 @@ type StorageReader = Pick<Storage, 'getItem'>
 type StorageWriter = Pick<Storage, 'setItem'>
 
 export function loadQuranReadingMode(storage: StorageReader = localStorage): QuranReadingMode {
-  try { const value=storage.getItem(QURAN_READING_MODE_KEY); return value==='reading'||value==='imlai'?value:'uthmani' } catch { return 'uthmani' }
+  try { const value=storage.getItem(QURAN_READING_MODE_KEY); return value==='uthmani'||value==='imlai'?value:'reading' } catch { return 'reading' }
 }
 
 export function saveQuranReadingMode(mode: QuranReadingMode, storage: StorageWriter = localStorage): void {
