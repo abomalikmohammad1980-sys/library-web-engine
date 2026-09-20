@@ -4,7 +4,7 @@ import {accountEntryReturn} from './account_entry'
 
 const ACCOUNT_NATIVE_SESSION='/api/account/native-session'
 const ACCOUNT_READINESS='/api/account/readiness'
-export interface AccountReadiness {ready:boolean;access:{configured:boolean;missing?:string[];bridgeReady?:boolean};native?:{configured:boolean};bindings?:{visitorsDb:boolean;libraryR2:boolean}}
+export interface AccountReadiness {ready:boolean;reason?:'database_quota_exhausted'|'schema_missing'|'bindings_missing'|'temporarily_unavailable';retryAfterSeconds?:number;access:{configured:boolean;missing?:string[];bridgeReady?:boolean};native?:{configured:boolean};bindings?:{visitorsDb:boolean;libraryR2:boolean}}
 const ACCOUNT_ERROR_ARABIC:Record<string,string>={
   account_owner_invalid:'تعذّر تحديد صاحب الحساب. حدّث قائمة الحسابات ثم أعد المحاولة.',account_members_page_invalid:'رقم صفحة الحسابات أو حجمها غير صالح. حدّث القائمة.',account_blocked:'أوقفت الإدارة هذا الحساب. تواصل معها لمراجعة حالته.',
   device_limit_reached:'بلغ حسابك ثلاثة أجهزة. ألغِ جهازًا قديمًا من جهاز مسجل أو تواصل مع الإدارة.',device_revoked:'أُلغي تسجيل هذا الجهاز. سجّل الدخول من جهاز معتمد أو تواصل مع الإدارة.',
@@ -56,6 +56,8 @@ export async function loadAccountReadiness():Promise<AccountReadiness>{
 }
 export function accountReadinessArabic(readiness:AccountReadiness):string{
   if(readiness.ready)return'منظومة الحسابات جاهزة.'
+  if(readiness.reason==='database_quota_exhausted')return'تسجيل الدخول متوقف مؤقتًا لنفاد حصة قاعدة البيانات اليومية. تتجدد الحصة عند الساعة 00:00 UTC. بيانات حسابك لم تُحذف؛ يمكنك متابعة القراءة بصفة ضيف.'
+  if(readiness.reason==='temporarily_unavailable')return'تعذّر الاتصال بخدمة الحسابات مؤقتًا. أعد المحاولة لاحقًا؛ بيانات حسابك لم تُحذف.'
   return 'منظومة الحسابات غير جاهزة الآن.'
 }
 export const cloudflareAccessAuthProvider:AuthProvider={
