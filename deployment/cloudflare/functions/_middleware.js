@@ -9,7 +9,7 @@ import {boundedBytes} from './_seo-toc.js'
 import {seoPresentation,seoNavLabels} from './_seo-presentation.js'
 import {loadSeoDataRelease,seoListingPage} from './_seo-data-release.js'
 import {renderSeoListing,relatedSeoRows} from './_seo-listings.js'
-import {readMergedPublicSeoListing,publicUploadAuthorId} from './_seo-public-listings.js'
+import {readMergedPublicSeoListing,readMergedPublicSeoRelated,publicUploadAuthorId} from './_seo-public-listings.js'
 import {serveVersionedPublicHtml} from './_seo-edge-cache.js'
 import {publicBookRemovalStatus} from './_seo-removal.js'
 import {indexNowKeyResponse} from './api/_public-book-indexnow.js'
@@ -68,6 +68,7 @@ export async function onRequest(context){
   if(release&&env.PUBLIC_BOOK_INDEX_EVENTS_ENABLED==='true'){
    const immutableListing=release.listing.bind(release)
    release.listing=(list,page)=>readMergedPublicSeoListing(env.VISITORS_DB,immutableListing,list,page)
+   release.related=list=>readMergedPublicSeoRelated(env.VISITORS_DB,immutableListing,list)
   }
   if(categoryPath&&!release)throw Error('seo_categories_release_required')
   if(match){const kind=match[1],id=kind==='authors'?match[2].padStart(6,'0'):String(Number(match[2]));baseRecord=release?await release.identity(kind,id):(await smallJson(await env.ASSETS.fetch(new URL(`/data/seo/${kind}-${seoShard(id)}.json`,url)))).records[id];record=await refreshPublicSeoRecord(env.VISITORS_DB,kind,id,baseRecord);if(!record)status=404;else if(path!==`/${kind}/${id}`){url.pathname=`/${kind}/${id}`;return Response.redirect(url.href,301)}}
@@ -83,7 +84,7 @@ export async function onRequest(context){
    // Independent immutable lists can load concurrently; listing() still checks
    // current visibility for every call, including the second cache fence.
    return Promise.all(groups.filter(([key])=>key).map(async([key,label])=>{
-    const group=await release.listing(key,1)
+    const group=await (release.related?release.related(key):release.listing(key,1))
     return {label,rows:relatedSeoRows(group?.rows??[],current.id)}
    }))
   }

@@ -57,6 +57,23 @@ export async function readMergedPublicSeoListing(db,readStatic,list,page=1){
  return checked({page,pages,total,totalExact:staticTotal===0,rows:[...dynamic,...statics].slice(0,SIZE)})
 }
 
+/** Related books need only thirteen candidates (twelve plus the current book),
+ * not a total/pagination count over every upload. Keep the fresh primary fence. */
+export async function readMergedPublicSeoRelated(db,readStatic,list){
+ const filter=predicate(list)
+ if(!db||!filter)return readStatic(list,1)
+ const query=`${base} SELECT id,title,author,category,updated_at FROM current_uploads WHERE ${filter.sql} ORDER BY updated_at DESC,id LIMIT 13`
+ const read=async()=>{
+  const current=typeof db.withSession==='function'?db.withSession('first-primary'):db
+  return (await current.prepare(query).bind(...filter.args).all()).results??[]
+ }
+ const before=await read()
+ const statics=before.length<13?await readStatic(list,1):null
+ const after=await read()
+ if(JSON.stringify(before)!==JSON.stringify(after))throw Error('seo_public_listing_changed')
+ return checked({rows:[...before.map(row),...(statics?.rows??[])].slice(0,13)})
+}
+
 /** Identity affiliation uses the stored reviewed central-author link, not names. */
 export async function publicUploadAuthorId(db,id){
  if(!db||!/^[A-Za-z0-9_-]{1,200}$/.test(id))return undefined

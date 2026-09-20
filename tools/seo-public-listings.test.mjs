@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {DatabaseSync} from 'node:sqlite'
-import {readMergedPublicSeoListing,publicUploadAuthorId} from '../alpha-publish/functions/_seo-public-listings.js'
+import {readMergedPublicSeoListing,readMergedPublicSeoRelated,publicUploadAuthorId} from '../alpha-publish/functions/_seo-public-listings.js'
 function fixture(){
  const sql=new DatabaseSync(':memory:');sql.exec(`CREATE TABLE user_books(id TEXT PRIMARY KEY,title TEXT,author TEXT,category TEXT,updated_at TEXT,visibility TEXT DEFAULT 'public',review_status TEXT DEFAULT 'approved',deleted_at TEXT);CREATE TABLE user_book_metadata(book_id TEXT,central_author_id TEXT);CREATE TABLE central_authors(author_id TEXT,hidden_at TEXT);CREATE TABLE central_book_overrides(book_id TEXT,title TEXT,author TEXT,category TEXT,updated_at TEXT,revision INTEGER,visibility TEXT DEFAULT 'public',logically_deleted_at TEXT);`)
  let primary=0
@@ -10,6 +10,24 @@ function fixture(){
  return{sql,db,add,primary:()=>primary}
 }
 const staticReader=(rows,kind='browse')=>async(list,page)=>{if(list!==kind)return null;const pages=Math.max(1,Math.ceil(rows.length/100));return page>pages?null:{page,pages,total:rows.length,rows:rows.slice((page-1)*100,page*100)}}
+
+test('related projection matches first13 merged candidates without COUNT or redundant static reads',async()=>{
+ const f=fixture();try{
+  const rows=Array.from({length:100},(_,i)=>({kind:'book',id:String(i),title:'قديم',href:'/books/'+i}))
+  for(let i=0;i<20;i++)f.add('u'+String(i).padStart(2,'0'))
+  const expected=(await readMergedPublicSeoListing(f.db,staticReader(rows),'browse')).rows.slice(0,13)
+  const queries=[],prepare=f.db.prepare;f.db.prepare=query=>{queries.push(query);return prepare(query)}
+  let staticReads=0
+  assert.deepEqual((await readMergedPublicSeoRelated(f.db,async()=>{staticReads++;return null},'browse')).rows,expected)
+  assert.equal(staticReads,0);assert.equal(queries.length,2);assert.ok(queries.every(q=>!q.includes('COUNT(')&&q.endsWith('LIMIT 13')))
+  f.sql.exec("UPDATE user_books SET visibility='private' WHERE id>='u02'")
+  const related=await readMergedPublicSeoRelated(f.db,staticReader(rows),'browse')
+  assert.equal(related.rows.length,13);assert.equal(related.rows[2].id,'0')
+ }finally{f.sql.close()}
+})
+test('related projection refuses a withdrawal during the immutable fetch',async()=>{
+ const f=fixture();try{f.add('a');await assert.rejects(readMergedPublicSeoRelated(f.db,async()=>{f.sql.exec("UPDATE user_books SET visibility='private'");return null},'browse'),/listing_changed/)}finally{f.sql.close()}
+})
 test('125 fresh public uploads plus251 static books are discoverable once over4 bounded pages',async()=>{
  const f=fixture();try{
   for(let i=0;i<125;i++)f.add('u'+String(i).padStart(3,'0'))

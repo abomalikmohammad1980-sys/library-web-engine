@@ -3,6 +3,7 @@ import { resolve } from 'node:path'
 import {satelliteCspSources} from './satellite-build-config.mjs'
 import {stampServiceWorkerRelease,assertServiceWorkerRelease} from './service-worker-release.mjs'
 import {prepareSeoIndex} from '../../tools/prepare-seo-index.mjs'
+import {inlineThemeBootstrap} from '../../tools/inline-theme-bootstrap.mjs'
 
 const root = resolve(import.meta.dirname, '..')
 const source = resolve(root, 'public/khizana')
@@ -48,6 +49,10 @@ await writeFile(resolve(output, '_headers'), `/*
 /quran/*
   Cache-Control: public, max-age=86400
 `, 'utf8')
+const prepaint = inlineThemeBootstrap(index, await readFile(resolve(output,'_headers'),'utf8'), await readFile(resolve(output,'theme-init.js'),'utf8'))
+await writeFile(resolve(output,'index.html'),prepaint.index)
+await writeFile(resolve(output,'_headers'),prepaint.headers)
+await writeFile(resolve(output,'sw.js'),stampServiceWorkerRelease(worker,prepaint.index))
 await cp(resolve(root,'scripts/pages-static/_redirects'),resolve(output,'_redirects'))
 await cp(resolve(root,'scripts/pages-static/404.html'),resolve(output,'404.html'))
 await cp(resolve(root,'scripts/pages-static/_routes.json'),resolve(output,'_routes.json'))
