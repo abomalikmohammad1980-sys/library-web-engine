@@ -6,8 +6,8 @@ import {injectSearchBootstrap} from './search-bootstrap-html.mjs'
 import {inlineEntryCss} from './inline-entry-css.mjs'
 import {inlineRoutePreloads} from './route-preload-hints.mjs'
 import {stampServiceWorkerRelease} from '../alpha-publish/scripts/service-worker-release.mjs'
-const batch=process.argv[2]??'64';if(!['64','65','66','67','68','69','70','71','72','73','74'].includes(batch))throw Error('reviewed_batch_required')
-const root=resolve(import.meta.dirname,'..'),base=resolve(root,'.artifacts/batch63'),out=resolve(root,'.artifacts/batch'+batch),app=resolve(root,'.artifacts/performance-20260920/client-pass'+({'64':'8','65':'9','66':'11','67':'11','68':'12','69':'12','70':'13','71':'14','72':'15','73':'16','74':'17'}[batch]))
+const batch=process.argv[2]??'64';if(!['64','65','66','67','68','69','70','71','72','73','74','75','76'].includes(batch))throw Error('reviewed_batch_required')
+const root=resolve(import.meta.dirname,'..'),base=resolve(root,'.artifacts/batch63'),out=resolve(root,'.artifacts/batch'+batch),app=resolve(root,'.artifacts/performance-20260920/client-pass'+({'64':'8','65':'9','66':'11','67':'11','68':'12','69':'12','70':'13','71':'14','72':'15','73':'16','74':'17','75':'18','76':'17'}[batch]))
 const sha=b=>createHash('sha256').update(b).digest('hex'),json=async p=>JSON.parse(await readFile(p))
 const manifest=await json(resolve(base,'static-source-manifest.json')),stage=await json(resolve(base,'stage.json')),snapshot=await json(resolve(base,'source-snapshot.json'))
 if(!stage.published||sha(JSON.stringify(manifest))!==stage.payloadFingerprint)throw Error('published_baseline_required')
@@ -20,7 +20,7 @@ for(const p of ['theme-init.js','manifest.webmanifest','quran/resources/manifest
 const optimized=inlineThemeBootstrap(injectSearchBootstrap(await readFile(resolve(app,'index.html'),'utf8'),{defer:true}),await readFile(resolve(base,'deploy/pages-dist/_headers'),'utf8'),replacements.get('theme-init.js').toString())
 if(batch==='67')optimized.index=await inlineEntryCss(optimized.index,path=>readFile(resolve(app,path),'utf8'))
 if(batch==='74')optimized.index=await inlineEntryCss(optimized.index,path=>readFile(resolve(app,path),'utf8'),{preservePreloadIdentity:true})
-if(['68','69','70','71','72','73','74'].includes(batch))Object.assign(optimized,inlineRoutePreloads(optimized.index,optimized.headers,await json(resolve(app,'route-preload-hints.json'))))
+if(['68','69','70','71','72','73','74','75','76'].includes(batch))Object.assign(optimized,inlineRoutePreloads(optimized.index,optimized.headers,await json(resolve(app,'route-preload-hints.json'))))
 replacements.set('index.html',Buffer.from(optimized.index));replacements.set('_headers',Buffer.from(optimized.headers))
 replacements.set('sw.js',Buffer.from(stampServiceWorkerRelease((await readFile(resolve(app,'sw.js'),'utf8')).replace("const CACHE = 'alkhizana-shell-v18'",`const CACHE = 'alkhizana-shell-search${batch}'`),optimized.index)))
 // Two morphology files have identical verified bytes. Preserve both request
@@ -30,10 +30,16 @@ const a=manifest.find(r=>r.path===alias),b=manifest.find(r=>r.path===canonical)
 if(!a||!b||a.sha256!==b.sha256||a.bytes!==b.bytes)throw Error('alias_bytes_not_identical')
 replacements.set('_redirects',Buffer.from((await readFile(resolve(base,'deploy/pages-dist/_redirects'),'utf8'))+'\n/'+alias+' /'+canonical+' 301\n'))
 const omitted=new Set([alias])
-if(['71','72','73','74'].includes(batch)){
+if(['71','72','73','74','75','76'].includes(batch)){
  const from='morphology/alkhalil/DATA.Derived.Nouns.PartOfSpeech.Number2.list.jsonl.gz',to='morphology/alkhalil/DATA.Derived.Nouns.PartOfSpeech.Number.list.jsonl.gz'
  const x=manifest.find(r=>r.path===from),y=manifest.find(r=>r.path===to)
  if(!x||!y||x.sha256!==y.sha256||x.bytes!==y.bytes)throw Error('css_slot_alias_bytes_not_identical')
+ omitted.add(from);replacements.set('_redirects',Buffer.from(replacements.get('_redirects').toString()+'\n/'+from+' /'+to+' 301\n'))
+}
+if(batch==='75'){
+ const from='morphology/alkhalil/DATA.Derived.Verbs.PartOfSpeech.NbRoot.list.jsonl.gz',to='morphology/alkhalil/DATA.Derived.Nouns.PartOfSpeech.NbRoot.list.jsonl.gz'
+ const x=manifest.find(r=>r.path===from),y=manifest.find(r=>r.path===to)
+ if(!x||!y||x.sha256!==y.sha256||x.bytes!==y.bytes)throw Error('decoder_slot_alias_bytes_not_identical')
  omitted.add(from);replacements.set('_redirects',Buffer.from(replacements.get('_redirects').toString()+'\n/'+from+' /'+to+' 301\n'))
 }
 await mkdir(out)

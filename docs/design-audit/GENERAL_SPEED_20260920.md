@@ -1,5 +1,9 @@
 # General performance follow-up (not a completion claim)
 
+## Final publication selection (2026-09-21)
+
+User requested ending further experiments and publishing verified improvements. Runtime commit c8bbc6a321b5a5746a96da2f0ba727de417cda49 is pushed. Pass17 is frozen as batch76 with normal external CSS, payload38975a62130466defab09f01aa72aae7c37876f1eeb5a5c0fc4a6653234aab89. Seventy-one focused tests passed; typecheck/build and eight CSS/bootstrap tests passed. Experiment74 scored66/LCP5.776s, worse than71's68/LCP5.401s, and is not selected. Experiment75 failed the local file budget before deployment; its lazy-cover-only code was removed while preserving pre-existing tests. No further performance experiments gate this publication. Actual production results must be taken from batch76 receipts; mobile first-paint improvement is not a claim of full performance completion. Rollback is production65, not the older static baseline63.
+
 Production baseline65 remains9d675d2d. User requests finishing general performance before publishing.
 
 Implemented and tested: optional home sections hydrate near viewport; no speculative author metadata/listBooks prewarm; background indexing uses identity-scoped local-only listStoredBooks; empty Word resume avoids importing search modules; catalog retries back off3/15/60s, stop after3 automatic retries, never announce incomplete results; visibility failures explicitly reject the outer IndexedDB promise rather than hanging; static/read-only routes no longer await category/name requests, while editors and filters retain the gate.
