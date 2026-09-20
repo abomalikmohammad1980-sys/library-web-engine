@@ -191,11 +191,11 @@ export function sunnahScreen(): HTMLElement {
         .sort((a, b) => a.localeCompare(b, 'ar')).map(value => h('option', { value }, value)))
   }
 
-  void resolveSunnahScreenSourcesWithRetry().then(async ({localBooks,indexedScope,verifiedRecords}) => {
+  void resolveSunnahScreenSourcesWithRetry().then(({localBooks,indexedScope,verifiedRecords}) => {
     // IndexedDB إثراء محلي فقط؛ سلطة النطاق هي دفعات الكتالوج المنشور.
     const indexedIds = new Set(indexedScope.books.map(book=>book.publicId))
     writeCachedSunnahScope(indexedScope)
-    const sunnahBooks = orderedBooks(await booksWithAuthorChronology(augmentSunnahLibraryBooks(localBooks.filter(book=>indexedIds.has(book.id)),indexedScope)))
+    let sunnahBooks = orderedBooks(augmentSunnahLibraryBooks(localBooks.filter(book=>indexedIds.has(book.id)),indexedScope))
     const indexedBySource = new Map(indexedScope.books.map(book=>[book.sourceBookId,book]))
     const orderedTextPage=createSunnahResultPager(indexedScope,(query,offset,limit,signal)=>searchAllVerifiedSunnahBooks(shamelaSearchClient(),indexedScope,query,offset,limit,signal))
     const categories = [...new Set(sunnahBooks.map(book => book.category?.trim()).filter((value): value is string => Boolean(value)))]
@@ -252,6 +252,13 @@ export function sunnahScreen(): HTMLElement {
     order.addEventListener('change', resetAndRender)
      const autoMore=new IntersectionObserver(entries=>{if(!entries.some(entry=>entry.isIntersecting))return;if(textMode){if(textLoadingRequest!==serial&&textOffset+60<textTotal)void loadTextPage(serial,textOffset+60)}else if(!more.hidden){visibleLimit += SUNNAH_WINDOW_SIZE;render();queueMicrotask(()=>{if(!more.hidden&&more.getBoundingClientRect().top<innerHeight+800){visibleLimit += SUNNAH_WINDOW_SIZE;render()}})}},{rootMargin:'800px 0px'});autoMore.observe(more);window.addEventListener('popstate',()=>autoMore.disconnect(),{once:true})
     render()
+    // The catalog already has usable author dates. Slow optional enrichment
+    // must not hold the first cards or prevent attaching the search handlers.
+    void booksWithAuthorChronology(sunnahBooks).then(enriched=>{
+      if(!results.isConnected)return
+      sunnahBooks=orderedBooks(enriched)
+      if(!textMode)render()
+    }).catch(()=>undefined)
   }).catch((error:unknown) => {
     const message=error instanceof Error?error.message:String(error)
     const code=/sunnah_catalog_http_/u.test(message)?'catalog-http':/json|catalog/u.test(message)?'catalog-data':/scope/u.test(message)?'scope':'screen-init'
