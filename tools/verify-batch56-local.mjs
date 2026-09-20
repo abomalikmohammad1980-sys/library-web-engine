@@ -2,7 +2,7 @@ import { readFile, writeFile } from 'node:fs/promises'
 import { createHash } from 'node:crypto'
 import assert from 'node:assert/strict'
 const batch = process.argv[2] ?? '56'
-assert(['56','57','58','59','60','61'].includes(batch))
+assert(['56','57','58','59','60','61','62'].includes(batch))
 const root = '.artifacts/batch'+batch, sha = bytes => createHash('sha256').update(bytes).digest('hex')
 const manifest = JSON.parse(await readFile(root + '/static-source-manifest.json'))
 const stage = JSON.parse(await readFile(root + '/stage.json'))
@@ -21,7 +21,7 @@ await Promise.all(Array.from({ length: 8 }, async () => {
     checked++
   }
 }))
-const fonts = JSON.parse(await readFile('.artifacts/performance-20260918/client-pass'+(batch==='61'?'6':batch==='60'?'5':batch==='59'?'4':'3')+'/font-cache-map.json'))
+const fonts = JSON.parse(await readFile('.artifacts/performance-20260918/client-pass'+(['61','62'].includes(batch)?'6':batch==='60'?'5':batch==='59'?'4':'3')+'/font-cache-map.json'))
 const sw = await readFile(root + '/deploy/pages-dist/sw.js', 'utf8')
 const redirects = await readFile(root + '/deploy/pages-dist/_redirects', 'utf8')
 for (const row of fonts) {

@@ -45,6 +45,10 @@ test('visibility failure fails closed and cache outage still renders current met
  f.cache.match=async()=>{throw Error('cache down')};f.cache.put=async()=>{throw Error('cache down')}
  assert.equal((await f.serve()).status,200)
 })
+test('D1 row quota exhaustion reaches the middleware recovery path',async()=>{
+ const f=fixture()
+ await assert.rejects(()=>f.serve(undefined,{loadSnapshot:async()=>{throw Error("D1_ERROR: Your account has exceeded D1's free tier daily row read limit.")}}),/daily row read limit/)
+})
 test('HEAD never poisons GET cache with empty body; set-cookie responses never stored',async()=>{
  const f=fixture();assert.equal(await (await f.serve(request('/books/21633',{method:'HEAD'}))).text(),'');assert.equal(f.rows.size,0)
  await f.serve(undefined,{render:async()=>new Response('personal',{headers:{'content-type':'text/html','set-cookie':'x=y'}})})

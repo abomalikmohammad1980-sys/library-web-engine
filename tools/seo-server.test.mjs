@@ -10,6 +10,18 @@ const require=createRequire(new URL('../alpha-publish/package.json',import.meta.
 const {Miniflare}=require('miniflare'),{build}=require('esbuild')
 const root=resolve(import.meta.dirname,'..')
 
+test('D1 row quota exhaustion keeps the SPA reachable without exposing unverified SEO metadata',async()=>{
+ const compiled=await build({stdin:{contents:"import {onRequest} from './alpha-publish/functions/_middleware.js';export default {fetch(request,env){env.VISITORS_DB={prepare(){throw Error(\"D1_ERROR: Your account has exceeded D1's free tier daily row read limit.\")}};return onRequest({request,env,next:()=>new Response('passthrough')})}}",resolveDir:root},bundle:true,write:false,format:'esm',platform:'browser',target:'es2022'})
+ const shell='<html><head><title>الخزانة</title><link rel="canonical" href="https://khzanah.com/"><script src="/app.js"></script></head><body><div id="app"></div></body></html>'
+ const mf=new Miniflare({modules:true,script:compiled.outputFiles[0].text,compatibilityDate:'2026-05-22',serviceBindings:{ASSETS:async request=>new URL(request.url).pathname==='/index.html'?new Response(shell,{headers:{'content-type':'text/html'}}):new Response('missing',{status:404})}})
+ try{
+  const response=await mf.dispatchFetch('https://khzanah.com/books/public/example'),html=await response.text()
+  assert.equal(response.status,200);assert.match(response.headers.get('x-robots-tag'),/noindex/)
+  assert.match(html,/app\.js/);assert.match(html,/name="robots" content="noindex, follow"/)
+  assert.doesNotMatch(html,/rel="canonical"|application\/ld\+json/)
+ }finally{await mf.dispose()}
+})
+
 test('real HTMLRewriter projects verified public upload headings, not body, and keeps missing/private noindex',async()=>{
  const artifact={contract:'public-book-index/1',bookId:'upload',generation:1,sourceSha256:'a'.repeat(64),parserVersion:'bounded-account-v1',title:'كتاب جديد',author:'مؤلف',coverageMode:'text-and-headings',rows:[{text:'SECRET-BODY'}],headings:Array.from({length:201},(_,i)=>({value:i===0?'<unsafe> عنوان':`عنوان ${i}`,paragraphIndex:i}))}
  const bytes=Buffer.from(JSON.stringify(artifact)),sha=createHash('sha256').update(bytes).digest('hex')

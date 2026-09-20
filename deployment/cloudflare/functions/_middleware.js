@@ -127,7 +127,9 @@ export async function onRequest(context){
   }else if(status===200&&(PUBLIC_PAGE_META[path]||categoryPath)){
    body+=`<nav aria-label="أقسام الخزانة">${Object.keys(PUBLIC_PAGE_META).map(p=>`<a href="${p}">${escape(seoNavLabels[p])}</a>`).join('')}</nav>`
    if(listing)body+=renderSeoListing(listing,path)
-   else if(release){const sample=await release.listing('new-books',1);body+=`<ul>${(sample?.rows??[]).slice(0,12).map(row=>`<li><a href="${escape(row.href)}">${escape(row.title)}</a></li>`).join('')}</ul>`}
+   // Static landing pages already link to the public catalog. Fetching a live
+   // listing here makes every crawler visit spend D1 rows for optional samples.
+   else if(release){}
    else{const kind=path==='/authors'?'authors':'books',data=await smallJson(await env.ASSETS.fetch(new URL(`/data/seo/${kind}-00.json`,url)));body+=`<ul>${Object.values(data.records).slice(0,40).map(row=>`<li><a href="/${kind}/${escape(row.id)}">${escape(row.title??row.name)}</a></li>`).join('')}</ul>`}
    schema.push({'@context':'https://schema.org','@type':'CollectionPage',name:meta.title,url:SEO_ORIGIN+path,description:meta.description})
   }
@@ -165,5 +167,29 @@ export async function onRequest(context){
     ...(context.waitUntil?{waitUntil:promise=>context.waitUntil(promise)}:{})})
   }
   return await renderPage(record,status,listing,await loadRelated(record))
- }catch(error){console.error('seo_render_failed',error instanceof Error?error.message:'unknown');return new Response('تعذّر تحميل الصفحة مؤقتًا',{status:503,headers:{'content-type':'text/plain; charset=utf-8','X-Robots-Tag':'noindex','cache-control':'no-store'}})}
+ }catch(error){
+  const message=error instanceof Error?error.message:'unknown'
+  console.error('seo_render_failed',message)
+  if(/D1_ERROR:.*daily row read limit/i.test(message)){
+   // When D1's daily quota is exhausted, serve the static SPA shell so readers
+   // can still open the library. Do not expose unchecked public metadata to
+   // crawlers: the shell is noindex and contains no canonical or JSON-LD.
+   try{
+    const shell=await env.ASSETS.fetch(new URL('/index.html',url))
+    if(shell.ok){
+     const rewritten=new HTMLRewriter()
+      .on('link[rel="canonical"], meta[name="robots"], script[type="application/ld+json"]',{element:e=>e.remove()})
+      .on('head',{element:e=>e.append('<meta name="robots" content="noindex, follow">',{html:true})})
+      .transform(shell)
+     const headers=new Headers(rewritten.headers)
+     headers.set('content-type','text/html; charset=utf-8')
+     headers.set('cache-control','no-store')
+     headers.set('x-robots-tag','noindex, follow')
+     headers.delete('content-length')
+     return new Response(request.method==='HEAD'?null:rewritten.body,{status:200,headers})
+    }
+   }catch(fallbackError){console.error('seo_quota_fallback_failed',fallbackError instanceof Error?fallbackError.message:'unknown')}
+  }
+  return new Response('تعذّر تحميل الصفحة مؤقتًا',{status:503,headers:{'content-type':'text/plain; charset=utf-8','X-Robots-Tag':'noindex','cache-control':'no-store'}})
+ }
 }

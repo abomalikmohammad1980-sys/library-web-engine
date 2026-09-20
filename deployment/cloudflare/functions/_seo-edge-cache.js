@@ -80,5 +80,10 @@ export async function serveVersionedPublicHtml({request,cache,deploymentVersion,
    if(waitUntil)waitUntil(put);else await put
   }
   return externalResponse(response,request,key?'miss':'bypass')
- }catch{return externalResponse(unavailable(),request,'error')}
+ }catch(error){
+  // Let the middleware serve a noindex SPA shell when the account-wide D1
+  // read quota is exhausted. Other visibility failures still fail closed.
+  if(/D1_ERROR:.*daily row read limit/i.test(error instanceof Error?error.message:''))throw error
+  return externalResponse(unavailable(),request,'error')
+ }
 }
