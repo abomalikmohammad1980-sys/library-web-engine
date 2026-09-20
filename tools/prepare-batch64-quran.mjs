@@ -6,8 +6,8 @@ import {injectSearchBootstrap} from './search-bootstrap-html.mjs'
 import {inlineEntryCss} from './inline-entry-css.mjs'
 import {inlineRoutePreloads} from './route-preload-hints.mjs'
 import {stampServiceWorkerRelease} from '../alpha-publish/scripts/service-worker-release.mjs'
-const batch=process.argv[2]??'64';if(!['64','65','66','67','68','69','70'].includes(batch))throw Error('reviewed_batch_required')
-const root=resolve(import.meta.dirname,'..'),base=resolve(root,'.artifacts/batch63'),out=resolve(root,'.artifacts/batch'+batch),app=resolve(root,'.artifacts/performance-20260920/client-pass'+({'64':'8','65':'9','66':'11','67':'11','68':'12','69':'12','70':'13'}[batch]))
+const batch=process.argv[2]??'64';if(!['64','65','66','67','68','69','70','71','72','73','74'].includes(batch))throw Error('reviewed_batch_required')
+const root=resolve(import.meta.dirname,'..'),base=resolve(root,'.artifacts/batch63'),out=resolve(root,'.artifacts/batch'+batch),app=resolve(root,'.artifacts/performance-20260920/client-pass'+({'64':'8','65':'9','66':'11','67':'11','68':'12','69':'12','70':'13','71':'14','72':'15','73':'16','74':'17'}[batch]))
 const sha=b=>createHash('sha256').update(b).digest('hex'),json=async p=>JSON.parse(await readFile(p))
 const manifest=await json(resolve(base,'static-source-manifest.json')),stage=await json(resolve(base,'stage.json')),snapshot=await json(resolve(base,'source-snapshot.json'))
 if(!stage.published||sha(JSON.stringify(manifest))!==stage.payloadFingerprint)throw Error('published_baseline_required')
@@ -19,7 +19,8 @@ await collect('assets')
 for(const p of ['theme-init.js','manifest.webmanifest','quran/resources/manifest.json'])replacements.set(p,await readFile(resolve(app,p)))
 const optimized=inlineThemeBootstrap(injectSearchBootstrap(await readFile(resolve(app,'index.html'),'utf8'),{defer:true}),await readFile(resolve(base,'deploy/pages-dist/_headers'),'utf8'),replacements.get('theme-init.js').toString())
 if(batch==='67')optimized.index=await inlineEntryCss(optimized.index,path=>readFile(resolve(app,path),'utf8'))
-if(['68','69','70'].includes(batch))Object.assign(optimized,inlineRoutePreloads(optimized.index,optimized.headers,await json(resolve(app,'route-preload-hints.json'))))
+if(batch==='74')optimized.index=await inlineEntryCss(optimized.index,path=>readFile(resolve(app,path),'utf8'),{preservePreloadIdentity:true})
+if(['68','69','70','71','72','73','74'].includes(batch))Object.assign(optimized,inlineRoutePreloads(optimized.index,optimized.headers,await json(resolve(app,'route-preload-hints.json'))))
 replacements.set('index.html',Buffer.from(optimized.index));replacements.set('_headers',Buffer.from(optimized.headers))
 replacements.set('sw.js',Buffer.from(stampServiceWorkerRelease((await readFile(resolve(app,'sw.js'),'utf8')).replace("const CACHE = 'alkhizana-shell-v18'",`const CACHE = 'alkhizana-shell-search${batch}'`),optimized.index)))
 // Two morphology files have identical verified bytes. Preserve both request
@@ -28,9 +29,16 @@ const alias='morphology/alkhalil/DATA.Derived.Verbs.PartOfSpeech.Emphasized2.lis
 const a=manifest.find(r=>r.path===alias),b=manifest.find(r=>r.path===canonical)
 if(!a||!b||a.sha256!==b.sha256||a.bytes!==b.bytes)throw Error('alias_bytes_not_identical')
 replacements.set('_redirects',Buffer.from((await readFile(resolve(base,'deploy/pages-dist/_redirects'),'utf8'))+'\n/'+alias+' /'+canonical+' 301\n'))
+const omitted=new Set([alias])
+if(['71','72','73','74'].includes(batch)){
+ const from='morphology/alkhalil/DATA.Derived.Nouns.PartOfSpeech.Number2.list.jsonl.gz',to='morphology/alkhalil/DATA.Derived.Nouns.PartOfSpeech.Number.list.jsonl.gz'
+ const x=manifest.find(r=>r.path===from),y=manifest.find(r=>r.path===to)
+ if(!x||!y||x.sha256!==y.sha256||x.bytes!==y.bytes)throw Error('css_slot_alias_bytes_not_identical')
+ omitted.add(from);replacements.set('_redirects',Buffer.from(replacements.get('_redirects').toString()+'\n/'+from+' /'+to+' 301\n'))
+}
 await mkdir(out)
 const next=[]
-for(const row of manifest){if(row.path.startsWith('assets/')||replacements.has(row.path)||row.path===alias)continue;const dest=resolve(out,'deploy/pages-dist',row.path);await mkdir(dirname(dest),{recursive:true});await link(resolve(base,'deploy/pages-dist',row.path),dest);next.push(row)}
+for(const row of manifest){if(row.path.startsWith('assets/')||replacements.has(row.path)||omitted.has(row.path))continue;const dest=resolve(out,'deploy/pages-dist',row.path);await mkdir(dirname(dest),{recursive:true});await link(resolve(base,'deploy/pages-dist',row.path),dest);next.push(row)}
 for(const [path,bytes] of replacements){const dest=resolve(out,'deploy/pages-dist',path);await mkdir(dirname(dest),{recursive:true});await writeFile(dest,bytes,{flag:'wx'});next.push({path,bytes:bytes.length,sha256:sha(bytes)})}
 if(next.length>20000)throw Error('file_budget');next.sort((a,b)=>a.path.localeCompare(b.path))
 const seen=new Set();for(const row of snapshot.files){if(seen.has(row.path))continue;seen.add(row.path);const bytes=await readFile(resolve(base,row.path));if(sha(bytes)!==row.sha256)throw Error('source_snapshot_mismatch');const dest=resolve(out,row.path);await mkdir(dirname(dest),{recursive:true});await writeFile(dest,bytes,{flag:'wx'})}

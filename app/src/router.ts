@@ -121,7 +121,10 @@ const routeLoaders: Record<Exclude<Route['name'], 'reader' | 'book'>, RouteLoade
   notes: async () => ({ content: (await import('./screens/notes')).notesScreen(), activeHash: '#/me' }),
 }
 
-export function preloadRoute(route: Route): Promise<unknown> {
+export async function preloadRoute(route: Route): Promise<unknown> {
+  // Keep route-specific CSS after the complete shared cascade, even on hover
+  // preloads and direct deep links. Download-only HTML hints remain parallel.
+  if(route.name!=='home')await import('./route_full_styles')
   switch (route.name) {
     case 'categories': return import('./screens/categories')
     case 'not-found': return Promise.resolve()
@@ -211,8 +214,16 @@ export function render(focusMain = false): void {
   const titleRoute = route.name === 'quran-tafsir' ? 'quran' : route.name === 'sunnah-source' ? 'sunnah' : route.name
   setSourceDocumentTitle(routeDocumentTitle(titleRoute))
   const metadataReady=Promise.allSettled([hydrateSubjectCategories(),hydrateAuthorDisplayNames()])
-  const beforeRender=routeNeedsMetadataBeforeRender(route.name)?metadataReady:Promise.resolve()
-  if (route.name === 'reader' && route.param) { void beforeRender.then(()=>renderReader(route, root, generation, focusMain)).then(()=>{if(generation===renderGeneration)finishScroll()}); return }
+  const fullStyles=route.name==='home'?Promise.resolve():import('./route_full_styles')
+  const beforeRender=Promise.all([fullStyles,routeNeedsMetadataBeforeRender(route.name)?metadataReady:Promise.resolve()])
+  if (route.name === 'reader' && route.param) {
+    void beforeRender.then(()=>{if(generation===renderGeneration)return renderReader(route, root, generation, focusMain)}).then(()=>{if(generation===renderGeneration)finishScroll()}).catch(()=>{
+      if(generation!==renderGeneration)return
+      finishRoute(root,stateView({kind:'error',title:'تعذّر تحميل أدوات القارئ',description:'الكتاب لم يتغير. تحقق من الاتصال ثم أعد المحاولة.',actionLabel:'إعادة المحاولة',onAction:()=>render(true)}),'#/',focusMain)
+      finishScroll()
+    })
+    return
+  }
   const loader = routeLoaders[route.name as Exclude<Route['name'], 'reader' | 'book'>]
   void beforeRender.then(()=>loader(route)).then(({ content, activeHash }) => {
     if (generation !== renderGeneration) return

@@ -2,8 +2,8 @@
 
 import './styles/tokens.css'
 import './styles/base.css'
-import './styles/components.css'
-import './styles/screens.css'
+import './styles/components.css?initial'
+import './styles/screens.css?initial'
 import { applyStoredSettings } from './settings_store'
 import { installSelectionTranslation } from './selection_translation'
 import { cloudflareAccessAuthProvider } from './account_service'

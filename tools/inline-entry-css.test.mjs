@@ -10,3 +10,7 @@ test('rejects escapes, relative resources and missing or ambiguous inputs',async
  for(const css of ['</style><script>x</script>','a{background:url(../x)}','@import "x";',''])await assert.rejects(()=>inlineEntryCss('<link rel="stylesheet" href="/assets/x.css">',async()=>css))
  await assert.rejects(()=>inlineEntryCss('',async()=>''))
 })
+test('keeps an initially disabled stylesheet identity for Vite deduplication',async()=>{
+ const result=await inlineEntryCss('<link rel="stylesheet" href="/assets/x.css">',async()=>'.home{display:block}',{preservePreloadIdentity:true})
+ assert.equal(result,'<style data-entry-css>.home{display:block}</style><link disabled data-inlined-css-identity rel="stylesheet" href="/assets/x.css">')
+})

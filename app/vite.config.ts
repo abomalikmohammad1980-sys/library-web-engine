@@ -21,6 +21,7 @@ import {wordConversionMultipart} from '../tools/word-conversion-response.mjs'
 import {interfaceFontScale} from '../tools/interface-font-scale.mjs'
 import {versionedUiFonts} from '../tools/versioned-ui-fonts.mjs'
 import {routePreloadHints} from '../tools/route-preload-hints.mjs'
+import {initialScreenCssPlugin} from '../tools/initial-screen-css.mjs'
 import sourceEditionPacks from './src/quran_source_packs.generated.json'
 import {copySourceEditionAsset} from '../tools/source-edition-packs.mjs'
 
@@ -542,7 +543,7 @@ export default defineConfig(({mode}) => {
   // Our pre-middleware above serves individual files without a startup crawl.
   publicDir: false,
   base: '/',
-  plugins: [uiFontAssets, routePreloadHints(), satellitePlugin, serveReaderPublicAssets(), disableServiceWorkerInDev(), emitEssentialPublicAssets(), serveHarfbuzzWasm(), serveLocalShamelaBatches(), localTranslationBridge(), wordPdfConversion(), wordBokConversion()],
+  plugins: [initialScreenCssPlugin(), uiFontAssets, routePreloadHints(), satellitePlugin, serveReaderPublicAssets(), disableServiceWorkerInDev(), emitEssentialPublicAssets(), serveHarfbuzzWasm(), serveLocalShamelaBatches(), localTranslationBridge(), wordPdfConversion(), wordBokConversion()],
   optimizeDeps: {
     // The application owns a very large local corpus and many lazy reader routes.
     // Vite's automatic dependency discovery walks that whole graph on a cold
