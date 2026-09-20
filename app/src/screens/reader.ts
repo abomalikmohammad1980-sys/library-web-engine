@@ -1676,7 +1676,7 @@ function renderBookInfo(panel: HTMLElement, book: StoredBook): void {
   const formatNames: Record<string, string> = { word: 'Word', pdf: 'PDF', 'shamela-bok': 'BOK', epub: 'EPUB', text: 'نص', markdown: 'Markdown' }
   const sourceLabel = format === 'pdf' ? 'تحميل PDF' : `تحميل ${formatNames[format] ?? 'الملف'} الأصلي`
   const original = localOriginalAsset(book)
-  const source = original ? h('button', { class: 'reader__metadata-link', type: 'button', 'aria-label': sourceLabel }, sourceLabel) : undefined
+  const source = original ? h('button', { class: 'reader__metadata-download', type: 'button', title: sourceLabel, 'aria-label': sourceLabel }, icon('download',18)) : undefined
   source?.addEventListener('click', () => downloadBytes(original!.bytes, original!.fileName, original!.mimeType))
   const pdfLabel = needsPdfRefresh(book) ? 'إنشاء PDF من عرض المتصفح' : 'تحميل PDF'
   const pdf = h('button', { class: 'reader__metadata-link', type: 'button', 'aria-label': pdfLabel }, pdfLabel) as HTMLButtonElement
@@ -1688,7 +1688,7 @@ function renderBookInfo(panel: HTMLElement, book: StoredBook): void {
     }).catch(error => toast(error instanceof Error ? error.message : 'تعذّر فتح تعديل الكتاب'))
   })
   const facts: HTMLElement[] = [
-    h('div', null, h('dt', null, 'الصيغة'), h('dd', null, formatNames[format] ?? format)),
+    h('div', null, h('dt', null, 'الصيغة'), h('dd', {class:'reader__format-actions'}, h('span',null,formatNames[format] ?? format), ...(source ? [source] : []))),
     h('div', null, h('dt', null, 'التصنيف'), h('dd', null, categoryLink(category))),
   ]
   if (book.tags?.length) facts.push(h('div', null, h('dt', null, 'الوسوم'), h('dd', { class: 'reader__book-tags' }, ...book.tags.map(tag => h('a', { class: 'book-tag', href: `#/library?tag=${encodeURIComponent(tag.name)}`, title: tag.source === 'toc' ? 'مستخرج من فهرس الكتاب' : 'أضيف يدويًا' }, h('span',{dataset:{noTranslate:''}},`#${tag.name}`))))))
@@ -1701,21 +1701,27 @@ function renderBookInfo(panel: HTMLElement, book: StoredBook): void {
   const pageCount = bookPageCount(book)
   if (volumeCount > 1) facts.push(h('div', null, h('dt', null, 'عدد الأجزاء'), h('dd', null, arabicNum(volumeCount))))
   facts.push(h('div', null, h('dt', null, 'عدد الصفحات'), h('dd', null, pageCount > 0 ? arabicNum(pageCount) : 'غير متاح')))
-  const actions = h('div', { class: 'reader__book-card-actions reader__book-card-actions--compact' }, ...(source ? [source] : []))
+  const actions = h('div', { class: 'reader__book-card-actions reader__book-card-actions--compact', role:'group', 'aria-label':'إجراءات الكتاب' })
   const editorHost = h('section', {hidden:true, 'aria-label':'تعديل الكتاب'})
   const compactActions = (): void => {
     for (const button of actions.querySelectorAll<HTMLButtonElement>('button')) {
       if (button.dataset.compactAction) continue
       const label = button.getAttribute('aria-label') || button.textContent || ''
       button.setAttribute('aria-label', label); button.title ||= label
-      const name = /حذف/.test(label) ? 'close' : /تعديل/.test(label) ? 'settings' : /ملاحظات|علامات/.test(label) ? 'bookmark' : /خطأ|بلاغ/.test(label) ? 'info' : 'download'
-      const short = /PDF/.test(label) ? 'PDF' : /Word/.test(label) ? 'Word' : /EPUB/.test(label) ? 'EPUB' : /BOK/.test(label) ? 'BOK' : /تحميل/.test(label) ? 'الأصل' : /ملاحظات|علامات/.test(label) ? 'علاماتي' : /خطأ|بلاغ/.test(label) ? 'بلاغ' : label
-      button.replaceChildren(icon(name, 20), h('span', null, short))
+      const name = /حذف/.test(label) ? 'trash' : /تعديل/.test(label) ? 'settings' : /ملاحظات|علامات/.test(label) ? 'bookmark' : /خطأ|بلاغ/.test(label) ? 'info' : /فتح PDF|بجوار/.test(label) ? 'book' : 'download'
+      button.replaceChildren(icon(name, 20))
       button.dataset.compactAction = 'true'
     }
   }
   actions.append(h('button',{type:'button',class:'btn btn--secondary',onclick:()=>showAnnotations(panel,book.id)},'ملاحظاتي الشخصية والعلامات'))
-  if (format === 'word' && (book.pdfData?.length || needsPdfRefresh(book))) actions.appendChild(pdf)
+  // Exactly the same policy and handler as the reader's bottom PDF action.
+  if (format !== 'pdf') {
+    if (pdfButtonAction(book,'standard')==='formatted') {
+      pdf.setAttribute('aria-label','فتح PDF المنسق');pdf.title='فتح PDF المنسق'
+    }
+    actions.appendChild(pdf)
+    if(pdfButtonAction(book,'pdf-text')==='original')actions.append(h('button',{type:'button',class:'reader__metadata-link','aria-label':'فتح PDF بجوار النص',title:'فتح PDF بجوار النص',onclick:()=>togglePdfBesideBook(book.id,panel)},icon('book',20)))
+  }
   if (format === 'word' && needsPdfRefresh(book)) {
     pdf.title = 'ينشئ PDF داخل المتصفح من صفحات محرك العرض؛ قد تختلف النتيجة قليلًا عن Microsoft Word.'
     void getRuntimeCapabilities().then(capabilities => {
@@ -1732,7 +1738,23 @@ function renderBookInfo(panel: HTMLElement, book: StoredBook): void {
       compactActions()
     })
   }
-  if (book.managedSource !== 'published') actions.appendChild(edit)
+  if (book.managedSource !== 'published') {
+    actions.appendChild(edit)
+    const identity=captureReadingIdentity()
+    const remove=h('button',{type:'button',class:'reader__metadata-link','aria-label':'حذف الكتاب من مكتبتي',title:'حذف الكتاب من مكتبتي'},icon('trash',20)) as HTMLButtonElement
+    remove.onclick=async()=>{
+      if(remove.disabled||!identity.isCurrent()||!confirm(`حذف «${book.title}» من مكتبتك على هذا الجهاز؟`)||!identity.isCurrent())return
+      remove.disabled=true
+      try{
+        const {deleteBook}=await import('../engine/library_store')
+        if(!identity.isCurrent())return
+        await deleteBook(book.id)
+        if(identity.isCurrent()){window.dispatchEvent(new Event('library-changed'));routeLocation.hash='#/library'}
+      }catch{if(identity.isCurrent())toast('تعذّر حذف الكتاب؛ أعد المحاولة.')}
+      finally{remove.disabled=false}
+    }
+    actions.append(remove)
+  }
   else {
     actions.appendChild(createBookIssueReportButton(book,()=>{
       const pageIndex=currentPageIndex(book.id),selection=window.getSelection()?.toString().replace(/\s+/gu,' ').trim()??''
@@ -1743,6 +1765,9 @@ function renderBookInfo(panel: HTMLElement, book: StoredBook): void {
     else actions.appendChild(managedBookLock('reader__metadata-fixed'))
   }
   compactActions()
+  // The linked-edition explanation and any failure detail stay behind a small
+  // keyboard-accessible disclosure, beside the managed-source lock.
+  actions.append(independentPdfPanel(book,false,true))
   for (const fact of facts) {
     const label = fact.querySelector('dt')
     const name = label?.textContent === 'الصيغة' ? 'book' : label?.textContent === 'التصنيف' ? 'box' : label?.textContent === 'عدد الصفحات' ? 'list' : 'info'
@@ -1754,7 +1779,6 @@ function renderBookInfo(panel: HTMLElement, book: StoredBook): void {
     ...(book.description ? [h('section', { class: 'reader__book-card-description' }, h('h3', null, 'عن الكتاب'), h('p', null, book.description))] : []),
     actions,
     editorHost,
-    independentPdfPanel(book,false),
   )
 }
 

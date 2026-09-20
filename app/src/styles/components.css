@@ -1746,6 +1746,16 @@ body.reader-book-card-open { overflow: hidden; }
 .library-card__editor { position: relative; z-index: 3; grid-column: 1 / -1; min-width: 0; }
 .reader__book-card-actions--compact button { box-sizing: border-box; flex: 1 0 44px !important; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; min-width: 44px; min-height: 60px; padding: 6px !important; font-size: .875rem; text-decoration: none; }
 .reader__book-card-actions--compact button span { white-space: nowrap; }
+.reader__book-card-actions--compact { overflow: visible; flex-wrap: wrap; align-items: center; }
+.reader__book-card-actions--compact button { flex: 0 0 40px !important; width: 40px; min-width: 40px; min-height: 40px; height: 40px; border-radius: 10px; }
+.reader__format-actions { display: flex; align-items: center; justify-content: center; gap: 8px; }
+.reader__metadata-download { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; border: 1px solid var(--border-default); border-radius: 9px; background: var(--paper-surface); color: var(--read-accent); cursor: pointer; }
+.reader__edition-disclosure { position: relative; flex: 0 0 auto !important; }
+.reader__edition-disclosure > summary { display: flex; align-items: center; gap: 4px; min-height: 40px; padding: 4px 8px; cursor: pointer; border: 1px solid var(--border-default); border-radius: 10px; list-style: none; }
+.reader__edition-disclosure > summary::-webkit-details-marker { display: none; }
+.reader__edition-disclosure > .book-profile__section { position: absolute; z-index: 5; inset-inline-end: 0; width: min(300px, 75vw); background: var(--paper-surface); box-shadow: 0 8px 24px #0002; text-align: start; }
+.reader__edition-disclosure:not([open]) > .book-profile__section { display: none; }
+.reader__metadata-download:focus-visible, .reader__edition-disclosure > summary:focus-visible { outline: 2px solid var(--read-accent); outline-offset: 3px; }
 .reader__pdf-loading { height: 100%; display: grid; place-items: center; color: var(--read-muted); }
 .reader__info--pdf .reader__info-content { padding: 0; display: grid; grid-template-rows: auto 1fr; overflow: hidden; }
 .reader__body--pdf-companion .reader__info--pdf .reader__info-content {

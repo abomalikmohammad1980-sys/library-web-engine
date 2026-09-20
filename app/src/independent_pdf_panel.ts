@@ -1,4 +1,5 @@
 import {h} from './ui'
+import {icon} from './icons'
 import {listBooks,currentLibraryIdentityScope,type StoredBook} from './engine/library_store'
 import {legacyHashToPath} from './path_location'
 import {addIndependentPdfEdition} from './independent_pdf_edition'
@@ -6,10 +7,20 @@ import {currentAccountClaims} from './account_authority'
 import {loadCloudEditions,syncIndependentPdfEdition,cloudEditionHref,editionCloudId,linkExistingCloudPdf} from './independent_pdf_cloud'
 import {listAccountBooksPage} from './account_service'
 
-export function independentPdfPanel(book:StoredBook,editable=true):HTMLElement{
+export function independentPdfPanel(book:StoredBook,editable=true,compact=false):HTMLElement{
  const scope=currentLibraryIdentityScope(),root=h('section',{class:'book-profile__section'}),list=h('div',null),status=h('p',{role:'status'})
  const current=()=>currentLibraryIdentityScope()===scope
  const cloud=h('div',null)
+ const disclosure=compact?h('details',{class:'reader__edition-disclosure'}):undefined
+ const summary=h('summary',{title:'الطبعات المرتبطة — عرض التفاصيل','aria-label':'الطبعات المرتبطة — عرض التفاصيل'},icon('book',18),h('span',{'aria-hidden':'true'},'…'))
+ const updateSummary=()=>{
+  if(!disclosure)return
+  const count=list.querySelectorAll('a').length+cloud.querySelectorAll('a').length
+  const label=count?`الطبعات المرتبطة: ${count} — عرض التفاصيل`:status.textContent?'تعذّر التحقق من بعض الطبعات — عرض التفاصيل':'لا توجد طبعات مرتبطة'
+  summary.title=label;summary.setAttribute('aria-label',label)
+  summary.replaceChildren(icon('book',18),h('span',{'aria-hidden':'true'},count?String(count):status.textContent?'!':'0'))
+ }
+ const setStatus=(message:string)=>{status.textContent=message;updateSummary()}
  const refresh=async()=>{const books=await listBooks();if(!current())return;const key=book.relatedWorkId||book.id;const editions=books.filter(other=>other.id!==book.id&&(other.relatedWorkId===key||other.id===key));list.replaceChildren(...editions.map(other=>{
   const row=h('p',null,h('a',{href:legacyHashToPath(`#/reader/${other.id}`)},`${other.title} — ${other.edition||'النسخة الأصلية'}${other.publisher?' — '+other.publisher:''}`))
   if(editable&&currentAccountClaims()&&other.sourceFormat==='pdf'&&other.relatedWorkId){
@@ -17,7 +28,7 @@ export function independentPdfPanel(book:StoredBook,editable=true):HTMLElement{
    sync.onclick=async()=>{if(!current()||sync.disabled)return;sync.disabled=true;status.textContent='جارٍ حفظ الطبعة وربطها سحابيًا…';try{await syncIndependentPdfEdition(book,other);if(!current())return;status.textContent='حُفظت الطبعة وربطها في الحساب. النشر للعموم إجراء مستقل من مكتبي.';await refreshCloud()}catch(error){if(current())status.textContent=error instanceof Error?error.message:'تعذّر الحفظ السحابي'}finally{sync.disabled=false}};row.append(sync)
   }
   return row
- }))}
+ }));updateSummary()}
  const refreshCloud=async(page=0)=>{const result=await loadCloudEditions(book,page);if(!current()||!result)return;if(!page)cloud.replaceChildren();const own=editionCloudId(book),entries=[...(page===0&&result.parent?[result.parent]:[]),...result.editions].filter(entry=>entry.id!==own);cloud.append(...entries.map(entry=>h('p',null,h('a',{href:cloudEditionHref(entry)},`${entry.title}${entry.edition?' — '+entry.edition:''}${entry.publisher?' — '+entry.publisher:''}`))));if(result.hasMore){const more=h('button',{type:'button',class:'btn'},'المزيد من الطبعات') as HTMLButtonElement;more.onclick=()=>{more.remove();void refreshCloud(page+1).catch(()=>{if(current())status.textContent='تعذّر تحميل بقية الطبعات.'})};cloud.append(more)}}
  root.append(h('h3',null,'الطبعات المستقلة المرتبطة'),h('p',null,'لكل طبعة صفحاتها وفهرسها الخاص؛ لا تُزامن صفحاتها تلقائيًا مع النسخة النصية.'),list,cloud,status)
  if(editable){
@@ -37,7 +48,8 @@ export function independentPdfPanel(book:StoredBook,editable=true):HTMLElement{
    root.append(load,existing,link)
   }
  }
- void refresh().catch(()=>{if(current())status.textContent='تعذّر تحميل الطبعات المرتبطة.'})
- void refreshCloud().catch(()=>{if(current())status.textContent='تعذّر تحميل الطبعات السحابية؛ الطبعات المحلية محفوظة.'})
+ void refresh().catch(()=>{if(current())setStatus('تعذّر تحميل الطبعات المرتبطة.')})
+ void refreshCloud().then(updateSummary).catch(()=>{if(current())setStatus('تعذّر تحميل الطبعات السحابية؛ الطبعات المحلية محفوظة.')})
+ if(disclosure){disclosure.append(summary,root);return disclosure}
  return root
 }
