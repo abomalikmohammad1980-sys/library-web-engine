@@ -5,7 +5,7 @@ import {inlineThemeBootstrap} from './inline-theme-bootstrap.mjs'
 import {injectSearchBootstrap} from './search-bootstrap-html.mjs'
 import {inlineRoutePreloads} from './route-preload-hints.mjs'
 import {stampServiceWorkerRelease} from '../alpha-publish/scripts/service-worker-release.mjs'
-const root=resolve(import.meta.dirname,'..'),base=resolve(root,'.artifacts/batch80'),out=resolve(root,'.artifacts/batch81'),app=resolve(root,'.artifacts/mobile-reader-20260921/client-final2')
+const root=resolve(import.meta.dirname,'..'),base=resolve(root,'.artifacts/batch80'),out=resolve(root,'.artifacts/batch81'),app=resolve(root,'.artifacts/mobile-reader-20260921/client-final3')
 const sha=b=>createHash('sha256').update(b).digest('hex'),json=async p=>JSON.parse(await readFile(p))
 const manifest=await json(resolve(base,'static-source-manifest.json')),stage=await json(resolve(base,'stage.json')),snapshot=await json(resolve(base,'source-snapshot.json'))
 if(!stage.published||sha(JSON.stringify(manifest))!==stage.payloadFingerprint)throw Error('verified_baseline_required')

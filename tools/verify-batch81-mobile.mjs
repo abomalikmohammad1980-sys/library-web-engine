@@ -12,6 +12,6 @@ let cursor=0
 await Promise.all(Array.from({length:origin?4:8},async()=>{while(cursor<rows.length){const row=rows[cursor++];assert(!row.path.includes('..'));let bytes=await readFile(root+'/deploy/pages-dist/'+row.path);assert.equal(sha(bytes),row.sha256,row.path);assert.equal(bytes.length,row.bytes);if(origin){for(let attempt=0;;attempt++){try{const response=await fetch(origin+'/'+row.path,{signal:AbortSignal.timeout(30000)});assert.equal(response.status,200,row.path);bytes=Buffer.from(await response.arrayBuffer());break}catch(error){if(attempt>=2)throw error}}assert.equal(sha(bytes),row.sha256,row.path)}}}))
 assert(manifest.some(r=>/shamela_pack_prepare.worker-.*\.js$/.test(r.path)))
 const sw=await readFile(root+'/deploy/pages-dist/sw.js','utf8')
-for(const row of await json('.artifacts/mobile-reader-20260921/client-final2/font-cache-map.json')){assert(manifest.some(r=>r.path===row.target));assert(sw.includes(row.target))}
+for(const row of await json('.artifacts/mobile-reader-20260921/client-final3/font-cache-map.json')){assert(manifest.some(r=>r.path===row.target));assert(sw.includes(row.target))}
 const report={passed:true,phase:phase??'local',origin:origin??null,checked:rows.length,payloadFingerprint:stage.payloadFingerprint,functionsUnchanged:true,fieldsActivated:false,checkedAt:new Date().toISOString()}
 await writeFile(root+'/'+(phase??'local')+'-verification.json',JSON.stringify(report,null,2));console.log(JSON.stringify(report))
