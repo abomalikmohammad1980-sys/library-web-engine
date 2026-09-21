@@ -29,3 +29,10 @@ Published79: `https://b5b7195f.khezana.pages.dev`, source `e62e217b99f87fd5611f7
 Next candidate80 guards automatic background search indexing BEFORE reading all local book bytes. Previously the unconditional three-second timer called IndexedDB getAll even on reader routes; this can be expensive with an existing local library, unlike an empty preview origin. This is a verified code-path flaw, not yet proof of the sole crash cause. Reader/hidden-tab pause and library return/resume are covered by four new tests; all23 background/flow/navigation tests and TypeScript pass. No local storage was cleared and no user book was deleted.
 
 Rollback79 is production77 (`1df777d7-7a7b-4d0d-827d-ecab9e747e2b`), not78 (preview only). Field activation and full-library BOK release remain disabled.
+
+## Closed: scoped reader interaction / batch80
+
+- Production80: `https://96477f82.khezana.pages.dev`, ID `96477f82-327d-479a-8e6b-5a27b981dccf`. Source `556a6d8052c723caa1bda6be03fc36c868db4554` independently verified on origin/main. Rollback80→79, directory `.artifacts/batch79/deploy/pages-dist`.
+- Preview `73fe5bf1.khezana.pages.dev` passed 75% zoom/card, last page84, reset100% retained84; no console errors. Frozen20,000 files; preview145 and live145 fingerprints passed. Live check08:32:10UTC. Payload `3230a11a971c4d7de2e5f63e9ee24723ece46da040888c9e9ea1379330c58aa5`.
+- Live **khzanah.com/books/2146** loaded real text with saved75% preference, remained responsive across calls (unlike79). Card opened in603ms automation roundtrip; screenshot shows actions directly beneath cover and four compact facts including84 pages. Jump42→84 and zoom retained84; independent later observation still84; return1 worked. Browser error log empty.
+- Close the reported interaction freeze/layout issue for the verified book and tested controls. Do NOT generalize this to all devices/books or claim a measured cold-load/INP score. Background scan was a verified expensive path; the observation supports the fix but does not isolate all possible crash causes. User storage and cloud books were not altered.
