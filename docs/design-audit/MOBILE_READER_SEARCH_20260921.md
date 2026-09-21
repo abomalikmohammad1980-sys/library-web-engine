@@ -2,7 +2,7 @@
 
 Scope reopened by the user: large-book opening on phones, header book suggestions on phones, and immediate title/author/category matching in the home subject gateway. Previous backlog remains paused; heartbeat automation remains deleted.
 
-## Implemented locally, not published
+## Implemented (publication update below supersedes initial local status)
 
 - Transfer sources over 8 MiB to a module worker for verified JSON materialization, preserving source bytes, page identities and title counts. Terminate on success/error/timeout; transfer source buffers instead of cloning them.
 - Remove redundant BOK full-text paragraph splitting and duplicated page text in DOM attributes. Use a page-ID lookup for TOC entries rather than repeated whole-book scans.
@@ -28,3 +28,11 @@ Scope reopened by the user: large-book opening on phones, header book suggestion
 3. Final build, frozen preview, regression checks and only then production publication/receipt if authorized. Production remains batch80; these edits have NOT been published.
 
 No paid upgrade, production fixtures, source-text changes, library-wide field activation, destructive cleanup or automatic-monitor restart was performed.
+
+## Publication — user explicitly requested publishing despite quota blocker
+
+Published batch81 on2026-09-21: https://b5f4b2c8.khezana.pages.dev and khzanah.com. Source5f7e62fe47098d4806400dbeafb62dfc4aea0319 pushed and remote main independently verified. Forty-two tests and typecheck passed; final build groups three tiny utilities so the extra preparation worker stays within20000 files without deleting corpus/features. Local20000 hashes verified; preview145 and live145 static hashes plus transformed-HTML entry references verified. SEO rewrites HTML metadata, so HTML is checked semantically rather than compared byte-for-byte with the unprocessed static source.
+
+Preview4ce3f216: book1673 opened with actual first-page text, no captured console errors; mobile search overlay correctly showed loading then explicit retry failure. Full suggestion success remains blocked by D1 quota. Functions unchanged; field activation remainsfalse. Rollback is verified batch80, deployment96477f82-327d-479a-8e6b-5a27b981dccf. Re-publish its frozen deploy/pages-dist from the batch80/deploy directory to main only if rollback is needed; do not alter data deployments. See ops/batch-20260921-81-deployment.json. Older backlog stays paused and heartbeat stays deleted.
+
+Live book1673 also rendered its actual first-page text (هدي الساري مقدمة فتح الباري). Two generic Uncaught(in promise) log entries were captured without useful error details; their cause is not established. Do not claim an error-free runtime or complete quota recovery. Publication and static integrity succeeded independently of these remaining acceptance limits.
