@@ -24,4 +24,8 @@ Scope: slow internal reader and information card, requested at `/books/2146` (84
 
 ## Publication
 
-Candidate79 is frozen, preview-accepted. Production receipt and live validation will be recorded separately. Rollback is production77 (`1df777d7-7a7b-4d0d-827d-ecab9e747e2b`), not78 (preview only). Field activation and full-library BOK release remain disabled.
+Published79: `https://b5b7195f.khezana.pages.dev`, source `e62e217b99f87fd5611f760b95a085106415f8f7` verified on origin/main. Live145 assets matched at06:29UTC. However, production reader tabs became unresponsive/crashed while preview interaction passed. Thus reader acceptance remains OPEN. Live HTML served the same main bundle as preview; no proof that stale service-worker code caused this.
+
+Next candidate80 guards automatic background search indexing BEFORE reading all local book bytes. Previously the unconditional three-second timer called IndexedDB getAll even on reader routes; this can be expensive with an existing local library, unlike an empty preview origin. This is a verified code-path flaw, not yet proof of the sole crash cause. Reader/hidden-tab pause and library return/resume are covered by four new tests; all23 background/flow/navigation tests and TypeScript pass. No local storage was cleared and no user book was deleted.
+
+Rollback79 is production77 (`1df777d7-7a7b-4d0d-827d-ecab9e747e2b`), not78 (preview only). Field activation and full-library BOK release remain disabled.
