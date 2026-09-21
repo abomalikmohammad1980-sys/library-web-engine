@@ -566,6 +566,11 @@ export default defineConfig(({mode}) => {
     // إعادة تحسين التبعيات في جلسة محلية طويلة.
     exclude: ['harfbuzzjs', 'pdfjs-dist'],
   },
+  // Keep the extra reader worker within the Pages file budget by sharing two
+  // tiny utilities; no corpus asset or feature is removed.
+  build: {rollupOptions:{output:{onlyExplicitManualChunks:true,manualChunks(id){
+    if(/\/src\/(artifact_download|hash_query_state)\.ts$/.test(id.replaceAll('\\','/')))return 'reader-shared-utils'
+  }}}},
   css: {postcss:{plugins:[interfaceFontScale()]}},
   server: {
     port: 5173,

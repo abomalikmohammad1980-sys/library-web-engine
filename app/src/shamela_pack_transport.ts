@@ -20,10 +20,9 @@ export async function fetchShamelaPackBytes(url:string,expectedBytes:number,fetc
    if(response.headers.get('content-type')?.toLowerCase().includes('text/html')){await response.body?.cancel();throw new ShamelaPackSeedError('shamela_pack_book_spa_fallback')}
    if(!response.body)throw new TypeError('missing_response_body')
    reader=response.body.getReader()
-   const chunks:Uint8Array[]=[];let length=0
-   for(;;){controller.signal.throwIfAborted();const {done,value}=await reader.read();controller.signal.throwIfAborted();if(done)break;length+=value.byteLength;if(length>expectedBytes)throw new ShamelaPackSeedError('shamela_pack_book_size_mismatch');chunks.push(value)}
+   const bytes=new Uint8Array(expectedBytes);let length=0
+   for(;;){controller.signal.throwIfAborted();const {done,value}=await reader.read();controller.signal.throwIfAborted();if(done)break;if(length+value.byteLength>expectedBytes)throw new ShamelaPackSeedError('shamela_pack_book_size_mismatch');bytes.set(value,length);length+=value.byteLength}
    if(length!==expectedBytes)throw new ShamelaPackSeedError('shamela_pack_book_size_mismatch')
-   const bytes=new Uint8Array(length);let offset=0;for(const chunk of chunks){bytes.set(chunk,offset);offset+=chunk.byteLength}
    if(expectedSha256){const sha=[...new Uint8Array(await crypto.subtle.digest('SHA-256',bytes.buffer))].map(n=>n.toString(16).padStart(2,'0')).join('');if(sha!==expectedSha256)throw new ShamelaPackSeedError('shamela_pack_book_checksum_mismatch')}
    return bytes
   }catch(error){

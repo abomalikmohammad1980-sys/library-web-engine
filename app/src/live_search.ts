@@ -16,7 +16,7 @@ interface LiveSuggestion {
 }
 
 export interface PublishedLiveSearchBook { id: string; title: string; author: string; category?: string }
-export interface LiveSearchScope { category?: string }
+export interface LiveSearchScope { category?: string; includeCategory?: boolean; inline?: boolean }
 
 let publishedMemory: Promise<PublishedLiveSearchBook[]> | undefined
 const LIVE_SEARCH_HISTORY_KEY = 'alkhizana:live-search-history-v1'
@@ -61,7 +61,7 @@ function loadPublishedLiveSearchBooks(): Promise<PublishedLiveSearchBook[]> {
   return publishedMemory
 }
 
-export function liveMetadataSuggestions(index: ShamelaAuthorIndex, rawQuery: string, limit = 200, publishedBooks: readonly PublishedLiveSearchBook[] = [], allowedBookIds?: ReadonlySet<string>, hiddenBookIds:ReadonlySet<string>=new Set()): LiveSuggestion[] {
+export function liveMetadataSuggestions(index: ShamelaAuthorIndex, rawQuery: string, limit = 200, publishedBooks: readonly PublishedLiveSearchBook[] = [], allowedBookIds?: ReadonlySet<string>, hiddenBookIds:ReadonlySet<string>=new Set(), includeCategory=false): LiveSuggestion[] {
   const query = normalizeArabicAuthorName(rawQuery)
   if (query.length < 2) return []
   const suggestions: LiveSuggestion[] = []
@@ -74,7 +74,8 @@ export function liveMetadataSuggestions(index: ShamelaAuthorIndex, rawQuery: str
       if (allowedBookIds && !allowedBookIds.has(book.id)) continue
       const title = normalizeArabicAuthorName(book.title)
       const titleMatches = title.includes(query)
-      if ((!authorMatches && !titleMatches) || seenBooks.has(book.id)) continue
+      const categoryMatches=includeCategory&&normalizeArabicAuthorName(book.category??'').includes(query)
+      if ((!authorMatches && !titleMatches && !categoryMatches) || seenBooks.has(book.id)) continue
       seenBooks.add(book.id)
       suggestions.push({
         kind: 'book', label: book.title, detail: author.name,
@@ -90,7 +91,8 @@ export function liveMetadataSuggestions(index: ShamelaAuthorIndex, rawQuery: str
     const author = normalizeArabicAuthorName(book.author)
     const titleMatches = title.includes(query)
     const authorMatches = author.includes(query)
-    if ((!titleMatches && !authorMatches) || seenBooks.has(book.id)) continue
+    const categoryMatches=includeCategory&&normalizeArabicAuthorName(book.category??'').includes(query)
+    if ((!titleMatches && !authorMatches && !categoryMatches) || seenBooks.has(book.id)) continue
     seenBooks.add(book.id)
     suggestions.push({
       kind: 'book', label: book.title, detail: book.author,
@@ -111,7 +113,7 @@ export function attachLiveSearch(input: HTMLInputElement, host: HTMLElement, sco
   const panelId = `live-search-${Math.random().toString(36).slice(2)}`
   const panel = document.createElement('div')
   panel.id = panelId
-  panel.className = 'live-search'
+  panel.className = scope.inline ? 'live-search live-search--inline' : 'live-search'
   panel.setAttribute('role', 'listbox')
   panel.setAttribute('aria-label', 'اقتراحات الكتب والمؤلفين')
   panel.hidden = true
@@ -213,17 +215,25 @@ export function attachLiveSearch(input: HTMLInputElement, host: HTMLElement, sco
   }
 
   input.placeholder = 'اختر كتابًا أو ابحث عن معلومة'
+  const renderMessage=(message:string,retry=false):void=>{
+    panel.replaceChildren();panel.setAttribute('role','region');panel.setAttribute('aria-label','حالة اقتراحات الكتب')
+    const status=document.createElement('div');status.className='live-search__status';status.setAttribute('role','status');status.textContent=message;panel.append(status)
+    if(retry){const button=document.createElement('button');button.type='button';button.className='live-search__more';button.textContent='إعادة المحاولة';button.onclick=()=>input.dispatchEvent(new Event('input'));panel.append(button)}
+    panel.hidden=false;input.setAttribute('aria-expanded','true')
+  }
   input.addEventListener('input', () => {
     input.setCustomValidity('')
     const query = input.value.trim()
     const current = ++request
     if (query.length < 2) { close(); return }
+    renderMessage('جارٍ تحميل اقتراحات الكتب…')
     void Promise.all([loadShamelaAuthorMetadata(), loadPublishedLiveSearchBooks(),loadLiveSearchHiddenBooks()]).then(([index, publishedBooks,hiddenBookIds]) => {
       if (current !== request || input.value.trim() !== query) return
       const scopedPublished = scope.category ? publishedBooks.filter(book => matchesCategoryFilter(book.category,scope.category!)) : publishedBooks
-      const allowedBookIds = scope.category ? new Set(scopedPublished.map(book => book.id)) : undefined
-      render(liveMetadataSuggestions(index, query, 200, scopedPublished, allowedBookIds,hiddenBookIds), query)
-    }).catch(() => { if (current === request) close() })
+      const allowedBookIds = scope.category ? new Set([...scopedPublished.map(book => book.id),...index.authors.flatMap(author=>author.books.filter(book=>matchesCategoryFilter(book.category,scope.category!)).map(book=>book.id))]) : undefined
+      panel.setAttribute('aria-label','اقتراحات الكتب والمؤلفين')
+      render(liveMetadataSuggestions(index, query, 200, scopedPublished, allowedBookIds,hiddenBookIds,scope.includeCategory), query)
+    }).catch(() => { if (current === request) renderMessage('تعذّر تحميل الاقتراحات أو التحقق من إتاحة الكتب. أعد المحاولة.',true) })
   })
   input.addEventListener('focus', () => { if (!input.value.trim()) renderHistory();else{invalidateLiveSearchVisibility();input.dispatchEvent(new Event('input'))} })
   routeEventListener(window,'alkhizana:central-book-mutated',()=>{invalidateLiveSearchVisibility();request++;const visible=!panel.hidden;close();if(visible&&input.isConnected)input.dispatchEvent(new Event('input'))})

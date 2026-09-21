@@ -8,13 +8,8 @@ import { createTrackedObjectURL, revokeTrackedObjectURL, routeObserver, routeEve
 import { fitCoverTextBatch, type CoverFitTarget } from './cover_text_fit'
 import { brandMark } from './brand'
 
-export function deterministicCoverHue(seed: string): number {
-  let hash = 2166136261
-  for (const char of seed) { hash ^= char.codePointAt(0) ?? 0; hash = Math.imul(hash, 16777619) }
-  return Math.abs(hash) % 360
-}
-
-export function deterministicCoverTemplate(seed: string): number { return deterministicCoverHue(seed) % 4 }
+import {deterministicCoverHue,deterministicCoverTemplate} from './book_cover_identity'
+export {deterministicCoverHue,deterministicCoverTemplate} from './book_cover_identity'
 
 export function deterministicCoverPalette(bookId: string): number { return deterministicCoverHue(bookId) % 10 }
 

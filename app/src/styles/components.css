@@ -489,6 +489,10 @@
 }
 
 .live-search[hidden] { display: none; }
+.live-search--inline { position:relative; inset:auto; min-width:0; width:100%; box-sizing:border-box; max-height:480px; box-shadow:none; }
+/* A backdrop-filter creates a containing block for fixed descendants. The
+   phone search sheet must use the viewport, not the 64px header, as its box. */
+.app-header--search-open { -webkit-backdrop-filter:none; backdrop-filter:none; }
 
 .live-search__head {
   position: sticky;
@@ -2477,6 +2481,10 @@ body:has(.reader--serenity) .app-header,
   .app-header__search.is-open .live-search { inset-block-start:calc(100% + 6px); min-width:0; width:100%; max-height:calc(100vh - 88px); }
 }
 @media (min-width:1101px) { .app-header__search-button { padding-inline: 4px; } }
+@media (max-width:1100px) {
+ .app-header__search.is-open { max-width:none; inset-block:8px; max-height:calc(100dvh - 16px); grid-template-rows:auto minmax(0,1fr); overflow:hidden; }
+ .app-header__search.is-open .live-search { position:relative; inset:auto; grid-column:1 / -1; min-height:0; width:100%; height:100%; max-height:none; box-sizing:border-box; overscroll-behavior:contain; }
+}
 @media (max-width:360px) { .app-logo { min-width:44px; padding-inline:4px; } .app-header__services-menu { grid-template-columns:1fr; } }
 
 @media (max-width: 1024px) {

@@ -93,6 +93,9 @@ let activePageNumbers: number[] = []
 let activePartNumbers: number[] = []
 let activeDisplayedTotal = 0
 let activeReaderPageIndex = 0
+// Source strings stay in JS; duplicating a large book into DOM attributes twice
+// can exhaust a phone's renderer before the first page becomes interactive.
+const readerPageSearchText=new WeakMap<HTMLElement,string>()
 
 const READER_PAGE_EVENT = 'alkhizana:reader-page'
 const READER_PAGE_REQUEST_EVENT = 'alkhizana:reader-page-request'
@@ -573,8 +576,6 @@ async function renderTextSource(reader: HTMLElement, stored: StoredBook, resourc
       printTextBookWhenRequested(stored)
       return
     }
-    const paragraphs = textParagraphs(sourceText)
-    if (!paragraphs.length) throw new Error('لا يوجد نص مستخرج قابل للقراءة')
     if (format === 'shamela-bok' && stored.bokPages?.length) {
       const bokDisplayPages = bokLocalPageNumbers(stored.bokPages)
       const tocByPage = new Map<number, Array<{ title: string; bookmark: string; level: number }>>()
@@ -627,7 +628,7 @@ async function renderTextSource(reader: HTMLElement, stored: StoredBook, resourc
         // الموثقة بدل إسقاطها أو تخمين فقرة أخرى.
         for (const entry of pendingHeadings.reverse()) page.insertBefore(h('h2', { class: 'reader__text-heading', id: entry.bookmark, dataset: { level: String(entry.level) } }, entry.title), page.children[1] ?? null)
       }
-      const pages = stored.bokPages.map((source, index) => {const displayed=bokDisplayPages[index]??source.page;const page=h('section',{class:'page reader__text-page reader__text-page--bok','aria-label':`الجزء ${arabicNum(source.part)} الصفحة ${arabicNum(displayed)}${source.hadithNumber?` الحديث ${arabicNum(source.hadithNumber)}`:''}`});page.dataset.pageIndex=String(index);page.dataset.wordPageNumber=String(displayed);page.dataset.sourcePageNumber=String(source.page);page.dataset.partNumber=String(source.part);if(source.hadithNumber)page.dataset.hadithNumber=String(source.hadithNumber);page.dataset.searchText=source.text;page.dataset.tocBookmarks=(tocByPage.get(source.id)??[]).map(entry=>entry.bookmark).join('|');return page})
+const pages = stored.bokPages.map((source, index) => {const displayed=bokDisplayPages[index]??source.page;const page=h('section',{class:'page reader__text-page reader__text-page--bok','aria-label':`الجزء ${arabicNum(source.part)} الصفحة ${arabicNum(displayed)}${source.hadithNumber?` الحديث ${arabicNum(source.hadithNumber)}`:''}`});page.dataset.pageIndex=String(index);page.dataset.wordPageNumber=String(displayed);page.dataset.sourcePageNumber=String(source.page);page.dataset.partNumber=String(source.part);if(source.hadithNumber)page.dataset.hadithNumber=String(source.hadithNumber);readerPageSearchText.set(page,source.text);page.dataset.tocBookmarks=(tocByPage.get(source.id)??[]).map(entry=>entry.bookmark).join('|');return page})
       const eager=new Set([0,1,2,focusIndex-2,focusIndex-1,focusIndex,focusIndex+1,focusIndex+2].filter(index=>index>=0&&index<pages.length));for(const index of eager)hydratePage(pages[index]!,stored.bokPages[index]!,index)
       textTrace('bok-dom-built',{pages:pages.length})
       const live = readingColumn(); stage.replaceChildren(live)
@@ -645,8 +646,9 @@ async function renderTextSource(reader: HTMLElement, stored: StoredBook, resourc
       await nextPaint();textTrace('bok-first-paint',{pages:pages.length})
       textTrace('bok-window-ready',{center:focusIndex})
       live.querySelector('.reading__stream')?.prepend(textBookTitlePage(stored))
+      const bokPageIndexes=new Map(stored.bokPages.map((page,index)=>[page.id,index]))
       const bokToc = (stored.bokToc ?? []).map((entry, index) => ({
-        num: (() => { const pageIndex = stored.bokPages?.findIndex(page => page.id === entry.id) ?? -1; return pageIndex >= 0 ? bokDisplayPages[pageIndex]! : entry.id })(),
+        num: bokDisplayPages[bokPageIndexes.get(entry.id)??-1]??entry.id,
         label: entry.title,
         bookmark: `bok-toc-${index + 1}`,
         level: entry.level,
@@ -658,6 +660,8 @@ async function renderTextSource(reader: HTMLElement, stored: StoredBook, resourc
       printTextBookWhenRequested(stored)
       return
     }
+    const paragraphs = textParagraphs(sourceText)
+    if (!paragraphs.length) throw new Error('لا يوجد نص مستخرج قابل للقراءة')
     const perPage = 18
     const pages: HTMLElement[] = []
     const headingsByIndex = new Map<number, NonNullable<StoredBook['textToc']>>()
@@ -1079,7 +1083,7 @@ function renderDomPages(container: HTMLElement, pages: HTMLElement[], title: str
     slot.dataset.partCount = String(partNumbers.length)
     slot.dataset.wordPageNumber = page.dataset.wordPageNumber ?? String(index + 1)
     if (page.dataset.hadithNumber) slot.dataset.hadithNumber = page.dataset.hadithNumber
-    slot.dataset.searchText = page.dataset.searchText ?? page.textContent ?? ''
+    readerPageSearchText.set(slot,readerPageSearchText.get(page) ?? page.dataset.searchText ?? page.textContent ?? '')
     stream.appendChild(slot)
     slots.push(slot)
     return slot
@@ -2598,7 +2602,7 @@ function toggleSearch(reader: HTMLElement): void {
     const slots = [...reader.querySelectorAll<HTMLElement>('.reading__page-slot,.reader__pdf-page')]
     const failedPdfPages=slots.filter(slot=>slot.dataset.searchIndexError==='true').length
     matches = searchReaderPageTexts(slots.map((slot, index) => ({
-      text: slot.dataset.searchText ?? '',
+      text: readerPageSearchText.get(slot) ?? slot.dataset.searchText ?? '',
       pageNumber: Number(slot.dataset.wordPageNumber) || index + 1,
     })), q).map(match => ({
       slot: slots[match.pageIndex]!, occurrence: match.occurrence, offset: match.offset,

@@ -78,10 +78,11 @@ export function appHeader(currentHash: string): HTMLElement {
   activeHeaderSearch = searchInput
   search.append(searchButton, searchInput)
   attachLiveSearch(searchInput, search)
-  const compactSearch = (): boolean => window.matchMedia('(max-width: 768px)').matches
+  const compactSearch = (): boolean => window.matchMedia('(max-width: 1100px)').matches
   const closeCompactSearch = (restoreFocus = false): void => {
     if (!search.classList.contains('is-open')) return
     search.classList.remove('is-open')
+    search.closest('.app-header')?.classList.remove('app-header--search-open')
     searchButton.setAttribute('aria-expanded', 'false')
     searchInput.blur()
     if (restoreFocus) searchButton.focus()
@@ -90,6 +91,7 @@ export function appHeader(currentHash: string): HTMLElement {
     if (!compactSearch()) return
     event.preventDefault()
     if (!search.classList.contains('is-open')) search.classList.add('is-open')
+    search.closest('.app-header')?.classList.add('app-header--search-open')
     searchButton.setAttribute('aria-expanded', 'true')
     searchInput.focus()
   })

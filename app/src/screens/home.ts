@@ -26,6 +26,7 @@ import {currentAccountClaims} from '../account_authority'
 import {activeEditorialIds,loadEditorialRecommendations} from '../editorial_recommendations'
 import { homeQuoteCandidates } from '../home_quote_candidates'
 import { whenNearViewport } from '../near_viewport'
+import {attachLiveSearch} from '../live_search'
 
 type PublicHomeCard=Pick<StoredBook,'id'|'title'|'author'|'authorId'|'category'>&{publicSource:true;addedAt:number}
 export type HomeCardDisplay=StoredBook|PublicHomeCard
@@ -241,7 +242,13 @@ function gatewayPanel(title: string, description: string, iconName: 'compass' | 
     renderItems(filterInput.value)
   })
   filterBar.append(icon('search', 17), filterInput, filterStatus)
-  return h('article', { class: 'home-gateway' }, h('header', { class: 'home-gateway__head' }, h('span', { class: 'home-gateway__mark' }, icon(iconName, 23)), h('div', null, h('h2', null, title), h('p', null, description)), h('div', { class: 'home-gateway__actions' }, h('a', { href: allHref }, 'عرض الكل'))), filterBar, rail)
+  const results=h('div',{class:'home-gateway__book-results'})
+  if(iconName==='compass'){
+    attachLiveSearch(filterInput,results,{includeCategory:true,inline:true})
+    filterInput.placeholder='اكتب اسم قسم أو كتاب أو مؤلف'
+    filterInput.addEventListener('input',()=>{const searching=filterInput.value.trim().length>=2;rail.hidden=searching;filterStatus.hidden=searching})
+  }
+  return h('article', { class: 'home-gateway' }, h('header', { class: 'home-gateway__head' }, h('span', { class: 'home-gateway__mark' }, icon(iconName, 23)), h('div', null, h('h2', null, title), h('p', null, description)), h('div', { class: 'home-gateway__actions' }, h('a', { href: allHref }, 'عرض الكل'))), filterBar, results, rail)
 }
 
 function hero(): HTMLElement {
