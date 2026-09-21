@@ -377,6 +377,8 @@
 }
 
 .reader--textual .reader__text-page--bok { font-size: var(--reader-bok-font-size, 18px); }
+.reader--textual .reading__page--text-flow { width: 100%; height: auto; zoom: var(--reader-content-zoom, 1); }
+.reader--textual .reading__page-slot[data-mounted="true"] { height: auto !important; min-height: 0 !important; }
 
 /* EPUB يبقى reflow آمنًا، لكن يحتفظ بتنسيق الناشر وموارده داخل حدود الصفحة. */
 .reader--epub .reader__epub-page.page {
@@ -1746,8 +1748,9 @@ body.reader-book-card-open { overflow: hidden; }
 .library-card__editor { position: relative; z-index: 3; grid-column: 1 / -1; min-width: 0; }
 .reader__book-card-actions--compact button { box-sizing: border-box; flex: 1 0 44px !important; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; min-width: 44px; min-height: 60px; padding: 6px !important; font-size: .875rem; text-decoration: none; }
 .reader__book-card-actions--compact button span { white-space: nowrap; }
-.reader__book-card-actions--compact { overflow: visible; flex-wrap: wrap; align-items: center; }
-.reader__book-card-actions--compact button { flex: 0 0 40px !important; width: 40px; min-width: 40px; min-height: 40px; height: 40px; border-radius: 10px; }
+.reader__book-card-actions--compact { overflow: visible; flex-wrap: wrap; align-items: center; justify-content: center; margin-block: 0 var(--space-4); }
+.reader__book-card-actions--compact button { flex: 0 0 46px !important; width: 46px; min-width: 46px; min-height: 46px; height: 46px; border-radius: 10px; }
+.reader__book-card-actions--compact button svg { width: 24px; height: 24px; }
 .reader__format-actions { display: flex; align-items: center; justify-content: center; gap: 8px; }
 .reader__metadata-download { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; border: 1px solid var(--border-default); border-radius: 9px; background: var(--paper-surface); color: var(--read-accent); cursor: pointer; }
 .reader__edition-disclosure { position: relative; flex: 0 0 auto !important; }

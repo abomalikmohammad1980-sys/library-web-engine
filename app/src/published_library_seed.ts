@@ -168,7 +168,16 @@ export function publishedBookNeedsRefresh(book: StoredBook, work: PublishedWork)
 
 export async function materializePublishedWork(work: PublishedWork, load = fetchVerifiedSource, loadJson: (path: string) => Promise<unknown> = async path => verifiedJsonResponse(await fetch(path, { credentials: 'same-origin', cache: 'force-cache' }),'artifact')): Promise<StoredBook> {
   if (!installablePublishedWorks({ schemaVersion: 1, datasetVersion: 'single', sourceFileCount: work.sources.length, workCount: 1, readyCount: 1, works: [work] }).length) throw new Error('published_work_not_installable')
-  const source = work.sources.find(item => item.role === 'primary') ?? work.sources[0]!, packed = await load(source)
+  const source = work.sources.find(item => item.role === 'primary') ?? work.sources[0]!
+  // Reviewed Word assets are independent: do not serialize three network trips
+  // before the first page. Promise.all observes every rejection; all original
+  // byte/hash and page-map checks still apply before exposing the book.
+  const pairedPdf = source.format === 'word' ? work.sources.find(item => item.format === 'pdf') : undefined
+  const [packed, reviewedMap, pairedPdfData] = await Promise.all([
+    load(source),
+    source.format === 'word' && work.wordArtifact ? loadJson(work.wordArtifact.path) : Promise.resolve(undefined),
+    pairedPdf ? load(pairedPdf) : Promise.resolve(undefined),
+  ])
   const data = source.compression === 'gzip' && packed.byteLength !== source.contentBytes ? (await import('fflate')).gunzipSync(packed) : packed
   if (source.contentBytes != null && data.byteLength !== source.contentBytes) throw new Error('published_source_content_size_mismatch')
   const now = Date.now()
@@ -213,10 +222,10 @@ export async function materializePublishedWork(work: PublishedWork, load = fetch
   }
   if (source.format === 'word' && work.wordArtifact) {
     const pdfSource = work.sources.find(item => item.format === 'pdf')
-    const wordPageMap = await loadJson(work.wordArtifact.path) as StoredBook['wordPageMap']
+    const wordPageMap = reviewedMap as StoredBook['wordPageMap']
     if (!publishedWordPageMapComplete(wordPageMap, work.wordArtifact)) throw new Error('published_word_map_incomplete')
     const completeWordPageMap = wordPageMap!
-    const pdfData = pdfSource ? await load(pdfSource) : undefined
+    const pdfData = pairedPdfData
     const cover = pdfData ? await pdfFirstPageCover(pdfData).catch(() => undefined) : undefined
     return { ...common, sourceFormat: 'word', mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', wordPageMap: completeWordPageMap, physicalPageCount: completeWordPageMap.totalPages,
       ...(pdfSource && pdfData ? { pdfData, pdfFileName: pdfSource.fileName, pdfStatus: 'ready' as const, pdfEngine: 'published-original-v1' } : {}),
@@ -229,7 +238,7 @@ export async function materializePublishedWork(work: PublishedWork, load = fetch
     const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(extractedText))
     const extractedTextSha256 = [...new Uint8Array(digest)].map(value => value.toString(16).padStart(2, '0')).join('')
     if (loaded.model.paragraphs.length !== work.wordFallback.paragraphCount || extractedTextSha256 !== work.wordFallback.extractedTextSha256) throw new Error('published_word_fallback_mismatch')
-    const pdfSource = work.sources.find(item => item.format === 'pdf'), pdfData = pdfSource ? await load(pdfSource) : undefined
+    const pdfSource = work.sources.find(item => item.format === 'pdf'), pdfData = pairedPdfData
     const cover = pdfData ? await pdfFirstPageCover(pdfData).catch(() => undefined) : undefined
     return { ...common, sourceFormat: 'word', mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', readerModel: loaded.model, readerPageCount: loaded.pages.length, extractedText,
       ...(pdfSource && pdfData ? { pdfData, pdfFileName: pdfSource.fileName, pdfStatus: 'ready' as const, pdfEngine: 'published-original-v1' } : {}),

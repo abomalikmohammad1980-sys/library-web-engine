@@ -1209,6 +1209,17 @@ function fitMappedPageStory(page: HTMLElement): number {
 
 /** يلائم صفحةً (عرضها الثابت بحجم Word) لعرضٍ متاح، معولًا بنسبةٍ موحّدة. */
 export function fitPageToWidth(page: HTMLElement, maxWidth: number, registerCleanup?: (cleanup: () => void) => void): HTMLElement {
+  // BOK/EPUB/plain-text pages are browser-flow content, not fixed Word sheets.
+  // Their width/min-height are stylesheet values (no authored inline dimensions).
+  // Running Word geometry here forces repeated layout reads/writes and observes
+  // the same page those writes resize. Native flow already tracks fonts/images
+  // and zoom without a ResizeObserver or a synthetic fixed slot height.
+  if (page.classList.contains('reader__text-page')) {
+    const wrap = document.createElement('div')
+    wrap.className = 'reading__page reading__page--text-flow'
+    wrap.appendChild(page)
+    return wrap
+  }
   const w = parseFloat(page.style.width)
   // تبقى قيمة Word الأصلية ثابتة عبر unmount/remount. استعمال minHeight
   // الممدد أساسًا جديدًا كان يعيد surfaceGrowth إلى الصفر في التركيب التالي

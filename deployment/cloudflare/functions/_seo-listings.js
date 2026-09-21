@@ -43,7 +43,12 @@ export async function visibleSeoListingRows(db,rows,{list}={}){
  if(ids.length>SEO_LISTING_PAGE_SIZE||ids.some(id=>!/^\d{1,12}$/.test(id)))throw Error('seo_listing_identity')
  const aliases=[...new Set(ids.flatMap(id=>[id,String(410000000+Number(id)),'shamela-'+id]))]
  // One parameter and one fresh primary round trip, not four serial queries.
- const result=await db.prepare(`SELECT book_id,title,author,category,visibility,logically_deleted_at,updated_at,revision FROM central_book_overrides WHERE book_id IN (SELECT value FROM json_each(?1)) ORDER BY CASE WHEN visibility<>'public' OR logically_deleted_at IS NOT NULL THEN 0 ELSE 1 END, revision DESC`).bind(JSON.stringify(aliases)).all()
+ // json_each counts every candidate alias as a virtual-table row read in D1,
+ // even when no override exists. Scalar extraction preserves one bound value
+ // and primary-key lookups without scanning that virtual table. Paths depend
+ // only on the validated, bounded array length, never on user-controlled SQL.
+ const keys=aliases.map((_,index)=>`json_extract(?1,'$[${index}]')`).join(',')
+ const result=await db.prepare(`SELECT book_id,title,author,category,visibility,logically_deleted_at,updated_at,revision FROM central_book_overrides WHERE book_id IN (${keys}) ORDER BY CASE WHEN visibility<>'public' OR logically_deleted_at IS NOT NULL THEN 0 ELSE 1 END, revision DESC`).bind(JSON.stringify(aliases)).all()
  const byAlias=new Map((result.results??[]).map(row=>[row.book_id,row]))
  return rows.flatMap(row=>{
   if(row.kind!=='book')return[row]

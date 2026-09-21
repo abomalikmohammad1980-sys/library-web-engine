@@ -257,9 +257,13 @@ export async function ensureShamelaBookReady(id:string):Promise<StoredBook>{
  const offline=typeof navigator!=='undefined'&&navigator.onLine===false
  // Read the local copy while checking publication visibility, not afterwards.
  // Neither the copy nor remote book bytes may be exposed before this check.
- const [overrides,cachedBook]=await Promise.all([
+ // Public routing metadata is safe to prefetch while the visibility request
+ // runs. Never hydrate or expose book bytes until the visibility fence below.
+ // Offline opens must not start either metadata network request.
+ const [overrides,cachedBook,fast]=await Promise.all([
   loadCentralBookOverrides(fetch,offline),
   getBook(shamelaPublicBookId(sourceBookId)),
+  offline?Promise.resolve(undefined):locateShamelaBookFast(sourceBookId).catch(()=>undefined),
  ])
  const override=centralOverrideFor(overrides,sourceBookId)
  if(override&&(override.logicallyDeleted||override.visibility==='hidden'))throw new ShamelaPackSeedError('shamela_pack_book_not_found')
@@ -269,7 +273,6 @@ export async function ensureShamelaBookReady(id:string):Promise<StoredBook>{
  // Offline keeps the verified downloaded edition. Online must check its source digest,
  // otherwise the old fast return prevents every later published text correction.
  if(offline&&existing?.bokPages?.length&&existing.bokToc!==undefined&&existing.bokTextVersion===CURRENT_SHAMELA_PACK_TEXT_VERSION&&!shouldParseRawBok(existing,'shamela-bok'))return existing
- const fast=await locateShamelaBookFast(sourceBookId).catch(()=>undefined)
  const fastCandidates:LocatedShamelaPackBook[]=fast?applyCentralBookOverrides([fast],override?[override]:[]):[]
  let located=fastCandidates[0]??(await sessionCatalog()).find(x=>x.entry.bookId===sourceBookId)
  if(!located)throw new ShamelaPackSeedError('shamela_pack_book_not_found')

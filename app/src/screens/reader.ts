@@ -1205,6 +1205,15 @@ function renderDomPages(container: HTMLElement, pages: HTMLElement[], title: str
   // ويتوقف عداد الموضع عند آخر صفحة سبق قياسها. عند التكبير نقيس الدفعة
   // الموجودة كلها؛ والصفحات التي تصل لاحقًا تقاس في appendPages أدناه.
   const refitAllPagesAfterZoom = (): void => {
+    if (pages[0]?.classList.contains('reader__text-page')) {
+      // Native-flow text reflows itself; do not hydrate the entire book on +/-.
+      // Pin the current page after the new font/zoom metrics settle so changing
+      // preceding page heights cannot silently move the reader backwards.
+      const anchor = activeReaderPageIndex
+      mountVisibleWindow(anchor)
+      routeAnimationFrame(() => scrollTo(anchor), resourceScope)
+      return
+    }
     for (let index = 0; index < pages.length; index++) mount(index)
     scheduleViewportSync()
     routeAnimationFrame(scheduleViewportSync, resourceScope)
@@ -1700,7 +1709,7 @@ function renderBookInfo(panel: HTMLElement, book: StoredBook): void {
   const volumeCount = bookVolumeCount(metadataBook)
   const pageCount = bookPageCount(book)
   if (volumeCount > 1) facts.push(h('div', null, h('dt', null, 'عدد الأجزاء'), h('dd', null, arabicNum(volumeCount))))
-  facts.push(h('div', null, h('dt', null, 'عدد الصفحات'), h('dd', null, pageCount > 0 ? arabicNum(pageCount) : 'غير متاح')))
+  facts.push(h('div', null, h('dt', null, 'عدد الصفحات'), h('dd', null, pageCount > 0 ? `${arabicNum(pageCount)} صفحة` : 'غير متاح')))
   const actions = h('div', { class: 'reader__book-card-actions reader__book-card-actions--compact', role:'group', 'aria-label':'إجراءات الكتاب' })
   const editorHost = h('section', {hidden:true, 'aria-label':'تعديل الكتاب'})
   const compactActions = (): void => {
@@ -1709,7 +1718,7 @@ function renderBookInfo(panel: HTMLElement, book: StoredBook): void {
       const label = button.getAttribute('aria-label') || button.textContent || ''
       button.setAttribute('aria-label', label); button.title ||= label
       const name = /حذف/.test(label) ? 'trash' : /تعديل/.test(label) ? 'settings' : /ملاحظات|علامات/.test(label) ? 'bookmark' : /خطأ|بلاغ/.test(label) ? 'info' : /فتح PDF|بجوار/.test(label) ? 'book' : 'download'
-      button.replaceChildren(icon(name, 20))
+      button.replaceChildren(icon(name, 24))
       button.dataset.compactAction = 'true'
     }
   }
@@ -1771,13 +1780,19 @@ function renderBookInfo(panel: HTMLElement, book: StoredBook): void {
   for (const fact of facts) {
     const label = fact.querySelector('dt')
     const name = label?.textContent === 'الصيغة' ? 'book' : label?.textContent === 'التصنيف' ? 'box' : label?.textContent === 'عدد الصفحات' ? 'list' : 'info'
-    label?.prepend(icon(name, 18))
+    const title = label?.textContent ?? ''
+    if (label && ['الصيغة', 'التصنيف', 'سنة النشر', 'عدد الصفحات'].includes(title)) {
+      label.title = title
+      label.setAttribute('aria-label', title)
+      label.tabIndex = 0
+      label.replaceChildren(icon(name, 20))
+    } else label?.prepend(icon(name, 18))
   }
   content?.replaceChildren(
     bookCover(book, 'reader__book-cover'),
+    actions,
     h('dl', { class: 'reader__metadata' }, ...facts),
     ...(book.description ? [h('section', { class: 'reader__book-card-description' }, h('h3', null, 'عن الكتاب'), h('p', null, book.description))] : []),
-    actions,
     editorHost,
   )
 }
