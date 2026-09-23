@@ -1,11 +1,12 @@
 import {normalizeArabicSearch,matchesSearchExclusions} from '../../packages/search/src/index'
+import {HEADING_RELEASE_NORMALIZER_SOURCE_SHA,normalizeHeadingReleaseText} from './heading_release_normalizer'
 import {createHeadingScanCheckpoint} from './heading_scan_scheduler'
 import {filterHeadingBookRows,validateHeadingBookRanges,type HeadingBookRanges} from './heading_book_ranges'
 import {HeadingPostingLookahead} from './heading_posting_lookahead'
 import {visitHeadingRows,HeadingPointerCache} from './heading_row_pipeline'
 import {decodeRowBundle,validateRowBundles,type HeadingRowBundles} from './heading_row_bundles'
 import {selectHeadingPartitions,type HeadingDictionaryPartitions} from './heading_dictionary_partitions'
-const NORMALIZER_SHA='52ec6091d90d87867f439e6dac8d23c8bec6cec44c799a45df00a94aff739297'
+const NORMALIZER_SHA=HEADING_RELEASE_NORMALIZER_SOURCE_SHA
 type Asset={path:string;bytes:number;sha256:string}
 type RowShard=Asset&{firstRow:number;count:number}
 type Segment=[number,number,number,number]
@@ -49,6 +50,7 @@ export function decodeHeadingDeltas(bytes:Uint8Array,count:number,rowCount:numbe
 }
 export class CentralHeadingSearchClient{
  private readonly fetcher:typeof fetch;private readonly base:string;#manifest?:Manifest;private dictionary:Dictionary|undefined;private active=false
+ private candidatePageCache?:{query:string;rowIds:number[];workingBytes:number}
  private readonly rowCache=new Map<number,{row:Row;bytes:number}>();private rowCacheBytes=0
  private readonly postingCache=new Map<string,Uint8Array>();private postingCacheBytes=0
  private readonly dictionaryAssetCache=new Map<string,Uint8Array<ArrayBuffer>>();private dictionaryAssetCacheBytes=0
@@ -233,14 +235,18 @@ export class CentralHeadingSearchClient{
  }
  private async execute(query:string,{offset=0,limit=20,bookIds,excluded=[],signal}:{offset?:number;limit?:number;bookIds?:readonly string[];excluded?:readonly string[];signal?:AbortSignal}){
   if(!integer(offset)||!integer(limit)||limit>500)throw Error('heading_search_invalid_page')
-  const initStart=performance.now(),wanted=normalizeArabicSearch(query),terms=[wanted,...excluded.map(normalizeArabicSearch)].flatMap(value=>value.split(/\s+/).filter(Boolean)),m=await this.initialize(signal,terms),empty={hits:[] as CentralHeadingHit[],total:0,totalExact:true,coverageComplete:m.coverageComplete,indexedBooks:m.bookCount};this.timings.initializeMs=performance.now()-initStart;if(!wanted||bookIds?.length===0)return empty
+  const initStart=performance.now(),wanted=normalizeHeadingReleaseText(query),terms=[wanted,...excluded.map(normalizeArabicSearch)].flatMap(value=>value.split(/\s+/).filter(Boolean))
+  const cacheable=!bookIds&&!excluded.length&&wanted.split(/\s+/).filter(Boolean).length===1
+  const cached=cacheable&&this.candidatePageCache?.query===wanted?this.candidatePageCache:undefined
+  if(cached&&(cached.workingBytes>(this.options.maxQueryShardBytes??64*1024*1024)||cached.rowIds.length>(this.options.maxCandidateEntries??100000)))throw Error('heading_search_memory_budget')
+  const m=cached&&this.#manifest?this.#manifest:await this.initialize(signal,terms),empty={hits:[] as CentralHeadingHit[],total:0,totalExact:true,coverageComplete:m.coverageComplete,indexedBooks:m.bookCount};this.timings.initializeMs=performance.now()-initStart;if(!wanted||bookIds?.length===0)return empty
   const scanCheckpoint=this.options.yieldControl??createHeadingScanCheckpoint()
   const estimateStart=performance.now(),tokens=wanted.split(/\s+/).filter(Boolean).map((token,position,all)=>({token,matches:(word:string)=>headingPhraseWordMatches(word,token,position,all.length),estimate:0,entries:this.options.planTokens?[] as Dictionary:undefined}))
-  if(this.options.planTokens){let scanned=0,planned=0;const count=this.#compact?.words.length??this.dictionary!.length;for(let index=0;index<count;index++){abort(signal);if(++scanned%4096===0){await scanCheckpoint();abort(signal)}const word=this.#compact?.words[index]??this.dictionary![index]![0];let entry:[string,Segment[]]|undefined;for(const item of tokens)if(item.matches(word)){if(++planned>(this.options.maxCandidateEntries??100000))throw Error('heading_search_memory_budget');entry??=this.dictionaryEntry(index);item.entries!.push(entry);for(const s of entry[1])item.estimate+=s[3]}}this.timings.estimateDictionaryVisits=scanned}
-  else for(const item of tokens){let scanned=0;for(const [word,segments]of this.dictionary!){abort(signal);if(++scanned%4096===0&&this.options.yieldControl){await this.options.yieldControl();abort(signal)}if(item.matches(word))for(const s of segments)item.estimate+=s[3]}}
+  if(!cached&&this.options.planTokens){let scanned=0,planned=0;const count=this.#compact?.words.length??this.dictionary!.length;for(let index=0;index<count;index++){abort(signal);if(++scanned%4096===0){await scanCheckpoint();abort(signal)}const word=this.#compact?.words[index]??this.dictionary![index]![0];let entry:[string,Segment[]]|undefined;for(const item of tokens)if(item.matches(word)){if(++planned>(this.options.maxCandidateEntries??100000))throw Error('heading_search_memory_budget');entry??=this.dictionaryEntry(index);item.entries!.push(entry);for(const s of entry[1])item.estimate+=s[3]}}this.timings.estimateDictionaryVisits=scanned}
+  else if(!cached)for(const item of tokens){let scanned=0;for(const [word,segments]of this.dictionary!){abort(signal);if(++scanned%4096===0&&this.options.yieldControl){await this.options.yieldControl();abort(signal)}if(item.matches(word))for(const s of segments)item.estimate+=s[3]}}
   tokens.sort((a,b)=>a.estimate-b.estimate);this.timings.estimateMs=performance.now()-estimateStart
   const candidatesStart=performance.now()
-  let candidates:Set<number>|undefined,used=0;const cache=new Map<number,Uint8Array>(),budget=this.options.maxCandidateEntries??100000
+  let candidates:Set<number>|undefined=cached?new Set(cached.rowIds):undefined,used=cached?.workingBytes??0;const cache=new Map<number,Uint8Array>(),budget=this.options.maxCandidateEntries??100000
   const lookahead=new HeadingPostingLookahead(cache,index=>{used+=m.postings[index]!.bytes;if(used>(this.options.maxQueryShardBytes??64*1024*1024))throw Error('heading_search_memory_budget')},(index,signal)=>this.postingBytes(m.postings[index]!,signal),signal)
   try{
   // A rare word is already a complete superset of a phrase's matches. When
@@ -249,7 +255,7 @@ export class CentralHeadingSearchClient{
   // Keep `tokens` unchanged: the single-word exact-count shortcut is not valid
   // for a phrase. Scope filters, exclusions and phrase order are checked below.
   this.timings.postingTokens=0
-  for(const {matches,entries}of tokens){this.timings.postingTokens++;const found=new Set<number>(),sourceEntries=entries??this.dictionary!;let scanned=0
+  for(const {matches,entries}of cached?[]:tokens){this.timings.postingTokens++;const found=new Set<number>(),sourceEntries=entries??this.dictionary!;let scanned=0
    const narrowSegments=this.segmentHashes.size?sourceEntries.filter(([word])=>matches(word)).flatMap(([,segments])=>segments):[]
    const narrowPositions=new Map(narrowSegments.map((segment,index)=>[segment.join(':'),index]))
    const narrowLookahead=new HeadingPostingLookahead(new Map(),index=>{used+=narrowSegments[index]![2];if(used>(this.options.maxQueryShardBytes??64*1024*1024))throw Error('heading_search_memory_budget')},(index,ownedSignal)=>this.partitionSegment(narrowSegments[index]!,m,ownedSignal),signal,6)
@@ -289,11 +295,12 @@ export class CentralHeadingSearchClient{
   }
   this.timings.candidatesMs=performance.now()-candidatesStart;const rowsStart=performance.now()
   const allOrdered=[...candidates!].sort((a,b)=>a-b)
+  if(cacheable&&!cached&&allOrdered.length<=10000)this.candidatePageCache={query:wanted,rowIds:allOrdered,workingBytes:used}
   const scopedByRanges=!!bookIds&&!!this.options.bookRanges
   const ordered=scopedByRanges?filterHeadingBookRows(allOrdered,bookIds!,this.options.bookRanges!):allOrdered,single=tokens.length===1&&(!bookIds||scopedByRanges)&&(!foldedExclusions.length||plannedExclusions)&&wanted===tokens[0]!.token,selected=single?ordered.slice(offset,offset+limit):ordered,wantedIds=new Set(selected),books=bookIds?new Set(bookIds):null,hits:CentralHeadingHit[]=[];let total=single?ordered.length:0
   const consume=(rowId:number,row:Row)=>{
    if(!Array.isArray(row)||row.length!==9||typeof row[0]!=='string'||typeof row[1]!=='string'||typeof row[3]!=='string'||!(row[4]===null||integer(row[4])))throw bad()
-   const matches=normalizeArabicSearch(row[3]).includes(wanted);if(single&&!matches)throw bad();if(!matches||books&&!books.has(row[0])||matchesSearchExclusions(row[3],excluded))return
+   const matches=normalizeHeadingReleaseText(row[3]).includes(wanted);if(single&&!matches)throw bad();if(!matches||books&&!books.has(row[0])||matchesSearchExclusions(row[3],excluded))return
    const position=single?0:total++;if(single||position>=offset&&hits.length<limit)hits.push({rowId,bookId:row[0],titleId:row[1],parentTitleId:row[2],title:row[3],pageIndex:row[4],pageLabel:row[5],partLabel:row[6],sequence:row[7],pageSourceId:row[8]})
   }
   if(m.contract==='khizana-heading-search/2'){

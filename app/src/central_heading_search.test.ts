@@ -5,6 +5,7 @@ import {createHash} from 'node:crypto'
 import {gzipSync,gunzipSync} from 'node:zlib'
 import {CentralHeadingSearchClient,decodeHeadingDeltas,decodeBinaryHeadingDictionary,headingPhraseWordMatches} from './central_heading_search'
 import {normalizeArabicSearch} from '../../packages/search/src/index'
+import {HEADING_RELEASE_NORMALIZER_SOURCE_SHA,normalizeHeadingReleaseText} from './heading_release_normalizer'
 // @ts-expect-error Offline artifact tooling is not shipped with the application.
 import {encodeHeadingDictionary} from '../../tools/build-heading-dictionary-binary.mjs'
 const root=resolve(process.cwd(),'artifacts/heading-search-sample-v1')
@@ -50,9 +51,10 @@ it('decodes reset-zero deltas and rejects truncated or non-increasing rows',()=>
  expect(decodeHeadingDeltas(new Uint8Array([0,2,3]),3,10)).toEqual([0,2,5])
  for(const bytes of [[128],[1,0],[255,255,255,255,255,255,255,255]])expect(()=>decodeHeadingDeltas(new Uint8Array(bytes),2,10)).toThrow()
 })
-it('binds the reviewed normalizer to the current source implementation',async()=>{
- const source=await readFile(resolve(process.cwd(),'packages/search/src/index.ts')),manifest=JSON.parse(await readFile(resolve(root,'manifest.json'),'utf8'))
- expect(createHash('sha256').update(source).digest('hex')).toBe(manifest.normalizer.sourceSha256)
+it('binds the reviewed index to its original normalizer, not the newer full-text source',async()=>{
+ const manifest=JSON.parse(await readFile(resolve(root,'manifest.json'),'utf8'))
+ expect(manifest.normalizer.sourceSha256).toBe(HEADING_RELEASE_NORMALIZER_SOURCE_SHA)
+ expect(normalizeHeadingReleaseText('بَاب، النُّسَخ (١)')).toBe('باب، النسخ (١)')
 })
 it('aborts an active fetch and frees the one-flight guard for a retry',async()=>{
  const controller=new AbortController();let started!:()=>void;const begun=new Promise<void>(resolve=>{started=resolve})
@@ -71,6 +73,17 @@ async function tinyFixture(v2=false,n=3){
  const fetch:typeof globalThis.fetch=async(input,init)=>{const path=new URL(String(input)).pathname.slice(1);requests.push(path);const body=files.get(path),range=new Headers(init?.headers).get('range');if(range&&body){ranges.push(range);const [,start,end]=range.match(/^bytes=(\d+)-(\d+)$/)!;return new Response(body.slice(Number(start),Number(end)+1),{status:206,headers:{'content-range':`bytes ${start}-${end}/${body.length}`,'content-length':String(Number(end)-Number(start)+1)}})}return new Response(body??null,{status:body?200:404})}
  return{fetch,requests,ranges,files,manifest}
 }
+it('reuses verified one-word candidates for the next page without repeating postings',async()=>{
+ const f=await tinyFixture(true,240),client=new CentralHeadingSearchClient({baseURL:'https://heading.test/',fetch:f.fetch})
+ const first=await client.search('النسخ',{offset:0,limit:100})
+ const before=f.requests.length,second=await client.search('النسخ',{offset:100,limit:100})
+ expect(first.total).toBe(240);expect(second.total).toBe(240)
+ expect(first.hits).toHaveLength(100);expect(second.hits).toHaveLength(100)
+ expect(new Set([...first.hits,...second.hits].map(hit=>hit.rowId)).size).toBe(200)
+ expect(f.requests.slice(before).some(path=>path.startsWith('postings/')||path.startsWith('dictionary/'))).toBe(false)
+ ;(client as any).options.maxQueryShardBytes=1
+ await expect(client.search('النسخ',{offset:200,limit:40})).rejects.toThrow('memory_budget')
+})
 it('retains verified postings between searches without changing filtered and excluded results',async()=>{
  const f=await tinyFixture(true),client=new CentralHeadingSearchClient({baseURL:'https://heading.test/',fetch:f.fetch})
  const first=await client.search('النسخ');expect(await client.search('النسخ')).toEqual(first)
