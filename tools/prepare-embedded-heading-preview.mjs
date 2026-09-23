@@ -66,7 +66,7 @@ for (const part of ['deploy/functions', 'deploy/server', 'app', 'packages']) awa
 if (process.env.KHIZANA_CATALOG_PROXY === '1') {
   const route = 'api/library/catalog-snapshot.js'
   await mkdir(dirname(resolve(target, 'deploy/functions', route)), { recursive: true })
-  await copyFile(resolve(root, 'alpha-publish/functions', route), resolve(target, 'deploy/functions', route))
+  await copyFile(resolve(root, 'edge-functions', route), resolve(target, 'deploy/functions', route))
 }
 await copyFile(resolve(baseline, 'deploy/wrangler.jsonc'), resolve(target, 'deploy/wrangler.jsonc'))
 inventory.sort((a, b) => a.path.localeCompare(b.path))
