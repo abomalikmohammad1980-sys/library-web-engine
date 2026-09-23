@@ -7,7 +7,7 @@ import { stampServiceWorkerRelease } from '../alpha-publish/scripts/service-work
 
 const root = resolve(import.meta.dirname, '..')
 const base = resolve(root, '../تعديلات على المكتبة/.artifacts/review-20260923-ui-only-v23')
-const out = resolve(root, '../تعديلات على المكتبة/.artifacts/review-20260923-sw-recovery-v24')
+const out = resolve(root, '../تعديلات على المكتبة/.artifacts/review-20260923-sw-recovery-v25')
 const sha = value => createHash('sha256').update(value).digest('hex')
 const current = JSON.parse(await readFile(resolve(root, '../تعديلات على المكتبة/alpha-publish/ops/current-production.json')))
 if (current.version !== 'batch-20260923-83' || current.deploymentId !== 'c1e0a60d-8bc2-4f7f-9277-5b1390c5a373') throw Error('production_baseline_changed')
@@ -45,6 +45,9 @@ async function copyTree(part) {
   }
 }
 await copyTree('deploy/functions')
+await copyTree('deploy/server')
+await copyTree('app')
+await copyTree('packages')
 inventory.sort((a, b) => a.path.localeCompare(b.path))
 const fingerprint = sha(JSON.stringify(inventory))
 await writeFile(resolve(out, 'inventory.json'), JSON.stringify(inventory), { flag: 'wx' })
