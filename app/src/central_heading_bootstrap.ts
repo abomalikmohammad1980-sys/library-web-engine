@@ -1,6 +1,7 @@
 import {centralHeadingProvider,configureCentralHeadingSearch,type CentralHeadingProvider} from './central_heading_integration'
 import {shamelaPublicBookId} from './shamela_public_identity'
 import {loadHeadingBookRanges} from './heading_book_ranges'
+import headingReleaseText from './heading_release.generated.json?raw'
 // Release owner enables only after the R2 integrity gate and public config copy.
 export const CENTRAL_HEADING_RELEASE_ENABLED=true
 export const CENTRAL_HEADING_CONFIG_SHA='62f0baee0d621d7b45335244bd2a2de4f654a6525a66e83d59b21eb2d646a837'
@@ -22,16 +23,12 @@ export function createHeadingBootstrapTask<T>(load:(signal:AbortSignal)=>Promise
   finally{if(timer!==undefined)clearTimeout(timer)}
  })().catch(error=>{task=undefined;throw error})
 }
-const fetchRelease=createHeadingBootstrapTask(async signal=>{
- const response=await fetch(new URL('./data/heading-release.json',document.baseURI),{signal})
- if(!response.ok)throw Error(`heading_release_http_${response.status}`)
- if(!response.body)throw Error('heading_release_integrity')
- const reader=response.body.getReader(),chunks:Uint8Array[]=[];let length=0
- const cancel=()=>{void reader.cancel().catch(()=>undefined)};signal.addEventListener('abort',cancel,{once:true})
- try{for(;;){signal.throwIfAborted();const {done,value}=await reader.read();if(done)break;length+=value.length;if(length>100_000)throw Error('heading_release_budget');chunks.push(value)}signal.throwIfAborted()}
- catch(error){await reader.cancel().catch(()=>undefined);throw error}finally{signal.removeEventListener('abort',cancel);reader.releaseLock()}
- const bytes=new Uint8Array(length);let offset=0;for(const chunk of chunks){bytes.set(chunk,offset);offset+=chunk.length}
- return validateCentralHeadingRelease(bytes)
+// The descriptor is release-pinned and SHA-checked. Bundling it with the
+// heading bootstrap avoids an extra service-worker-controlled fetch on
+// long-lived origins whose old cache cannot safely activate a new worker.
+const loadRelease=createHeadingBootstrapTask(async signal=>{
+ signal.throwIfAborted()
+ return validateCentralHeadingRelease(new TextEncoder().encode(headingReleaseText.trimEnd()))
 })
 export async function ensureCentralHeadingProvider(signal?:AbortSignal):Promise<CentralHeadingProvider|undefined>{
  signal?.throwIfAborted()
@@ -40,7 +37,7 @@ export async function ensureCentralHeadingProvider(signal?:AbortSignal):Promise<
  pending??=(async()=>{
   // Independent modules/configuration must not form a serial HTTP waterfall.
   const [release,{CentralHeadingSearchClient},dictionary,{withCatalogHeadingSupplement},bookRanges]=await Promise.all([
-   fetchRelease(),import('./central_heading_search'),
+   loadRelease(),import('./central_heading_search'),
    import('./heading_dictionary_release').then(module=>module.headingDictionaryOptions(document.baseURI)),
    import('./heading_catalog_supplement'),
    loadHeadingBookRanges('primary'),
