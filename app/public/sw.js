@@ -1,4 +1,4 @@
-const CACHE = 'alkhizana-shell-v18'
+const CACHE = 'alkhizana-shell-v19'
 const FONT_ALIASES = {} // Populated from verified font bytes by the build.
 const LARGE_CATALOG_PATH = '/data/shamela-authors.json'
 const LIGHTWEIGHT_AUTHOR_INDEX_PATH = '/data/shamela-author-index.json'
@@ -138,6 +138,13 @@ self.addEventListener('fetch', event => {
   // returned the same files in milliseconds. Rely on the HTTP cache and retain
   // any old cache entry only as an offline fallback.
   if (url.pathname.startsWith('/library/shamela-search-v2/')) {
+    event.respondWith(fetch(request).catch(() => caches.match(request).then(cached => cached || Response.error())))
+    return
+  }
+  // The heading bootstrap is latency-sensitive. On long-lived origins,
+  // CacheStorage lookup before the network can exceed the client's timeout
+  // even when this small release descriptor is served quickly by Pages.
+  if (url.pathname === '/data/heading-release.json') {
     event.respondWith(fetch(request).catch(() => caches.match(request).then(cached => cached || Response.error())))
     return
   }
