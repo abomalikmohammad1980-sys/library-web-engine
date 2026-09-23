@@ -10,8 +10,8 @@ import { stampServiceWorkerRelease } from '../alpha-publish/scripts/service-work
 const root = resolve(import.meta.dirname, '..')
 const workspace = resolve(root, '../تعديلات على المكتبة')
 const baseline = resolve(workspace, '.artifacts/review-20260923-sw-recovery-v25')
-const client = resolve(workspace, '.artifacts/review-20260923-client-v26')
-const target = resolve(workspace, '.artifacts/review-20260923-embedded-heading-v27')
+const client = resolve(workspace, process.env.KHIZANA_CLIENT_ARTIFACT ?? '.artifacts/review-20260923-client-v26')
+const target = resolve(workspace, process.env.KHIZANA_TARGET_ARTIFACT ?? '.artifacts/review-20260923-embedded-heading-v27')
 const sha = bytes => createHash('sha256').update(bytes).digest('hex')
 const manifest = JSON.parse(await readFile(resolve(baseline, 'inventory.json')))
 if (manifest.length !== 20000) throw Error('baseline_inventory_changed')
@@ -63,9 +63,14 @@ async function copyTree(part) {
   }
 }
 for (const part of ['deploy/functions', 'deploy/server', 'app', 'packages']) await copyTree(part)
+if (process.env.KHIZANA_CATALOG_PROXY === '1') {
+  const route = 'api/library/catalog-snapshot.js'
+  await mkdir(dirname(resolve(target, 'deploy/functions', route)), { recursive: true })
+  await copyFile(resolve(root, 'alpha-publish/functions', route), resolve(target, 'deploy/functions', route))
+}
 await copyFile(resolve(baseline, 'deploy/wrangler.jsonc'), resolve(target, 'deploy/wrangler.jsonc'))
 inventory.sort((a, b) => a.path.localeCompare(b.path))
 const fingerprint = sha(JSON.stringify(inventory))
 await writeFile(resolve(target, 'inventory.json'), JSON.stringify(inventory), { flag: 'wx' })
-await writeFile(resolve(target, 'preview.json'), JSON.stringify({ status: 'preview-only', productionReady: false, baseline: 'batch84', staticFiles: inventory.length, payloadFingerprint: fingerprint, backend: 'byte-identical to batch84', scope: 'bundled verified heading release descriptor' }, null, 2), { flag: 'wx' })
+await writeFile(resolve(target, 'preview.json'), JSON.stringify({ status: 'preview-only', productionReady: false, baseline: 'batch84', staticFiles: inventory.length, payloadFingerprint: fingerprint, backend: process.env.KHIZANA_CATALOG_PROXY === '1' ? 'batch84 plus pinned catalog proxy without database' : 'byte-identical to batch84', scope: process.env.KHIZANA_CATALOG_PROXY === '1' ? 'bundled heading descriptor and service-worker-bypassing catalog proxy' : 'bundled verified heading release descriptor' }, null, 2), { flag: 'wx' })
 console.log(JSON.stringify({ target, staticFiles: inventory.length, payloadFingerprint: fingerprint }))

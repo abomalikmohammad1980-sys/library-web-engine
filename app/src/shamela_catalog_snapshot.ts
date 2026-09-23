@@ -17,7 +17,10 @@ export function createCatalogSnapshotReader(descriptor:Descriptor=SHAMELA_CATALO
     progress();totalTimer=setTimeout(abort,maxTotalMs)
    })
    try{return await Promise.race([(async()=>{
-    const response=await fetcher(`${descriptor.path}?v=${descriptor.sha256}`,{signal:controller.signal,cache:'force-cache'})
+    // The /api route bypasses even older installed service workers. Cache-first
+    // cloning of this multi-megabyte JSON can stall the reader before bytes
+    // arrive; the release SHA below still verifies every byte independently.
+    const response=await fetcher(`./api/library/catalog-snapshot?v=${descriptor.sha256}`,{signal:controller.signal,cache:'force-cache'})
     if(!response.ok||!response.body)throw Error('catalog_snapshot_http')
     progress()
     const reader=response.body.getReader(),bytes=new Uint8Array(descriptor.bytes);let at=0
