@@ -28,7 +28,7 @@ const validUntil = (value, now) => /^\d{4}-\d\d-\d\d$/.test(value || '') && now 
 const cap = (env, provider, now) => {
   if (provider === 'aws' && !validUntil(env.AWS_TRANSLATE_FREE_UNTIL, now)) return 0
   if (provider === 'qwen' && !validUntil(env.QWEN_FREE_UNTIL, now)) return 0
-  const configured = env[`TRANSLATION_${provider.toUpperCase()}_FREE_CHARS`]
+  const configured = env[provider === 'qwen' ? 'TRANSLATION_QWEN_FREE_TOKENS' : `TRANSLATION_${provider.toUpperCase()}_FREE_CHARS`]
   const value = configured === undefined ? LIMITS[provider] : Number(configured)
   return Number.isSafeInteger(value) && value >= 0 ? Math.min(value, LIMITS[provider]) : 0
 }
@@ -56,7 +56,7 @@ export async function routeTranslation({ env, text, target, purpose, now = new D
     if (!secretReady(env, provider) || !adapters[provider] || (provider === 'alibaba' && text.length > 5000)) continue
     const limit = cap(env, provider, now)
     const amount = provider === 'qwen' ? new TextEncoder().encode(text).length * 3 : text.length
-    if (!await reserveQuota(env.VISITORS_DB, provider, isoMonth(now), amount, limit)) continue
+    if (!await reserveQuota(env.VISITORS_DB, provider, provider === 'qwen' ? `trial:${env.QWEN_FREE_UNTIL}` : isoMonth(now), amount, limit)) continue
     try {
       const translation = await adapters[provider]({ env, text, target: policy.codes[provider], purpose })
       if (typeof translation !== 'string' || !translation.trim()) throw new Error('empty_translation')
