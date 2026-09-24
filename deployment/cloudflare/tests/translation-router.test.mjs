@@ -150,3 +150,12 @@ test('Qwen-MT Plus adapter sends a single source-labelled message', async () => 
     assert.equal(body.messages.length, 1)
   } finally { globalThis.fetch = original }
 })
+
+test('Qwen trial quota does not reset at a month boundary', async () => {
+  const database = db()
+  const env = { VISITORS_DB: database, QWEN_API_KEY: 'test', QWEN_ENDPOINT: 'https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions', QWEN_FREE_UNTIL: '2026-12-01', TRANSLATION_QWEN_FREE_TOKENS: '24' }
+  const args = { env, text: 'سلام', target: 'en', purpose: 'text', adapters: { qwen: async () => 'hello' } }
+  assert.equal((await routeTranslation({ ...args, now: new Date('2026-09-30') })).provider, 'qwen')
+  await assert.rejects(routeTranslation({ ...args, now: new Date('2026-10-01') }))
+  assert.equal(database.counters.size, 1)
+})
