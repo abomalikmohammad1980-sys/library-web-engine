@@ -102,6 +102,8 @@ export interface StoredBook {
   textToc?: Array<{ title: string; paragraphIndex: number; level: number; bookmark?: string }>
   /** أصول Markdown المحلية المشار إليها نسبيًا؛ لا تشمل ملفات المجلد غير المستخدمة. */
   markdownAssets?: MarkdownAsset[]
+  /** HTML companion images and CSS selected with the original; never fetched from arbitrary URLs. */
+  htmlAssets?: MarkdownAsset[]
   bokTextVersion?: number
   title: string
   author: string
@@ -161,7 +163,7 @@ export interface StoredBook {
   conversionArtifactFailedAt?: number
   /** أجزاء الكتاب عند توافرها؛ الصفحات أرقام PDF/فيزيائية تبدأ من 1. */
   parts?: BookPart[]
-  /** ملفات Word للأجزاء حين يمثل السجل كتابًا واحدًا متعدد الأجزاء. */
+  /** مصادر مرتبة: أجزاء Word أو صفحات الصور عندما sourceFormat=jpeg. */
   volumes?: BookVolume[]
   /** نموذج OOXML المفكوك؛ يُحفظ بعد أول فتح لتجنب فك ملف Word في كل زيارة. */
   readerModel?: DocumentModelV0
@@ -315,7 +317,7 @@ function openDb(): Promise<IDBDatabase> {
 export interface BookIntakeFields { title: string; author: string; authorId?: string; authors?: BookAuthorRef[]; deathYearHijri?: number; contemporary?: boolean; category?: string; tags?: BookTag[]; publisher?: string; edition?: string; investigator?: string; publicationYearHijri?: number; description?: string; rawSourceMetadata?: string; volumeCount?: number; coverMediaPath?: string; coverHue?: number; coverTemplate?: number; customCoverData?: Uint8Array; customCoverMimeType?: string }
 
 export async function saveBook(book: BookIntakeFields & {
-  fileName: string; data: Uint8Array; mimeType?: string; sourceData?: Uint8Array; sourceMimeType?: string; volumes?: BookVolume[]; sourceFormat?: BookFormat; paginationAuthority?: PaginationAuthority; paginationOverride?: StoredBook['paginationOverride']; wordPageMap?: WordPageMap
+  fileName: string; data: Uint8Array; mimeType?: string; sourceData?: Uint8Array; sourceMimeType?: string; volumes?: BookVolume[]; sourceFormat?: BookFormat; paginationAuthority?: PaginationAuthority; paginationOverride?: StoredBook['paginationOverride']; wordPageMap?: WordPageMap; pdfData?:Uint8Array;pdfFileName?:string;pdfEngine?:string;physicalPageCount?:number;htmlAssets?:MarkdownAsset[]
 }, options:{expectedOwnerScope?:string}={}): Promise<string> {
   const expectedOwnerScope=options.expectedOwnerScope
   const assertOwner=()=>{if(expectedOwnerScope!==undefined&&currentLibraryIdentityScope()!==expectedOwnerScope)throw Error('local_book_identity_changed')}
@@ -328,7 +330,7 @@ export async function saveBook(book: BookIntakeFields & {
     ownerScope: currentLibraryIdentityScope(),
     mimeType: book.mimeType ?? 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
     originalSha256: await sha256Hex(book.data),
-    pdfStatus: 'pending',
+    pdfStatus: book.pdfData?.length ? 'ready' : 'pending',
     fileSize: book.volumes?.reduce((sum, volume) => sum + (volume.sourceData?.length ?? volume.data.length), 0) ?? book.sourceData?.length ?? book.data.length,
     addedAt: Date.now(),
   }
@@ -369,6 +371,20 @@ export async function savePdfBook(book: BookIntakeFields & { fileName: string; d
   return id
 }
 
+/** One IDB transaction contains originals and derivative: never a half-readable image book. */
+export async function saveJpegBook(draft:import('../jpeg_import_draft').JpegBookDraft,metadata:BookIntakeFields,options:{expectedOwnerScope?:string}={}):Promise<string>{
+  const {validateJpegSource}=await import('../jpeg_pdf_source')
+  if(!draft.originals.length||draft.originals.length>200)throw Error('jpeg_source_count_invalid')
+  for(const source of draft.originals)validateJpegSource(source.data,source.file.name)
+  const {PDFDocument}=await import('pdf-lib')
+  const pdf=await PDFDocument.load(draft.readingPdf)
+  if(pdf.getPageCount()!==draft.originals.length)throw Error('jpeg_page_count_mismatch')
+  const first=draft.originals[0]!
+  return saveBook({...metadata,fileName:first.file.name,data:first.data,mimeType:'image/jpeg',sourceFormat:'jpeg',
+    volumes:draft.originals.map((source,index)=>({number:index+1,fileName:source.file.name,data:source.data,mimeType:'image/jpeg'})),
+    pdfData:draft.readingPdf,pdfFileName:draft.readingPdfFileName,pdfEngine:'jpeg-pages-v1',physicalPageCount:draft.originals.length},options)
+}
+
 /** يحفظ نص UTF-8 كمصدر مستقل قابل للقراءة والفهرسة. */
 export async function saveTextBook(book: BookIntakeFields & { fileName: string; data: Uint8Array; toc?: NonNullable<StoredBook['textToc']>; sourceFormat?: 'text' | 'markdown'; markdownAssets?: MarkdownAsset[] }): Promise<string> {
   const id = await saveBook({ ...book, sourceFormat: book.sourceFormat ?? 'text', mimeType: book.sourceFormat === 'markdown' ? 'text/markdown;charset=utf-8' : 'text/plain;charset=utf-8' })
@@ -382,6 +398,12 @@ export async function saveEpubBook(book: BookIntakeFields & { fileName: string; 
   const toc = book.toc
   await updateBook(id, stored => { stored.extractedText = book.extractedText; if (toc?.length) stored.textToc = toc })
   return id
+}
+
+/** Save the untouched HTML original and its inert, searchable reading text together. */
+export async function saveHtmlBook(book:BookIntakeFields&{fileName:string;data:Uint8Array;extractedText:string;htmlAssets?:MarkdownAsset[]},options:{expectedOwnerScope?:string}={}):Promise<string>{
+  if(!book.extractedText.trim())throw Error('html_readable_text_missing')
+  return saveBook({...book,sourceFormat:'html',mimeType:'text/html; charset=utf-8'},options)
 }
 
 export async function saveBokBook(book: BookIntakeFields & { fileName: string; data: Uint8Array; extractedText: string; pages: NonNullable<StoredBook['bokPages']>; toc: NonNullable<StoredBook['bokToc']> }): Promise<string> {
@@ -711,6 +733,7 @@ let catalogRetryAttempt=0
 import {catalogRetryDelay} from '../catalog_retry'
 if (typeof window !== 'undefined') window.addEventListener('library-changed', () => { booksListMemory = undefined })
 
+import {catalogDataInteractionAllowed,waitForBackgroundDataInteraction} from '../background_data_scheduler'
 export async function listBooks(options:{requireCompleteCatalog?:boolean}={}): Promise<StoredBook[]> {
   const scope=currentLibraryIdentityScope()
   const consume=(result:{books:StoredBook[];centralComplete:boolean}):StoredBook[]=>{
@@ -806,6 +829,7 @@ async function listBooksUncached(scope=currentLibraryIdentityScope()): Promise<{
         // must never resurrect a centrally deleted Word book from IndexedDB.
         visibilityReady=loadCentralBookOverrides().then(overrides=>{applyVisibility=books=>applyCentralOverridesToBookList(books,overrides)})
         const [catalog]=await Promise.all([readCompleteShamelaLibraryCatalog(),visibilityReady])
+        await waitForBackgroundDataInteraction({canRun:catalogDataInteractionAllowed})
         const publicBooks=materializeAvailableShamelaCatalogBooks(catalog.map(({entry})=>entry))
         resolve({books:applyVisibility(mergeCentralLibraryBooks(publicBooks,canonical.books)),centralComplete:true})
       } catch(error) {

@@ -1,0 +1,8 @@
+.jpeg-import-choice{max-width:42rem;margin-inline:auto;min-width:0;scroll-margin-block-start:5rem}
+.jpeg-import-choice select{width:100%;min-height:44px}
+.jpeg-import-choice__pages{padding-inline-start:1.8rem;max-height:22rem;overflow:auto}
+.jpeg-import-choice__page{padding:.4rem 0;display:flex;align-items:center;gap:.5rem;min-width:0}
+.jpeg-import-choice__name{flex:1;min-width:0;overflow-wrap:anywhere}
+.jpeg-import-choice__order{display:flex;gap:.25rem;flex:none}
+.jpeg-import-choice__order button{min-width:44px;min-height:44px}
+.jpeg-import-choice__actions{display:flex;flex-wrap:wrap;gap:.5rem}

@@ -1,4 +1,5 @@
 export interface BookPageCountSource {
+  sourceFormat?:string
   physicalPageCount?: number
   readerPageCount?: number
   wordPageMap?: { totalPages: number; pages?: readonly unknown[] }
@@ -36,6 +37,7 @@ export function bookPageCount(book: BookPageCountSource, cachedCount?: number): 
 }
 
 export function bookVolumeCount(book: BookPageCountSource): number {
+  if(book.sourceFormat==='jpeg')return 1 // image source files are pages, not printed volumes
   if (book.bokPages?.length) {
     const parts = new Set(book.bokPages.map(page => Number(page.part)).filter(part => Number.isInteger(part) && part > 0))
     if (parts.size) return parts.size

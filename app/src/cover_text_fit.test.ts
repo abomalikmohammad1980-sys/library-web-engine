@@ -11,7 +11,7 @@ it('preserves the binary-search result for different title and author limits', (
   })))
   limits.forEach((limit, index) => {
     expect(sizes[index]).toBeLessThanOrEqual(limit)
-    expect(limit - sizes[index]!).toBeLessThan(20 / 65536)
+    expect(limit - sizes[index]!).toBeLessThan(20 / 1024)
   })
 })
 
@@ -21,7 +21,7 @@ it('does not alternate writes and layout reads per cover', () => {
     maximum: 20, write: () => { phases.push('write') }, fits: () => { phases.push('read'); return true },
   })))
   expect(phases.join(',')).toBe([
-    ...Array.from({ length: 16 }, () => [...Array(40).fill('write'), ...Array(40).fill('read')]).flat(),
+    ...Array.from({ length: 10 }, () => [...Array(40).fill('write'), ...Array(40).fill('read')]).flat(),
     ...Array(40).fill('write'),
   ].join(','))
 })

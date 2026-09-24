@@ -84,3 +84,19 @@ it('stops further parsing when navigating to a reader during a scan',async()=>{
  const stop=installBackgroundSearchIndex();await vi.advanceTimersByTimeAsync(10000)
  expect(state.heading).toHaveBeenCalledTimes(1);expect(state.prepare).not.toHaveBeenCalled();stop()
 })
+
+it('does not clone or parse stored books while the import dialog is open; resumes after close',async()=>{
+ vi.useFakeTimers();vi.stubGlobal('window',new EventTarget());let open=true;
+ Object.assign(document,{querySelector:()=>open?{}:null});state.books=[{id:'local-word',sourceFormat:'word',data:new Uint8Array([1])}];
+ const stop=installBackgroundSearchIndex();await vi.advanceTimersByTimeAsync(10000);
+ expect(state.stored).not.toHaveBeenCalled();expect(state.heading).not.toHaveBeenCalled();
+ open=false;window.dispatchEvent(new Event('alkhizana:import-activity'));await vi.advanceTimersByTimeAsync(3300);
+ expect(state.heading).toHaveBeenCalledOnce();stop();
+})
+
+it('cancels a scheduled scan when the dialog opens before its timer fires',async()=>{
+ vi.useFakeTimers();vi.stubGlobal('window',new EventTarget());let open=false;
+ Object.assign(document,{querySelector:()=>open?{}:null});const stop=installBackgroundSearchIndex();
+ open=true;window.dispatchEvent(new Event('alkhizana:import-activity'));await vi.advanceTimersByTimeAsync(10000);
+ expect(state.stored).not.toHaveBeenCalled();stop();
+})

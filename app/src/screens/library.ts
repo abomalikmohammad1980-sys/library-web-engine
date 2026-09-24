@@ -1,5 +1,7 @@
 /** شاشة المكتبة — عرض الكتب المحفوظة مع حذف */
 import {publishedBookControls} from '../published_book_controls'
+import {collectionDownloadButton} from '../collection_download_button'
+import {downloadAttachmentPanel,attachmentAuthorKey} from '../download_attachment_panel'
 import {publishedGridSelection} from '../published_grid_selection'
 import {privateBookPublishButton} from '../private_book_publish'
 import {independentPdfPanel} from '../independent_pdf_panel'
@@ -28,10 +30,9 @@ import { listBooks, getBook, listAuthorRecords, getAuthorRecord, mergeAuthors, s
 import { convertStoredBookToPdf, needsPdfRefresh } from '../engine/word_pdf'
 import { getRuntimeCapabilities } from '../runtime_capabilities'
 import { sectionHeader, pageContent } from '../components'
-import { bookImportManager } from '../book_import'
-import { BOOK_CATEGORIES, approximateGregorianYear, isWordFile } from '../library_metadata'
-import { bookCover, deterministicCoverHue, discoverWordCover } from '../book_cover'
-import { normalizeLegacyWord } from '../book_import'
+import { SUBJECT_CATEGORY_NAMES as BOOK_CATEGORIES } from '../subject_categories'
+import { approximateGregorianYear,isWordFile } from '../library_file_identity'
+import { bookCover, deterministicCoverHue } from '../book_cover'
 import { authorHref, authorLink, categoryLink, effectiveBookCategory, matchesCategoryFilter, UNCATEGORIZED_CATEGORY } from '../taxonomy_links'
 import { ensureShamelaCatalogImported } from '../shamela_catalog'
 import { mountStateView, stateView } from '../state_view'
@@ -88,11 +89,22 @@ export function libraryScreen(): HTMLElement {
   const standardSections = categoryRoute.requested ? [] : (() => {
     const management = integratedManagementSection()
     const shelves = libraryShelvesPreview()
-    const importer = bookImportManager(() => { window.dispatchEvent(new Event('library-changed')) })
-    if (importIntent === 'book' || importIntent === 'folder') routeAnimationFrame(() => {
-      importer.scrollIntoView({ block: 'center' })
-      importer.querySelector<HTMLButtonElement>(importIntent === 'folder' ? '.import-manager__folder' : '.import-manager__primary')?.focus()
-    })
+    const importer = h('section',{'aria-label':'إضافة الكتب'})
+    const loadImporter=()=>{
+      importer.replaceChildren(silentSkeleton('cards'))
+      void import('../book_import').then(({bookImportManager})=>{
+        routeAnimationFrame(()=>{
+          if(routeScope.disposed||!importer.isConnected)return
+          const manager=bookImportManager(()=>window.dispatchEvent(new Event('library-changed')))
+          importer.replaceChildren(manager)
+          if(importIntent==='book'||importIntent==='folder'){
+            manager.scrollIntoView({block:'center'})
+            manager.querySelector<HTMLButtonElement>(importIntent==='folder'?'.import-manager__folder':'.import-manager__primary')?.focus()
+          }
+        },routeScope)
+      }).catch(()=>{if(!routeScope.disposed&&importer.isConnected)importer.replaceChildren(stateView({kind:'error',title:'تعذّر تحميل أدوات الإضافة',description:'أعد المحاولة لفتح أدوات إضافة الكتب.',actionLabel:'إعادة المحاولة',onAction:loadImporter}))})
+    }
+    loadImporter()
     return [
       importer,
       shelves,
@@ -459,9 +471,27 @@ function booksSection(initialCategoryRoute = libraryCategoryRoute(currentHashQue
   const grid = h('div', { class: 'library-grid', id: 'library-grid' })
   grid.appendChild(silentSkeleton('cards'))
   controls.append(search, advanced, clearFilters)
+  const download=collectionDownloadButton(()=>categoryFilter.value||'المكتبة',async()=>{
+    const category=categoryFilter.value
+    if(!category||category===INVALID_LIBRARY_CATEGORY)throw Error('collection_category_required')
+    const books=await listBooks({requireCompleteCatalog:true})
+    return books.filter(book=>matchesCategoryFilter(effectiveBookCategory(book),category)).map(({id,title})=>({id,title}))
+  })
+  download.hidden=!categoryFilter.value||categoryFilter.value===INVALID_LIBRARY_CATEGORY
+  const syncDownload=()=>{download.hidden=!categoryFilter.value||categoryFilter.value===INVALID_LIBRARY_CATEGORY}
+  categoryFilter.addEventListener('change',syncDownload)
+  clearFilters.addEventListener('click',()=>{download.hidden=true})
+  controls.append(download)
+  const archiveHost=h('div',null)
+  let archiveController:AbortController|undefined
+  const refreshArchives=()=>{archiveController?.abort();archiveHost.replaceChildren();if(categoryFilter.value&&categoryFilter.value!==INVALID_LIBRARY_CATEGORY){archiveController=new AbortController();archiveHost.append(downloadAttachmentPanel({category:categoryFilter.value},archiveController.signal))}}
+  resourceScope.add(()=>archiveController?.abort())
+  categoryFilter.addEventListener('change',refreshArchives)
+  clearFilters.addEventListener('click',()=>{archiveController?.abort();archiveHost.replaceChildren()})
+  refreshArchives()
   const filters = h('section', { class: 'library-filter-section', 'aria-label': 'البحث وتصفية كتب المكتبة' }, controls)
   const selection=publishedGridSelection()
-  wrap.append(tagFilter, selection.host, grid)
+  wrap.append(tagFilter, selection.host, grid,archiveHost)
   void listBooks().then(booksWithAuthorChronology).then((books) => {
     const params = currentHashQuery()
     const requestedCategory = libraryCategoryRoute(params)
@@ -540,9 +570,11 @@ function renderLibraryGrid(grid: HTMLElement, books: StoredBook[], query: string
 const FORMAT_MARKS: Record<BookFormat, { short: string; className: string }> = {
   word: { short: 'W', className: 'is-word' },
   pdf: { short: 'PDF', className: 'is-pdf' },
+  jpeg: { short: 'JPG', className: 'is-pdf' },
   'shamela-bok': { short: 'BOK', className: 'is-bok' },
   epub: { short: 'e', className: 'is-epub' },
   markdown: { short: 'M↓', className: 'is-markdown' },
+  html: { short: 'HTML', className: 'is-epub' },
   text: { short: 'TXT', className: 'is-text' },
 }
 
@@ -638,16 +670,17 @@ function bookCard(book: StoredBook, index: number, options: { compactPrivate?: b
   const sourceIsPdf = inferBookFormat(book) === 'pdf'
   const sourceIsText = ['text', 'markdown'].includes(inferBookFormat(book))
   const sourceIsEpub = inferBookFormat(book) === 'epub'
+  const sourceIsHtml = inferBookFormat(book) === 'html'
   const sourceIsBok = inferBookFormat(book) === 'shamela-bok'
   const originalAsset = localOriginalAsset(book)
-  const wordButton = h('button', { class: 'btn btn--secondary library-card__button', type: 'button' }, sourceIsPdf ? 'تحميل PDF' : sourceIsText ? 'تحميل النص الأصلي' : sourceIsEpub ? 'تحميل EPUB الأصلي' : sourceIsBok ? 'تحميل BOK الأصلي' : 'تحميل Word')
+  const wordButton = h('button', { class: 'btn btn--secondary library-card__button', type: 'button' }, sourceIsPdf ? 'تحميل PDF' : sourceIsText ? 'تحميل النص الأصلي' : sourceIsEpub ? 'تحميل EPUB الأصلي' : sourceIsHtml ? 'تحميل HTML الأصلي' : sourceIsBok ? 'تحميل BOK الأصلي' : 'تحميل Word')
   wordButton.addEventListener('click', (ev) => {
     ev.preventDefault(); ev.stopPropagation()
     if(originalAsset)downloadBytes(originalAsset.bytes,originalAsset.fileName,originalAsset.mimeType)
   })
   if (originalAsset) actions.appendChild(compactAction(wordButton, wordButton.textContent || 'تحميل الأصل', 'download'))
   const textualPdfAction = pdfButtonAction(book, 'standard')
-  if (textualPdfAction === 'original' && (sourceIsText || sourceIsEpub || sourceIsBok)) {
+  if (textualPdfAction === 'original' && (sourceIsText || sourceIsEpub || sourceIsHtml || sourceIsBok)) {
     const originalPdf = h('button', { class: 'btn btn--secondary library-card__button', type: 'button' }, 'فتح PDF')
     originalPdf.addEventListener('click', event => { event.preventDefault(); event.stopPropagation(); downloadBytes(book.pdfData!, book.pdfFileName ?? `${book.title}.pdf`, 'application/pdf') })
     actions.appendChild(compactAction(originalPdf, 'فتح PDF الأصلي', 'book'))
@@ -661,14 +694,14 @@ function bookCard(book: StoredBook, index: number, options: { compactPrivate?: b
     })
     actions.appendChild(compactAction(formattedPdf, 'فتح PDF المنسق', 'book'))
   }
-  if (!sourceIsPdf && !sourceIsText && !sourceIsEpub && !sourceIsBok && !needsPdfRefresh(book)) {
+  if (!sourceIsPdf && !sourceIsText && !sourceIsEpub && !sourceIsHtml && !sourceIsBok && !needsPdfRefresh(book)) {
     const pdfButton = h('button', { class: 'btn btn--secondary library-card__button', type: 'button' }, 'تحميل PDF')
     pdfButton.addEventListener('click', (ev) => {
       ev.preventDefault(); ev.stopPropagation()
       downloadBytes(book.pdfData!, book.pdfFileName ?? `${book.title}.pdf`, 'application/pdf')
     })
     actions.appendChild(compactAction(pdfButton, 'تحميل PDF', 'book'))
-  } else if (!sourceIsPdf && !sourceIsText && !sourceIsEpub && !sourceIsBok) {
+  } else if (!sourceIsPdf && !sourceIsText && !sourceIsEpub && !sourceIsHtml && !sourceIsBok) {
     const retry = h('button', { class: 'btn btn--secondary library-card__button', type: 'button' },
       'إنشاء PDF') as HTMLButtonElement
     retry.textContent = book.pdfStatus === 'converting' ? 'PDF قيد الإنشاء…' : 'إنشاء PDF'
@@ -995,8 +1028,8 @@ export function openLibraryBookEditor(row: HTMLElement, book: StoredBook, onSave
       try {
         const source = new Uint8Array(await file.arrayBuffer())
         const legacy = /\.(doc|rtf)$/i.test(file.name)
-        const data = legacy ? await normalizeLegacyWord(source, file.name) : source
-        const cover = discoverWordCover(data)
+        const data = legacy ? await (await import('../book_import')).normalizeLegacyWord(source, file.name) : source
+        const cover = (await import('@library/word-cover')).discoverWordCover(data)
         await replaceBookWord(book.id, {
           fileName: file.name, data,
           mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
@@ -1371,6 +1404,8 @@ export function authorBooksScreen(author: string): HTMLElement {
       h('div', { class: 'author-hero__main' }, authorAvatar(record, 72), h('div', null, h('h1', { class: 'page-title', id: 'author-title', dataset: { noTranslate: '' } }, record.name), h('p', { class: 'page-sub' }, authorEra(record)))),
       h('div', { class: 'author-stats', 'aria-label': 'إحصاءات رف المؤلف' }, h('span', null, h('strong', null, String(entry.bookCount)), ' كتاب')),
     )
+    hero.append(collectionDownloadButton(()=>record.name,async()=>shelfBooks))
+    hero.append(downloadAttachmentPanel({authorKey:attachmentAuthorKey(entry.authorId)}))
     const grid = h('div', { class: 'library-grid author-shelf-grid', id: 'author-books' }, ...shelfBooks.map((ref, index) => {
       const local = localById.get(ref.id)
       if (local) return bookCard(local, index)
@@ -1550,7 +1585,9 @@ function renderPeoplePage(content: HTMLElement, entry: ShamelaAuthorIndexEntry, 
     h('section', { class: 'person-work-group' }, h('h3', { dataset: { noTranslate: '' } }, group.category), h('ul', { class: 'person-works person-works--merged', dataset: { noTranslate: '' } },
       ...group.works.map(work => h('li', { class: `person-work ${work.available ? 'person-work--available' : 'person-work--listed'}` },
         work.available && work.id ? h('a', { href: `#/book/${encodeURIComponent(work.id)}` }, work.title) : work.title)))))) : undefined
-  return field(uiTemplateText('96d68a2e259efc38',{p1:linkedBooks.length}), works, 'person-section--works person-books')
+  const section=field(uiTemplateText('96d68a2e259efc38',{p1:linkedBooks.length}), works, 'person-section--works person-books')
+  if(section)section.querySelector('h2')?.append(collectionDownloadButton(()=>displayName,async()=>linkedBooks))
+  return section
   }
   const facetList = (kind: PeopleFacetKind, values?: string[]): HTMLElement | undefined => values?.length
     ? h('ul', { class: 'person-list person-list--facets', dataset: { noTranslate: '' } }, ...values.map(value => {
@@ -1570,6 +1607,7 @@ function renderPeoplePage(content: HTMLElement, entry: ShamelaAuthorIndexEntry, 
     field(person ? 'الترجمة المفصلة' : 'نبذة موثقة', record?.structuredFields&&record.biography?h('div',{class:'person-biography',dataset:{noTranslate:''}},...biographyParagraphs(record.biography).map(text=>h('p',null,text))):detailedBiography(biography)),
   ].filter((section): section is HTMLElement => Boolean(section))
   content.className = 'author-page person-page'; content.removeAttribute('aria-busy'); content.replaceChildren(hero, h('div', { class: 'person-page__body' }, ...sections))
+  content.append(downloadAttachmentPanel({authorKey:attachmentAuthorKey(entry.authorId)}))
   // Only canonical catalog identity is editable; never infer from a local name.
   if (catalog.some(author => author.authorId === entry.authorId) && /^\d{1,6}$/.test(entry.authorId)) attachAuthorOverride(content, `shamela:${Number(entry.authorId)}`, displayName, centralBaseline,biographyFields(biography))
   else if(localOverrideId)attachAuthorOverride(content,localOverrideId,displayName,centralBaseline,biographyFields(biography))

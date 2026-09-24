@@ -1,0 +1,51 @@
+// Account readiness messages are interface copy, never account data.
+const labels = [
+  'تسجيل الدخول غير متاح مؤقتًا',
+  'إعادة التحقق',
+  'خدمة الحسابات متوقفة مؤقتًا؛ أعد المحاولة لاحقًا. لم نتحقق من كلمة المرور.',
+] as const
+
+const row = (unavailable: string, retry: string, service: string): Record<string, string> => ({
+  [labels[0]]: unavailable,
+  [labels[1]]: retry,
+  [labels[2]]: service,
+})
+
+export const SIGN_IN_QUOTA_UI: Readonly<Record<string, Record<string, string>>> = {
+  en: row('Sign-in is temporarily unavailable', 'Check again', 'The account service is temporarily unavailable. Try again later. Your password was not checked.'),
+  fr: row('La connexion est temporairement indisponible', 'Vérifier à nouveau', 'Le service des comptes est temporairement indisponible. Réessayez plus tard. Votre mot de passe n’a pas été vérifié.'),
+  ug: row('كىرىش ۋاقىتلىق ئىشلىمەيدۇ', 'قايتا تەكشۈرۈش', 'ھېسابات مۇلازىمىتى ۋاقىتلىق ئىشلىمەيدۇ. كېيىن قايتا سىناڭ. پارولىڭىز تەكشۈرۈلمىدى.'),
+  ckb: row('چوونەژوورەوە بە کاتی بەردەست نییە', 'دووبارە پشکنین', 'خزمەتگوزاری هەژمارەکان بە کاتی بەردەست نییە. دواتر دووبارە هەوڵ بدەوە. وشەی نهێنیت نەپشکنرا.'),
+  ku: row('Têketin niha bi demkî ne berdest e', 'Dîsa kontrol bike', 'Karûbarê hesaban bi demkî ne berdest e. Paşê dîsa biceribîne. Şîfreya te nehat kontrolkirin.'),
+  tr: row('Giriş geçici olarak kullanılamıyor', 'Yeniden kontrol et', 'Hesap hizmeti geçici olarak kullanılamıyor. Daha sonra tekrar deneyin. Parolanız kontrol edilmedi.'),
+  ur: row('لاگ اِن عارضی طور پر دستیاب نہیں', 'دوبارہ جانچیں', 'اکاؤنٹ سروس عارضی طور پر دستیاب نہیں۔ بعد میں دوبارہ کوشش کریں۔ آپ کا پاس ورڈ چیک نہیں ہوا۔'),
+  fa: row('ورود موقتاً در دسترس نیست', 'بررسی دوباره', 'خدمات حساب موقتاً در دسترس نیست. بعداً دوباره تلاش کنید. گذرواژهٔ شما بررسی نشد.'),
+  sw: row('Kuingia hakupatikani kwa sasa', 'Angalia tena', 'Huduma ya akaunti haipatikani kwa sasa. Jaribu tena baadaye. Nenosiri lako halijakaguliwa.'),
+  hi: row('साइन इन अभी अस्थायी रूप से उपलब्ध नहीं है', 'फिर से जाँचें', 'खाता सेवा अभी अस्थायी रूप से उपलब्ध नहीं है। बाद में फिर प्रयास करें। आपका पासवर्ड जाँचा नहीं गया।'),
+  hu: row('A bejelentkezés átmenetileg nem érhető el', 'Ellenőrzés újra', 'A fiókszolgáltatás átmenetileg nem érhető el. Próbálja újra később. A jelszavát nem ellenőriztük.'),
+  id: row('Masuk sementara tidak tersedia', 'Periksa lagi', 'Layanan akun sementara tidak tersedia. Coba lagi nanti. Kata sandi Anda belum diperiksa.'),
+  ms: row('Log masuk tidak tersedia buat sementara waktu', 'Semak semula', 'Perkhidmatan akaun tidak tersedia buat sementara waktu. Cuba lagi kemudian. Kata laluan anda belum disemak.'),
+  bn: row('প্রবেশ সাময়িকভাবে অনুপলব্ধ', 'আবার পরীক্ষা করুন', 'অ্যাকাউন্ট সেবা সাময়িকভাবে অনুপলব্ধ। পরে আবার চেষ্টা করুন। আপনার পাসওয়ার্ড যাচাই করা হয়নি।'),
+  ps: row('ننوتل لنډمهاله شتون نه لري', 'بیا وګورئ', 'د حساب خدمت لنډمهاله شتون نه لري. وروسته بیا هڅه وکړئ. ستاسو پټنوم نه دی کتل شوی.'),
+  so: row('Gelitaanka si ku meel gaar ah uma shaqaynayo', 'Mar kale hubi', 'Adeegga akoonnadu si ku meel gaar ah uma shaqaynayo. Mar dambe isku day. Furahaaga sirta ah lama hubin.'),
+  ha: row('Shiga ba ya samuwa na ɗan lokaci', 'Sake dubawa', 'Sabis ɗin asusu ba ya samuwa na ɗan lokaci. Sake gwadawa daga baya. Ba a duba kalmar sirrinka ba.'),
+  ru: row('Вход временно недоступен', 'Проверить снова', 'Служба учётных записей временно недоступна. Повторите попытку позже. Ваш пароль не проверялся.'),
+  uk: row('Вхід тимчасово недоступний', 'Перевірити знову', 'Служба облікових записів тимчасово недоступна. Спробуйте пізніше. Ваш пароль не перевірявся.'),
+  de: row('Die Anmeldung ist vorübergehend nicht verfügbar', 'Erneut prüfen', 'Der Kontodienst ist vorübergehend nicht verfügbar. Versuchen Sie es später erneut. Ihr Passwort wurde nicht geprüft.'),
+  es: row('El inicio de sesión no está disponible temporalmente', 'Comprobar de nuevo', 'El servicio de cuentas no está disponible temporalmente. Inténtalo más tarde. No se ha comprobado tu contraseña.'),
+  pt: row('O início de sessão está temporariamente indisponível', 'Verificar novamente', 'O serviço de contas está temporariamente indisponível. Tente mais tarde. A sua palavra-passe não foi verificada.'),
+  it: row('L’accesso è temporaneamente non disponibile', 'Verifica di nuovo', 'Il servizio account è temporaneamente non disponibile. Riprova più tardi. La password non è stata verificata.'),
+  nl: row('Aanmelden is tijdelijk niet beschikbaar', 'Opnieuw controleren', 'De accountdienst is tijdelijk niet beschikbaar. Probeer het later opnieuw. Uw wachtwoord is niet gecontroleerd.'),
+  sv: row('Inloggning är tillfälligt otillgänglig', 'Kontrollera igen', 'Kontotjänsten är tillfälligt otillgänglig. Försök igen senare. Ditt lösenord har inte kontrollerats.'),
+  no: row('Innlogging er midlertidig utilgjengelig', 'Sjekk igjen', 'Kontotjenesten er midlertidig utilgjengelig. Prøv igjen senere. Passordet ditt ble ikke kontrollert.'),
+  pl: row('Logowanie jest tymczasowo niedostępne', 'Sprawdź ponownie', 'Usługa kont jest tymczasowo niedostępna. Spróbuj ponownie później. Twoje hasło nie zostało sprawdzone.'),
+  ro: row('Autentificarea este temporar indisponibilă', 'Verifică din nou', 'Serviciul de conturi este temporar indisponibil. Încearcă mai târziu. Parola ta nu a fost verificată.'),
+  bs: row('Prijava je privremeno nedostupna', 'Provjeri ponovo', 'Usluga računa je privremeno nedostupna. Pokušajte ponovo kasnije. Vaša lozinka nije provjerena.'),
+  sq: row('Hyrja është përkohësisht e padisponueshme', 'Kontrollo sërish', 'Shërbimi i llogarive është përkohësisht i padisponueshëm. Provo më vonë. Fjalëkalimi yt nuk u kontrollua.'),
+  az: row('Giriş müvəqqəti olaraq əlçatan deyil', 'Yenidən yoxla', 'Hesab xidməti müvəqqəti olaraq əlçatan deyil. Daha sonra yenidən cəhd edin. Şifrəniz yoxlanılmadı.'),
+  uz: row('Kirish vaqtincha mavjud emas', 'Qayta tekshirish', 'Hisob xizmati vaqtincha mavjud emas. Keyinroq qayta urinib ko‘ring. Parolingiz tekshirilmadi.'),
+  kk: row('Кіру уақытша қолжетімсіз', 'Қайта тексеру', 'Есептік жазба қызметі уақытша қолжетімсіз. Кейінірек қайталап көріңіз. Құпиясөзіңіз тексерілген жоқ.'),
+  zh: row('暂时无法登录', '重新检查', '账号服务暂时不可用。请稍后重试。尚未验证您的密码。'),
+  ja: row('ログインは一時的に利用できません', '再確認', 'アカウントサービスは一時的に利用できません。後でもう一度お試しください。パスワードは確認されていません。'),
+  ko: row('로그인을 일시적으로 사용할 수 없습니다', '다시 확인', '계정 서비스를 일시적으로 사용할 수 없습니다. 나중에 다시 시도하세요. 비밀번호는 확인되지 않았습니다.'),
+}

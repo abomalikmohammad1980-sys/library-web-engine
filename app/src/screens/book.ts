@@ -14,6 +14,7 @@ import { BOOK_FORMATS, formatLabel, inferBookFormat } from '../book_format'
 import { silentSkeleton } from '../silent_skeleton'
 import { createBookIssueReportButton } from '../book_issue_report'
 import { localOriginalAsset } from '../library_card_state'
+import {downloadJpegOriginal} from '../jpeg_original_download'
 import { withExtractedEditionMetadata } from '../edition_metadata'
 import { captureReadingIdentity } from '../reading_identity_scope'
 import {wordConformityLabel} from '../word_conformity'
@@ -32,15 +33,22 @@ function renderBook(book: StoredBook): HTMLElement {
   const metadataBook = withExtractedEditionMetadata(book)
   const category = effectiveBookCategory(book)
   const sourceIsPdf = inferBookFormat(book) === 'pdf'
+  const sourceIsJpeg = inferBookFormat(book) === 'jpeg'
   const sourceIsText = inferBookFormat(book) === 'text'
   const sourceIsEpub = inferBookFormat(book) === 'epub'
+  const sourceIsHtml = inferBookFormat(book) === 'html'
   const sourceIsBok = inferBookFormat(book) === 'shamela-bok'
   const original=localOriginalAsset(book)
+  const formatBadge = original
+    ? h('button', { class: 'book-format-badge', type: 'button', title: 'تحميل الملف الأصلي', 'aria-label': `تحميل ${sourceIsBok ? 'BOK' : formatLabel(book)} الأصلي` }, sourceIsBok ? 'BOK' : formatLabel(book), icon('download',18))
+    : h('span', { class: 'book-format-badge', title: 'الملف الأصلي غير متاح للتنزيل' }, sourceIsBok ? 'BOK' : formatLabel(book))
+  const downloadSource=()=>{if(sourceIsJpeg)downloadJpegOriginal(book);else if(original)downloadBytes(original.bytes,original.fileName,original.mimeType)}
+  if (original) formatBadge.addEventListener('click', downloadSource)
   const actions = h('div', { class: 'book-profile__actions' }, h('a', { class: 'btn btn--primary', href: `#/reader/${book.id}` }, icon('book', 18), 'ابدأ القراءة'))
-  if(original){const download=h('button', { class: 'btn btn--secondary', type: 'button' }, icon('download', 17), sourceIsPdf ? 'تحميل PDF' : sourceIsText ? 'تحميل النص الأصلي' : sourceIsEpub ? 'تحميل EPUB الأصلي' : sourceIsBok ? 'تحميل BOK الأصلي' : 'تحميل Word');download.addEventListener('click',()=>downloadBytes(original.bytes,original.fileName,original.mimeType));actions.append(download)}
+  if(original){const download=h('button', { class: 'btn btn--secondary', type: 'button' }, icon('download', 17), sourceIsJpeg?'تحميل صور JPG الأصلية':sourceIsPdf ? 'تحميل PDF' : sourceIsText ? 'تحميل النص الأصلي' : sourceIsEpub ? 'تحميل EPUB الأصلي' : sourceIsHtml ? 'تحميل HTML الأصلي' : sourceIsBok ? 'تحميل BOK الأصلي' : 'تحميل Word');download.addEventListener('click',downloadSource);actions.append(download)}
   if (book.managedSource === 'published') actions.appendChild(createBookIssueReportButton(book))
-  if (sourceIsEpub || sourceIsBok) actions.appendChild(h('a', { class: 'btn btn--secondary', href: `#/reader/${book.id}?print=1` }, icon('download', 17), 'حفظ PDF منسق'))
-  if (!sourceIsPdf && !sourceIsText && !sourceIsEpub && !sourceIsBok && !needsPdfRefresh(book)) {
+  if (sourceIsEpub || sourceIsHtml || sourceIsBok) actions.appendChild(h('a', { class: 'btn btn--secondary', href: `#/reader/${book.id}?print=1` }, icon('download', 17), 'حفظ PDF منسق'))
+  if (!sourceIsPdf && !sourceIsText && !sourceIsEpub && !sourceIsHtml && !sourceIsBok && !needsPdfRefresh(book)) {
     const pdf = h('button', { class: 'btn btn--secondary', type: 'button' }, icon('download', 17), 'تحميل PDF')
     pdf.addEventListener('click', () => downloadBytes(book.pdfData!, book.pdfFileName ?? `${book.title}.pdf`, 'application/pdf'))
     actions.appendChild(pdf)
@@ -49,13 +57,13 @@ function renderBook(book: StoredBook): HTMLElement {
   actions.append(publishedBookControls(book,editorHost))
   const details = [
     ...(wordConformityLabel(book)?[datum('مطابقة صفحات Word',wordConformityLabel(book)!)]:[]),
-    datum('صيغة المصدر', h('span', { class: 'book-format-badge' }, sourceIsBok ? 'BOK' : formatLabel(book))),
+    datum('صيغة المصدر', formatBadge),
     datum('التصنيف', categoryLink(category), false),
     datum(book.authors && book.authors.length > 1 ? 'المؤلفون' : 'المؤلف', bookAuthorLinks(book), false),
     datum('الزمن', book.contemporary ? 'معاصر' : book.deathYearHijri ? `توفي سنة ${book.deathYearHijri} هـ` : 'غير موثق'),
     ...(bookVolumeCount(metadataBook) > 1 ? [datum('عدد الأجزاء', String(bookVolumeCount(metadataBook)))] : []),
     datum('عدد الصفحات', pageCount(book) > 0 ? `${pageCount(book)}${wordPageMaximum(book) > pageCount(book) ? ` · ترقيم Word حتى ${wordPageMaximum(book)}` : ''}` : 'غير متاح'),
-    datum('البحث النصي', BOOK_FORMATS[inferBookFormat(book)].capabilities.searchable === 'when-text-layer' ? 'متاح إذا احتوى PDF طبقة نصية' : 'متاح'),
+    datum('البحث النصي', sourceIsJpeg?'غير متاح في الصور':BOOK_FORMATS[inferBookFormat(book)].capabilities.searchable === 'when-text-layer' ? 'متاح إذا احتوى PDF طبقة نصية' : 'متاح'),
     datum('نسخة PDF', needsPdfRefresh(book) ? 'لم تُنشأ بعد' : 'متاحة للعرض والتنزيل'),
     ...(metadataBook.publisher ? [datum('الناشر', metadataBook.publisher, false)] : []),
     ...(metadataBook.edition ? [datum('الطبعة', metadataBook.edition, false)] : []),

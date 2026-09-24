@@ -2,12 +2,13 @@ import { currentAccountClaims, type AccountClaims } from './account_authority'
 import { submitAccountBook } from './account_service'
 import { getBook, type StoredBook } from './engine/library_store'
 import {createWordBundleUpload} from './word_bundle_transfer'
+import {centralBookUploadInput} from './central_book_upload'
 
 const QUEUE_KEY = 'alkhizana:account-book-mirror:v1'
 const MAX_QUEUE_ITEMS = 500
 export type AccountBookMirrorResult = { kind: 'not-authenticated' } | { kind: 'session-changed' } | { kind: 'uploaded'; accountBookId: string } | { kind: 'local-only'; error: unknown }
-interface AccountBookMirrorInput { localBookId: string; sourcePartNumber?: number; file: File; title: string; author: string; category?: string; wordCompanion?:boolean }
-interface PendingMirror { subject: string; localBookId: string; sourcePartNumber?: number; title: string; author: string; category?: string; wordCompanion?:boolean }
+interface AccountBookMirrorInput { localBookId: string; sourcePartNumber?: number; file: File; title: string; author: string; category?: string; wordCompanion?:boolean;imageBook?:boolean }
+interface PendingMirror { subject: string; localBookId: string; sourcePartNumber?: number; title: string; author: string; category?: string; wordCompanion?:boolean; imageBook?:boolean }
 interface MirrorDependencies { claims?: () => AccountClaims | null; submit?: typeof submitAccountBook; storage?: Pick<Storage, 'getItem' | 'setItem'>; loadBook?: (id: string) => Promise<StoredBook | undefined>; prepareBundle?:typeof createWordBundleUpload }
 type RetryResult = { uploaded: number; remaining: number }
 const absentStorage = {}
@@ -18,10 +19,12 @@ export async function mirrorLocallySavedBookToAccount(input: AccountBookMirrorIn
   const claims = (dependencies.claims ?? currentAccountClaims)()
   if (!claims) return { kind: 'not-authenticated' }
   // Persist before starting network work: a reload can interrupt the first attempt.
-  addPending({ subject: claims.subject, localBookId: input.localBookId, ...(input.sourcePartNumber ? { sourcePartNumber: input.sourcePartNumber } : {}), title: input.title, author: input.author, ...(input.category ? { category: input.category } : {}),...(input.wordCompanion?{wordCompanion:true}:{}) }, targetStorage(dependencies))
+  addPending({ subject: claims.subject, localBookId: input.localBookId, ...(input.sourcePartNumber ? { sourcePartNumber: input.sourcePartNumber } : {}), title: input.title, author: input.author, ...(input.category ? { category: input.category } : {}),...(input.wordCompanion?{wordCompanion:true}:{}),...(input.imageBook?{imageBook:true}:{}) }, targetStorage(dependencies))
   try {
-    const { localBookId: _localBookId, sourcePartNumber: _sourcePartNumber, wordCompanion, ...upload } = input
-    const assets=wordCompanion?await companionAssets(await (dependencies.loadBook??getBook)(input.localBookId),dependencies):{}
+    const { localBookId: _localBookId, sourcePartNumber: _sourcePartNumber, wordCompanion,imageBook, ...upload } = input
+    const needsStored=Boolean(imageBook||wordCompanion||/\.html?$/iu.test(input.file.name))
+    const stored=needsStored?await (dependencies.loadBook??getBook)(input.localBookId):undefined
+    const assets=imageBook?imageAssets(stored):wordCompanion?await companionAssets(stored,dependencies):htmlResources(stored)
     assertMirrorSession(dependencies,claims)
     const uploaded = await (dependencies.submit ?? submitAccountBook)({...upload,...assets})
     removePending(claims.subject, input.localBookId, input.sourcePartNumber, targetStorage(dependencies))
@@ -67,7 +70,7 @@ async function retryAccountQueue(dependencies: MirrorDependencies, claims: Accou
     const bytes = part ? (part.sourceData ?? part.data) : (book.sourceData ?? book.data)
     const file = new File([new Uint8Array(bytes).buffer], part?.fileName ?? book.fileName, { type: part?.sourceMimeType ?? part?.mimeType ?? book.sourceMimeType ?? book.mimeType })
     try {
-      const assets=item.wordCompanion||book.pdfEngine==='microsoft-word-companion-v1'?await companionAssets(book,dependencies):{}
+      const assets=item.imageBook||book.sourceFormat==='jpeg'?imageAssets(book):item.wordCompanion||book.pdfEngine==='microsoft-word-companion-v1'?await companionAssets(book,dependencies):htmlResources(book)
       assertMirrorSession(dependencies,claims)
       await (dependencies.submit ?? submitAccountBook)({ file, title: item.title, author: item.author, ...(item.category ? { category: item.category } : {}),...assets })
       removePending(item.subject, item.localBookId, item.sourcePartNumber, storage)
@@ -82,6 +85,14 @@ async function retryAccountQueue(dependencies: MirrorDependencies, claims: Accou
 function sameMirrorSession(dependencies:MirrorDependencies,expected:AccountClaims):boolean{
  const active=(dependencies.claims??currentAccountClaims)()
  return Boolean(active&&active.subject===expected.subject&&active.sessionId===expected.sessionId)
+}
+function imageAssets(book:StoredBook|undefined){
+ if(!book||book.sourceFormat!=='jpeg'||!book.pdfData?.length||book.pdfStatus!=='ready')throw Error('jpeg_reading_pdf_missing')
+ return centralBookUploadInput({localBookId:book.id,metadata:book,files:[],book})
+}
+function htmlResources(book:StoredBook|undefined){
+ if(book?.sourceFormat!=='html'||!book.htmlAssets?.length)return {}
+ return {htmlResources:book.htmlAssets.map(asset=>({path:asset.path,file:new File([Uint8Array.from(asset.data)],asset.path.split('/').at(-1)!,{type:asset.mimeType})}))}
 }
 function assertMirrorSession(dependencies:MirrorDependencies,expected:AccountClaims):void{
  if(!sameMirrorSession(dependencies,expected))throw Error('account_session_changed')

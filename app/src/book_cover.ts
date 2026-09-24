@@ -1,9 +1,7 @@
-import { unzipSync } from 'fflate'
-import { rasterPayload } from '@engine/ooxml-dom'
+import {backgroundDataInteractionAllowed} from './background_data_scheduler'
+import {whenNearViewport} from './near_viewport'
 import { h } from './ui'
 import type { StoredBook } from './engine/library_store'
-export { discoverWordCover, selectCoverCandidate } from '@library/word-cover'
-import { discoverWordCover } from '@library/word-cover'
 import { createTrackedObjectURL, revokeTrackedObjectURL, routeObserver, routeEventListener, routeAnimationFrame, captureRouteResourceScope, type ResourceScope } from './resource_lifecycle'
 import { fitCoverTextBatch, type CoverFitTarget } from './cover_text_fit'
 import { brandMark } from './brand'
@@ -51,8 +49,13 @@ const coverFitQueues = new WeakMap<ResourceScope, Set<HTMLElement>>()
 /** Measure the actual shaped text after layout/font loading, not character count. */
 function fitCoverText(cover: HTMLElement): void {
   const scope = captureRouteResourceScope()
+  // A hidden reader-info cover must not synchronously measure the entire
+  // (potentially 10k-page) reading stream before the first paint.
+  let visible = typeof IntersectionObserver === 'undefined'
+  const allowed=()=>backgroundDataInteractionAllowed()||Boolean(cover.closest('.quick-book-import'))
   const schedule = () => {
-    if (scope.disposed) return
+    if(!allowed())return
+    if (scope.disposed || !visible) return
     let queue = coverFitQueues.get(scope)
     if (!queue) {
       queue = new Set()
@@ -65,6 +68,7 @@ function fitCoverText(cover: HTMLElement): void {
     routeAnimationFrame(() => {
       const covers = [...queue!]
       queue!.clear()
+      if(!allowed())return
       const targets: CoverFitTarget[] = []
       for (const item of covers) {
         if (!item.isConnected || !item.clientWidth) continue
@@ -84,6 +88,12 @@ function fitCoverText(cover: HTMLElement): void {
       fitCoverTextBatch(targets)
     }, scope)
   }
+  if (typeof IntersectionObserver !== 'undefined') routeObserver(new IntersectionObserver(entries => {
+    const next = entries.some(entry => entry.isIntersecting)
+    if (next && !visible) { visible = true; schedule() }
+    else visible = next
+  }, { rootMargin: '160px' }), scope).observe(cover)
+  routeEventListener(window,'alkhizana:import-activity',schedule,undefined,scope)
   if (typeof ResizeObserver !== 'undefined') routeObserver(new ResizeObserver(schedule)).observe(cover)
   routeObserver(new MutationObserver(schedule)).observe(cover, {childList:true,subtree:true,characterData:true})
   void document.fonts?.ready.then(schedule)
@@ -116,11 +126,17 @@ export function bookCover(book: Pick<StoredBook, 'id' | 'title' | 'author' | 'da
   const template = book.coverTemplate ?? deterministicCoverTemplate(`${book.title}|${book.category ?? ''}`)
   const palette = deterministicCoverPalette(book.id)
   const cover = h('span', { class: `${className} book-cover`, dataset: { coverTemplate: String(template), coverPalette: String(palette) }, style: `--cover-hue:${book.coverHue ?? deterministicCoverHue(`${book.title}|${book.category ?? ''}`)};--cover-fit:${coverTitleFit(book.title)};${paletteStyle(palette)}` })
-  const url = storedCoverUrl(book)
+  const url = customCoverUrl(book)
   if (url) cover.appendChild(h('img', { src: url, alt: '' }))
   else {
     cover.append(h('span', { class: 'book-cover__title', title: book.title, dataset:{noTranslate:''} }, book.title), brandMark('book-cover__brand brand-mark'), h('span', { class: 'book-cover__author', title: book.author || 'مؤلف غير معروف', ...(book.author?{dataset:{noTranslate:''}}:{}) }, book.author || 'مؤلف غير معروف'))
     fitCoverText(cover)
+    if (book.data?.length) {
+      const scope=captureRouteResourceScope()
+      whenNearViewport(cover,()=>{
+        void storedCoverUrl(book).then(url=>{if(url&&!scope.disposed&&cover.isConnected)cover.replaceChildren(h('img',{src:url,alt:''}))}).catch(()=>undefined)
+      },scope)
+    }
   }
   return cover
 }
@@ -148,34 +164,27 @@ export function previewCover(title: string, author: string, hue: number, real?: 
   } }
 }
 
-function storedCoverUrl(book: Pick<StoredBook, 'data' | 'originalSha256' | 'coverMediaPath' | 'customCoverData' | 'customCoverMimeType'>): string | undefined {
+function customCoverUrl(book: Pick<StoredBook, 'customCoverData' | 'customCoverMimeType' | 'originalSha256'>): string | undefined {
   if (book.customCoverData?.length) {
     const customKey = `${book.originalSha256}:custom-cover`
     const cached = coverUrlCache.get(customKey)
     if (cached) return cached
     return cacheCoverUrl(customKey, createTrackedObjectURL(new Blob([new Uint8Array(book.customCoverData)], { type: book.customCoverMimeType || 'image/jpeg' })))
   }
-  if (!book.coverMediaPath) {
-    const fallbackKey = `${book.originalSha256}:auto-cover`
-    const cachedAuto = coverUrlCache.get(fallbackKey)
-    if (cachedAuto) return cachedAuto
-    const discovered = discoverWordCover(book.data)
-    if (!discovered) return undefined
-    const url = createTrackedObjectURL(new Blob([new Uint8Array(discovered.bytes)], { type: discovered.mimeType }))
-    return cacheCoverUrl(fallbackKey, url)
-  }
-  const key = `${book.originalSha256}:${book.coverMediaPath}`
-  const cached = coverUrlCache.get(key)
-  if (cached) return cached
-  try {
-    const files = unzipSync(book.data)
-    const bytes = files[`word/${book.coverMediaPath}`]
-    if (!bytes) return undefined
-    const payload = rasterPayload(bytes)
-    if (!payload) return undefined
-    const url = createTrackedObjectURL(new Blob([new Uint8Array(payload.bytes)], { type: payload.mime }))
-    return cacheCoverUrl(key, url)
-  } catch { return undefined }
+  return undefined
+}
+
+async function storedCoverUrl(book: Pick<StoredBook, 'data' | 'originalSha256' | 'coverMediaPath'>): Promise<string|undefined> {
+  const key=`${book.originalSha256}:${book.coverMediaPath??'auto-cover'}`
+  const cached=coverUrlCache.get(key)
+  if(cached)return cached
+  const {wordCoverPayload}=await import('./word_cover_payload')
+  // A concurrent card may have decoded the same cover while the module loaded.
+  const ready=coverUrlCache.get(key)
+  if(ready)return ready
+  const payload=wordCoverPayload(book.data,book.coverMediaPath)
+  if(!payload)return undefined
+  return cacheCoverUrl(key,createTrackedObjectURL(new Blob([new Uint8Array(payload.bytes)],{type:payload.mimeType})))
 }
 
 function imageMime(path: string): string {

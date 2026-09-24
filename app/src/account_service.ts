@@ -70,7 +70,7 @@ export interface AccountBookSubmission {id:string;title:string;author:string;cat
 export interface AccountAdminStats {accountsTotal:number;booksTotal:number;pending:number;approved:number;rejected:number;publicBooks:number;privateBooks:number;deviceLimitRejections24h?:number}
 export interface AccountAdminMember {reportsTotal?:number;accountId:string;displayName:string;email:string;booksTotal:number;pending:number;approved:number;rejected:number;role?:'user'|'admin'|'editor'|'super-admin';roleVersion?:number;canManageRoles?:boolean}
 export interface AccountAdminAuditEvent {id:string;kind:'review'|'central';bookId:string;actorName:string;action:'publish'|'private'|'reject'|'update'|'delete'|'restore';createdAt:string}
-export const ACCOUNT_BOOK_ACCEPT='.docx,.doc,.rtf,.pdf,.epub,.bok,.txt,.md'
+export const ACCOUNT_BOOK_ACCEPT='.docx,.doc,.rtf,.pdf,.epub,.bok,.txt,.md,.html,.htm,.jpg,.jpeg'
 // Keep this boundary identical to the Pages upload function. Rejecting it in
 // the browser avoids transferring tens of MiB only to receive a late 400.
 export const ACCOUNT_BOOK_MAX_BYTES=64*1024*1024
@@ -134,12 +134,13 @@ export const createCentralBook=async(input:import('./central_book_upload').Centr
  const identity=currentAccountClaims();if(identity?.role!=='editor'&&identity?.role!=='super-admin')throw Error('account_permission_denied')
  validateAccountBookInput(input)
  const body=new FormData();body.set('file',input.file);body.set('title',input.title.trim());body.set('author',input.author.trim());if(input.category?.trim())body.set('category',input.category.trim())
- const files=[input.file,...(input.volumeFiles??[]),...(input.pdfFile?[input.pdfFile]:[]),...(input.coverFile?[input.coverFile]:[]),...(input.wordMapFile?[input.wordMapFile]:[])]
- if((input.volumeFiles?.length??0)>20||files.reduce((sum,file)=>sum+file.size,0)>64*1024*1024)throw Error('account_book_file_invalid')
+ const files=[input.file,...(input.volumeFiles??[]),...(input.pdfFile?[input.pdfFile]:[]),...(input.coverFile?[input.coverFile]:[]),...(input.wordMapFile?[input.wordMapFile]:[]),...(input.htmlResources??[]).map(a=>a.file)]
+ if((input.volumeFiles?.length??0)>(/\.jpe?g$/i.test(input.file.name)?199:20)||files.reduce((sum,file)=>sum+file.size,0)>64*1024*1024)throw Error('account_book_file_invalid')
  if(input.metadata)body.set('metadata',JSON.stringify(input.metadata))
  input.volumeFiles?.forEach((file,index)=>body.set(`volumeFile:${index+1}`,file))
  if(input.pdfFile)body.set('pdfFile',input.pdfFile)
  if(input.coverFile)body.set('coverFile',input.coverFile)
+ appendHtmlResources(body,input)
  appendWordBundle(body,input)
  const value=await api<unknown>('/api/admin/library-books',{method:'POST',body})
  const active=currentAccountClaims();if(active?.subject!==identity.subject||active.sessionId!==identity.sessionId)throw Error('account_session_invalid')
@@ -149,14 +150,28 @@ export const createCentralBook=async(input:import('./central_book_upload').Centr
  return row as {id:string;visibility:'public';reviewStatus:'approved';reviewVersion:number}
 }
 function appendWordBundle(body:FormData,input:import('./central_book_upload').CentralBookUploadInput):void{
+ const imageSource=/\.jpe?g$/i.test(input.file.name),sources=[input.file,...(input.volumeFiles??[])]
+ const all=[...sources,...(input.pdfFile?[input.pdfFile]:[]),...(input.coverFile?[input.coverFile]:[]),...(input.wordMapFile?[input.wordMapFile]:[]),...(input.htmlResources??[]).map(a=>a.file)]
+ if((input.volumeFiles?.length??0)>(imageSource?199:20)||all.reduce((sum,file)=>sum+file.size,0)>64*1024*1024)throw Error('account_book_file_invalid')
+ if(imageSource&&(!input.pdfFile||sources.some(file=>!/\.jpe?g$/i.test(file.name))||input.wordBundle||input.wordMapFile))throw Error('account_book_file_invalid')
  if(input.metadata)body.set('metadata',JSON.stringify(input.metadata))
  input.volumeFiles?.forEach((file,index)=>body.set(`volumeFile:${index+1}`,file))
  if(input.coverFile)body.set('coverFile',input.coverFile)
  if(input.pdfFile)body.set('pdfFile',input.pdfFile)
+ appendHtmlResources(body,input)
  if(!input.wordBundle&&!input.wordMapFile)return
  if(!input.wordBundle||!input.wordMapFile||!input.pdfFile||input.volumeFiles?.length||input.file.size+input.pdfFile.size+input.wordMapFile.size+(input.coverFile?.size??0)>64*1024*1024)throw Error('invalid_word_bundle')
  body.set('pdfFile',input.pdfFile);body.set('wordMapFile',input.wordMapFile);body.set('wordBundle',JSON.stringify(input.wordBundle))
  if(input.metadata)body.set('metadata',JSON.stringify(input.metadata))
+}
+function appendHtmlResources(body:FormData,input:import('./central_book_upload').CentralBookUploadInput):void{
+ const resources=input.htmlResources??[]
+ if(resources.length>100||resources.length&&!/\.html?$/iu.test(input.file.name)||resources.reduce((n,a)=>n+a.file.size,0)>24*1024*1024)throw Error('account_book_file_invalid')
+ const paths=new Set<string>()
+ resources.forEach(({path,file},index)=>{
+  if(!path||path.length>300||/[\\?#:<>&\u0000-\u001f\u007f]/u.test(path)||path.startsWith('/')||path.split('/').some(segment=>!segment||segment==='.'||segment==='..')||paths.has(path)||file.size<1||file.size>10*1024*1024)throw Error('account_book_file_invalid')
+  paths.add(path);body.set(`htmlResource:${index+1}`,file);body.set(`htmlPath:${index+1}`,path)
+ })
 }
 export const accountBookReviewFilePath=(id:string):string=>{requireAccountPermission(currentAccountClaims(),'book:review-submissions');const cleanId=id.trim();if(!cleanId||cleanId.length>200||cleanId!==id)throw new Error('account_book_id_invalid');return `/api/account/books/${encodeURIComponent(cleanId)}/file`}
 export const deleteAccountBook=async(id:string)=>{requireAuthenticatedAccount();const cleanId=id.trim();if(!cleanId||cleanId.length>200)throw new Error('account_book_id_invalid');const result=await api<unknown>(`/api/account/books/${encodeURIComponent(cleanId)}`,{method:'DELETE'});if(!result||typeof result!=='object'||(result as {id?:unknown}).id!==cleanId||(result as {deleted?:unknown}).deleted!==true)throw new Error('account_response_invalid');return result as{id:string;deleted:true}}

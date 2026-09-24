@@ -1,0 +1,18 @@
+import { describe, expect, it } from 'vitest'
+import { readFileSync } from 'node:fs'
+const read=(name:string)=>readFileSync(new URL(name,import.meta.url),'utf8')
+
+describe('global header book add',()=>{
+  it('offers HTML and both JPEG extensions without offering download-only archives as books',()=>{
+    const accept=read('./header_book_add.ts').match(/accept: '([^']+)'/)?.[1]?.split(',')??[]
+    for(const extension of ['.html','.htm','.jpg','.jpeg'])expect(accept).toContain(extension)
+    expect(accept).not.toContain('.zip');expect(accept).not.toContain('.rar')
+  })
+  it('is ordered after languages and before settings on every shell page',()=>{const shell=read('./shell.ts'),language=shell.indexOf("translationButton('app-header__translation')"),add=shell.indexOf('headerBookAddControl()'),settings=shell.indexOf("class: 'app-header__settings'");expect(language).toBeLessThan(add);expect(add).toBeLessThan(settings)})
+  it('opens native pickers without navigating or eagerly loading the importer',()=>{const source=read('./header_book_add.ts');expect(source).not.toContain('#/library?import=');expect(source.match(/role: 'menuitem'/g)).toHaveLength(2);expect(source).toContain('fileInput.click()');expect(source).toContain('folderInput.click()');expect(source).toContain("import {openQuickBookImport} from './quick_book_import'");expect(source).not.toContain("from './book_import'");expect(source).not.toContain('header-book-add__label')})
+  it('renders the two choices as a small two-column menu on desktop and mobile with no legacy dialog shell',()=>{const css=read('./styles/components.css');expect(css).toMatch(/\.header-book-add__menu \{[^}]*display: grid;[^}]*grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/s);expect(css).toContain('.header-book-add__menu[hidden] { display: none; }');expect(css).not.toContain('.header-book-add__dialog')})
+  it('routes each choice to the complete importer journey and focuses its matching action',()=>{const library=read('./screens/library.ts');expect(library.replace(/\s/g,'')).toContain("importIntent==='book'||importIntent==='folder'");expect(library.replace(/\s/g,'')).toContain("importIntent==='folder'?'.import-manager__folder':'.import-manager__primary'");expect(library.replace(/\s/g,'')).toContain("manager.scrollIntoView({block:'center'})")})
+  it('supports menu aria, keyboard wrap, escape and outside dismissal',()=>{const source=read('./header_book_add.ts');for(const token of ["aria-haspopup', 'menu'","aria-expanded', 'false'","event.key === 'Escape'","event.key === 'ArrowDown'","event.key !== 'ArrowUp'","document.addEventListener('pointerdown'","trigger.focus()"] )expect(source).toContain(token)})
+  it('reuses library staging in an accessible dialog and restores focus',()=>{const source=read('./quick_book_import.ts');expect(source).toContain("await import('./book_import')");expect(source.indexOf('await ensureWordUploadSetup')).toBeLessThan(source.indexOf("await import('./book_import')"));expect(source).toContain('initialFiles:files');expect(source).toContain('dialog.showModal()');expect(source).toContain('returnFocus.focus()');expect(source).not.toContain('location.hash');const importer=read('./book_import.ts');expect(importer).toContain('void importSelected(options.initialFiles!)')})
+  it('routes to the full importer and focuses the requested book or folder action',()=>{const library=read('./screens/library.ts');expect(library).toContain("const importIntent = query.get('import')");expect(library.replace(/\s/g,'')).toContain("importIntent==='book'||importIntent==='folder'");expect(library.replace(/\s/g,'')).toContain("'.import-manager__folder':'.import-manager__primary'");expect(library.replace(/\s/g,'')).toContain("manager.scrollIntoView({block:'center'})")})
+})

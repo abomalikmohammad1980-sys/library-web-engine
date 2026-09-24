@@ -27,18 +27,30 @@ export function cleanSearchText(value: string): CleanSearchText {
 export interface SearchTextSegment { text: string; footnote: boolean; separator?: boolean; start: number; end: number }
 
 const SEARCH_FOOTNOTE_SEPARATOR = /(?:^|\n)\s*[_ـ]{3,}\s*(?:\n|$)/mu
-const SEARCH_FOOTNOTE_REFERENCE = /([\[(])[\u00a0 \t]*[0-9٠-٩۰-۹]+[\u00a0 \t]*([\])])/gmu
+const SEARCH_FOOTNOTE_REFERENCE = /([\[(])[\u00a0 \t]*(?:[0-9٠-٩۰-۹]+|[*⁎∗]{1,4})[\u00a0 \t]*([\])])/gmu
 // بعض نسخ الشاملة تلصق أول حرف من الحاشية بالقوس: «(٣)هذا…» بينما
 // الحواشي التالية فيها مسافة. اشتراط المسافة كان يسقط الأولى، فيوضع الفاصل
 // قبل (٤). يكفي كون العلامة في أول السطر لتمييز مدخل الحاشية عن إحالة المتن.
-const SEARCH_FOOTNOTE_ENTRY = /(?:^|\n)\s*[\[(]([0-9٠-٩۰-۹]+)[\])](?=[\u00a0 \t]*(?:\S|(?:\r?\n)[\u00a0 \t]*\S))/gmu
+const SEARCH_FOOTNOTE_ENTRY = /(?:^|\n)\s*[\[(]([0-9٠-٩۰-۹]+|[*⁎∗]{1,4})[\])](?=[\u00a0 \t]*(?:\S|(?:\r?\n)[\u00a0 \t]*\S))/gmu
 
 function searchFootnoteStructure(text:string):{boundary:number;end:number;ids:Set<string>;explicit:boolean}|undefined{
   const explicit=SEARCH_FOOTNOTE_SEPARATOR.exec(text),from=explicit?explicit.index:0,entries=[...text.matchAll(SEARCH_FOOTNOTE_ENTRY)].filter(match=>(match.index??0)>=from)
-  const inferred=!explicit&&entries.length>=2?entries[0]:undefined,boundary=explicit?.index??inferred?.index
+  // استمرار حاشية من الصفحة السابقة: لا تكفي علامة = وحدها؛ نطلب فراغ
+  // الفصل ثم مداخل تعليقات بأرقام أحاديث موجودة بالفعل في المتن قبلها.
+  const continuation=!explicit?[...text.matchAll(/\n[\t ]*\n[\t ]*=[\t ]+(?=\S)/gu)].find(match=>{
+    const before=text.slice(0,match.index),after=text.slice(match.index!+match[0].length)
+    const bodyIds=new Set([...before.matchAll(/(?:^|\n)[\t ]*([0-9٠-٩۰-۹]+)[\t ]*[-–]/gu)].map(entry=>entry[1]))
+    return [...after.matchAll(/(?:^|\n)[\t ]*([0-9٠-٩۰-۹]+)[\t ]*[-–]/gu)].some(entry=>bodyIds.has(entry[1]))
+  }):undefined
+  const inferred=!explicit&&entries.length>=2?entries[0]:undefined
+  // The entry regex includes its leading newline. Keep that newline in the
+  // body and place the inferred divider immediately before the first marker.
+  const inferredStart=inferred?(inferred.index??0)+Math.max(0,inferred[0].search(/[\[(]/u)):undefined
+  const boundary=explicit?.index??continuation?.index??inferredStart
   if(boundary==null)return undefined
-  const end=explicit?explicit.index+explicit[0].length:boundary,ids=new Set(entries.filter(match=>(match.index??0)>=boundary).map(match=>match[1]!).filter(Boolean))
-  return ids.size?{boundary,end,ids,explicit:Boolean(explicit)}:undefined
+  const end=explicit?explicit.index+explicit[0].length:continuation?continuation.index!+continuation[0].indexOf('='):boundary
+  const ids=new Set(entries.filter(match=>(match.index??0)+Math.max(0,match[0].search(/[\[(]/u))>=boundary).map(match=>match[1]!).filter(Boolean))
+  return {boundary,end,ids,explicit:Boolean(explicit)}
 }
 
 function isQuranVerseNumber(text:string,start:number,end:number):boolean{
@@ -52,16 +64,26 @@ function isQuranVerseNumber(text:string,start:number,end:number):boolean{
  */
 export function searchCopyText(value: string): string {
   const structure=searchFootnoteStructure(value),body=structure?value.slice(0,structure.boundary):value
-  return body.replace(SEARCH_FOOTNOTE_REFERENCE,(marker,_open,_close,offset:number)=>structure?.ids.has(marker.replace(/[^0-9٠-٩۰-۹]/gu,''))&&!isQuranVerseNumber(body,offset,offset+marker.length)?'':marker).replace(/[ \t]+\n/gu, '\n').replace(/[ \t]{2,}/gu, ' ').trim()
+  return body.replace(SEARCH_FOOTNOTE_REFERENCE,(marker,_open,_close,offset:number)=>structure?.ids.has(marker.replace(/[^0-9٠-٩۰-۹*⁎∗]/gu,''))&&!isQuranVerseNumber(body,offset,offset+marker.length)?'':marker).replace(/[ \t]+\n/gu, '\n').replace(/[ \t]{2,}/gu, ' ').trim()
 }
 
 /** تقسيم بصري نقي؛ جمع النصوص يعيد النص نفسه حرفيًا ليستقيم النسخ. */
 export function searchTextSegments(text: string): SearchTextSegment[] {
-  const structure=searchFootnoteStructure(text),segments: SearchTextSegment[] = [], pattern = /([\[(])([0-9٠-٩۰-۹]+)([\])])|(?:^|\n)\s*[_ـ]{3,}\s*(?:\n|$)/gmu
+  const structure=searchFootnoteStructure(text),segments: SearchTextSegment[] = [], pattern = /([\[(])([0-9٠-٩۰-۹]+|[*⁎∗]{1,4})([\])])|(?:^|\n)\s*[_ـ]{3,}\s*(?:\n|$)/gmu
   let cursor = 0,inferredSeparatorAdded=false
+  const plain=(start:number,end:number)=>{
+    if(structure&&!structure.explicit&&!inferredSeparatorAdded&&structure.boundary>=start&&structure.boundary<=end){
+      const boundary=structure.boundary
+      if(boundary>start)segments.push({text:text.slice(start,boundary),footnote:false,start,end:boundary})
+      const separatorEnd=Math.min(end,structure.end)
+      segments.push({text:text.slice(boundary,separatorEnd),footnote:false,separator:true,start:boundary,end:separatorEnd});inferredSeparatorAdded=true
+      start=separatorEnd
+    }
+    if(end>start)segments.push({text:text.slice(start,end),footnote:false,start,end})
+  }
   for (const match of text.matchAll(pattern)) {
     const start = match.index ?? 0
-    if (start > cursor) segments.push({ text: text.slice(cursor, start), footnote: false, start: cursor, end: start })
+    plain(cursor,start)
     if(structure&&!structure.explicit&&!inferredSeparatorAdded&&start>=structure.boundary){segments.push({text:'',footnote:false,separator:true,start,end:start});inferredSeparatorAdded=true}
     const footnoteMarker=Boolean(match[1]&&structure?.ids.has(match[2]!)&&(start>=structure.boundary||!isQuranVerseNumber(text,start,start+match[0].length)))
     if (footnoteMarker) {
@@ -72,7 +94,7 @@ export function searchTextSegments(text: string): SearchTextSegment[] {
     } else segments.push({text:match[0],footnote:false,start,end:start+match[0].length})
     cursor = start + match[0].length
   }
-  if (cursor < text.length) segments.push({ text: text.slice(cursor), footnote: false, start: cursor, end: text.length })
+  plain(cursor,text.length)
   return segments
 }
 

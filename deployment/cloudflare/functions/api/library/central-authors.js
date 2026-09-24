@@ -13,8 +13,18 @@ export async function onRequestGet(context){
   }
   const page=Number(params.get('page')??0),limit=Number(params.get('limit')??100),rawQuery=params.get('q')??'',query=rawQuery.trim()
   if([...params.keys()].some(k=>!['page','limit','q'].includes(k)||params.getAll(k).length!==1)||rawQuery.length>300||/[\u0000-\u001f\u007f]/.test(rawQuery)||!Number.isSafeInteger(page)||page<0||page>10000||!Number.isSafeInteger(limit)||limit<1||limit>100)return json({error:'invalid_central_author_page'},400)
+  // This is a public, identity-independent list. Repeated page and suggestion
+  // requests otherwise scan D1 again; keep exact author lookups uncached so
+  // withdrawn or edited biographies are checked on every request.
+  const cache=globalThis.caches?.default
+  const cacheUrl=new URL('/api/library/central-authors',new URL(context.request.url).origin)
+  cacheUrl.searchParams.set('page',String(page));cacheUrl.searchParams.set('limit',String(limit));if(query)cacheUrl.searchParams.set('q',query)
+  const cacheKey=new Request(cacheUrl)
+  if(cache)try{const cached=await cache.match(cacheKey);if(cached)return cached}catch{/* D1 remains authoritative when the edge cache fails. */}
   const result=await context.env.VISITORS_DB.prepare(`SELECT ${summary} FROM central_authors WHERE hidden_at IS NULL AND (?3='' OR instr(display_name,?3)>0) ORDER BY author_id LIMIT ?1 OFFSET ?2`).bind(limit+1,page*limit,query).all(),rows=result.results??[]
-  return json({authors:rows.slice(0,limit).map(map),page,hasMore:rows.length>limit},200,{'cache-control':'no-store'})
+  const response=json({authors:rows.slice(0,limit).map(map),page,hasMore:rows.length>limit},200,{'cache-control':'public, max-age=30, must-revalidate'})
+  if(cache){const write=cache.put(cacheKey,response.clone()).catch(()=>undefined);if(context.waitUntil)context.waitUntil(write);else await write}
+  return response
  }catch{return json({error:'central_authors_unavailable'},503)}
 }
 export const onRequest=()=>json({error:'method_not_allowed'},405,{allow:'GET'})

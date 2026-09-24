@@ -257,6 +257,7 @@ export function publishedCatalogueEntry(work: PublishedWork): StoredBook {
     coverHue:deterministicCoverHue(work.title),coverTemplate:deterministicCoverTemplate(work.title),...work.metadata}
 }
 
+import {waitForBackgroundDataInteraction} from './background_data_scheduler'
 export async function ensurePublishedLibrarySeeded(): Promise<{ installed: number; failed: number }> {
   let manifest: PublishedLibraryManifest
   try {
@@ -265,8 +266,10 @@ export async function ensurePublishedLibrarySeeded(): Promise<{ installed: numbe
     manifest = await response.json() as PublishedLibraryManifest
   } catch { return { installed: 0, failed: 0 } }
   let installed = 0, failed = 0
+  await waitForBackgroundDataInteraction()
   await retireManifestTestBooks(manifest)
   for (const work of activePublishedWorks(manifest)) {
+    await waitForBackgroundDataInteraction()
     const existing = await getBook(work.id)
     // Never replace a downloaded copy or repeatedly rewrite a catalogue stub.
     // Verification and refreshing source bytes belong to the explicit reader path.
@@ -279,15 +282,15 @@ export async function ensurePublishedLibrarySeeded(): Promise<{ installed: numbe
 
 /** يضمن كتابًا منشورًا بعينه قبل فتح رابطه، بدل انتظار غرس المكتبة كلها. */
 const pendingPublishedOpens=new Map<string,Promise<StoredBook|undefined>>()
-export function ensurePublishedWorkSeeded(id:string):Promise<StoredBook|undefined>{
+export function ensurePublishedWorkSeeded(id:string,onPreview?:(book:StoredBook)=>void,requestedPageIndex=0):Promise<StoredBook|undefined>{
   const pending=pendingPublishedOpens.get(id);if(pending)return pending
-  const task=loadPublishedWorkForOpen(id).finally(()=>{if(pendingPublishedOpens.get(id)===task)pendingPublishedOpens.delete(id)})
+  const task=loadPublishedWorkForOpen(id,onPreview,requestedPageIndex).finally(()=>{if(pendingPublishedOpens.get(id)===task)pendingPublishedOpens.delete(id)})
   pendingPublishedOpens.set(id,task);return task
 }
-async function loadPublishedWorkForOpen(id: string): Promise<StoredBook | undefined> {
+async function loadPublishedWorkForOpen(id: string,onPreview?:(book:StoredBook)=>void,requestedPageIndex=0): Promise<StoredBook | undefined> {
   const existing = await getBook(id)
   if (/^(?:shamela-\d+|410\d+)$/u.test(id)) {
-    return ensureShamelaBookReady(id)
+    return ensureShamelaBookReady(id,onPreview,requestedPageIndex)
   }
   let manifest: PublishedLibraryManifest
   try { manifest=await fetchPublishedManifestForReader(id) } catch(error) {

@@ -1,3 +1,4 @@
+import {cachedNumberFormat} from './ui_number_format'
 /** Explicit source-ID bindings: never infer a template from a book/user string. */
 import {EN_ACCOUNT_TEMPLATES_REVIEWED} from './i18n/en.account_templates.reviewed'
 import {EN_READING_TEMPLATES_REVIEWED} from './i18n/en.reading_templates.reviewed'
@@ -60,11 +61,11 @@ function fillTemplate(text:string,parameters:Parameters,language:string):string{
   if(typeof value==='object'){
    if(value.type==='ui-label')return language==='ar'?value.source:uiDictionary.translate(value.source,language)??value.source
    if(value.type==='ui-region'){try{return new Intl.DisplayNames([language],{type:'region'}).of(value.code)??value.code}catch{return value.code}}
-   if(value.type==='ui-number')return Number.isFinite(value.value)?new Intl.NumberFormat(language,value.options).format(value.value):String(value.value)
+   if(value.type==='ui-number')return Number.isFinite(value.value)?cachedNumberFormat(language,value.options).format(value.value):String(value.value)
    const date=new Date(value.value)
    return Number.isFinite(date.getTime())?new Intl.DateTimeFormat(language,value.options).format(date):value.value
   }
-  return typeof value==='number'&&Number.isFinite(value)?new Intl.NumberFormat(language,{useGrouping:false}).format(value):String(value)
+  return typeof value==='number'&&Number.isFinite(value)?cachedNumberFormat(language,{useGrouping:false}).format(value):String(value)
  })
 }
 

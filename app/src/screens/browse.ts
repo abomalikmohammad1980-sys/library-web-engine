@@ -46,30 +46,41 @@ async function hydrate(root: HTMLElement): Promise<void> {
       root.replaceChildren(stateView({ kind: 'empty', icon: 'book', title: 'مكتبتك تنتظر أول كتاب', description: 'أضف كتاب Word من المكتبة ليظهر هنا.', actionLabel: 'إضافة كتاب', href: '#/library' }))
       return
     }
+    if(!root.isConnected)return
     let shelf: Shelf = 'all'
+    let page=0
+    const pageSize=40
     const grid = h('div', { class: 'discover-grid' })
+    const pagination=h('nav',{class:'discover-pagination chip-row','aria-label':'صفحات الكتب'})
     const controls = h('div', { class: 'discover-controls' }, h('h2', { id: 'shelves-title' }, 'رفوفك'))
     const filters = h('div', { class: 'chip-row', role: 'group', 'aria-label': 'تصفية الكتب' })
     const order = h('select', { 'aria-label': 'ترتيب الكتب' }, ...BOOK_SORT_OPTIONS.map(({value,label})=>h('option',{value},label))) as HTMLSelectElement
     const render = (): void => {
       order.disabled = shelf === 'recent'
       const visible = selectDiscoveryBooks(books,shelf,order.value as BookSort)
-      grid.replaceChildren(...visible.map((book, index) => discoveryCard(book, index)))
+      page=Math.min(page,Math.max(0,Math.ceil(visible.length/pageSize)-1))
+      const start=page*pageSize
+      grid.replaceChildren(...visible.slice(start,start+pageSize).map((book,index)=>discoveryCard(book,start+index)))
+      pagination.replaceChildren()
+      if(visible.length>pageSize){
+        const move=(next:number)=>{page=next;render();grid.scrollIntoView({block:'start',behavior:'instant'})}
+        pagination.append(h('button',{class:'btn btn--secondary',disabled:page===0,onclick:()=>move(page-1)},'السابق'),h('span',{'aria-live':'polite'},`${arabicNum(start+1)}–${arabicNum(Math.min(start+pageSize,visible.length))} / ${arabicNum(visible.length)}`),h('button',{class:'btn btn--secondary',disabled:start+pageSize>=visible.length,onclick:()=>move(page+1)},'التالي'))
+      }
       if (!visible.length) grid.replaceChildren(stateView({ kind: 'no-results', icon: 'book', title: 'لا توجد كتب في هذا الرف بعد', description: 'اختر رفًا آخر أو أضف كتبًا جديدة إلى مكتبتك.', actionLabel: 'فتح المكتبة', href: '#/library' }))
     }
     for (const item of [{ id: 'all', label: `كل الكتب · ${books.length}` }, { id: 'recent', label: 'المضافة حديثًا' }, { id: 'pdf', label: 'جاهزة للتنزيل PDF' }] as { id: Shelf; label: string }[]) {
       const button = h('button', { class: 'chip', 'aria-current': item.id === shelf ? 'true' : undefined }, item.id==='all'?uiTemplateText('50d1a3e6c8623145',{p1:books.length}):item.label)
       button.addEventListener('click', () => {
-        shelf = item.id
+        shelf = item.id; page=0
         for (const child of filters.querySelectorAll('button')) child.removeAttribute('aria-current')
         button.setAttribute('aria-current', 'true')
         render()
       })
       filters.appendChild(button)
     }
-    order.addEventListener('change',render)
+    order.addEventListener('change',()=>{page=0;render()})
     controls.append(filters,h('label',null,'ترتيب الكتب',order))
-    root.replaceChildren(controls, grid)
+    root.replaceChildren(controls, grid, pagination)
     render()
   } catch {
     root.replaceChildren(stateView({ kind: 'error', title: 'تعذّر ترتيب الرفوف الآن', description: 'كتبك محفوظة؛ أعد المحاولة دون إعادة تحميل الصفحة.', actionLabel: 'إعادة المحاولة', onAction: () => void hydrate(root) }))

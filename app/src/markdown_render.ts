@@ -1,4 +1,5 @@
 import DOMPurify from 'dompurify'
+import {styleOrnamentalVerses} from './textual_quran_style'
 import { marked } from 'marked'
 import type { MarkdownAsset } from './engine/library_store'
 
@@ -17,6 +18,7 @@ export function renderMarkdownPages(markdown: string, assets: MarkdownAsset[] = 
   source.className = 'reader__markdown-document'
   source.dir = 'rtl'
   source.innerHTML = clean
+  styleOrnamentalVerses(source)
 
   const assetUrls: string[] = []
   const byPath = new Map(assets.map(asset => [normalizeAssetPath(asset.path), asset]))

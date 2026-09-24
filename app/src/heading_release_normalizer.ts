@@ -1,4 +1,8 @@
-/** Preserve the normalization contract used by the published heading index. */
+/**
+ * The published central-heading indexes were built with this normalization.
+ * Do not substitute the newer full-text normalizer without rebuilding every
+ * heading dictionary/posting shard and updating the authenticated release.
+ */
 export const HEADING_RELEASE_NORMALIZER_SOURCE_SHA = '52ec6091d90d87867f439e6dac8d23c8bec6cec44c799a45df00a94aff739297'
 
 export function normalizeHeadingReleaseText(value: string): string {

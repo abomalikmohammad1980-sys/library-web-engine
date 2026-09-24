@@ -4,7 +4,6 @@ import {resolve} from 'node:path'
 import {createHash} from 'node:crypto'
 import {gzipSync,gunzipSync} from 'node:zlib'
 import {CentralHeadingSearchClient,decodeHeadingDeltas,decodeBinaryHeadingDictionary,headingPhraseWordMatches} from './central_heading_search'
-import {normalizeArabicSearch} from '../../packages/search/src/index'
 import {HEADING_RELEASE_NORMALIZER_SOURCE_SHA,normalizeHeadingReleaseText} from './heading_release_normalizer'
 // @ts-expect-error Offline artifact tooling is not shipped with the application.
 import {encodeHeadingDictionary} from '../../tools/build-heading-dictionary-binary.mjs'
@@ -137,7 +136,7 @@ it('narrows real phrase candidates at word boundaries without losing any of the 
 },30000)
 it('preserves every substring phrase boundary including repeated tokens and normalized punctuation',()=>{
  for(const title of ['والنسخ المعتمدة','النسخ النسخ','والنسخ المعتمدة في النسخة','باب، النَّسخ (١) المعتمدة','نسخ نسخة نسخ']){
-  const normalized=normalizeArabicSearch(title),words=normalized.split(' ')
+  const normalized=normalizeHeadingReleaseText(title),words=normalized.split(' ')
   for(let start=0;start<normalized.length;start++)for(let end=start+1;end<=normalized.length;end++){
    const query=normalized.slice(start,end).trim(),tokens=query.split(' ')
    expect(tokens.every((token,position)=>words.some(word=>headingPhraseWordMatches(word,token,position,tokens.length)))).toBe(true)

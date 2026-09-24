@@ -9,7 +9,7 @@ export async function onRequestDelete(context){
   if(!trustedMutation(context.request))return json({error:'cross_site_request_rejected'},403)
   const account=await trustedAccount(context);if(!account)return json({error:'authentication_required'},401)
   const bookId=clean(context.params.bookId);if(!bookId||bookId.length>200)return json({error:'invalid_book_id'},400)
-  const row=await context.env.VISITORS_DB.prepare('SELECT id,owner_subject,object_key,byte_length,visibility,review_status,deleted_at,deletion_object_removed_at,quota_released_at FROM user_books WHERE id=?1 AND owner_subject=?2').bind(bookId,account.subject).first()
+  const row=await context.env.VISITORS_DB.prepare('SELECT id,owner_subject,object_key,mime_type,byte_length,visibility,review_status,deleted_at,deletion_object_removed_at,quota_released_at FROM user_books WHERE id=?1 AND owner_subject=?2').bind(bookId,account.subject).first()
   if(!row)return json({error:'book_not_found'},404)
   if(!row.deleted_at&&row.visibility==='public'&&row.review_status==='approved')return json({error:'published_book_must_be_withdrawn'},409)
   if(!row.deleted_at){
@@ -20,6 +20,7 @@ export async function onRequestDelete(context){
   }
   let keys=[row.object_key],storageBytes=Number(row.byte_length)||0
   try{const metadata=await context.env.VISITORS_DB.prepare('SELECT storage_bytes FROM user_book_metadata WHERE book_id=?1').bind(bookId).first();if(metadata){storageBytes=metadata.storage_bytes;const assets=await context.env.VISITORS_DB.prepare('SELECT object_key FROM user_book_assets WHERE book_id=?1').bind(bookId).all();keys.push(...(assets.results??[]).map(a=>a.object_key))}}catch(error){if(!missingIntakeSchema(error))throw error}
+  if(row.mime_type?.startsWith('text/html')){const resources=await context.env.VISITORS_DB.prepare('SELECT object_key FROM user_book_html_resources WHERE book_id=?1').bind(bookId).all();keys.push(...(resources.results??[]).map(resource=>resource.object_key))}
   try{const map=await context.env.VISITORS_DB.prepare('SELECT object_key FROM user_book_word_bundles WHERE book_id=?1').bind(bookId).first();if(map)keys.push(map.object_key)}catch(error){if(!missingWordBundleSchema(error))throw error}
   if(!row.deletion_object_removed_at)try{for(const key of keys)await context.env.LIBRARY_R2.delete(key)}catch{return json({error:'account_book_deletion_pending'},503)}
   const markObject=context.env.VISITORS_DB.prepare('UPDATE user_books SET deletion_object_removed_at=COALESCE(deletion_object_removed_at,CURRENT_TIMESTAMP),updated_at=CURRENT_TIMESTAMP WHERE id=?1 AND owner_subject=?2').bind(bookId,account.subject)

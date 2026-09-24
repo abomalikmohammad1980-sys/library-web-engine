@@ -23,9 +23,7 @@ export function createHeadingBootstrapTask<T>(load:(signal:AbortSignal)=>Promise
   finally{if(timer!==undefined)clearTimeout(timer)}
  })().catch(error=>{task=undefined;throw error})
 }
-// The descriptor is release-pinned and SHA-checked. Bundling it with the
-// heading bootstrap avoids an extra service-worker-controlled fetch on
-// long-lived origins whose old cache cannot safely activate a new worker.
+// Preserve the published bundled descriptor to bypass older service workers.
 const loadRelease=createHeadingBootstrapTask(async signal=>{
  signal.throwIfAborted()
  return validateCentralHeadingRelease(new TextEncoder().encode(headingReleaseText.trimEnd()))

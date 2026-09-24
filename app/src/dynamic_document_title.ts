@@ -11,7 +11,7 @@ export const DYNAMIC_TITLE_SELECTORS:Readonly<Record<string,string>>={
 /** These screens own their resolved title directly (book routes resolve to reader). */
 export const SCREEN_OWNED_TITLE_ROUTES=['reader','book','search'] as const
 /** Collection and utility pages have no single selected book/person identity. */
-export const COLLECTION_TITLE_ROUTES=['recommendations','not-found','home','quotes','new-books','features','sunnah','welcome','browse','shelves','reading-plans','research-projects','editions','series','data-quality','me','settings','notes','library','admin-books','sign-in'] as const
+export const COLLECTION_TITLE_ROUTES=['categories','recommendations','not-found','home','quotes','new-books','features','sunnah','welcome','browse','shelves','reading-plans','research-projects','editions','series','data-quality','me','settings','notes','library','admin-books','sign-in'] as const
 export function bindResolvedRouteTitle(route:string,content:HTMLElement,isCurrent:()=>boolean):()=>void{
  const selector=DYNAMIC_TITLE_SELECTORS[route];if(!selector)return()=>{}
  let last='',disposed=false,pending=false

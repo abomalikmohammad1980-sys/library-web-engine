@@ -24,9 +24,11 @@ export function readerQualitySummary(book: StoredBook): ReaderQualitySummary {
   else facts.push({ kind: 'source', label: 'ملف محلي أضافه المستخدم' })
 
   if (format === 'pdf') facts.push({ kind: 'text', label: 'عرض مباشر من PDF الأصلي' })
+  else if (format === 'jpeg') facts.push({ kind: 'text', label: 'صور JPG أصلية داخل عارض PDF؛ ليست نصًا مفهرسًا' })
   else if (format === 'shamela-bok' && book.bokPages?.length) facts.push({ kind: 'text', label: `نص BOK متاح (${book.bokPages.length} صفحة مسجلة)` })
   else if (format === 'word' && book.readerModel) facts.push({ kind: 'text', label: 'نص Word مفكك للقراءة' })
   else if (format === 'text' || format === 'markdown') facts.push({ kind: 'text', label: 'نص مباشر' })
+  else if (format === 'html' && book.extractedText) facts.push({kind:'text',label:'نص HTML آمن للقراءة والبحث'})
   else if (format === 'epub' && book.extractedText) facts.push({ kind: 'text', label: 'نص EPUB مستخرج للقراءة' })
   else facts.push({ kind: 'text', label: 'اكتمال النص غير متحقق' })
 

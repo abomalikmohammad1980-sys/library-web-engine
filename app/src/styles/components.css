@@ -358,8 +358,9 @@
 .reader__plain-fallback-page { box-sizing: border-box; padding: 72px 68px; background: var(--read-surface); color: var(--read-ink); font-family: var(--font-arabic); font-size: 19px; line-height: 1.9; }
 .reader__plain-fallback-page p { margin: 0 0 13px; text-align: justify; }
 
-.reader--textual .reading__stream { gap: var(--space-5); }
-.reader--textual .reading__page-slot { width: min(100%, 860px); margin-inline: auto; }
+.reader--textual .reading__stream { display: block; }
+.reader--textual .reading__page-slot { width: min(100%, 860px); margin-inline: auto; margin-block-end: var(--space-5); }
+.reader--textual.reader--flow .reading__page-slot { margin-block-end: 0; }
 .reader--textual .reader__text-page.page {
   box-sizing: border-box;
   width: min(100%, 860px) !important;
@@ -426,7 +427,7 @@
 .reader--textual .reader__text-marker { color: #b3261e; font-size: .9em; }
 .reader--textual .reader__text-shamela-symbol { display: inline-block; margin-inline: .08em; color: color-mix(in srgb, var(--read-accent) 78%, var(--brand-gold)); font-family: var(--font-textual-book), serif; font-size: .92em; line-height: 1; }
 .reader--textual .reader__text-basmalah { margin-block: .35em 1.35em; color: var(--read-accent); font-family: var(--font-serif-display), var(--font-textual-book), serif; font-size: clamp(1.3em, 3vw, 1.75em); line-height: 1.55; text-align: center; text-wrap: balance; }
-.reader--textual .reader__text-notes { clear: both; width: 100%; margin-block-start: 1.8em; color: var(--read-muted); font-size: .84em; line-height: 1.75; }
+.reader--textual .reader__text-notes { clear: both; width: 100%; margin-block-start: 1.8em; color: var(--read-muted); font-size: .6em; line-height: 1.75; }
 .reader--textual .reader__text-footnote-rule { width: 38%; margin: 0 0 1em auto; border: 0; border-block-start: 1px solid var(--read-muted); }
 .reader--textual .reader__text-paragraph--note { display: block; margin: 0 0 .65em; color: inherit; font-size: 1em; line-height: inherit; text-align: justify; text-align-last: start; }
 .reader--textual .reader__text-note-number { display: inline; vertical-align: baseline; color: var(--read-accent); font-family: var(--font-textual-book), serif; font-size: 1em; line-height: inherit; direction: rtl; unicode-bidi: isolate; }
@@ -434,7 +435,7 @@
 .reader--textual .reader__text-paragraph--note-continuation { text-indent: 0; }
 .reader--textual .reader__text-note-ref,
 .reader--epub .reader__text-note-ref { margin-inline: .08em; color: var(--read-accent); font-family: var(--font-textual-book), serif; font-size: .72em; line-height: 1; vertical-align: super; text-decoration: none; }
-.reader--epub .reader__text-imported-note { color: var(--read-muted); font-size: .84em; line-height: 1.75; }
+.reader--epub .reader__text-imported-note { color: var(--read-muted); font-size: .6em; line-height: 1.75; }
 .reader--epub .reader__text-note-inline { display: block !important; text-align: justify !important; text-align-last: start !important; }
 .reader--epub .reader__text-imported-note,
 .reader--epub .reader__text-imported-note p { text-align: justify !important; text-align-last: start !important; }
@@ -1505,6 +1506,7 @@ body.reader-unified-panel-open { overflow: hidden; }
   overscroll-behavior-inline: contain;
   touch-action: pan-y;
 }
+.reading__virtual-spacer { width: 100%; pointer-events: none; contain: layout style paint; }
 
 .reading__page-slot {
   width: 100%;
@@ -1514,6 +1516,14 @@ body.reader-unified-panel-open { overflow: hidden; }
   align-items: start;
   justify-items: center;
   scroll-margin-block-start: 84px;
+}
+
+/* The thousands of empty placeholders in a long text book need only their
+   reserved block height. Avoid a grid formatting context until a page is
+   actually hydrated; containment keeps their style/layout work local. */
+.reader--textual .reading__page-slot:not([data-mounted="true"]) {
+  display: block;
+  contain: layout style paint;
 }
 
 /* At magnifications above fit width, keep every edge reachable within the
@@ -2665,7 +2675,7 @@ body:has(.reader--serenity) .app-header,
 .reader--markdown .reader__markdown-page hr { border: 0; border-top: 1px solid var(--border-default); margin: 1.5rem 0; }
 .reader--markdown .reader__markdown-page input[type='checkbox'] { inline-size: 1rem; block-size: 1rem; margin-inline: .2rem .5rem; accent-color: var(--brand-primary); }
 .reader--markdown .markdown-footnote-ref { margin-inline: .08em; color: var(--brand-primary-dark); font-size: .72em; vertical-align: super; }
-.reader--markdown .markdown-footnotes { margin-block-start: 2rem; color: var(--text-muted); font-size: .9em; }
+.reader--markdown .markdown-footnotes { margin-block-start: 2rem; color: var(--text-muted); font-size: .6em; }
 .reader--markdown .markdown-footnotes > ol { list-style: none; padding-inline: 0; }
 .reader--markdown .markdown-footnotes li { text-align: justify; text-align-last: start; }
 .reader--markdown .markdown-footnote-number { display: inline; vertical-align: baseline; font-size: 1em; }
@@ -2699,3 +2709,101 @@ body:has(.reader--serenity) .app-header,
 .bok-text-editor textarea { box-sizing:border-box; width:100%; min-height:22rem; resize:vertical; font:1.1rem/2 sans-serif; color:var(--text-body); background:var(--paper-surface); border:1px solid var(--border-default); border-radius:.6rem; padding:1rem; }
 .bok-text-editor pre { white-space:pre-wrap; overflow-wrap:anywhere; font:1rem/2 sans-serif; max-height:22rem; overflow:auto; }
 .bok-text-editor [role=status] { min-height:1.6em; }
+@font-face{font-family:'Khizana Textual Hafs';src:url('/fonts/quran/kfgqpc-hafs-regular.otf') format('opentype');font-weight:400;font-style:normal;font-display:swap}
+.reader__ornamental-verse{font-family:'Khizana Textual Hafs',serif!important;color:#8b202a!important;font-weight:400!important;font-style:normal!important;line-height:inherit}
+.search-workspace__preview-source{display:flex;flex-wrap:wrap;align-items:baseline;gap:.35rem .6rem}
+.search-workspace__preview-source>p{display:inline;margin:0}
+.page-jump--compact{display:flex;align-items:center;gap:.35rem}
+.page-jump--compact .btn{padding:.45rem;min-width:2.4rem}
+.reader__text-note-ref,.reader__text-note-number{white-space:nowrap;display:inline-block}
+.reader__text-note-body{display:inline}
+[data-theme='dark'] .reader__ornamental-verse{color:#f09a9f!important}
+.collection-download-dialog { position: fixed; inset: 0; margin: auto; box-sizing: border-box; width: min(38rem, calc(100vw - 24px)); max-height: 88dvh; overflow: auto; border: 1px solid var(--border-default); border-radius: 16px; padding: 20px; color: var(--ink-strong); background: var(--paper-surface); }
+.collection-download-dialog::backdrop { background: rgb(15 27 22 / .48); }
+.collection-download-dialog [hidden], .collection-download[hidden] { display: none !important; }
+.collection-download-dialog .btn { min-height: 44px; max-width: 100%; white-space: normal; }
+.collection-download-dialog li { overflow-wrap: anywhere; }
+.collection-download { flex: 0 0 auto; width: 44px; min-height: 44px; padding: 8px; vertical-align: middle; margin-inline-start: 8px; }
+.download-attachments { margin-block: 16px; }
+.download-attachment { padding: 16px; margin-block: 10px; border: 1px solid var(--border-default); border-radius: 12px; overflow-wrap: anywhere; }
+.download-attachment .btn { margin-inline-end: 8px; }
+.collection-download-dialog form { display: grid; gap: 12px; }
+.collection-download-dialog label { display: grid; gap: 4px; }
+.collection-download-dialog input, .collection-download-dialog textarea, .collection-download-dialog select { box-sizing: border-box; min-width: 0; width: 100%; }
+.reader__toc-more[hidden] { display: none !important; }
+
+/* Compact import dialog: keep hidden launchers hidden even under flex rules. */
+.import-manager__head[hidden] { display: none; }
+.import-manager__head:not([hidden]) { flex-direction: column; gap: 12px; text-align: center; }
+.import-manager__head h2 { margin: 0; text-align: center; }
+.quick-book-import { width: min(880px, calc(100vw - 24px)); padding: 16px; margin: auto; }
+.quick-book-import__head { position: relative; justify-content: center; min-height: 36px; margin-bottom: 10px; }
+.quick-book-import__head h2 { margin: 0; font-size: 22px; text-align: center; }
+.quick-book-import__head > button { position: absolute; inset-inline-end: 0; padding: 6px; min-height: 32px; }
+.quick-book-import .import-manager { margin: 0; padding: 12px; box-shadow: none; }
+.word-upload-setup { display: grid; gap: 10px; padding: 14px; border: 1px solid var(--border-default); border-radius: var(--radius-lg); background: var(--paper-surface); color: var(--ink-strong); }
+.word-upload-setup p { margin: 0; line-height: 1.7; font-size: 14px; }
+.word-upload-setup__intro, .word-upload-setup__steps { text-align: center; }
+.word-upload-setup__steps { color: var(--ink-muted); }
+.word-upload-setup__download { justify-self: center; font-size: 14px; padding: 7px 16px; min-height: 36px; }
+.word-upload-setup__controls { display: flex; align-items: center; gap: 8px; }
+.word-upload-setup__code { flex: 1; min-width: 0; width: 100%; border: 1px solid var(--border-default); border-radius: var(--radius-md); background: var(--paper-surface-alt); color: var(--ink-strong); padding: 8px 12px; font: inherit; }
+.word-upload-setup__code:focus { outline: 2px solid var(--brand-primary); outline-offset: 2px; }
+.word-upload-setup__controls .btn { min-height: 36px; padding: 6px 14px; font-size: 14px; }
+.word-upload-setup__status { display: flex; align-items: center; gap: 12px; min-height: 24px; font-size: 13px; color: var(--ink-muted); }
+.word-upload-setup__timer { border-radius: var(--radius-md); background: var(--accent-soft); padding: 2px 12px; color: var(--ink-strong); font-variant-numeric: tabular-nums; }
+@media(max-width: 540px) { .quick-book-import__head h2 { font-size: 18px; padding-inline: 30px; } .quick-book-import { padding: 10px; } .word-upload-setup { padding: 10px; } .word-upload-setup__controls { flex-wrap: wrap; } .word-upload-setup__code { flex-basis: 100%; } }
+
+/* Compact intake review: dimensions follow the data, not equal-height columns. */
+.quick-book-import__head:has(.import-review__summary){flex-direction:column;gap:3px;padding-block-end:9px;border-block-end:1px solid var(--border-default)}
+.quick-book-import__head:has(.import-review__summary)>button{inset-block-start:0}
+.import-review__summary{margin:0;text-align:center;font-size:12px;line-height:1.6;color:var(--text-muted)}
+.quick-book-import .import-workspace:not(:empty){margin:0;padding:0;border:0}
+.quick-book-import .import-manager{padding:9px}
+.word-import-progress{padding:10px;border:1px solid var(--border-default);border-radius:var(--radius-md);background:var(--paper-surface)}
+.word-import-progress h3{margin:0;font-size:16px;overflow-wrap:anywhere}
+.word-import-progress p{margin:4px 0 0;font-size:13px}
+.word-import-progress progress[hidden]{display:none}
+.import-review .import-book{grid-template-columns:90px minmax(0,1fr);gap:9px;padding:10px;box-shadow:none}
+.import-book__aside{display:grid;justify-items:center;gap:7px;min-width:0}
+.import-review .import-book__cover{inline-size:90px}
+.import-book__aside .import-word-bok{width:100%;min-width:0;min-height:32px;padding:5px;font-size:11px;line-height:1.4;box-shadow:none}
+.import-review .import-book legend{font-size:12px;line-height:1.6}
+.import-review .import-book legend span{width:20px;height:20px;margin-inline-end:5px}
+.import-review .import-book legend .format-badge{margin-inline-start:6px;font-size:10px}
+.import-review .import-book__fields{grid-template-columns:repeat(6,minmax(0,1fr));gap:7px 9px;align-items:start}
+.import-review .import-field{gap:3px;align-content:start;font-size:11px;line-height:1.5}
+.import-field--wide{grid-column:span 3}
+.import-field--medium{grid-column:span 2}
+.import-review .import-field input,.import-review .import-field select,.import-review .import-field textarea{box-sizing:border-box;min-height:32px;height:32px;padding:4px 7px;font:inherit;font-size:12px;min-width:0;width:100%;border:1px solid var(--border-default);border-radius:var(--radius-sm);background:var(--paper-surface);color:var(--text-body)}
+.import-review .import-field textarea{height:45px;resize:vertical}
+.import-review .import-field input[type=file]{font-size:10px;padding:4px}
+.import-review .import-author-control,.import-review .import-coauthors__row{grid-template-columns:minmax(0,1fr) 32px;gap:5px}
+.import-review .import-author-add,.import-review .import-author-remove{min-width:32px;min-height:32px;height:32px;padding:4px}
+.import-review .import-death{grid-column:span 3;grid-template-columns:88px auto;justify-content:start;gap:3px 6px}
+.import-review .import-contemporary{min-height:32px;padding:3px 6px;font-size:12px;box-sizing:border-box}
+.import-review .import-contemporary input{width:16px;height:16px}
+.import-review .import-approx{font-size:10px;line-height:1.4}
+.import-review .book-tag-chips{gap:3px}
+.import-review .book-tag-chips>small{display:none}
+.import-review .book-tag-chips__list:empty{display:none}
+.import-review .book-tag-chips__tag{font-size:11px;padding:1px 5px;gap:3px}
+.import-review .book-tag-chips__list{max-height:64px;overflow:auto;gap:3px}
+.import-review .import-review__save{min-height:34px;min-width:120px;padding:5px 16px;margin-block-start:10px;font-size:13px}
+.import-pdf-edition{grid-column:1/-1;border-block-start:1px solid var(--border-default);padding-block-start:7px;font-size:12px}
+.import-pdf-edition summary{cursor:pointer;color:var(--brand-primary-dark);width:fit-content}
+.import-pdf-edition p{margin:5px 0;color:var(--text-muted);font-size:11px}
+.import-pdf-edition__fields{display:grid;grid-template-columns:1.2fr 1fr 1fr;gap:7px}
+@media(max-width:620px){
+ .import-review .import-book{grid-template-columns:1fr;padding:9px}
+ .import-book__aside{justify-self:center;width:90px}
+ .import-review .import-book__fields{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+ .import-review .import-field--wide,.import-review .import-field--medium{grid-column:span 1}
+ .import-review .import-death{grid-column:span 1;grid-template-columns:68px auto;gap:3px}
+ .import-review .import-death .import-field{font-size:10px}
+ .import-review .import-contemporary{padding-inline:3px;font-size:11px}
+ .import-pdf-edition__fields{grid-template-columns:1fr}
+ .import-review__summary{font-size:11px}
+}
+
+.import-pdf-edition__fields{grid-template-columns:1fr 1fr 1fr 32px;align-items:end;margin-top:7px}.import-pdf-edition__fields>span{overflow-wrap:anywhere;font-size:11px;align-self:center}.import-pdf-edition__fields>.btn{min-width:32px;min-height:32px;padding:4px}.import-review .import-book legend{display:flex;align-items:center;gap:5px}@media(max-width:620px){.import-pdf-edition__fields{grid-template-columns:1fr 1fr 32px}.import-pdf-edition__fields>span{grid-column:1/-1}.import-review .import-field input,.import-review .import-field select{height:36px;min-height:36px}}

@@ -48,3 +48,11 @@ export function augmentSunnahLibraryBooks(books:readonly StoredBook[],scope:Sunn
   } satisfies StoredBook)})
 }
 export async function searchAllVerifiedSunnahBooks(client:ShamelaSearchClient,scope:SunnahSearchScope,query:string,offset=0,limit=40,signal?:AbortSignal):Promise<SunnahGlobalSearchPage>{if(scope.contract!=='sunnah-global-search-scope/1'||!scope.books.length||scope.books.some(x=>!x.sourceBookId||!x.publicId))throw new Error('sunnah_search_scope_invalid');const compiled=compiledSunnahScope(scope),search=typeof client.searchExhaustiveV2==='function'?client.searchExhaustiveV2.bind(client):typeof client.searchCompleteV2==='function'?client.searchCompleteV2.bind(client):client.search.bind(client),page=signal?await search(query,offset,limit,compiled.publicIds,signal):await search(query,offset,limit,compiled.publicIds),reported=new Set([...page.unavailableBookIds,...page.pendingBookIds]);if([...reported].some(id=>!compiled.sourceIds.has(id)))throw new Error('sunnah_search_coverage_invalid');return{...page,scopeBooks:scope.books.length,scopeCoverageComplete:page.coverageComplete&&page.unavailableBookIds.length===0&&page.pendingBookIds.length===0}}
+
+/** First visible passages only; an incomplete page never certifies the total. */
+export async function previewVerifiedSunnahBooks(client:ShamelaSearchClient,scope:SunnahSearchScope,query:string,limit=20,signal?:AbortSignal):Promise<SunnahGlobalSearchPage>{
+  if(scope.contract!=='sunnah-global-search-scope/1'||!scope.books.length||scope.books.some(x=>!x.sourceBookId||!x.publicId))throw new Error('sunnah_search_scope_invalid')
+  const compiled=compiledSunnahScope(scope),page=await client.searchBoundedV2(query,0,limit,compiled.publicIds,signal)
+  if([...page.unavailableBookIds,...page.pendingBookIds].some(id=>!compiled.sourceIds.has(id)))throw new Error('sunnah_search_coverage_invalid')
+  return{...page,scopeBooks:scope.books.length,scopeCoverageComplete:page.coverageComplete&&page.unavailableBookIds.length===0&&page.pendingBookIds.length===0}
+}

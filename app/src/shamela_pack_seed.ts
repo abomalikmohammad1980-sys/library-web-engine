@@ -8,7 +8,7 @@ import { migrateShamelaLocalRelations, shamelaPublicBookId, shamelaSourceBookId 
 import { CURRENT_SHAMELA_PACK_TEXT_VERSION } from './shamela_reader_contract'
 import { shouldParseRawBok } from './shamela_reader_contract'
 import { displayableHijriPublicationYear } from './shamela_text_presentation'
-import { fetchPagesDataAsset } from './pages_data_release'
+import { fetchPagesDataAsset,pinnedReaderBatch } from './pages_data_release'
 import { type ShamelaAuthorIndex } from './shamela_author_index'
 import { loadShamelaAuthorMetadata } from './shamela_author_metadata'
 import {readShamelaCatalogSnapshot} from './shamela_catalog_snapshot'
@@ -17,6 +17,7 @@ import {currentAccountClaims} from './account_authority'
 import {getAnnotations,saveAnnotations} from './annotation_store'
 import {revalidateBokAnnotations} from './bok_annotation_revalidation'
 import {activeBokReaderEntry} from './bok_active_release'
+import {createShamelaPreviewBook,loadShamelaReaderEarlyWindow,loadShamelaReaderWindow,locateShamelaReaderShardRef} from './shamela_reader_shards'
 export {ShamelaPackSeedError} from './shamela_pack_transport'
 
 export interface ShamelaPackCatalog { title: string | null; author: string | null; authorId: string | null; deathYearHijri?:number|null; category: string | null; publicationYearHijri: number | null; rawSourceMetadata: string | null }
@@ -138,11 +139,13 @@ export async function readCompleteShamelaCatalog(fetcher:typeof fetch=fetch):Pro
 /** شبكة المكتبة لا يجوز أن تستهلك manifests القديمة مباشرة؛ آخر الدفعات
  * المنشورة قد تحمل عنوانًا/مؤلفًا فارغًا مع أن فهرس الهوية الخفيف يحتوي
  * القيمة الموثقة. عدم الدمج هنا أسقط 2,194 بطاقة وأبقى ثلاثة دواوين فقط. */
+import {catalogDataInteractionAllowed,waitForBackgroundDataInteraction} from './background_data_scheduler'
 export async function readCompleteShamelaLibraryCatalog(fetcher:typeof fetch=fetch):Promise<LocatedShamelaPackBook[]>{
   // Do not turn one bounded snapshot failure into 86 batch downloads (and
   // repeated full-catalog retries). Preserve the failure and snapshot cooldown.
   // Legacy callers can explicitly use readCompleteShamelaCatalog when needed.
   const [catalog,index]=await Promise.all([readShamelaCatalogSnapshot(fetcher),loadShamelaAuthorMetadata()])
+  await waitForBackgroundDataInteraction({canRun:catalogDataInteractionAllowed})
   const enriched=enrichShamelaCatalogMetadata(catalog,index)
   validateShamelaKnownCatalogCoverage(enriched,index)
   return enriched
@@ -171,19 +174,21 @@ export function applyCentralOverridesToBookList(books:StoredBook[],overrides:Cen
   return [applyCentralOverrideToStoredBook(book,override)];
  });
 }
-export async function loadCentralBookOverrides(fetcher:typeof fetch=fetch,offline=false):Promise<CentralBookOverride[]>{
-  if(offline)return cachedCentralOverrides()
+export async function loadCentralBookOverrides(fetcher:typeof fetch=fetch,offline=false,sourceBookId?:string):Promise<CentralBookOverride[]>{
+  const relevant=(rows:CentralBookOverride[]):CentralBookOverride[]=>sourceBookId===undefined?rows:rows.filter(row=>row.bookId===sourceBookId||row.bookId===shamelaPublicBookId(sourceBookId))
+  if(offline)return relevant(cachedCentralOverrides())
   try{
-    const response=await fetcher('./api/library/central-overrides',{cache:'no-cache',credentials:'same-origin',signal:AbortSignal.timeout(10000)})
-    if(!response.ok)return cachedCentralOverrides()
+    const url=sourceBookId===undefined?'./api/library/central-overrides':`./api/library/central-overrides?bookId=${encodeURIComponent(shamelaPublicBookId(sourceBookId))}`
+    const response=await fetcher(url,{cache:'no-cache',credentials:'same-origin',signal:AbortSignal.timeout(10000)})
+    if(!response.ok)return relevant(cachedCentralOverrides())
     const payload=await response.json() as {schemaVersion?:unknown;overrides?:unknown}
-    if(payload.schemaVersion!==1||!Array.isArray(payload.overrides))return cachedCentralOverrides()
-    const incoming=validCentralOverrides(payload),known=cachedCentralOverrides(),byId=new Map(incoming.map(row=>[row.bookId,row]))
+    if(payload.schemaVersion!==1||!Array.isArray(payload.overrides))return relevant(cachedCentralOverrides())
+    const incoming=relevant(validCentralOverrides(payload)),known=cachedCentralOverrides(),byId=new Map(incoming.map(row=>[row.bookId,row]))
     for(const row of known)if(Number(row.revision)>Number(byId.get(row.bookId)?.revision??-1))byId.set(row.bookId,row)
     const overrides=[...byId.values()]
     try{localStorage.setItem(CENTRAL_OVERRIDES_CACHE_KEY,JSON.stringify({schemaVersion:1,overrides}))}catch{/* Optional public metadata cache. */}
-    return overrides
-  }catch{return cachedCentralOverrides()}
+    return relevant(overrides)
+  }catch{return relevant(cachedCentralOverrides())}
 }
 function sessionCatalog():Promise<LocatedShamelaPackBook[]> {
   sessionCatalogPromise ??= readCompleteShamelaCatalog()
@@ -199,11 +204,26 @@ function sessionCatalog():Promise<LocatedShamelaPackBook[]> {
   return sessionCatalogPromise
 }
 async function locateShamelaBookFast(sourceBookId:string):Promise<LocatedShamelaPackBook|undefined>{
+  // Most current manifests already have complete display metadata. The small
+  // pinned map can locate those before downloading metadata for every author.
+  // This is route metadata only; the caller's visibility fence remains intact.
+  const pinnedBatch=await pinnedReaderBatch(sourceBookId).catch(()=>undefined)
+  if(pinnedBatch){
+    const manifestPath=`./library/shamela/batches/${pinnedBatch}/manifest.json`
+    const manifest=await fetchManifest(manifestPath,fetch),raw=manifest.books.find(book=>book.bookId===sourceBookId)
+    const entry=raw&&catalogEntryWithVerifiedTitleFallback(raw)
+    if(entry?.catalog.title&&!isPlaceholderShamelaTitle(entry.catalog.title)&&!isUnknownShamelaAuthor(entry.catalog.author)&&entry.catalog.category?.trim())return {entry,batchId:pinnedBatch,root:directoryOf(manifestPath)}
+  }
   const index=await loadShamelaAuthorMetadata(),ref=index.authors.flatMap(author=>author.books).find(book=>book.sourceBookId===sourceBookId)
-  if(!ref)return
-  const manifestPath=`./library/shamela/batches/${ref.batchId}/manifest.json`,manifest=await fetchManifest(manifestPath,fetch),entry=manifest.books.find(book=>book.bookId===sourceBookId)
+  // A few published books have no author-index entry. The pinned immutable
+  // shard catalog locates those without scanning all 86 batch manifests.
+  const sidecar=ref?undefined:await locateShamelaReaderShardRef(sourceBookId).catch(()=>undefined)
+  const batchId=ref?.batchId??sidecar?.batchId
+  if(!batchId)return
+  const manifestPath=`./library/shamela/batches/${batchId}/manifest.json`,manifest=await fetchManifest(manifestPath,fetch),entry=manifest.books.find(book=>book.bookId===sourceBookId)
   if(!entry)return
-  return enrichShamelaCatalogMetadata([{entry,batchId:ref.batchId,root:directoryOf(manifestPath)}],index)[0]
+  if(sidecar&&(entry.sha256!==sidecar.sourceSha256||entry.counts.pages!==sidecar.counts.pages||entry.counts.titles!==sidecar.counts.titles))throw new ShamelaPackSeedError('shamela_reader_shard_catalog_mismatch')
+  return enrichShamelaCatalogMetadata([{entry,batchId,root:directoryOf(manifestPath)}],index)[0]
 }
 export function shamelaBookNeedsHydration(existing:StoredBook|undefined,entry:ShamelaPackManifestBook):boolean {return !existing||existing.bokTextVersion!==CURRENT_SHAMELA_PACK_TEXT_VERSION||existing.originalSha256!==entry.sha256||existing.bokPages?.length!==entry.counts.pages||existing.bokToc===undefined||existing.bokToc.length!==entry.counts.titles||shouldParseRawBok(existing,'shamela-bok')}
 async function reconcileCatalogEntry(entry:ShamelaPackManifestBook):Promise<{book:StoredBook;installed:boolean}>{const sourceBookId=entry.bookId,targetId=shamelaPublicBookId(sourceBookId),legacyId=`shamela-${sourceBookId}`,catalogBook=materializeShamelaCatalogBook(entry);let existing=await getBook(targetId),legacy=await getBook(legacyId),installed=false;if(!existing&&!legacy){existing=catalogBook;await restoreArchivedBook(existing);installed=true}else if(!existing&&legacy){const migrated={...legacy,id:targetId,sourceKind:'shamela4.1' as const,sourceBookId,title:isPlaceholderShamelaTitle(legacy.title)?catalogBook.title:legacy.title};if(displayableHijriPublicationYear(migrated.publicationYearHijri)==null)delete migrated.publicationYearHijri;await migratePublishedBookId(legacyId,migrated);existing=migrated}else if(existing&&legacy){try{existing=await reconcilePublishedBookAlias(legacyId,targetId,sourceBookId,entry.sha256)}catch(error){throw new ShamelaPackSeedError('shamela_public_id_collision',error)}}if(existing){const repaired={...existing,title:isPlaceholderShamelaTitle(existing.title)?catalogBook.title:existing.title,author:isUnknownShamelaAuthor(existing.author)?catalogBook.author:existing.author,...(catalogBook.authorId?{authorId:catalogBook.authorId}:{}),...(catalogBook.deathYearHijri!=null?{deathYearHijri:catalogBook.deathYearHijri}:{}),...(catalogBook.category?{category:catalogBook.category}:{}),...(catalogBook.publicationYearHijri!=null?{publicationYearHijri:catalogBook.publicationYearHijri}:{}),...(catalogBook.rawSourceMetadata!=null?{rawSourceMetadata:catalogBook.rawSourceMetadata}:{})};if(catalogBook.author===UNKNOWN_SHAMELA_AUTHOR){delete repaired.authorId;delete repaired.deathYearHijri}if(catalogBook.category&&repaired.categoryOverride?.value.trim()==='غير مصنف')delete repaired.categoryOverride;if(repaired.title!==existing.title){repaired.coverHue=deterministicCoverHue(repaired.title);repaired.coverTemplate=deterministicCoverTemplate(repaired.title)}if(repaired.title!==existing.title||repaired.author!==existing.author||repaired.authorId!==existing.authorId||repaired.deathYearHijri!==existing.deathYearHijri||repaired.category!==existing.category||repaired.categoryOverride!==existing.categoryOverride||repaired.publicationYearHijri!==existing.publicationYearHijri||repaired.rawSourceMetadata!==existing.rawSourceMetadata){existing=repaired;await restoreArchivedBook(existing)}}migrateShamelaLocalRelations(localStorage,sourceBookId);return{book:existing!,installed}}
@@ -225,7 +245,7 @@ async function hydrateEntry(located:LocatedShamelaPackBook):Promise<StoredBook>{
   return book
  }catch(error){if(error instanceof ShamelaPackSeedError)throw error;throw new ShamelaPackSeedError('shamela_pack_book_hydration_failed',error)}
 }
-export async function ensureShamelaBookReady(id:string):Promise<StoredBook>{
+export async function ensureShamelaBookReady(id:string,onPreview?:(book:StoredBook)=>void,requestedPageIndex=0):Promise<StoredBook>{
  const sourceBookId=shamelaSourceBookId(id);if(!sourceBookId)throw new ShamelaPackSeedError('shamela_pack_book_id_invalid')
  const offline=typeof navigator!=='undefined'&&navigator.onLine===false
  // Read the local copy while checking publication visibility, not afterwards.
@@ -234,7 +254,7 @@ export async function ensureShamelaBookReady(id:string):Promise<StoredBook>{
  // runs. Never hydrate or expose book bytes until the visibility fence below.
  // Offline opens must not start either metadata network request.
  const [overrides,cachedBook,fast]=await Promise.all([
-  loadCentralBookOverrides(fetch,offline),
+  loadCentralBookOverrides(fetch,offline,sourceBookId),
   getBook(shamelaPublicBookId(sourceBookId)),
   offline?Promise.resolve(undefined):locateShamelaBookFast(sourceBookId).catch(()=>undefined),
  ])
@@ -252,12 +272,34 @@ export async function ensureShamelaBookReady(id:string):Promise<StoredBook>{
  const corrected=await activeBokReaderEntry(sourceBookId)
  if(corrected)located={...located,root:corrected.root,entry:{...located.entry,...corrected.entry,catalog:located.entry.catalog} as ShamelaPackManifestBook}
  if(existing&&!shamelaBookNeedsHydration(existing,located.entry))return existing
- let {book}=await reconcileCatalogEntry(located.entry)
- if(override){book=applyCentralOverrideToStoredBook(book,override);await restoreArchivedBook(book)}
- if(!shamelaBookNeedsHydration(book,located.entry))return book
- let hydrated=await hydrateEntry(located)
- if(override){hydrated=applyCentralOverrideToStoredBook(hydrated,override);await restoreArchivedBook(hydrated)}
- return hydrated
+ let verifiedPreview:StoredBook|undefined
+ const hasReaderShards=located.entry.byteLength>=2*1024*1024||located.entry.counts.pages>=2000
+ if(!offline&&onPreview&&hasReaderShards&&Number.isSafeInteger(requestedPageIndex)&&requestedPageIndex>=0&&requestedPageIndex<located.entry.counts.pages){
+  const preview=(window:NonNullable<Awaited<ReturnType<typeof loadShamelaReaderWindow>>>|Awaited<ReturnType<typeof loadShamelaReaderEarlyWindow>>)=>{const book=createShamelaPreviewBook(window,sourceBookId,located.batchId,located.entry.catalog.title??existing?.title??'');if(override)Object.assign(book,applyCentralOverrideToStoredBook(book,override));verifiedPreview=book;onPreview(book)}
+  const complete=loadShamelaReaderWindow(sourceBookId,located.batchId,located.entry.sha256,located.entry.workId,located.entry.counts.pages,located.entry.counts.titles,requestedPageIndex).catch(error=>{console.warn('shamela_reader_full_toc_unavailable',sourceBookId,error);return undefined})
+  // Match the sidecar builder's byte/page thresholds. Some books compress
+  // well yet still contain thousands of pages and suffer the same DOM delay.
+  // Truly small books have no route and avoid a speculative 404 on open.
+  try{preview(await loadShamelaReaderEarlyWindow(sourceBookId,located.batchId,located.entry.sha256,located.entry.workId,located.entry.counts.pages,located.entry.counts.titles,requestedPageIndex))}catch(error){console.warn('shamela_reader_early_preview_unavailable',sourceBookId,error)}
+  const window=await complete;if(window)preview(window)
+ }
+ try{
+  let {book}=await reconcileCatalogEntry(located.entry)
+  if(override){book=applyCentralOverrideToStoredBook(book,override);await restoreArchivedBook(book)}
+  if(!shamelaBookNeedsHydration(book,located.entry))return book
+  // Give the requested verified page a rendering opportunity before the
+  // complete source transfer and IndexedDB write compete for the main thread.
+  if(onPreview&&typeof requestAnimationFrame==='function')await new Promise<void>(resolve=>requestAnimationFrame(()=>resolve()))
+  let hydrated=await hydrateEntry(located)
+  if(override){hydrated=applyCentralOverrideToStoredBook(hydrated,override);await restoreArchivedBook(hydrated)}
+  return hydrated
+ }catch(error){
+  // A background full-pack failure must not replace already authenticated
+  // readable pages with an error. The sparse book still loads distant shards
+  // on demand and remains explicitly partial until full hydration succeeds.
+  if(verifiedPreview){console.warn('shamela_full_pack_background_failed',sourceBookId,error);return verifiedPreview}
+  throw error
+ }
 }
 export function selectShamelaEntriesForDownload(manifest:ShamelaPackManifest,id?:string):ShamelaPackManifestBook[]{const sourceBookId=id?shamelaSourceBookId(id):undefined;return sourceBookId?manifest.books.filter(x=>x.bookId===sourceBookId):[]}
 const SHAMELA_CATALOG_READY_KEY='alkhizana:shamela-catalog-ready-v1'

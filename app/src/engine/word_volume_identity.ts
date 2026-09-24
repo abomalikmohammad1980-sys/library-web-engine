@@ -9,7 +9,7 @@ export function orderedWordVolumes(book:StoredBook){
 }
 async function hash(data:Uint8Array){const copy=new Uint8Array(data);return [...new Uint8Array(await crypto.subtle.digest('SHA-256',copy.buffer))].map(n=>n.toString(16).padStart(2,'0')).join('')}
 export async function localSearchBookFingerprint(book:StoredBook):Promise<string>{
- if(!book.volumes||book.volumes.length<2){const source=book.originalSha256||`${book.id}:${book.fileSize}`;return inferBookFormat(book)==='word'?`${WORD_TEXT_REVISION}:${source}`:source}
+ if(!book.volumes||book.volumes.length<2){const source=book.originalSha256||`${book.id}:${book.fileSize}`,format=inferBookFormat(book);return format==='word'?`${WORD_TEXT_REVISION}:${source}`:format==='markdown'?`markdown-headings/20260922:${source}`:source}
  const parts=[]
  for(const v of orderedWordVolumes(book))parts.push([v.number,v.data.byteLength,await hash(v.data),v.wordPageMap??null])
  return 'word-volumes/v1:'+await hash(new TextEncoder().encode(JSON.stringify([WORD_TEXT_REVISION,parts])))

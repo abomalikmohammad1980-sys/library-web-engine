@@ -8,7 +8,7 @@ const PUBLIC = "visibility='public' AND review_status='approved' AND deleted_at 
 const REVISION = `SELECT COUNT(*) AS count,COALESCE(SUM(review_version),0) AS versions,COALESCE(SUM(byte_length),0) AS bytes,COALESCE(MAX(updated_at),'') AS updated,COALESCE(MAX(id),'') AS lastId,(SELECT COALESCE(MAX(id),0) FROM book_review_events) AS reviewEvent,(SELECT COALESCE(SUM(revision),0) FROM central_book_overrides) AS centralVersion FROM user_books WHERE ${PUBLIC}`
 const FIELDS="id,COALESCE((SELECT o.title FROM central_book_overrides o WHERE o.book_id=user_books.id),title) AS title,COALESCE((SELECT o.author FROM central_book_overrides o WHERE o.book_id=user_books.id),author) AS author,CASE WHEN EXISTS(SELECT 1 FROM central_book_overrides o WHERE o.book_id=user_books.id) THEN (SELECT o.category FROM central_book_overrides o WHERE o.book_id=user_books.id) ELSE category END AS category,mime_type AS mimeType,byte_length AS byteLength,created_at AS createdAt,object_key AS objectKey,review_version AS publicationVersion"
 const PAGE = `SELECT ${FIELDS} FROM user_books WHERE ${PUBLIC} AND (?1='' OR created_at<?1 OR (created_at=?1 AND id<?2)) ORDER BY created_at DESC,id DESC LIMIT ?3`
-const FORMATS=new Map([['docx','word'],['doc','word'],['rtf','word'],['pdf','pdf'],['epub','epub'],['bok','shamela-bok'],['txt','text'],['md','markdown']])
+const FORMATS=new Map([['docx','word'],['doc','word'],['rtf','word'],['pdf','pdf'],['jpg','jpeg'],['jpeg','jpeg'],['epub','epub'],['bok','shamela-bok'],['txt','text'],['md','markdown'],['html','html'],['htm','html']])
 export function publicBook(row){
   let name=String(row.objectKey??'').split('/').at(-1)??''
   try{name=decodeURIComponent(name)}catch{name=''}
@@ -45,7 +45,7 @@ export async function onRequest(context){
     if(id){
       const [result]=await db.batch([db.prepare(`SELECT ${FIELDS} FROM user_books WHERE ${PUBLIC} AND id=?1 LIMIT 1`).bind(id)])
       const row=result.results?.[0]
-      let extras={};if(row)try{extras=await publicBookExtras(db,id)}catch(error){if(!missingIntakeSchema(error))throw error}
+      let extras={};if(row)try{extras=await publicBookExtras(db,id,row.mimeType)}catch(error){if(!missingIntakeSchema(error))throw error}
       return row?json({schemaVersion:1,book:{...publicBook(row),...extras}},200,{'cache-control':'no-store','cross-origin-resource-policy':'same-origin'}):json({error:'book_not_found'},404,{'cache-control':'no-store'})
     }
     // D1 batch is transactional: page and epoch observe the same database snapshot.

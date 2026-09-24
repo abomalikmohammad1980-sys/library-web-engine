@@ -21,7 +21,8 @@ import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url'
 import { authorLink, bookAuthorLinks, categoryLink, effectiveBookCategory } from '../taxonomy_links'
 import { stateView } from '../state_view'
 import { buildRichClipboard, writeRichClipboard } from '../rich_clipboard'
-import { availableReaderPage, parseReaderDeepLink, readyReaderTotal, readerHydrationWindow, readerIndexForDisplayedPage, readerProgressState, requestedReaderPage } from '../reader_navigation'
+import { availableReaderPage, parseReaderDeepLink, readyReaderTotal, readerEstimatedSlotHeight, readerHydrationWindow, readerIndexForDisplayedPage, readerProgressState, readerSlotAtViewportCenter, requestedReaderPage } from '../reader_navigation'
+import {ReaderVirtualHeights} from '../reader_virtual_window'
 import { persistCompletedReaderPageCount } from '../reader_page_count_persistence'
 import { bookPageCount, bookVolumeCount, cacheReaderPageCount } from '../book_page_count'
 import { getReadingMode, nextReadingMode, readingModeLabel, saveReadingMode, type ReadingMode } from '../reading_mode'
@@ -36,7 +37,8 @@ import { classifyReaderFailure, plainReaderGroups, type ReaderFailure, type Read
 import { bestEffortClone } from '../reader_cache'
 import { ReaderPreviewCache } from '../reader_preview_cache'
 import { hasAuthoritativeWordPageMaps } from '../reader_page_authority'
-import { inferBookFormat } from '../book_format'
+import { inferBookFormat, isTextualReaderFormat } from '../book_format'
+import {downloadJpegOriginal} from '../jpeg_original_download'
 import { managedBookLock } from '../managed_book_lock'
 import { shouldParseRawBok } from '../shamela_reader_contract'
 import { assertBookFormat, invalidBookFormatMessage } from '../book_format_validation'
@@ -47,7 +49,10 @@ import { extractPdfOutline, normalizeTocQuery, type PdfTocDestination } from '..
 import { pdfJsLocalAssets } from '../pdfjs_assets'
 import { openTranslationDialog, setSourceDocumentTitle } from '../translation'
 import { ensurePublishedWorkSeeded } from '../published_library_seed'
-import { cleanShamelaFootnoteMarks, isShamelaBasmalah, parseTextualFootnoteLine, shamelaSymbolParts, splitTextualFootnoteEntries } from '../shamela_text_presentation'
+import {shamelaPreviewPageLoaded,shamelaPreviewPageLoader} from '../shamela_reader_shards'
+import { isShamelaBasmalah } from '../shamela_text_presentation'
+import { shamelaTextBlocks, decorateTextParagraph } from '../shamela_page_render'
+import { followHtmlBookAnchor } from '../html_book_navigation'
 import { shamelaSourceBookId } from '../shamela_public_identity'
 import { createReaderErrorReportButton } from '../reader_error_report'
 import { localOriginalAsset } from '../library_card_state'
@@ -70,6 +75,7 @@ import {captureAnnotationStores} from '../annotation_identity_store'
 import {openQuotePublishDialog} from '../quote_publish_form'
 
 const readerIdentities = new WeakMap<object, ReturnType<typeof captureReadingIdentity>>()
+const readerSearchSlots=new WeakMap<HTMLElement,HTMLElement[]>()
 const publicReaderRegistry=createPublicReaderRegistry()
 const accountReaderRegistry=createPublicReaderRegistry(resolveAccountBookOriginal,true)
 const isAccountReaderId=(id:string)=>id.startsWith('account-book:')
@@ -176,21 +182,32 @@ export function readerScreen(id: string): HTMLElement {
   const previousBodyOverflowX = document.body.style.overflowX
   document.documentElement.style.overflowX = 'hidden'
   document.body.style.overflowX = 'hidden'
-  const lockReaderHorizontalPosition = (): void => {
-    document.documentElement.scrollLeft = 0
-    document.body.scrollLeft = 0
-    if (window.scrollX !== 0) window.scrollTo(0, window.scrollY)
-    for (const element of reader.querySelectorAll<HTMLElement>('.reader__body,.reader__stage,.reading,.reading__stream,.reading__page-slot')) {
-      if (element.scrollLeft !== 0) element.scrollLeft = 0
-    }
+  let horizontalLockFrame = 0
+  const lockReaderHorizontalPosition = (event?: Event): void => {
+    // Scroll events are captured from the actual scroller. Reading every
+    // one of 10,000 page slots on each vertical scroll forced full layouts
+    // even when only the window or one visible slot could have moved.
+    const target = event?.target
+    if (target instanceof HTMLElement && reader.contains(target)
+      && target.matches('.reader__body,.reader__stage,.reading,.reading__stream,.reading__page-slot')
+      && target.scrollLeft !== 0) target.scrollLeft = 0
+    if (!horizontalLockFrame) horizontalLockFrame = requestAnimationFrame(() => {
+      horizontalLockFrame = 0
+      if (window.scrollX !== 0) {
+        document.documentElement.scrollLeft = 0
+        document.body.scrollLeft = 0
+        window.scrollTo(0, window.scrollY)
+      }
+    })
   }
   routeEventListener(window, 'scroll', lockReaderHorizontalPosition, { capture: true, passive: true }, resourceScope)
   routeEventListener(reader, 'scroll', lockReaderHorizontalPosition, { capture: true, passive: true }, resourceScope)
   resourceScope.add(() => {
+    if (horizontalLockFrame) cancelAnimationFrame(horizontalLockFrame)
     document.documentElement.style.overflowX = previousRootOverflowX
     document.body.style.overflowX = previousBodyOverflowX
   })
-  requestAnimationFrame(lockReaderHorizontalPosition)
+  requestAnimationFrame(() => lockReaderHorizontalPosition())
 
   reader.appendChild(readerToolbar(reader,
     () => void downloadOriginalBook(id, book),
@@ -205,9 +222,15 @@ export function readerScreen(id: string): HTMLElement {
     () => toggleSearch(reader),
     () => toggleSerenity(reader),
     () => {
+      const visibleSlot=Array.from(reader.querySelectorAll<HTMLElement>('.reading__page-slot'))
+        .find(slot=>slot.getBoundingClientRect().bottom>84)
+      const visiblePageIndex=Number(visibleSlot?.dataset.pageIndex)
       readingMode = nextReadingMode(readingMode)
       saveReadingMode(readingMode)
       reader.classList.toggle('reader--flow', readingMode === 'flow')
+      reader.dispatchEvent(new CustomEvent('reader-layout-mode-changed',{
+        detail:{pageIndex:Number.isSafeInteger(visiblePageIndex)?visiblePageIndex:activeReaderPageIndex},
+      }))
       return readingMode
     },
   ))
@@ -389,19 +412,31 @@ export function readerScreen(id: string): HTMLElement {
       const remoteRegistry=isAccountReaderId(id)?accountReaderRegistry:publicReaderRegistry
       const publicAbort=new AbortController()
       if(publicSource)resourceScope.add(()=>publicAbort.abort())
-      let stored = publicSource ? await remoteRegistry.resolve(id,publicAbort.signal) : shamelaSourceBookId(id) ? await ensurePublishedWorkSeeded(id) : await getBook(id)
+      const deepRequested=parseReaderDeepLink(routeLocation.hash.split('?')[1]??'').pageIndex
+      const savedRequested=Number(identity.getItem(`alkhizana:reading-position:${id}`))
+      const requestedIndex=deepRequested??(Number.isSafeInteger(savedRequested)&&savedRequested>=0?savedRequested:0)
+      let previewRender:Promise<void>|undefined
+      const showShamelaPreview=(preview:StoredBook):void=>{
+        if(resourceScope.disposed||!identity.isCurrent())return
+        const title=storedReaderTitle(preview)
+        reader.dataset.readerTitle=title;reader.dataset.readerAuthor=preview.author
+        setSourceDocumentTitle(readerDocumentTitle(title))
+        previewRender=renderTextSource(reader,preview,resourceScope)
+      }
+      let stored = publicSource ? await remoteRegistry.resolve(id,publicAbort.signal) : shamelaSourceBookId(id) ? await ensurePublishedWorkSeeded(id,showShamelaPreview,requestedIndex) : await getBook(id)
+      if(previewRender)await previewRender
       if(publicSource&&stored){const transient=stored;resourceScope.add(()=>{remoteRegistry.release(transient);loadedBookCache.delete(id)})}
       if (!identity.isCurrent()) return
       sourceTrace('source-ready',{bytes:stored?.data?.byteLength??0,format:stored?inferBookFormat(stored):'missing'})
       // قد يسبق فتح رابط كتاب منشور اكتمال غرس manifest في IndexedDB، ولا
       // ينبغي أن تظهر عندها هوية وهمية أو صفحة مفقودة.
-      if (!publicSource && (!stored || (stored.managedSource === 'published' && !stored.data?.byteLength))) {
+      if (!publicSource && (!stored || (stored.managedSource === 'published' && !stored.data?.byteLength && !shamelaPreviewPageLoader(stored)))) {
         stored = await ensurePublishedWorkSeeded(id) ?? stored
-      } else if (!publicSource && stored?.managedSource === 'published' && inferBookFormat(stored) === 'shamela-bok' && shouldParseRawBok(stored, 'shamela-bok')) {
+      } else if (!publicSource && stored?.managedSource === 'published' && !shamelaPreviewPageLoader(stored) && inferBookFormat(stored) === 'shamela-bok' && shouldParseRawBok(stored, 'shamela-bok')) {
         // سجلات BOK المنشورة القديمة قد تحمل الأصل الصحيح مع مشتقات ناقصة.
         // تحديثها قبل أول رسم يمنع فشل Jet المتكرر، ولا يمس كتب المستخدم.
         stored = await ensurePublishedWorkSeeded(id) ?? stored
-      } else if (!publicSource && stored?.managedSource === 'published') {
+      } else if (!publicSource && stored?.managedSource === 'published' && !shamelaPreviewPageLoader(stored)) {
         // افتح النسخة الموثقة الموجودة فورًا؛ فحص manifest/الخريطة عملية صيانة
         // خلفية ولا يجوز أن يحبس أول رسم على الشبكة أو كتابة IndexedDB. إذا
         // وصلت سلطة صفحات أحدث، أعد الرسم بها في المسار نفسه دون إعادة تحميل.
@@ -433,11 +468,11 @@ export function readerScreen(id: string): HTMLElement {
         configureReaderSourceLabel(reader, stored)
         renderReaderInfoIdentity(infoEl, stored)
         renderBookInfo(bookCardEl, stored)
-        if (inferBookFormat(stored) === 'text' || inferBookFormat(stored) === 'markdown' || inferBookFormat(stored) === 'epub' || inferBookFormat(stored) === 'shamela-bok') {
+        if (isTextualReaderFormat(inferBookFormat(stored))) {
           void renderTextSource(reader, stored, resourceScope)
           return
         }
-        if (inferBookFormat(stored) === 'pdf') {
+        if (inferBookFormat(stored) === 'pdf' || inferBookFormat(stored) === 'jpeg') {
           const stage = reader.querySelector<HTMLElement>('.reader__stage')
           stage?.replaceChildren()
           void showPdfBesideBook(id, infoEl, true)
@@ -507,6 +542,9 @@ async function renderTextSource(reader: HTMLElement, stored: StoredBook, resourc
   const stage = reader.querySelector<HTMLElement>('.reader__stage')
   if (!stage) return
   try {
+    const previewLoader=shamelaPreviewPageLoader(stored)
+    if(previewLoader)reader.dataset.partialBook='true';else delete reader.dataset.partialBook
+    for(const button of reader.querySelectorAll<HTMLButtonElement>('[data-reader-action="search"]')){button.disabled=Boolean(previewLoader);button.title=previewLoader?'يكتمل البحث داخل الكتاب بعد تحميل بقية الصفحات':'بحث في الكتاب'}
     reader.classList.add('reader--textual')
     stage.classList.add('reader__stage--textual')
     const format = inferBookFormat(stored)
@@ -521,7 +559,7 @@ async function renderTextSource(reader: HTMLElement, stored: StoredBook, resourc
       stored = { ...stored, extractedText: parsed.extractedText, bokPages: parsed.pages, bokToc: parsed.toc, bokTextVersion: CURRENT_BOK_TEXT_VERSION }
       await updateBokDerivedText(stored.id, { extractedText: parsed.extractedText, pages: parsed.pages, toc: parsed.toc, version: CURRENT_BOK_TEXT_VERSION })
     }
-    const sourceText = format === 'epub' || format === 'shamela-bok'
+    const sourceText = format === 'epub' || format === 'html' || format === 'shamela-bok'
       ? stored.extractedText ?? ''
       : storedTextSource(stored.data, stored.extractedText)
     if (format === 'markdown') {
@@ -542,6 +580,31 @@ async function renderTextSource(reader: HTMLElement, stored: StoredBook, resourc
       live.dataset.status = 'ready'
       cacheReaderPageCount(stored.id, rendered.pages.length)
       await persistCompletedReaderPageCount(stored.id, rendered.pages.length, saveReaderPageCount)
+      printTextBookWhenRequested(stored)
+      return
+    }
+    if(format==='html'){
+      const {parseHtmlBook}=await import('../html_source')
+      const rendered=parseHtmlBook(stored.data,stored.fileName,stored.htmlAssets)
+      resourceScope.add(()=>rendered.assetUrls.forEach(url=>URL.revokeObjectURL(url)))
+      reader.classList.add('reader--epub')
+      const page=document.createElement('section')
+      page.className='page reader__text-page reader__epub-page'
+      page.dataset.pageIndex='0';page.dataset.wordPageNumber='1';page.dataset.searchText=rendered.text
+      page.append(rendered.content)
+      const live=readingColumn();stage.replaceChildren(live)
+      const nav=renderDomPages(live,[page],stored.title,stored.author,stored.authorId,resourceScope)
+      activePageNavigation=nav
+      live.querySelector('.reading__stream')?.prepend(textBookTitlePage(stored))
+      live.addEventListener('click',event=>{ followHtmlBookAnchor(event,live) })
+      if(rendered.headings.length){
+        const entries=rendered.headings.map(entry=>({num:1,label:entry.title,bookmark:entry.bookmark,level:entry.level}))
+        const aside=document.querySelector<HTMLElement>('.reader__toc')
+        if(aside){renderTocAside(aside,'day',entries);enableTocNavigation(entries,nav)}
+      }
+      live.dataset.status='ready'
+      cacheReaderPageCount(stored.id,1)
+      await persistCompletedReaderPageCount(stored.id,1,saveReaderPageCount)
       printTextBookWhenRequested(stored)
       return
     }
@@ -584,9 +647,27 @@ async function renderTextSource(reader: HTMLElement, stored: StoredBook, resourc
         titles.push({ title: entry.title, bookmark: `bok-toc-${tocIndex + 1}`, level: entry.level })
         tocByPage.set(entry.id, titles)
       }
-      const deepIndex=parseReaderDeepLink(routeLocation.hash.split('?')[1]??'').pageIndex,savedIndex=Number(identity.getItem(`alkhizana:reading-position:${stored.id}`)),focusIndex=deepIndex??(Number.isInteger(savedIndex)&&savedIndex>=0?savedIndex:0)
+      const deepIndex=parseReaderDeepLink(routeLocation.hash.split('?')[1]??'').pageIndex,savedIndex=Number(identity.getItem(`alkhizana:reading-position:${stored.id}`)),focusIndex=reader.dataset.hugeBookMounted==='true'?activeReaderPageIndex:deepIndex??(Number.isInteger(savedIndex)&&savedIndex>=0?savedIndex:0)
       const hydratePage=(page:HTMLElement,source:NonNullable<StoredBook['bokPages']>[number],index:number):void=>{
         if(page.dataset.hydrated==='true')return
+        if(previewLoader&&!shamelaPreviewPageLoaded(stored,index)){
+          if(page.dataset.hydrated==='pending')return
+          page.dataset.hydrated='pending'
+          page.replaceChildren(h('p',{class:'reader__text-page-loading'},'جارٍ تحميل هذه الصفحة…'))
+          void previewLoader(index).then(()=>{
+            if(resourceScope.disposed)return
+            const ready=stored.bokPages?.[index]
+            if(!ready||!shamelaPreviewPageLoaded(stored,index))throw Error('shamela_reader_shard_page_missing')
+            delete page.dataset.hydrated
+            readerPageSearchText.set(page,ready.text)
+            hydratePage(page,ready,index)
+          }).catch(()=>{
+            if(resourceScope.disposed)return
+            page.dataset.hydrated='failed'
+            page.replaceChildren(h('button',{type:'button',onclick:()=>{delete page.dataset.hydrated;hydratePage(page,stored.bokPages![index]!,index)}},'تعذّر تحميل الصفحة — إعادة المحاولة'))
+          })
+          return
+        }
         page.dataset.hydrated='true';page.replaceChildren(h('div', { class: 'reader__text-folio', 'aria-hidden': 'true' },
           h('span', null, `الجزء ${arabicNum(source.part)} · الصفحة ${arabicNum(bokDisplayPages[index] ?? source.page)}`),
           ...(source.hadithNumber ? [h('strong', { class: 'reader__hadith-number' }, `حديث ${arabicNum(source.hadithNumber)}`)] : []),
@@ -628,10 +709,63 @@ async function renderTextSource(reader: HTMLElement, stored: StoredBook, resourc
         // الموثقة بدل إسقاطها أو تخمين فقرة أخرى.
         for (const entry of pendingHeadings.reverse()) page.insertBefore(h('h2', { class: 'reader__text-heading', id: entry.bookmark, dataset: { level: String(entry.level) } }, entry.title), page.children[1] ?? null)
       }
-const pages = stored.bokPages.map((source, index) => {const displayed=bokDisplayPages[index]??source.page;const page=h('section',{class:'page reader__text-page reader__text-page--bok','aria-label':`الجزء ${arabicNum(source.part)} الصفحة ${arabicNum(displayed)}${source.hadithNumber?` الحديث ${arabicNum(source.hadithNumber)}`:''}`});page.dataset.pageIndex=String(index);page.dataset.wordPageNumber=String(displayed);page.dataset.sourcePageNumber=String(source.page);page.dataset.partNumber=String(source.part);if(source.hadithNumber)page.dataset.hadithNumber=String(source.hadithNumber);readerPageSearchText.set(page,source.text);page.dataset.tocBookmarks=(tocByPage.get(source.id)??[]).map(entry=>entry.bookmark).join('|');return page})
-      const eager=new Set([0,1,2,focusIndex-2,focusIndex-1,focusIndex,focusIndex+1,focusIndex+2].filter(index=>index>=0&&index<pages.length));for(const index of eager)hydratePage(pages[index]!,stored.bokPages[index]!,index)
-      textTrace('bok-dom-built',{pages:pages.length})
+      const createBokPage=(source:NonNullable<StoredBook['bokPages']>[number],index:number):HTMLElement=>{const displayed=bokDisplayPages[index]??source.page;const page=h('section',{class:'page reader__text-page reader__text-page--bok','aria-label':`الجزء ${arabicNum(source.part)} الصفحة ${arabicNum(displayed)}${source.hadithNumber?` الحديث ${arabicNum(source.hadithNumber)}`:''}`});page.dataset.pageIndex=String(index);page.dataset.wordPageNumber=String(displayed);page.dataset.sourcePageNumber=String(source.page);page.dataset.partNumber=String(source.part);if(source.hadithNumber)page.dataset.hadithNumber=String(source.hadithNumber);readerPageSearchText.set(page,source.text);page.dataset.tocBookmarks=(tocByPage.get(source.id)??[]).map(entry=>entry.bookmark).join('|');return page}
+      // A multi-thousand-page work must not allocate thousands of DOM slots
+      // before the requested text becomes interactive. Keep the complete TOC
+      // and page identities, but mount only the requested page; nearby pages
+      // are already in verified shards and distant pages load on demand.
+      if(stored.bokPages.length>=2000){
+        const total=stored.bokPages.length,live=readingColumn(),stream=h('div',{class:'reading__stream'}),position=h('span',{class:'reading__position-text',role:'status','aria-live':'polite'})
+        const previous=h('button',{type:'button',class:'btn btn--secondary','aria-label':'الصفحة السابقة'},'السابق') as HTMLButtonElement
+        const next=h('button',{type:'button',class:'btn btn--secondary','aria-label':'الصفحة التالية'},'التالي') as HTMLButtonElement
+        const jump=h('input',{type:'number',min:'1',max:String(total),'aria-label':'رقم الصفحة للانتقال المباشر'}) as HTMLInputElement
+        let goTo=(_requested:number):void=>undefined
+        const boundaries=readerBoundaryButtons(()=>goTo(0),()=>goTo(total-1))
+        const jumpForm=h('form',{class:'reading__page-jump'},jump,boundaries.element,h('button',{type:'submit','aria-label':'الانتقال إلى الصفحة المحددة'},'انتقل'))
+        const controls=h('div',{class:'reading__position'},previous,position,next,jumpForm)
+        live.replaceChildren(controls,stream);stage.replaceChildren(live)
+        const pageByRow=new Map(stored.bokPages.map((page,index)=>[page.id,index]))
+        const tocPageIndex=new Map<string,number>()
+        const bokToc=(stored.bokToc??[]).map((entry,index)=>{const pageIndex=pageByRow.get(entry.id)??0,bookmark=`bok-toc-${index+1}`;tocPageIndex.set(bookmark,pageIndex);return{num:bokDisplayPages[pageIndex]??entry.id,label:entry.title,bookmark,level:entry.level}})
+        let current=-1
+        goTo=(requested:number):void=>{
+          if(resourceScope.disposed||!Number.isSafeInteger(requested)||requested<0||requested>=total)return
+          current=requested;activeReaderPageIndex=current
+          const source=stored.bokPages![current]!,page=createBokPage(source,current)
+          hydratePage(page,source,current)
+          const slot=h('div',{class:'reading__page-slot'},page);slot.dataset.pageIndex=String(current)
+          stream.replaceChildren(slot)
+          position.textContent=`${arabicNum(current+1)} / ${arabicNum(total)}`
+          previous.disabled=current===0;next.disabled=current===total-1
+          boundaries.update(current,total)
+          identity.setItem(`alkhizana:reading-position:${stored.id}`,String(current))
+          announceReaderPage(current,total)
+          slot.scrollIntoView({block:'start',behavior:'instant'})
+        }
+        const nav:PageNavigation={goTo,goToDisplayedPage:page=>{const found=bokDisplayPages.findIndex(number=>number===page);goTo(found>=0?found:page-1)},goToBookmark:bookmark=>{const index=tocPageIndex.get(bookmark);if(index===undefined)return false;goTo(index);return true},total}
+        activePageNavigation=nav
+        activePageNumbers=bokDisplayPages;activePartNumbers=stored.bokPages.map(page=>Number(page.part)||1);activeDisplayedTotal=total
+        previous.addEventListener('click',()=>goTo(current-1));next.addEventListener('click',()=>goTo(current+1))
+        jumpForm.addEventListener('submit',event=>{event.preventDefault();goTo(Number(jump.value)-1)})
+        goTo(Math.min(Math.max(0,focusIndex),total-1))
+        reader.dataset.hugeBookMounted='true'
+        const aside=document.querySelector<HTMLElement>('.reader__toc')
+        if(aside){renderTocAside(aside,'day',bokToc);enableTocNavigation(bokToc,nav)}
+        live.dataset.status=previewLoader?'partial':'ready'
+        if(!previewLoader){cacheReaderPageCount(stored.id,total);await persistCompletedReaderPageCount(stored.id,total,saveReaderPageCount)}
+        return
+      }
       const live = readingColumn(); stage.replaceChildren(live)
+      // A 10,000-page BOK used to keep the real page hidden while every
+      // placeholder was allocated and laid out. Show the requested page first;
+      // reuse that very node when the full navigation stream is ready.
+      const previewPage=stored.bokPages.length>6000?createBokPage(stored.bokPages[focusIndex]!,focusIndex):undefined
+      if(previewPage){hydratePage(previewPage,stored.bokPages[focusIndex]!,focusIndex);live.replaceChildren(previewPage);await new Promise<void>(resolve=>requestAnimationFrame(()=>setTimeout(resolve,0)));if(resourceScope.disposed)return;textTrace('bok-preview-paint',{center:focusIndex})}
+      const pages = stored.bokPages.map((source,index)=>index===focusIndex&&previewPage?previewPage:createBokPage(source,index))
+      // A partial deep link must not eagerly fetch the first shard as well as
+      // the requested shard. The complete TOC remains available independently.
+      const eager=new Set([...(previewLoader?[]:[0,1,2]),focusIndex-2,focusIndex-1,focusIndex,focusIndex+1,focusIndex+2].filter(index=>index>=0&&index<pages.length));for(const index of eager)hydratePage(pages[index]!,stored.bokPages[index]!,index)
+      textTrace('bok-dom-built',{pages:pages.length})
       const hydration=new AbortController();resourceScope.add(()=>hydration.abort())
       // BOK pages carry their full source text in memory. Hydrate the current
       // page and a small direction-aware window synchronously, so a deep jump
@@ -641,11 +775,15 @@ const pages = stored.bokPages.map((source, index) => {const displayed=bokDisplay
         if(hydration.signal.aborted)return
         for(const index of readerHydrationWindow(center,pages.length,direction))hydratePage(pages[index]!,stored.bokPages![index]!,index)
       }
-      const nav = renderDomPages(live, pages, stored.title, stored.author, stored.authorId, resourceScope, undefined, prepareBokWindow)
+      const nav = renderDomPages(live, pages, stored.title, stored.author, stored.authorId, resourceScope, undefined, prepareBokWindow, !previewLoader&&pdfButtonAction(stored,'pdf-text')!=='original')
       activePageNavigation = nav
       await nextPaint();textTrace('bok-first-paint',{pages:pages.length})
       textTrace('bok-window-ready',{center:focusIndex})
       live.querySelector('.reading__stream')?.prepend(textBookTitlePage(stored))
+      // The title sheet is inserted after renderDomPages schedules its initial
+      // deep-link jump. Re-anchor only after that insertion, or the new sheet
+      // pushes a requested BOK page one page below the visible viewport.
+      if(deepIndex!=null||focusIndex>0)routeAnimationFrame(()=>nav.goTo(focusIndex),resourceScope)
       const bokPageIndexes=new Map(stored.bokPages.map((page,index)=>[page.id,index]))
       const bokToc = (stored.bokToc ?? []).map((entry, index) => ({
         num: bokDisplayPages[bokPageIndexes.get(entry.id)??-1]??entry.id,
@@ -655,9 +793,9 @@ const pages = stored.bokPages.map((source, index) => {const displayed=bokDisplay
       }))
       const aside = document.querySelector<HTMLElement>('.reader__toc')
       if (aside) { renderTocAside(aside, 'day', bokToc); enableTocNavigation(bokToc, nav) }
-      live.dataset.status = 'ready'
-      cacheReaderPageCount(stored.id, pages.length); await persistCompletedReaderPageCount(stored.id, pages.length, saveReaderPageCount)
-      printTextBookWhenRequested(stored)
+      live.dataset.status = previewLoader?'partial':'ready'
+      cacheReaderPageCount(stored.id, pages.length); if(!previewLoader)await persistCompletedReaderPageCount(stored.id, pages.length, saveReaderPageCount)
+      if(!previewLoader)printTextBookWhenRequested(stored)
       return
     }
     const paragraphs = textParagraphs(sourceText)
@@ -704,7 +842,7 @@ const pages = stored.bokPages.map((source, index) => {const displayed=bokDisplay
       bookTitle: stored.title, bookId: stored.id,
       retry: () => void renderTextSource(reader, stored, resourceScope),
       download: () => downloadBytes(stored.data, stored.fileName, stored.mimeType),
-      downloadLabel: format === 'epub' ? 'تنزيل EPUB الأصلي' : format === 'shamela-bok' ? 'تنزيل BOK الأصلي' : 'تنزيل النص الأصلي',
+      downloadLabel: format === 'html' ? 'تنزيل HTML الأصلي' : format === 'epub' ? 'تنزيل EPUB الأصلي' : format === 'shamela-bok' ? 'تنزيل BOK الأصلي' : 'تنزيل النص الأصلي',
     }))
   }
 }
@@ -724,7 +862,7 @@ function textBookTitlePage(book: StoredBook): HTMLElement {
     h('h2', { dataset: { noTranslate: '' } }, book.title),
     h('p', { class: 'reader__text-title-authors', dataset: { noTranslate: '' } }, authors.filter(Boolean).join('، ')),
     ...(metadata.length ? [h('dl', null, ...metadata.flatMap(([label, value]) => [h('dt', null, label), h('dd', {dataset:{noTranslate:''}}, value)]))] : []),
-    h('p', { class: 'reader__text-title-format' }, inferBookFormat(book) === 'shamela-bok' ? 'نسخة نصية من ملف BOK الأصلي' : 'نسخة نصية من ملف EPUB الأصلي'),
+    h('p', { class: 'reader__text-title-format' }, inferBookFormat(book) === 'shamela-bok' ? 'نسخة نصية من ملف BOK الأصلي' : inferBookFormat(book) === 'html' ? 'نسخة للقراءة والبحث من ملف HTML الأصلي' : 'نسخة نصية من ملف EPUB الأصلي'),
   )
   uiTemplateAttribute(titlePage,'aria-label','d7c2d9934cfcf7bf',{p1:book.title})
   return titlePage
@@ -739,66 +877,6 @@ function printTextBookWhenRequested(book: StoredBook): void {
   requestAnimationFrame(() => requestAnimationFrame(() => window.print()))
 }
 
-interface TextBlockOptions { footnote?: boolean; indent?: number; basmalah?: boolean }
-
-function shamelaTextBlocks(text:string,controls:Array<{kind:'separator'|'style';offset:number;level?:number}> = []):Array<{text:string;footnote:boolean;indent:number;separator?:boolean;styleLevel?:number}>{
-  for(const control of [...controls].sort((a,b)=>b.offset-a.offset)){const marker=control.kind==='separator'?'\n\uE000separator\n':`\n\uE000style:${control.level??0}\n`;text=text.slice(0,control.offset)+marker+text.slice(control.offset)}
-  const normalized = text.replace(/\r\n?/g, '\n')
-  const lines = normalized.includes('\n') ? normalized.split('\n') : textParagraphs(normalized)
-  const blocks:Array<{text:string;footnote:boolean;indent:number;separator?:boolean;styleLevel?:number}>=[]
-  let footnoteSection=false,styleLevel:number|undefined
-  for (const raw of lines) {
-    const value = cleanShamelaFootnoteMarks(raw.trim())
-    if (!value) continue
-    if(value==='\uE000separator'){blocks.push({text:'',footnote:false,indent:0,separator:true});continue}
-    if(value.startsWith('\uE000style:')){styleLevel=Number(value.slice(7));continue}
-    if (/^(?:[_ـ=-]{3,}|الحواشي\s*:?)$/u.test(value)) { footnoteSection = true; continue }
-    const explicitFootnote = /^(?:\(\s*\d+\s*\)|\[\s*\d+\s*\]|=)\s*/u.test(value)
-    // الفراغات الأولية في قواعد الشاملة ليست تفقيرًا موثوقًا؛ إبقاؤها كان
-    // يضيّق بعض الفقرات عشوائيًا من الجانبين في القارئ.
-    const footnote = footnoteSection || explicitFootnote
-    for (const entry of splitTextualFootnoteEntries(value, footnote)) blocks.push({ text:entry,footnote,indent:0,...styleLevel!=null?{styleLevel}:{} })
-  }
-  return blocks
-}
-
-function decorateTextParagraph(text: string, options: TextBlockOptions = {}): HTMLElement {
-  const paragraph = h('p', { class: 'reader__text-paragraph' })
-  text = cleanShamelaFootnoteMarks(text)
-  if (options.indent) paragraph.dataset.indent = String(options.indent)
-  if (options.basmalah) paragraph.classList.add('reader__text-basmalah')
-  const isNote = options.footnote || /^(?:\[?\d+[\]\).:\-]|الهامش|حاشية)/u.test(text.trim())
-  if (isNote) paragraph.classList.add('reader__text-paragraph--note')
-  if (/(?:قال رسول الله|عن النبي|صلى الله عليه وسلم|ﷺ)/u.test(text)) paragraph.classList.add('reader__text-paragraph--hadith')
-  // الأقواس وحدها ليست دليلًا قرآنيًا. لا نلوّن متنًا مرشحًا قبل مطابقته
-  // exact مع أثر quran-annotations ذي corpusVersion/checksum موثّقين.
-  const noteLine = isNote ? parseTextualFootnoteLine(text, true) : undefined
-  const visibleText = noteLine?.body ?? text
-  if (noteLine?.marker) paragraph.appendChild(h('span', { class: 'reader__text-note-number', 'aria-label': `الحاشية ${noteLine.marker}` }, `(${noteLine.marker}) `))
-  if (noteLine?.continuation) paragraph.classList.add('reader__text-paragraph--note-continuation')
-  const content = isNote ? h('span', { class: 'reader__text-note-body' }) : paragraph
-  const versePattern = /(\[[^\]\n]{2,40}:\s*[\d٠-٩۰-۹][^\]\n]{0,18}\]|\(\s*[\d٠-٩۰-۹]{1,3}\s*\))/gu
-  let cursor = 0
-  for (const match of visibleText.matchAll(versePattern)) {
-    const start = match.index ?? 0
-    if (start > cursor) appendShamelaAccessibleText(content, visibleText.slice(cursor, start))
-    const token = match[0]
-    const className = token.startsWith('[') ? 'reader__text-verse-ref' : 'reader__text-note-ref'
-    content.appendChild(h('span', { class: className }, token))
-    cursor = start + match[0].length
-  }
-  if (cursor < visibleText.length) appendShamelaAccessibleText(content, visibleText.slice(cursor))
-  if (content !== paragraph) paragraph.appendChild(content)
-  return paragraph
-}
-
-function appendShamelaAccessibleText(target: HTMLElement, value: string): void {
-  for (const part of shamelaSymbolParts(value)) {
-    if (!part.label) target.append(document.createTextNode(part.text))
-    else target.appendChild(h('span', { class: 'reader__text-shamela-symbol', 'aria-label': part.label, title: part.label }, part.text))
-  }
-}
-
 function configureReaderSourceLabel(reader: HTMLElement, stored: StoredBook): void {
   const button = reader.querySelector<HTMLElement>('[data-reader-source-action="download"]')
   const original = localOriginalAsset(stored)
@@ -806,7 +884,7 @@ function configureReaderSourceLabel(reader: HTMLElement, stored: StoredBook): vo
   const label = button?.querySelector('span')
   if (!label) return
   const format = inferBookFormat(stored)
-  const shortLabel = format === 'pdf' ? 'PDF' : format === 'markdown' ? 'Markdown' : format === 'text' ? 'نص' : format === 'epub' ? 'EPUB' : format === 'shamela-bok' ? 'BOK' : 'Word'
+  const shortLabel = format === 'pdf' ? 'PDF' : format === 'jpeg' ? 'JPG' : format === 'markdown' ? 'Markdown' : format === 'html' ? 'HTML' : format === 'text' ? 'نص' : format === 'epub' ? 'EPUB' : format === 'shamela-bok' ? 'BOK' : 'Word'
   const fullLabel = format === 'pdf' ? 'تحميل PDF' : `تنزيل ${shortLabel} الأصلي`
   label.textContent = shortLabel
   button?.setAttribute('aria-label', fullLabel)
@@ -814,13 +892,17 @@ function configureReaderSourceLabel(reader: HTMLElement, stored: StoredBook): vo
   if(button && format!=='pdf')for(const attribute of ['aria-label','title'] as const)uiTemplateAttribute(button,attribute,'a42ac02d751540dc',{p1:uiLabelParameter(shortLabel)})
   // PDF المستقل هو نفسه الأصل القابل للتنزيل؛ لا نعرض زر «PDF» مشتقًا
   // ولا «PDF بجوار النص» لكتاب لا يملك متن Word موازيًا.
-  if (format === 'pdf') {
+  if (format === 'pdf' || format === 'jpeg') {
     reader.classList.add('reader--pdf-source')
     reader.querySelector<HTMLElement>('[data-reader-pdf-action="download"]')?.remove()
     reader.querySelector<HTMLElement>('[data-reader-pdf-action="beside"]')?.remove()
     // Canvas PDF لا يملك DOM نصيًا يعاد تدفقه أو بحثه؛ إبقاء الزرين كان
     // يوحي بوظائف غير موجودة. بقية الأدوات (السكينة/العلامات/الملاحظات) حقيقية.
     reader.querySelector<HTMLElement>('[data-reader-action="flow"]')?.remove()
+    if (format === 'jpeg') {
+      reader.querySelector<HTMLElement>('[data-reader-action="search"]')?.remove()
+      reader.querySelector<HTMLElement>('.reader__toc-toggle')?.remove()
+    }
   }
 }
 
@@ -973,19 +1055,14 @@ function isPhoneReaderViewport(): boolean {
 }
 
 /** يركّب نافذة آمنة حول الصفحة المرئية، مع قصها عند أول وآخر الكتاب. */
-export function mountReaderPageWindow(pageCount: number, index: number, mount: (pageIndex: number) => void): void {
-  const radius = 4
+export function mountReaderPageWindow(pageCount: number, index: number, mount: (pageIndex: number) => void, radius = 4): void {
   for (let candidate = Math.max(0, index - radius); candidate <= Math.min(pageCount - 1, index + radius); candidate++) mount(candidate)
 }
 
 function enableTocNavigation(_entries: TocEntry[], nav: PageNavigation): void {
   const aside = document.querySelector('.reader__toc')
   if (!aside) return
-  const items: { el: HTMLElement; num: number; bookmark?: string; pdfDestination?: PdfTocDestination }[] = (aside as any)?.__tocItems ?? []
-  if (items.length === 0) return
-
-  for (const item of items) {
-    item.el.onclick = () => {
+  ;(aside as any).__tocNavigate = (item: TocEntry) => {
       const moved = Boolean(item.bookmark && nav.goToBookmark?.(item.bookmark))
       if (!moved && item.pdfDestination && nav.goToPdfDestination) nav.goToPdfDestination(item.num, item.pdfDestination)
       else if (!moved) nav.goToDisplayedPage(item.num)
@@ -995,7 +1072,6 @@ function enableTocNavigation(_entries: TocEntry[], nav: PageNavigation): void {
         aside.classList.remove('reader__toc--mobile-open')
         document.querySelector<HTMLButtonElement>('.reader__toc-toggle')?.setAttribute('aria-expanded', 'false')
       }
-    }
   }
 }
 
@@ -1029,7 +1105,7 @@ function readerBoundaryButtons(goFirst: () => void, goLast: () => void): ReaderB
   return { element: h('span', { class: 'reader__page-boundaries', 'aria-label': 'الانتقال إلى طرفي الكتاب' }, first, last), update }
 }
 /** عرض عمودي مستمر مثل PDF؛ content-visibility يمنع رسم الصفحات البعيدة. */
-function renderDomPages(container: HTMLElement, pages: HTMLElement[], title: string, author: string, authorId: string | undefined, resourceScope: ResourceScope, preview?: { preview: true; physicalPageCount?: number }, preparePage?: (index: number, direction: -1 | 0 | 1) => void): PageNavigation {
+function renderDomPages(container: HTMLElement, pages: HTMLElement[], title: string, author: string, authorId: string | undefined, resourceScope: ResourceScope, preview?: { preview: true; physicalPageCount?: number }, preparePage?: (index: number, direction: -1 | 0 | 1) => void, virtualizeLargeBok=false): PageNavigation {
   const readingIdentity = identityForReader(resourceScope)
   const columnWidth = (): number => container.clientWidth || 680
   const stream = h('div', { class: 'reading__stream', 'aria-label': `${title} — صفحات متتابعة` })
@@ -1061,9 +1137,14 @@ function renderDomPages(container: HTMLElement, pages: HTMLElement[], title: str
   const requestedParagraph = deepLink.paragraphIndex
   const requestedTafsirPage = deepLink.surah && deepLink.ayah ? pages.findIndex(page => [...page.querySelectorAll<HTMLElement>('[data-tafsir-surah]')].some(node => Number(node.dataset.tafsirSurah) === deepLink.surah && Number(node.dataset.tafsirFrom) <= deepLink.ayah! && Number(node.dataset.tafsirTo) >= deepLink.ayah!)) : -1
   const positionKey = `alkhizana:reading-position:${bookId}`
+  const initialDeepPage = requestedTafsirPage >= 0 ? requestedTafsirPage : availableReaderPage(deepLink, pages)
+  const savedPage=Number(readingIdentity.getItem(positionKey))
+  const initialVirtualPage=initialDeepPage>=0?initialDeepPage:Number.isSafeInteger(savedPage)&&savedPage>=0&&savedPage<pages.length?savedPage:0
+  const virtualLongBok=virtualizeLargeBok&&pages.length>6000&&pages[0]?.classList.contains('reader__text-page--bok')
   activePageNumbers = pages.map((page, index) => Number(page.dataset.wordPageNumber) || index + 1)
   activePartNumbers = pages.map(page => Number(page.dataset.partNumber) || 1)
   activeDisplayedTotal = preview?.physicalPageCount ?? readyReaderTotal(pages.length)
+  const maximumDisplayedPage=pages.reduce((maximum,page)=>Math.max(maximum,Number(page.dataset.wordTotalPages)||0,Number(page.dataset.wordPageNumber)||0),0)
   const slots: HTMLElement[] = []
   let lazyObserver: IntersectionObserver | undefined
   let positionObserver: IntersectionObserver | undefined
@@ -1077,18 +1158,35 @@ function renderDomPages(container: HTMLElement, pages: HTMLElement[], title: str
     const slot = h('div', { class: 'reading__page-slot', 'aria-label': knownTotal
       ? `صفحة ${displayed} من ${arabicNum(knownTotal)}`
       : `صفحة ${displayed}` })
-    slot.style.minHeight = `${Math.round(height * scale)}px`
+    slot.style.minHeight = `${Math.round(page.classList.contains('reader__text-page')?readerEstimatedSlotHeight(height*scale,pages.length):height*scale)}px`
     slot.dataset.pageIndex = String(index)
     slot.dataset.partNumber = page.dataset.partNumber ?? '1'
     slot.dataset.partCount = String(partNumbers.length)
     slot.dataset.wordPageNumber = page.dataset.wordPageNumber ?? String(index + 1)
     if (page.dataset.hadithNumber) slot.dataset.hadithNumber = page.dataset.hadithNumber
     readerPageSearchText.set(slot,readerPageSearchText.get(page) ?? page.dataset.searchText ?? page.textContent ?? '')
-    stream.appendChild(slot)
+    if(!virtualLongBok)stream.appendChild(slot)
     slots.push(slot)
     return slot
   }
   pages.forEach((page, index) => appendSlot(page, index))
+  const owningReader=container.closest<HTMLElement>('.reader')
+  if(owningReader){if(virtualLongBok)readerSearchSlots.set(owningReader,slots);else readerSearchSlots.delete(owningReader)}
+  let virtualHeights:ReaderVirtualHeights|undefined,virtualStart=0,virtualEnd=-1,virtualGap=0,virtualObserver:ResizeObserver|undefined
+  const virtualTop=virtualLongBok?h('div',{class:'reading__virtual-spacer','aria-hidden':'true'}):undefined
+  const virtualBottom=virtualLongBok?h('div',{class:'reading__virtual-spacer','aria-hidden':'true'}):undefined
+  if(virtualLongBok&&virtualTop&&virtualBottom){
+    virtualHeights=new ReaderVirtualHeights(pages.length,Math.max(1,parseFloat(slots[0]?.style.minHeight??'')||557))
+    const initial=virtualHeights.window(initialVirtualPage)
+    virtualStart=initial.start;virtualEnd=initial.end
+    virtualTop.style.height=`${initial.before}px`;virtualBottom.style.height=`${initial.after}px`
+    stream.append(virtualTop,...slots.slice(virtualStart,virtualEnd+1),virtualBottom)
+  }
+  const updateVirtualSpacers=():void=>{
+    if(!virtualHeights||!virtualTop||!virtualBottom)return
+    virtualTop.style.height=`${virtualHeights.prefix(virtualStart)}px`
+    virtualBottom.style.height=`${virtualHeights.prefix(virtualHeights.count)-virtualHeights.prefix(virtualEnd+1)}px`
+  }
   const mountedCleanup: Array<Array<() => void> | undefined> = []
   const unmount = (index: number): void => {
     const slot = slots[index]
@@ -1111,12 +1209,22 @@ function renderDomPages(container: HTMLElement, pages: HTMLElement[], title: str
   const pruneMountedPages = (center: number): void => {
     for (let index = 0; index < slots.length; index++) if (Math.abs(index - center) > 4) unmount(index)
   }
+  const setVirtualWindow=(center:number):void=>{
+    if(!virtualHeights||!virtualTop)return
+    const next=virtualHeights.window(center)
+    if(next.start===virtualStart&&next.end===virtualEnd)return
+    for(let index=virtualStart;index<=virtualEnd;index++)if(index<next.start||index>next.end){virtualObserver?.unobserve(slots[index]!);unmount(index);slots[index]!.remove()}
+    virtualTop.after(...slots.slice(next.start,next.end+1))
+    virtualStart=next.start;virtualEnd=next.end
+    updateVirtualSpacers()
+    for(let index=next.start;index<=next.end;index++)virtualObserver?.observe(slots[index]!)
+  }
   const updatePosition = (index: number): void => {
     activeReaderPageIndex = Math.max(0, index)
     const page = pages[index]
     const current = page?.dataset.wordPageNumber ?? index + 1
     const progress = readerProgressState(index, pages.length, Boolean(preview?.preview), preview?.physicalPageCount)
-    const wordMaximum = Math.max(...pages.map(item => Number(item.dataset.wordTotalPages) || 0), ...pages.map(item => Number(item.dataset.wordPageNumber) || 0))
+    const wordMaximum = maximumDisplayedPage
     const part = Number(page?.dataset.partNumber) || 1
     const total = wordMaximum || progress.total || preview?.physicalPageCount || (progressiveUnknownTotal ? 0 : pages.length)
     const percent = progress.percent ?? Math.max(1, Math.min(100, Math.round(((index + 1) / Math.max(1, total)) * 100)))
@@ -1133,11 +1241,27 @@ function renderDomPages(container: HTMLElement, pages: HTMLElement[], title: str
     position,
     stream,
   )
+  if(virtualHeights){
+    virtualGap=Math.max(0,parseFloat(getComputedStyle(slots[virtualStart]!).marginBlockEnd)||0)
+    if(virtualGap){virtualHeights=new ReaderVirtualHeights(pages.length,virtualHeights.estimate+virtualGap);updateVirtualSpacers()}
+    if(typeof ResizeObserver!=='undefined'){
+      virtualObserver=new ResizeObserver(entries=>{
+        for(const entry of entries){const index=Number((entry.target as HTMLElement).dataset.pageIndex),height=entry.borderBoxSize?.[0]?.blockSize??entry.contentRect.height
+          if(Number.isSafeInteger(index)&&index>=0&&index<pages.length&&height>0)virtualHeights?.set(index,height+virtualGap)}
+        updateVirtualSpacers()
+      })
+      for(let index=virtualStart;index<=virtualEnd;index++)virtualObserver.observe(slots[index]!)
+      resourceScope.add(()=>virtualObserver?.disconnect())
+    }
+  }
   const alignPositionToReadingStream = (): void => {
     const rect = stream.getBoundingClientRect()
     if (rect.width > 0) position.style.left = `${Math.round(rect.left + rect.width / 2)}px`
   }
   alignPositionToReadingStream()
+  const positionLayoutObserver = typeof ResizeObserver === 'undefined' ? undefined : new ResizeObserver(alignPositionToReadingStream)
+  positionLayoutObserver?.observe(stream)
+  resourceScope.add(() => positionLayoutObserver?.disconnect())
   const mount = (index: number): void => {
     if(!readingIdentity.isCurrent())return
     const slot = slots[index]
@@ -1149,7 +1273,10 @@ function renderDomPages(container: HTMLElement, pages: HTMLElement[], title: str
     slot.dataset.mounted = 'true'
     const cleanups: Array<() => void> = []
     mountedCleanup[index] = cleanups
-    const wrap = fitPageToWidth(page, columnWidth(), cleanup => cleanups.push(cleanup))
+    // Text flows to the available CSS width; fitPageToWidth ignores its width
+    // argument for this branch. Reading clientWidth between mounts would force
+    // a full layout of every placeholder for each newly mounted text page.
+    const wrap = fitPageToWidth(page, page.classList.contains('reader__text-page') ? 0 : columnWidth(), cleanup => cleanups.push(cleanup))
     resourceScope.add(() => { for (const cleanup of cleanups) cleanup() })
     wrap.classList.add('reading__stream-page')
     wrap.tabIndex = 0
@@ -1167,6 +1294,7 @@ function renderDomPages(container: HTMLElement, pages: HTMLElement[], title: str
   // خلفية القارئ وحدها. ظهور أي موضع يعيد الصفحة وجارتيها فورًا، ويضمن كذلك
   // أن الرجوع إلى صفحة سبق فكها لا يحتاج إعادة تحميل الكتاب.
   const mountVisibleWindow = (index: number): void => {
+    setVirtualWindow(index)
     mountReaderPageWindow(pages.length, index, mount)
   }
   // بعد تكبير صفحات Word تتغير ارتفاعات slots جذريًا، وقد يتأخر
@@ -1177,20 +1305,14 @@ function renderDomPages(container: HTMLElement, pages: HTMLElement[], title: str
   const syncVisiblePageFromViewport = (): void => {
     if (!readingIdentity.isCurrent()) return
     viewportSyncFrame = 0
-    alignPositionToReadingStream()
     const viewportCenter = window.innerHeight / 2
-    let nearestIndex = 0
-    let nearestDistance = Number.POSITIVE_INFINITY
-    for (let index = 0; index < slots.length; index++) {
-      const rect = slots[index]!.getBoundingClientRect()
-      const distance = rect.top <= viewportCenter && rect.bottom >= viewportCenter
-        ? 0 : Math.min(Math.abs(rect.top - viewportCenter), Math.abs(rect.bottom - viewportCenter))
-      if (distance < nearestDistance) {
-        nearestDistance = distance
-        nearestIndex = index
-        if (distance === 0) break
-      }
-    }
+    let nearestIndex:number
+    if(virtualHeights&&virtualTop){
+      const first=slots[virtualStart]!.getBoundingClientRect(),last=slots[virtualEnd]!.getBoundingClientRect()
+      nearestIndex=viewportCenter>=first.top&&viewportCenter<=last.bottom
+        ?virtualStart+readerSlotAtViewportCenter(virtualEnd-virtualStart+1,viewportCenter,index=>slots[virtualStart+index]!.getBoundingClientRect())
+        :virtualHeights.atOffset(viewportCenter-virtualTop.getBoundingClientRect().top)
+    }else nearestIndex=readerSlotAtViewportCenter(slots.length,viewportCenter,index=>slots[index]!.getBoundingClientRect())
     mountVisibleWindow(nearestIndex)
     const previousIndex = activeReaderPageIndex
     updatePosition(nearestIndex)
@@ -1223,16 +1345,21 @@ function renderDomPages(container: HTMLElement, pages: HTMLElement[], title: str
     routeAnimationFrame(scheduleViewportSync, resourceScope)
   }
   window.addEventListener('scroll', scheduleViewportSync, { passive: true })
-  window.addEventListener('resize', scheduleViewportSync, { passive: true })
+  const onViewportResize = (): void => { alignPositionToReadingStream(); scheduleViewportSync() }
+  window.addEventListener('resize', onViewportResize, { passive: true })
   window.addEventListener('reader-content-zoom', refitAllPagesAfterZoom)
   resourceScope.add(() => {
     window.removeEventListener('scroll', scheduleViewportSync)
-    window.removeEventListener('resize', scheduleViewportSync)
+    window.removeEventListener('resize', onViewportResize)
     window.removeEventListener('reader-content-zoom', refitAllPagesAfterZoom)
     if (viewportSyncFrame) cancelAnimationFrame(viewportSyncFrame)
   })
-  if (typeof IntersectionObserver === 'undefined') pages.forEach((_, index) => mount(index))
-  else {
+  // A long text book can have more than ten thousand placeholders. Registering
+  // every one with two observers makes the first reader interaction expensive.
+  // The scroll/resize path above already finds the visible slot by binary
+  // search and hydrates its neighbours; keep that path as the sole tracker for
+  // large books (and browsers without IntersectionObserver).
+  if (typeof IntersectionObserver !== 'undefined' && slots.length <= 6000) {
     lazyObserver = routeObserver(new IntersectionObserver((entries) => {
       for (const entry of entries) if (entry.isIntersecting) {
         const index = Number((entry.target as HTMLElement).dataset.pageIndex)
@@ -1253,15 +1380,27 @@ function renderDomPages(container: HTMLElement, pages: HTMLElement[], title: str
     }, { threshold: [0.35, 0.6] }), resourceScope)
     slots.forEach((slot) => positionObserver?.observe(slot))
   }
-  mountVisibleWindow(0)
-  updatePosition(0)
+  if(initialDeepPage >= 0 && pages.length > 6000 && pages[initialDeepPage]?.classList.contains('reader__text-page')){
+    // Hydrate the same neighbourhood used by scrollTo before first paint.
+    // A later jump must not resize several placeholders above the deep link.
+    mountReaderPageWindow(pages.length,initialDeepPage,mount,12)
+    updatePosition(initialDeepPage)
+  }else{
+    mountVisibleWindow(0)
+    updatePosition(0)
+  }
   const scrollTo = (index: number): void => {
     if (!readingIdentity.isCurrent()) return
     const safe = Math.max(0, Math.min(index, slots.length - 1))
     const direction: -1 | 0 | 1 = lastPreparedIndex < 0 ? 0 : safe > lastPreparedIndex ? 1 : safe < lastPreparedIndex ? -1 : 0
     preparePage?.(safe, direction)
     lastPreparedIndex = safe
+    // Large BOK books have short distant placeholders. Materialize enough
+    // neighbours before the jump so late observer hydration cannot change
+    // heights above the requested page and move the deep link away.
     mountVisibleWindow(safe)
+    if (pages.length > 6000 && pages[safe]?.classList.contains('reader__text-page'))
+      mountReaderPageWindow(pages.length, safe, mount, 12)
     updatePosition(safe)
     if (!readingIdentity.setItem(positionKey, String(safe))) return
     // الانتقال المباشر (الفهرس/الجزء/الصفحة) يجب أن يثبت الهدف قبل أن يرى
@@ -1269,6 +1408,16 @@ function renderDomPages(container: HTMLElement, pages: HTMLElement[], title: str
     // كان يجعل 5/55 يقف عند صفحة قريبة مثل 5/50 في الكتب الكبيرة.
     slots[safe]?.scrollIntoView({ behavior: 'auto', block: 'start' })
     announceReaderPage(safe, pages.length)
+  }
+  if(virtualHeights){
+    const onModeChange=(event:Event):void=>{
+      const nextGap=Math.max(0,parseFloat(getComputedStyle(slots[virtualStart]!).marginBlockEnd)||0)
+      if(nextGap!==virtualGap){virtualHeights?.shiftAll(nextGap-virtualGap);virtualGap=nextGap;updateVirtualSpacers()}
+      const requested=(event as CustomEvent<{pageIndex:number}>).detail?.pageIndex
+      scrollTo(Number.isSafeInteger(requested)&&requested>=0&&requested<pages.length?requested:activeReaderPageIndex)
+    }
+    owningReader?.addEventListener('reader-layout-mode-changed',onModeChange)
+    resourceScope.add(()=>owningReader?.removeEventListener('reader-layout-mode-changed',onModeChange))
   }
   let followLastBoundary = false
   jumpToBoundary = boundary => {
@@ -1302,12 +1451,13 @@ function renderDomPages(container: HTMLElement, pages: HTMLElement[], title: str
   }
   // لا تقصّ رابط pageIndex إلى آخر صفحة من الدفعة الأولى؛ صفحات DOCX
   // الموثقة تُلحق تدريجيًا، فاحتفظ بالهدف حتى تصل صفحته الدقيقة.
-  const requestedPage = requestedTafsirPage >= 0 ? requestedTafsirPage
-    : availableReaderPage(deepLink, pages)
+  const requestedPage = initialDeepPage
   let pendingRequestedPage = requestedPage < 0 ? deepLink.pageIndex : undefined
   let pendingRequestedParagraph = requestedPage < 0 ? requestedParagraph : undefined
   let pendingWordBookmark: string | undefined
   if (requestedPage >= 0) {
+    const earlyDeepJump = pages.length > 6000 && pages[requestedPage]?.classList.contains('reader__text-page')
+    if (earlyDeepJump) scrollTo(requestedPage)
     routeAnimationFrame(() => {
       scrollTo(requestedPage)
       if (requestedParagraph !== undefined) routeAnimationFrame(() => pages[requestedPage]?.querySelector<HTMLElement>(`[data-idx="${requestedParagraph}"]`)?.scrollIntoView({ behavior: readerScrollBehavior(), block: 'center' }), resourceScope)
@@ -1318,7 +1468,7 @@ function renderDomPages(container: HTMLElement, pages: HTMLElement[], title: str
       }, resourceScope)
     }, resourceScope)
   } else {
-    const savedIndex = Number(readingIdentity.getItem(positionKey))
+    const savedIndex = savedPage
     if (Number.isFinite(savedIndex) && savedIndex > 0 && savedIndex < slots.length) routeAnimationFrame(() => scrollTo(savedIndex), resourceScope)
   }
   const appendPages = (next: HTMLElement[]): void => {
@@ -1397,7 +1547,7 @@ function renderDomPages(container: HTMLElement, pages: HTMLElement[], title: str
         followLastBoundary = false
         scrollTo(readerBoundaryIndex(pages.length, 'last'))
       } else {
-        const current = Math.max(0, slots.findIndex(slot => slot.dataset.mounted === 'true'))
+        const current = virtualHeights?activeReaderPageIndex:Math.max(0, slots.findIndex(slot => slot.dataset.mounted === 'true'))
         updatePosition(current)
       }
     },
@@ -1686,11 +1836,11 @@ function renderBookInfo(panel: HTMLElement, book: StoredBook): void {
     bookAuthorLinks(book, 'reader__info-author-link'),
   )
   const format = inferBookFormat(book)
-  const formatNames: Record<string, string> = { word: 'Word', pdf: 'PDF', 'shamela-bok': 'BOK', epub: 'EPUB', text: 'نص', markdown: 'Markdown' }
+  const formatNames: Record<string, string> = { word: 'Word', pdf: 'PDF', jpeg:'JPG', 'shamela-bok': 'BOK', epub: 'EPUB', html:'HTML', text: 'نص', markdown: 'Markdown' }
   const sourceLabel = format === 'pdf' ? 'تحميل PDF' : `تحميل ${formatNames[format] ?? 'الملف'} الأصلي`
   const original = localOriginalAsset(book)
-  const source = original ? h('button', { class: 'reader__metadata-download', type: 'button', title: sourceLabel, 'aria-label': sourceLabel }, icon('download',18)) : undefined
-  source?.addEventListener('click', () => downloadBytes(original!.bytes, original!.fileName, original!.mimeType))
+  const source = original ? h('button', { class: 'reader__metadata-download', type: 'button', title: sourceLabel, 'aria-label': sourceLabel }, formatNames[format] ?? format, icon('download',18)) : undefined
+  source?.addEventListener('click', () => {if(format==='jpeg')downloadJpegOriginal(book);else downloadBytes(original!.bytes, original!.fileName, original!.mimeType)})
   const pdfLabel = needsPdfRefresh(book) ? 'إنشاء PDF من عرض المتصفح' : 'تحميل PDF'
   const pdf = h('button', { class: 'reader__metadata-link', type: 'button', 'aria-label': pdfLabel }, pdfLabel) as HTMLButtonElement
   pdf.addEventListener('click', () => void downloadConvertedPdf(book.id))
@@ -1701,7 +1851,7 @@ function renderBookInfo(panel: HTMLElement, book: StoredBook): void {
     }).catch(error => toast(error instanceof Error ? error.message : 'تعذّر فتح تعديل الكتاب'))
   })
   const facts: HTMLElement[] = [
-    h('div', null, h('dt', null, 'الصيغة'), h('dd', {class:'reader__format-actions'}, h('span',null,formatNames[format] ?? format), ...(source ? [source] : []))),
+    h('div', null, h('dt', null, 'الصيغة'), h('dd', {class:'reader__format-actions'}, ...(source ? [source] : [h('span',{title:'الملف الأصلي غير متاح للتنزيل'},formatNames[format] ?? format)]))),
     h('div', null, h('dt', null, 'التصنيف'), h('dd', null, categoryLink(category))),
   ]
   if (book.tags?.length) facts.push(h('div', null, h('dt', null, 'الوسوم'), h('dd', { class: 'reader__book-tags' }, ...book.tags.map(tag => h('a', { class: 'book-tag', href: `#/library?tag=${encodeURIComponent(tag.name)}`, title: tag.source === 'toc' ? 'مستخرج من فهرس الكتاب' : 'أضيف يدويًا' }, h('span',{dataset:{noTranslate:''}},`#${tag.name}`))))))
@@ -1868,6 +2018,7 @@ async function showPdfBesideBook(id: string, panel: HTMLElement, standalone = fa
     let stored = await getBook(id)
     if (!standalone && (!stored || pdfButtonAction(stored, 'pdf-text') !== 'original')) throw new Error(ORIGINAL_PDF_MISSING_TOOLTIP)
     if (stored && needsPdfRefresh(stored) && !hasOriginalBookPdf(stored)) {
+      if(inferBookFormat(stored)==='jpeg')throw Error('نسخة قراءة الصور غير متاحة؛ أعد إضافة الصور الأصلية.')
       if (stored.bokPages?.length || stored.extractedText?.trim()) throw new Error('لا توجد نسخة PDF أصلية صالحة لهذا الكتاب.')
         const capabilities = await getRuntimeCapabilities()
         if (!capabilities.wordPdfConversionAvailable) throw new Error('إنشاء PDF يتطلب تشغيل الخِزانة المحلي؛ يمكنك متابعة قراءة Word في نسخة الويب.')
@@ -2537,6 +2688,7 @@ function toggleToc(_header: HTMLElement): void {
 
 /** بحث داخل جميع صفحات الكتاب من دون استبدال مشهد القراءة. */
 function toggleSearch(reader: HTMLElement): void {
+  if(reader.dataset.partialBook==='true'){toast('يكتمل البحث داخل الكتاب بعد تحميل بقية الصفحات');return}
   const existing = reader.querySelector<HTMLElement>('.reader__search-bar')
   if (existing) { existing.querySelector<HTMLButtonElement>('.reader__search-close')?.click(); return }
   const active = document.activeElement instanceof HTMLElement ? document.activeElement : null
@@ -2599,7 +2751,7 @@ function toggleSearch(reader: HTMLElement): void {
     const q = input.value.trim()
     results.replaceChildren();renderedMatches=0;moreResults.hidden=true
     if (!q) { matches = []; current = -1; count.textContent = ''; return }
-    const slots = [...reader.querySelectorAll<HTMLElement>('.reading__page-slot,.reader__pdf-page')]
+    const slots = readerSearchSlots.get(reader)??[...reader.querySelectorAll<HTMLElement>('.reading__page-slot,.reader__pdf-page')]
     const failedPdfPages=slots.filter(slot=>slot.dataset.searchIndexError==='true').length
     matches = searchReaderPageTexts(slots.map((slot, index) => ({
       text: readerPageSearchText.get(slot) ?? slot.dataset.searchText ?? '',
@@ -2757,6 +2909,7 @@ async function downloadOriginalBook(id: string, builtIn: ReturnType<typeof bookB
   }
   const stored = await getBook(id)
   if (!stored) { toast('ملف الكتاب الأصلي غير موجود'); return }
+  if(inferBookFormat(stored)==='jpeg'){downloadJpegOriginal(stored);return}
   if (stored.volumes && stored.volumes.length > 1) {
     const volumes = [...stored.volumes].sort((a, b) => a.number - b.number)
     const originals = volumes.map(volume => localOriginalAsset(volume)).filter((asset): asset is NonNullable<typeof asset> => Boolean(asset))
@@ -2881,23 +3034,37 @@ function renderTocAside(aside: HTMLElement, _theme: ReadingTheme, entries: TocEn
   const list = h('div', { class: 'reader__toc-list', role: 'tree', 'aria-label': 'عناوين الكتاب' })
   aside.append(h('div', { class: 'reader__toc-filter' }, search, clear), statusRow, list)
   const items: { el: HTMLElement; num: number; bookmark?: string; label: string; pdfDestination?: PdfTocDestination }[] = []
-  for (const it of entries) {
+  const indexed=entries.map(entry=>({entry,query:normalizeTocQuery(entry.label)}))
+  let matches=indexed,shown=0
+  const more=h('button',{type:'button',class:'btn btn--secondary reader__toc-more'},'عرض المزيد من الفهرس') as HTMLButtonElement
+  aside.append(more)
+  const appendWindow=():void=>{
+   const end=Math.min(matches.length,shown+200),fragment=document.createDocumentFragment()
+   for(;shown<end;shown++){
+    const it=matches[shown]!.entry
     const level = Math.max(1, Math.min(6, it.level ?? 1))
-    const el = h('button', { type: 'button', role: 'treeitem', class: 'reader__toc-item', dataset: { level: String(level) }, onclick: () => {} },
+    const el = h('button', { type: 'button', role: 'treeitem', class: 'reader__toc-item', dataset: { level: String(level) }, onclick: () => (aside as any).__tocNavigate?.(it) },
       h('span', { class: 'num' }, arabicNum(it.num)),
       h('span', {dataset:{noTranslate:''}}, it.label),
     )
     uiTemplateAttribute(el,'aria-label','55329a6ca24d2cd5',{p1:it.label})
     el.setAttribute('aria-level', String(level))
-    list.appendChild(el)
+    el.setAttribute('aria-setsize',String(matches.length))
+    el.setAttribute('aria-posinset',String(shown+1))
+    fragment.appendChild(el)
     items.push({ el, num: it.num, label: it.label, ...(it.bookmark ? { bookmark: it.bookmark } : {}),
       ...(it.pdfDestination ? { pdfDestination: it.pdfDestination } : {}) })
+   }
+   list.append(fragment)
+   more.hidden=shown>=matches.length
+   more.textContent=`عرض المزيد من الفهرس (${arabicNum(shown)} / ${arabicNum(matches.length)})`
   }
+  more.addEventListener('click',appendWindow)
   const filter = (): void => {
     const query = normalizeTocQuery(search.value)
-    let visible = 0
-    for (const item of items) { const matched = !query || normalizeTocQuery(item.label).includes(query); item.el.hidden = !matched; if (matched) visible++ }
-    status.textContent = query ? visible ? `${arabicNum(visible)} نتيجة في الفهرس` : 'لا توجد عناوين مطابقة في الفهرس' : `${arabicNum(items.length)} عنوانًا في الفهرس`
+    matches=query?indexed.filter(item=>item.query.includes(query)):indexed
+    shown=0;items.length=0;list.replaceChildren();appendWindow()
+    status.textContent = query ? matches.length ? `${arabicNum(matches.length)} نتيجة في الفهرس` : 'لا توجد عناوين مطابقة في الفهرس' : `${arabicNum(entries.length)} عنوانًا في الفهرس`
     clear.hidden = !query
   }
   search.addEventListener('input', filter)
@@ -2906,7 +3073,7 @@ function renderTocAside(aside: HTMLElement, _theme: ReadingTheme, entries: TocEn
   search.addEventListener('search', filter)
   clear.addEventListener('click', () => { search.value = ''; filter(); search.focus() })
   filter()
-  aside.dataset.tocItems = String(items.length)
+  aside.dataset.tocItems = String(entries.length)
   ;(aside as any).__tocItems = items
 }
 

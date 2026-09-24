@@ -2,6 +2,9 @@ import {h} from '../ui'
 import {pageContent} from '../components'
 import {stateView} from '../state_view'
 import {captureRouteResourceScope} from '../resource_lifecycle'
+import {collectionDownloadButton} from '../collection_download_button'
+import {loadPublicCategoryCollection} from '../public_collection_refs'
+import {downloadAttachmentPanel} from '../download_attachment_panel'
 
 /** Project only reviewed server public-list links, never the user's local library. */
 export function publicCategoryHref(value:string,origin:string):string|undefined{
@@ -15,6 +18,8 @@ export function publicCategoryHref(value:string,origin:string):string|undefined{
 export function categoriesScreen(category?:string):HTMLElement{
  const root=pageContent(),heading=h('h1',{class:'page-title'},category??'أقسام المكتبة'),content=h('section',{'aria-live':'polite'})
  root.append(heading,content)
+ if(category)root.append(downloadAttachmentPanel({category}))
+ if(category)heading.append(collectionDownloadButton(()=>category,signal=>loadPublicCategoryCollection(category,signal)))
  const path='/categories'+(category?'/'+encodeURIComponent(category):''),query=new URLSearchParams(location.search),page=query.get('page')
  const url=path+(page?'?page='+encodeURIComponent(page):'')
  const scope=captureRouteResourceScope();let generation=0,active:AbortController|undefined

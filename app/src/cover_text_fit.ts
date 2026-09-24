@@ -7,7 +7,9 @@ export interface CoverFitTarget {
 /** Write every candidate before measuring any, so one layout serves the batch. */
 export function fitCoverTextBatch(targets: CoverFitTarget[]): void {
   const states = targets.map(target => ({ target, low: .25, high: target.maximum, size: 0 }))
-  for (let iteration = 0; iteration < 16; iteration++) {
+  // Ten steps leave <0.02px of uncertainty at a 20px maximum while avoiding
+  // six synchronous layout measurements for every visible cover.
+  for (let iteration = 0; iteration < 10; iteration++) {
     for (const state of states) {
       state.size = (state.low + state.high) / 2
       state.target.write(state.size)

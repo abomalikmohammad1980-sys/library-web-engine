@@ -1,6 +1,6 @@
 import {currentLibraryIdentityScope,listStoredBooks} from './engine/library_store'
 import {inferBookFormat} from './book_format'
-import {backgroundDataRouteAllowed} from './background_data_scheduler'
+import {backgroundDataRouteAllowed,backgroundDataInteractionAllowed} from './background_data_scheduler'
 import {routeLocation} from './path_location'
 
 /** Serial, local-only warmup. Never download the public corpus at startup. */
@@ -9,7 +9,7 @@ export function installBackgroundSearchIndex():()=>void{
  const failures=new Map<string,number>()
  let timer:ReturnType<typeof setTimeout>|undefined,running=false,again=false,disposed=false
  let controller:AbortController|undefined
- const allowed=()=>!disposed&&document.visibilityState!=='hidden'&&backgroundDataRouteAllowed(routeLocation.hash)
+ const allowed=()=>!disposed&&document.visibilityState!=='hidden'&&backgroundDataRouteAllowed(routeLocation.hash)&&backgroundDataInteractionAllowed()
  const schedule=()=>{
   if(!allowed())return
   if(running){again=true;return}
@@ -68,9 +68,10 @@ export function installBackgroundSearchIndex():()=>void{
  window.addEventListener('library-changed',schedule)
  window.addEventListener('alkhizana:account-changed',identityChanged)
  window.addEventListener('online',online)
+ window.addEventListener('alkhizana:import-activity',activityChanged)
  window.addEventListener('popstate',activityChanged)
  window.addEventListener('hashchange',activityChanged)
  document.addEventListener('visibilitychange',activityChanged)
  schedule()
- return ()=>{disposed=true;controller?.abort();if(timer!==undefined)clearTimeout(timer);window.removeEventListener('library-changed',schedule);window.removeEventListener('alkhizana:account-changed',identityChanged);window.removeEventListener('online',online);window.removeEventListener('popstate',activityChanged);window.removeEventListener('hashchange',activityChanged);document.removeEventListener('visibilitychange',activityChanged)}
+ return ()=>{disposed=true;controller?.abort();if(timer!==undefined)clearTimeout(timer);window.removeEventListener('library-changed',schedule);window.removeEventListener('alkhizana:account-changed',identityChanged);window.removeEventListener('online',online);window.removeEventListener('alkhizana:import-activity',activityChanged);window.removeEventListener('popstate',activityChanged);window.removeEventListener('hashchange',activityChanged);document.removeEventListener('visibilitychange',activityChanged)}
 }

@@ -30,10 +30,11 @@ try{const cached=localStorage.getItem(CACHE_KEY);if(cached&&cached.length<=51200
 export const subjectCategories=():readonly SubjectCategory[]=>categories.map(row=>({...row,aliases:[...row.aliases]}))
 export const subjectCategoryNames=():string[]=>categories.map(row=>row.name)
 export const canonicalSubjectCategory=(name:string):string=>lookup.get(normalize(name))??normalize(name)
+const CATEGORY_REFRESH_MS=5*60_000
 let pending:Promise<void>|undefined,lastLoaded=0,lastAttempt=0
 export async function hydrateSubjectCategories(force=false):Promise<void>{
  if(pending)return pending
- if(!force&&(Date.now()-lastLoaded<30000||Date.now()-lastAttempt<30000))return
+ if(!force&&(Date.now()-lastLoaded<CATEGORY_REFRESH_MS||Date.now()-lastAttempt<30000))return
  lastAttempt=Date.now()
  pending=(async()=>{const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),1800);try{
   const response=await fetch('/api/library/categories',{signal:controller.signal,credentials:'same-origin',cache:'no-store'})

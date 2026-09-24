@@ -1,4 +1,5 @@
 import { icon } from './icons'
+import {openQuickBookImport} from './quick_book_import'
 import { h, toast } from './ui'
 import { makeProgrammaticFileInput } from './programmatic_file_input'
 
@@ -10,7 +11,7 @@ export function headerBookAddControl(): HTMLElement {
     h('button', { type: 'button', role: 'menuitem' }, icon('book', 18), 'إضافة كتاب'),
     h('button', { type: 'button', role: 'menuitem' }, icon('box', 18), 'إضافة مجموعة'))
   const items = Array.from(menu.querySelectorAll<HTMLButtonElement>('[role="menuitem"]'))
-  const fileInput = makeProgrammaticFileInput(h('input', { type: 'file', accept: '.docx,.doc,.rtf,.pdf,.epub,.bok,.txt,.md' }) as HTMLInputElement)
+  const fileInput = makeProgrammaticFileInput(h('input', { type: 'file', accept: '.docx,.doc,.rtf,.pdf,.epub,.bok,.txt,.md,.html,.htm,.jpg,.jpeg' }) as HTMLInputElement)
   const folderInput = makeProgrammaticFileInput(h('input', { type: 'file' }) as HTMLInputElement)
   folderInput.setAttribute('webkitdirectory', '')
   fileInput.multiple = folderInput.multiple = true
@@ -21,7 +22,7 @@ export function headerBookAddControl(): HTMLElement {
     const files = Array.from(input.files ?? [])
     input.value = ''
     if (!files.length) return
-    void import('./quick_book_import').then(module => { if (wrap.isConnected) module.openQuickBookImport(files, trigger) }).catch(() => { if (wrap.isConnected) toast('تعذّر فتح الإضافة؛ أعد المحاولة.') })
+    try { if(wrap.isConnected)openQuickBookImport(files,trigger) } catch { if(wrap.isConnected)toast('تعذّر فتح الإضافة؛ أعد المحاولة.') }
   })
   trigger.setAttribute('aria-haspopup', 'menu')
   trigger.setAttribute('aria-expanded', 'false')

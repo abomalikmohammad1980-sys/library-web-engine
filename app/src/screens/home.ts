@@ -1,3 +1,4 @@
+import {waitForBackgroundDataInteraction} from '../background_data_scheduler'
 import {uiTemplateText,uiTemplateAttribute,uiLabelParameter} from '../ui_template_binding'
 import { arabicNum, h, toast } from '../ui'
 import { sectionHeader, pageContent } from '../components'
@@ -10,7 +11,7 @@ import { getReaderQuotes } from '../quote_store'
 import {quotePublishForm} from '../quote_publish_form'
 import {loadPublicQuotes,publicQuoteHref} from '../public_quotes'
 import { captureReadingIdentity } from '../reading_identity_scope'
-import { BOOK_CATEGORIES } from '../library_metadata'
+import { SUBJECT_CATEGORY_NAMES as BOOK_CATEGORIES } from '../subject_categories'
 import { authorLink, categoryHref, categoryLink, effectiveBookCategory, UNCATEGORIZED_CATEGORY } from '../taxonomy_links'
 import { stateView } from '../state_view'
 import { getReadingPlan, planProgress, readingPosition } from '../reading_plan'
@@ -41,9 +42,14 @@ type HomeBookSnapshot = Pick<StoredBook, 'id' | 'title' | 'author' | 'authorId' 
 
 let homeBooksRead: Promise<StoredBook[]> | undefined
 let homeBooksIdentity = captureReadingIdentity()
+async function homeMayUpdate(root:HTMLElement):Promise<boolean>{
+ const scope=captureRouteResourceScope(),abort=new AbortController()
+ scope.add(()=>abort.abort())
+ return await waitForBackgroundDataInteraction({signal:abort.signal})&&!scope.disposed&&root.isConnected
+}
 function loadHomeBooks(): Promise<StoredBook[]> {
   if (!homeBooksIdentity.isCurrent()) { homeBooksRead = undefined; homeBooksIdentity = captureReadingIdentity() }
-  if (!homeBooksRead) homeBooksRead = listBooks().catch(error => { homeBooksRead = undefined; throw error })
+  if (!homeBooksRead) homeBooksRead = waitForBackgroundDataInteraction().then(()=>listBooks()).then(async books=>{await waitForBackgroundDataInteraction();return books}).catch(error => { homeBooksRead = undefined; throw error })
   return homeBooksRead
 }
 if (typeof window !== 'undefined') window.addEventListener('library-changed', () => { homeBooksRead = undefined })
@@ -168,12 +174,14 @@ export function popularBooksSection(snapshot: HomeBookSnapshot[] = readHomeBookS
 async function hydrateRecommendations(section: HTMLElement): Promise<void> {
   const identity=captureReadingIdentity()
   try {
+    if(!await homeMayUpdate(section))return
     const books = await (await import('../discovery_books')).listDiscoveryBooks()
+    if(!await homeMayUpdate(section))return
     if(!identity.isCurrent())return
     const activity = getReadingActivity()
     const dismissed = new Set(dismissedRecommendationIds())
     const editorial=await loadEditorialRecommendations().catch(()=>({revision:0,entries:[]}))
-    if(!identity.isCurrent())return
+    if(!await homeMayUpdate(section)||!identity.isCurrent())return
     const featured=activeEditorialIds(editorial.entries).filter(id=>!dismissed.has(id)).flatMap(id=>{const book=books.find(b=>b.id===id);return book?[{book,reason:'من ترشيحات الإدارة',score:0}]:[]}).slice(0,1)
     const items = [...featured,...recommendUnreadBooks(books, activity.openedBookIds, activity.openCounts, books.length).filter(item => !dismissed.has(item.book.id)&&!featured.some(f=>f.book.id===item.book.id))].slice(0, 4)
     if (!items.length) {
@@ -203,6 +211,7 @@ async function hydrateGateways(root: HTMLElement): Promise<void> {
       categories: Array<{ name: string; count: number }>
       authors: Array<{ id: string; name: string; bookCount: number }>
     }
+    if(!await homeMayUpdate(root))return
     if (!Array.isArray(index.categories) || !Array.isArray(index.authors)) throw new Error('shamela_gateways_invalid')
     const categoryCounts = new Map<string,number>()
     for(const category of index.categories){const name=effectiveBookCategory({category:category.name});categoryCounts.set(name,(categoryCounts.get(name)??0)+category.count)}
@@ -268,6 +277,7 @@ function hero(): HTMLElement {
 async function hydrateRecent(root: HTMLElement): Promise<void> {
   try {
     const books = (await loadHomeBooks()).slice().sort((a, b) => b.addedAt - a.addedAt)
+    if(!await homeMayUpdate(root))return
     const lastBookId = getReadingActivity().lastBookId
     const last = books.find((book) => book.id === lastBookId) ?? books[0]
     root.replaceChildren(last ? continueCard(last) : emptyRecent())
@@ -330,7 +340,7 @@ const quote = h('article', { class: 'daily-card daily-card--quote' }, h('div', {
 
 async function hydrateDailyQuote(root: HTMLElement): Promise<void> {
   const identity = captureReadingIdentity()
-try{const {quotes}=await loadPublicQuotes(0,20);if(!identity.isCurrent())return;if(quotes.length){const selected=quotes[Math.floor(Date.now()/86_400_000)%quotes.length]!;root.replaceChildren(h('div',{class:'daily-quote__head'},h('a',{class:'home-kicker',href:'#/quotes'},'اقتباس اليوم'),h('a',{href:'#/quotes'},'كل الاقتباسات')),h('strong',{dataset:{noTranslate:''}},selected.displayName),h('p',{class:'daily-quote__text',dataset:{noTranslate:''}},selected.text),h('a',{href:publicQuoteHref(selected),dataset:{noTranslate:''}},`${selected.bookTitle} — موضع ${selected.pageIndex+1}`));const add=h('button',{class:'daily-quote__add',onclick:()=>{void loadHomeBooks().then(books=>{if(identity.isCurrent())showQuoteForm(root,books,identity)})}},'أضف اقتباسًا');root.querySelector('.daily-quote__head')?.append(add);return}}catch{/* Private local quotes remain available without publishing them. */}
+try{const {quotes}=await loadPublicQuotes(0,20);if(!await homeMayUpdate(root)||!identity.isCurrent())return;if(quotes.length){const selected=quotes[Math.floor(Date.now()/86_400_000)%quotes.length]!;root.replaceChildren(h('div',{class:'daily-quote__head'},h('a',{class:'home-kicker',href:'#/quotes'},'اقتباس اليوم'),h('a',{href:'#/quotes'},'كل الاقتباسات')),h('strong',{dataset:{noTranslate:''}},selected.displayName),h('p',{class:'daily-quote__text',dataset:{noTranslate:''}},selected.text),h('a',{href:publicQuoteHref(selected),dataset:{noTranslate:''}},`${selected.bookTitle} — موضع ${selected.pageIndex+1}`));const add=h('button',{class:'daily-quote__add',onclick:()=>{void loadHomeBooks().then(books=>{if(identity.isCurrent())showQuoteForm(root,books,identity)})}},'أضف اقتباسًا');root.querySelector('.daily-quote__head')?.append(add);return}}catch{/* Private local quotes remain available without publishing them. */}
   const books = await loadHomeBooks()
   if (!identity.isCurrent()) return
   const custom = getReaderQuotes(identity)
@@ -362,7 +372,7 @@ async function hydratePopular(section: HTMLElement): Promise<void> {
   const current=()=>identity.isCurrent()&&!scope.disposed
   try {
   const books = await loadHomeBooks()
-  if(!current())return
+  if(!await homeMayUpdate(section)||!current())return
   const counts = getReadingActivity().openCounts
   const body = h('div', { class: 'home-popular__body' })
   const grid = h('div', { class: 'home-popular__grid' })
@@ -415,12 +425,12 @@ async function hydrateNewForYou(section: HTMLElement): Promise<void> {
     grid.replaceChildren(...(shown.length?shown.map((book,index)=>homeNewCard(book,index)):initial))
     status.replaceChildren(state.error?uiTemplateText('home-public-load-failed',{}):busy?uiTemplateText('home-public-loading',{}):'')
   }
-  const load=async()=>{if(!current()||busy||pages>=3)return;busy=true;render();await client.next(abort.signal);pages++;busy=false;render()}
+  const load=async()=>{if(!current()||busy||pages>=3)return;busy=true;render();await client.next(abort.signal);pages++;busy=false;if(await homeMayUpdate(section))render()}
   section.append(status)
   void load()
   try {
     const allBooks = await loadHomeBooks()
-    if(!current())return
+    if(!await homeMayUpdate(section)||!current())return
     writeHomeBookSnapshot(allBooks)
     local = allBooks.slice().sort(compareBooksByMetric(book => book.addedAt)).slice(0, 4)
     grid.removeAttribute('role')

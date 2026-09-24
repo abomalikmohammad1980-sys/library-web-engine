@@ -65,16 +65,30 @@ export async function loadAuthorChronologyOverrides(options:Options={}):Promise<
 }
 export async function loadAuthorOverride(id:string,options:Options={}):Promise<AuthorOverride|null>{
  if(!validId(id))throw new Error('invalid_author_id')
+ for(let attempt=0;attempt<2;attempt++){
  const signal=AbortSignal.any([...(options.signal?[options.signal]:[]),AbortSignal.timeout(8000)])
+ try{
  const response=await request(`/api/library/author-overrides?id=${encodeURIComponent(id)}`,{...options,signal})
  if(response.status===404)return null
- if(!response.ok)throw new Error('author_overrides_unavailable')
+ if(!response.ok){
+  if(attempt===0&&(response.status===408||response.status===429||response.status>=500)){await response.body?.cancel();continue}
+  throw new Error('author_overrides_unavailable')
+ }
  const payload=await body(response,signal),row=payload.override as Partial<AuthorOverride>|undefined
  if(payload.schemaVersion!==1||!row||row.authorId!==id||!Number.isSafeInteger(row.revision)||row.revision!<1)throw fail()
  for(const [key,max] of [['displayName',300],['biography',20000],['source',2000],['updatedAt',100]] as const)if(typeof row[key]!=='string'||(!['source','biography'].includes(key)&&!row[key]!.trim())||row[key]!.length>max)throw fail()
  options.signal?.throwIfAborted()
  if(row.fields!==undefined&&!validAuthorStructuredFields(row.fields))throw fail()
  return {authorId:id,displayName:row.displayName!,biography:row.biography!,source:row.source!,revision:row.revision!,updatedAt:row.updatedAt!,...(row.fields?{fields:row.fields}:{})}
+ }catch(error){
+  // A transient failed read gets one fresh timeout. Malformed data and
+  // cancelled navigation never fall back to an older biography.
+  options.signal?.throwIfAborted()
+  if(attempt===0&&(signal.aborted||error instanceof TypeError))continue
+  throw error
+ }
+ }
+ throw new Error('author_overrides_unavailable')
 }
 export async function saveAuthorOverride(id:string,draft:AuthorOverrideDraft,options:Options={}):Promise<number>{
  if(!validId(id))throw new Error('invalid_author_id')

@@ -56,10 +56,10 @@ export function isShamelaBasmalah(value: string): boolean {
   return compact === '﷽' || compact === 'بسماللهالرحمنالرحيم'
 }
 
-const TEXTUAL_NOTE_MARKER = /^\s*(?:\(\s*([\d٠-٩۰-۹]+)\s*\)|\[\s*([\d٠-٩۰-۹]+)\s*\]|([\d٠-٩۰-۹]+)[.):-])\s*/u
+const TEXTUAL_NOTE_MARKER = /^\s*(?:\(\s*([\d٠-٩۰-۹]+|[*⁎∗]{1,4})\s*\)|\[\s*([\d٠-٩۰-۹]+|[*⁎∗]{1,4})\s*\]|([\d٠-٩۰-۹]+)[.):-])\s*/u
 // التقسيم الداخلي يقتصر على العلامات المحاطة؛ صيغ مثل «١/ ٢٤)» داخل
 // المراجع الببليوغرافية ليست بداية حاشية جديدة.
-const TEXTUAL_NOTE_MARKER_GLOBAL = /(?:\(\s*[\d٠-٩۰-۹]+\s*\)|\[\s*[\d٠-٩۰-۹]+\s*\])\s*/gu
+const TEXTUAL_NOTE_MARKER_GLOBAL = /(?:\(\s*(?:[\d٠-٩۰-۹]+|[*⁎∗]{1,4})\s*\)|\[\s*(?:[\d٠-٩۰-۹]+|[*⁎∗]{1,4})\s*\])\s*/gu
 
 export interface TextualFootnoteLine {
   marker?: string

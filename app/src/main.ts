@@ -7,7 +7,7 @@ import './styles/screens.css?initial'
 import { applyStoredSettings } from './settings_store'
 import { installSelectionTranslation } from './selection_translation'
 import { cloudflareAccessAuthProvider } from './account_service'
-import { backgroundDataRouteAllowed, createBackgroundDataScheduler } from './background_data_scheduler'
+import { backgroundDataRouteAllowed, backgroundDataInteractionAllowed, createBackgroundDataScheduler } from './background_data_scheduler'
 import { createServiceWorkerReloadGate } from './service_worker_reload_gate'
 import { registerServiceWorkerUpdate } from './service_worker_update'
 import {createServiceWorkerInteractionGuard,createServiceWorkerUpdateCheck} from './service_worker_refresh'
@@ -23,8 +23,21 @@ window.addEventListener('alkhizana:account-changed', () => render(false))
 applyStoredSettings()
 render(false)
 installSelectionTranslation()
-// Warm local search indexes after the initial interface, and after imports.
-void import('./background_search_index').then(module=>module.installBackgroundSearchIndex()).catch(()=>undefined)
+// Loading even the indexing module pulls its parsers before the first mobile
+// interaction. Install its listeners after a quiet period; its own scan stays
+// local, abortable and route-gated as before.
+const backgroundIndexScheduler=createBackgroundDataScheduler({
+  canRun:()=>document.visibilityState==='visible'&&(backgroundDataRouteAllowed(routeLocation.hash)&&backgroundDataInteractionAllowed()),
+  idle:callback=>globalThis.setTimeout(()=>{
+    if('requestIdleCallback' in window)window.requestIdleCallback(callback,{timeout:5000})
+    else callback()
+  },5000),
+  run:async()=>{const module=await import('./background_search_index');module.installBackgroundSearchIndex()},
+})
+window.addEventListener('popstate',()=>backgroundIndexScheduler.notify())
+document.addEventListener('visibilitychange',()=>backgroundIndexScheduler.notify())
+backgroundIndexScheduler.notify()
+window.addEventListener('alkhizana:import-activity',()=>backgroundIndexScheduler.notify())
 // الجلسة مصدرها الخادم فقط؛ بعد التحقق نعيد رسم الصفحة كي تظهر مساحة الحساب
 // أو أدوات الإدارة من claims الموقعة، بلا قراءة دور من localStorage.
 // installTrustedRuntimeClaims يطلق account-changed؛ لا نكرر الرسم هنا.
@@ -42,7 +55,7 @@ const startBackgroundData = async (): Promise<void> => {
 // نفحص الحالة مرة عند الجدولة ومرة عند التنفيذ، فلا ينفذ مؤقت قديم
 // بعد الانتقال إلى القراءة أو الحسابات. تحميل السنة يبقى عند فتح قسمها.
 const backgroundDataScheduler = createBackgroundDataScheduler({
-  canRun: () => document.visibilityState === 'visible' && backgroundDataRouteAllowed(routeLocation.hash),
+  canRun: () => document.visibilityState === 'visible' && (backgroundDataRouteAllowed(routeLocation.hash)&&backgroundDataInteractionAllowed()),
   idle: callback => 'requestIdleCallback' in window
     ? window.requestIdleCallback(callback, { timeout: 4000 })
     : globalThis.setTimeout(callback, 1400),
@@ -51,15 +64,17 @@ const backgroundDataScheduler = createBackgroundDataScheduler({
 window.addEventListener('popstate', () => backgroundDataScheduler.notify())
 document.addEventListener('visibilitychange', () => backgroundDataScheduler.notify())
 backgroundDataScheduler.notify()
+window.addEventListener('alkhizana:import-activity',()=>backgroundDataScheduler.notify())
 
 // Resume known private Word jobs only after idle; never parse on the initial route.
 let wordResumeScheduled=false
 function scheduleWordIndexResume():void{
- if(wordResumeScheduled||document.visibilityState!=='visible'||!backgroundDataRouteAllowed(routeLocation.hash))return
+ if(wordResumeScheduled||document.visibilityState!=='visible'||!(backgroundDataRouteAllowed(routeLocation.hash)&&backgroundDataInteractionAllowed()))return
  wordResumeScheduled=true
- const run=()=>{wordResumeScheduled=false;if(document.visibilityState!=='visible'||!backgroundDataRouteAllowed(routeLocation.hash))return;void import('./local_index_status').then(module=>module.resumeImportedWordIndexing()).catch(()=>undefined)}
+ const run=()=>{wordResumeScheduled=false;if(document.visibilityState!=='visible'||!(backgroundDataRouteAllowed(routeLocation.hash)&&backgroundDataInteractionAllowed()))return;void import('./local_index_status').then(module=>module.resumeImportedWordIndexing()).catch(()=>undefined)}
  if('requestIdleCallback' in window)window.requestIdleCallback(run,{timeout:4000});else globalThis.setTimeout(run,1400)
 }
+window.addEventListener('alkhizana:import-activity',scheduleWordIndexResume)
 window.addEventListener('popstate',scheduleWordIndexResume)
 window.addEventListener('alkhizana:account-changed',scheduleWordIndexResume)
 document.addEventListener('visibilitychange',scheduleWordIndexResume)

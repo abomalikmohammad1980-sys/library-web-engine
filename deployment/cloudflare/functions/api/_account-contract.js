@@ -27,7 +27,9 @@ export async function trustedAccount(context,options={}){
   await context.env.VISITORS_DB.prepare('INSERT INTO accounts(subject,email,display_name) VALUES(?1,?2,?3) ON CONFLICT(subject) DO UPDATE SET email=excluded.email, updated_at=CURRENT_TIMESTAMP').bind(subject,email,identity.name||email.split('@')[0]).run()
   return enforce(await context.env.VISITORS_DB.prepare('SELECT subject,email,display_name AS displayName,role FROM accounts WHERE subject=?1').bind(subject).first())
 }
-export const publicClaims=account=>({subject:account.subject,role:account.role,displayName:account.displayName,sessionId:`access:${account.subject.slice(0,16)}`})
+// Optional presentation data must match the client claims contract. A legacy
+// NULL display_name must not invalidate an otherwise verified session.
+export const publicClaims=account=>({subject:account.subject,role:account.role,...(typeof account.displayName==='string'&&account.displayName.length<=200?{displayName:account.displayName}:{}),sessionId:`access:${account.subject.slice(0,16)}`})
 export const isManager=account=>account?.role==='admin'||account?.role==='super-admin'
 export const isSuperAdmin=account=>account?.role==='super-admin'
 export const canEditLibrary=account=>isSuperAdmin(account)||account?.role==='editor'

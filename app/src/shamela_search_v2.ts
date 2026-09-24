@@ -19,6 +19,7 @@ import { searchProgressDownload } from './search_progress_download'
 import { searchBatchFetch } from './search_batch_fetch'
 import {SearchPositionFilters,mayContainPosition} from './search_position_filter'
 import {searchDocumentPage} from './search_document_page'
+import {readStaticPosting} from './static_posting_reader'
 
 export type SeparatedV2SearchBinding = { manifestUrl: string; manifestSha256: string; sourceIndexSha256: string; packedReleaseId: string; packedManifestSha256: string; expectedBooks: number; expectedSegments: number; sourceRows?: {manifestUrl:string;manifestSha256:string} }
 
@@ -205,7 +206,7 @@ private loadPackedManifest(){return this.packedManifest??=(async()=>{await pinBo
       throw error
     }
   }
-  search(query:string,offset=0,limit=40,bookIds?:string[],completeResults=false):Promise<{total:number;hits:SearchHit[];networkBytes:number;indexedBooks:number;coverageComplete:boolean}>{this.searchPages??=new Map;let scopeKey=0;if(bookIds){this.scopeKeys??=new WeakMap<string[],number>();this.nextScopeKey??=0;scopeKey=this.scopeKeys.get(bookIds)??++this.nextScopeKey;this.scopeKeys.set(bookIds,scopeKey)}const key=`${normalizeArabicSearch(query)}\u0000${offset}\u0000${limit}\u0000${scopeKey}\u0000${completeResults}`;let cached=this.searchPages.get(key);if(!cached){const missingRevision=this.packedMissingRevision;cached=this.searchUncached(query,offset,limit,bookIds,completeResults).then(page=>{const coverageComplete=this.packedMissingPaths.size===0&&missingRevision===this.packedMissingRevision;if(!coverageComplete)this.searchPages.delete(key);return{...page,coverageComplete}}).catch(error=>{this.searchPages.delete(key);delete this.manifest;delete this.packedManifest;delete this.merkleDirectoryTask;delete this.liteDirectoryState;this.cache.clear();throw error});this.searchPages.set(key,cached)}return cached}
+  search(query:string,offset=0,limit=40,bookIds?:string[],completeResults=false):Promise<{total:number;hits:SearchHit[];networkBytes:number;indexedBooks:number;coverageComplete:boolean}>{this.searchPages??=new Map;let scopeKey=0;if(bookIds){this.scopeKeys??=new WeakMap<string[],number>();this.nextScopeKey??=0;scopeKey=this.scopeKeys.get(bookIds)??++this.nextScopeKey;this.scopeKeys.set(bookIds,scopeKey)}const key=`${normalizeArabicSearch(query)}\u0000${offset}\u0000${limit}\u0000${scopeKey}\u0000${completeResults}`;let cached=this.searchPages.get(key);if(!cached){const missingRevision=this.packedMissingRevision;cached=this.searchUncached(query,offset,limit,bookIds,completeResults).then(page=>{const coverageComplete=page.coverageComplete!==false&&this.packedMissingPaths.size===0&&missingRevision===this.packedMissingRevision;if(!coverageComplete)this.searchPages.delete(key);return{...page,coverageComplete}}).catch(error=>{this.searchPages.delete(key);delete this.manifest;delete this.packedManifest;delete this.merkleDirectoryTask;delete this.liteDirectoryState;this.cache.clear();throw error});this.searchPages.set(key,cached)}return cached}
   async searchComplete(query:string,offset=0,limit=40,bookIds?:string[]){
     // A single-token posting already carries the complete count. Loading every
     // matching page text here can exhaust a phone on common words; materialize
@@ -221,7 +222,7 @@ private loadPackedManifest(){return this.packedManifest??=(async()=>{await pinBo
     return searchDocumentPage(await this.search(query,0,Number.MAX_SAFE_INTEGER,bookIds,true),offset,limit)
   }
   private positionFilters=new SearchPositionFilters()
-  private async selectivePackedPhrase(query:string,words:string[],manifest:Manifest,allowed:(id:string)=>boolean,offset:number,limit:number,before:number,completeResults=false):Promise<{total:number;hits:SearchHit[];networkBytes:number;indexedBooks:number}|null>{
+  private async selectivePackedPhrase(query:string,words:string[],manifest:Manifest,allowed:(id:string)=>boolean,offset:number,limit:number,before:number,completeResults=false):Promise<{total:number;hits:SearchHit[];networkBytes:number;indexedBooks:number;coverageComplete?:boolean}|null>{
     const packed=await this.getPackedManifest();if(!packed||words.length<1||!manifest.postingPattern||!manifest.postingBucketCount)return null
     // Prefer exact-word postings whenever the release provides them. Fetching
     // broad buckets first both adds a dependency round-trip and can download
@@ -289,35 +290,54 @@ private loadPackedManifest(){return this.packedManifest??=(async()=>{await pinBo
       }
     }
     if(globalThis.location?.hostname==='localhost'||globalThis.location?.hostname==='127.0.0.1')console.debug(`shamela_v2_selective ${JSON.stringify({phase:'candidates',count:candidate.size})}`);if(!candidate.size)return{total:0,hits:[],networkBytes:this.bytesFetched-before,indexedBooks:manifest.counts?.books??0}
-    const snippetPattern=manifest.segmentSnippetPattern??manifest.batchSnippetPattern!.replace('{batch}','{segment}'),matches:Array<{row:Snippet;death:number;id:string;matchOffset:number}>=[],target=Math.max(1,Math.max(0,offset)+Math.max(0,Math.min(completeResults?Number.MAX_SAFE_INTEGER:500,limit))),ordered=[...candidate].sort((a,b)=>(a[1][2]??Number.POSITIVE_INFINITY)-(b[1][2]??Number.POSITIVE_INFINITY)||a[0].localeCompare(b[0]));let cursor=0,loadedPaths=0
+    const snippetPattern=manifest.segmentSnippetPattern??manifest.batchSnippetPattern!.replace('{batch}','{segment}'),matches:Array<{row:Snippet;death:number;id:string;matchOffset:number}>=[],matchedCandidates=new Set<string>(),target=Math.max(1,Math.max(0,offset)+Math.max(0,Math.min(completeResults?Number.MAX_SAFE_INTEGER:500,limit))),ordered=[...candidate].sort((a,b)=>(a[1][2]??Number.POSITIVE_INFINITY)-(b[1][2]??Number.POSITIVE_INFINITY)||a[0].localeCompare(b[0]));let cursor=0,loadedPaths=0
     while(cursor<ordered.length&&matches.length<target){
-      // Candidates are not matches. Near a full page, shrinking this to the
-      // remaining hit count serializes potentially thousands of non-matches.
-      // Keep a bounded 64-candidate wave; slice verified hits only afterwards.
-      const cohort=ordered.slice(cursor,cursor+64),byPath=new Map<string,Set<string>>()
+      // Begin with precisely the page demand when postings prove highly
+      // selective. Subsequent waves estimate the observed rejection rate,
+      // capped at 64 so false positives do not serialize one request at a time.
+      const remaining=target-matches.length
+      // One passage may contain dozens of occurrences; use matching document
+      // count to estimate the next wave, not the occurrence count.
+      const observedRate=cursor?Math.max(matchedCandidates.size/cursor,1/64):1
+      const wave=Math.min(64,Math.max(1,Math.ceil(remaining/observedRate)))
+      const cohort=ordered.slice(cursor,cursor+wave),byPath=new Map<string,Set<string>>()
       for(const[id,row]of cohort){const path=snippetPattern.replace('{segment}',row[3]).replace('{bucket}',bucketFor(id,manifest.bucketCount??manifest.buckets??512)),ids=byPath.get(path)??new Set<string>();ids.add(id);byPath.set(path,ids)}
       loadedPaths+=byPath.size
       await Promise.all([...byPath].map(async([path,wanted])=>{
         for(const row of await this.snippetRows(path,wanted)){
           const posting=candidate.get(row[0])!
-          for(const matchOffset of snippetPhraseOffsets(row[3],query))matches.push({row,death:posting[2]??Number.POSITIVE_INFINITY,id:row[0],matchOffset})
+          const offsets=snippetPhraseOffsets(row[3],query)
+          if(offsets.length)matchedCandidates.add(row[0])
+          for(const matchOffset of offsets)matches.push({row,death:posting[2]??Number.POSITIVE_INFINITY,id:row[0],matchOffset})
         }
       }))
       cursor+=cohort.length
     }
-    if(globalThis.location?.hostname==='localhost'||globalThis.location?.hostname==='127.0.0.1')console.debug(`shamela_v2_selective ${JSON.stringify({phase:'progressive-snippets',paths:loadedPaths,candidates:cursor,matches:matches.length})}`);matches.sort((a,b)=>a.death-b.death||a.id.localeCompare(b.id)||a.matchOffset-b.matchOffset);const selected=matches.slice(Math.max(0,offset),Math.max(0,offset)+Math.max(0,Math.min(completeResults?Number.MAX_SAFE_INTEGER:500,limit))),hits=selected.map(match=>({...snippetHit(match.row,query),matchOffset:match.matchOffset})),partial=cursor<ordered.length;return{total:partial?Math.max(matches.length,candidate.size):matches.length,hits,networkBytes:this.bytesFetched-before,indexedBooks:Math.max(0,(manifest.counts?.books??0)-(partial?1:0))}
+    if(globalThis.location?.hostname==='localhost'||globalThis.location?.hostname==='127.0.0.1')console.debug(`shamela_v2_selective ${JSON.stringify({phase:'progressive-snippets',paths:loadedPaths,candidates:cursor,matches:matches.length})}`);matches.sort((a,b)=>a.death-b.death||a.id.localeCompare(b.id)||a.matchOffset-b.matchOffset);const selected=matches.slice(Math.max(0,offset),Math.max(0,offset)+Math.max(0,Math.min(completeResults?Number.MAX_SAFE_INTEGER:500,limit))),hits=selected.map(match=>({...snippetHit(match.row,query),matchOffset:match.matchOffset})),partial=cursor<ordered.length;return{total:matches.length,hits,networkBytes:this.bytesFetched-before,indexedBooks:Math.max(0,(manifest.counts?.books??0)-(partial?1:0)),coverageComplete:!partial}
   }
-  private async selectiveSmallStaticPhrase(query:string,words:string[],manifest:Manifest,allowed:(id:string)=>boolean,offset:number,limit:number,before:number,completeResults=false):Promise<{total:number;hits:SearchHit[];networkBytes:number;indexedBooks:number}|null>{
+  private staticWords=new Map<string,Promise<GlobalPosting[]>>()
+  private staticWordPosting(path:string,word:string,maxBytes:number):Promise<GlobalPosting[]>{
+    const key=path+'\u0000'+word
+    let pending=this.staticWords.get(key)
+    if(!pending){
+      pending=(async()=>{const value=await readStaticPosting(await this.fetcher(`${ROOT}${path}`,{cache:'force-cache'}),word,maxBytes);this.bytesFetched+=value.bytes;return value.rows})().catch(error=>{this.staticWords.delete(key);throw error})
+      // Keep only a handful of extracted terms, never entire parsed buckets.
+      if(this.staticWords.size>=8)this.staticWords.delete(this.staticWords.keys().next().value!)
+      this.staticWords.set(key,pending)
+    }
+    return pending
+  }
+  private async selectiveSmallStaticPhrase(query:string,words:string[],manifest:Manifest,allowed:(id:string)=>boolean,offset:number,limit:number,before:number,completeResults=false):Promise<{total:number;hits:SearchHit[];networkBytes:number;indexedBooks:number;coverageComplete?:boolean}|null>{
     const started=performance.now(),trace=(phase:string,extra:Record<string,unknown>={})=>{if(globalThis.location?.hostname==='localhost'||globalThis.location?.hostname==='127.0.0.1')console.debug(`shamela_v2_static ${JSON.stringify({phase,ms:Math.round(performance.now()-started),...extra})}`)}
     if(words.length<2||!manifest.postingPattern||!manifest.postingBucketCount)return null
-    // لا ننزّل buckets كبيرة داخل المتصفح: تحليل ملفين بحجم 15MB جمّد
-    // أول بحث حي بدل تسريعه. المسار الموجّه أدناه هو البديل الآمن لهذه
-    // العبارات، بينما تبقى postings الصغيرة مفيدة للعبارات النادرة.
-    const count=manifest.bucketCount??manifest.buckets??512,maxPostingBytes=8*1024*1024,knownPostingSizes=new Map((manifest.postingFiles??[]).map(file=>[file.file,file.byteLength] as const)),postingCandidates=await Promise.all(words.map(async(word,index)=>{const path=manifest.postingPattern!.replace('{bucket}',bucketFor(word,manifest.postingBucketCount!)),knownSize=knownPostingSizes.get(path);return{word,index,path,size:knownSize!=null&&knownSize>0&&knownSize<=maxPostingBytes?knownSize:knownSize!=null?null:await this.staticJsonSize(path,maxPostingBytes)}}))
-    const sizedPostings=postingCandidates.filter((item):item is typeof item&{size:number}=>item.size!==null).sort((a,b)=>a.size-b.size),loadablePostings=words.length<=3?sizedPostings:sizedPostings.slice(0,2)
+    // Parse bounded static buckets off the UI thread and retain only the
+    // requested terms. This avoids hundreds of routed requests for short
+    // phrases without returning to the unbounded 100MB bucket path.
+    const count=manifest.bucketCount??manifest.buckets??512,maxPostingBytes=12*1024*1024,knownPostingSizes=new Map((manifest.postingFiles??[]).map(file=>[file.file,file.byteLength] as const)),postingCandidates=await Promise.all(words.map(async(word,index)=>{const path=manifest.postingPattern!.replace('{bucket}',bucketFor(word,manifest.postingBucketCount!)),knownSize=knownPostingSizes.get(path);return{word,index,path,size:knownSize!=null&&knownSize>0&&knownSize<=maxPostingBytes?knownSize:knownSize!=null?null:await this.staticJsonSize(path,maxPostingBytes)}}))
+    const sizedPostings=postingCandidates.filter((item):item is typeof item&{size:number}=>item.size!==null).sort((a,b)=>a.size-b.size),loadablePostings=sizedPostings.slice(0,2)
     trace('posting-heads',{available:loadablePostings.length,anchors:loadablePostings.map(item=>item.word),sizes:loadablePostings.map(item=>item.size)})
     if(loadablePostings.length<(words.length<=3?1:2))return null
-    const rows=await Promise.all(loadablePostings.map(item=>this.rawJson<{entries:Array<[string,GlobalPosting[]]>}>(`${ROOT}${item.path}`))),postingOptions=rows.map((value,rowIndex)=>{const item=loadablePostings[rowIndex]!;return{index:item.index,map:new Map((value.entries.find(entry=>entry[0]===words[item.index])?.[1]??[]).filter(row=>allowed(row[0])).map(row=>[row[0],row] as const))}}).sort((a,b)=>a.map.size-b.map.size).slice(0,2),anchorIndexes=postingOptions.map(item=>item.index),postings=postingOptions.map(item=>item.map),candidates=new Map<string,GlobalPosting>()
+    const rows=await Promise.all(loadablePostings.map(item=>this.staticWordPosting(item.path,item.word,maxPostingBytes))),postingOptions=rows.map((value,rowIndex)=>{const item=loadablePostings[rowIndex]!;return{index:item.index,map:new Map(value.filter(row=>allowed(row[0])).map(row=>[row[0],row] as const))}}).sort((a,b)=>a.map.size-b.map.size).slice(0,2),anchorIndexes=postingOptions.map(item=>item.index),postings=postingOptions.map(item=>item.map),candidates=new Map<string,GlobalPosting>()
     trace('posting-anchors',{anchors:anchorIndexes.map(index=>words[index]),counts:postings.map(posting=>posting.size)})
     // مرساة واحدة واسعة لا تختصر العبارة مهما كان عدد كلماتها؛ فتح آلاف
     // snippet buckets بعدها أبطأ كثيرًا من الفهرس الموجّه الذي يستعمل بقية
@@ -333,9 +353,9 @@ private loadPackedManifest(){return this.packedManifest??=(async()=>{await pinBo
     while(candidateCursor<ordered.length&&found.length<target){const cohort=ordered.slice(candidateCursor,candidateCursor+cohortSize),byPath=new Map<string,Set<string>>();for(const[id,row]of cohort){const path=snippetPattern.replace('{segment}',row[3]).replace('{bucket}',bucketFor(id,count)),ids=byPath.get(path)??new Set<string>();ids.add(id);byPath.set(path,ids)}const paths=[...byPath.keys()];loadedPaths+=paths.length;await Promise.all(paths.map(async path=>{const ids=byPath.get(path)!,value=await this.get<{entries:Snippet[]}>(path);for(const row of value.entries)if(ids.has(row[0])&&normalizeArabicSearch(cleanShamelaPlainText(row[3])).includes(wanted)){const posting=candidates.get(row[0]);found.push({hit:snippetHit(row,query),death:posting?.[2]??Number.POSITIVE_INFINITY})}}));candidateCursor+=cohort.length}
     const partial=candidateCursor<ordered.length;trace('snippets',{paths:loadedPaths,matches:found.length,partial})
     found.sort((a,b)=>a.death-b.death||a.hit.id.localeCompare(b.hit.id));const selected=found.slice(Math.max(0,offset),Math.max(0,offset)+Math.max(0,Math.min(completeResults?Number.MAX_SAFE_INTEGER:500,limit))).map(item=>item.hit),indexedBooks=Math.max(0,(manifest.counts?.books??0)-(partial?1:0))
-    return{total:partial?Math.max(found.length,candidates.size):found.length,hits:selected,networkBytes:this.bytesFetched-before,indexedBooks}
+    return{total:found.length,hits:selected,networkBytes:this.bytesFetched-before,indexedBooks,coverageComplete:!partial}
   }
-  private async searchUncached(query:string,offset=0,limit=40,bookIds?:string[],completeResults=false):Promise<{total:number;hits:SearchHit[];networkBytes:number;indexedBooks:number}>{
+  private async searchUncached(query:string,offset=0,limit=40,bookIds?:string[],completeResults=false):Promise<{total:number;hits:SearchHit[];networkBytes:number;indexedBooks:number;coverageComplete?:boolean}>{
     const before=this.bytesFetched,started=performance.now(),trace=(phase:string,extra:Record<string,unknown>={})=>{if(globalThis.location?.hostname==='localhost'||globalThis.location?.hostname==='127.0.0.1')console.debug(`shamela_v2_phase ${JSON.stringify({phase,ms:Math.round(performance.now()-started),bytes:this.bytesFetched-before,...extra})}`)},manifest=await this.getManifest();trace('manifest');if(!manifest.coverageComplete)throw new Error('shamela_search_v2_incomplete')
     await this.ensureRecovery()
     const wanted=bookIds?.length?new Set(bookIds):undefined,allowed=(id:string)=>this.documentAllowed(id)&&(!wanted||wanted.has(id.slice(0,id.indexOf(':')))),words=normalizeArabicSearch(query).split(' ').filter(Boolean),count=manifest.bucketCount??manifest.buckets??512;if(!words.length)return{total:0,hits:[],networkBytes:this.bytesFetched-before,indexedBooks:manifest.counts?.books??0}
@@ -357,7 +377,9 @@ private loadPackedManifest(){return this.packedManifest??=(async()=>{await pinBo
       const byPath=new Map<string,Set<string>>(),loaded=new Map<string,Snippet>()
       for(const id of selected){const path=snippetPattern.replace('{segment}',matchSegment.get(id)!).replace('{bucket}',bucketFor(id,count));const ids=byPath.get(path)??new Set<string>();ids.add(id);byPath.set(path,ids)}
       await Promise.all([...byPath].map(async([path,ids])=>{for(const row of await this.snippetRows(path,ids))loaded.set(row[0],row)}))
-      const hits=selected.map(id=>{const row=loaded.get(id);if(!row)throw new Error('shamela_search_snippet_rows_missing_or_duplicate');return snippetHit(row,query)});trace('snippets',{selected:selected.length,hits:hits.length,total:matches.length})
+      const occurrenceCursor=new Map<string,number>()
+      for(const id of matches.slice(0,Math.max(0,offset)))occurrenceCursor.set(id,(occurrenceCursor.get(id)??0)+1)
+      const hits=selected.map(id=>{const row=loaded.get(id);if(!row)throw new Error('shamela_search_snippet_rows_missing_or_duplicate');const index=occurrenceCursor.get(id)??0;occurrenceCursor.set(id,index+1);const offsets=snippetPhraseOffsets(row[3],query);return{...snippetHit(row,query),matchOffset:offsets[index]??offsets[0]??0}});trace('snippets',{selected:selected.length,hits:hits.length,total:matches.length})
       return{total:matches.length,hits,networkBytes:this.bytesFetched-before,indexedBooks:manifest.counts?.books??0}
     }
     const routedWordIndexes=words.length>=4?words.map((word,index)=>({word,index})).sort((a,b)=>b.word.length-a.word.length).slice(0,2).map(item=>item.index):words.map((_,index)=>index),routes=await Promise.all(routedWordIndexes.map(async index=>{const word=words[index]!,path=manifest.routePattern.replace('{bucket}',bucketFor(word,count)),value=await this.get<{entries:Array<[string,string[]]>}>(path);return new Set(value.entries.find(x=>x[0]===word)?.[1]??[])}))
@@ -368,11 +390,11 @@ private loadPackedManifest(){return this.packedManifest??=(async()=>{await pinBo
     // document-level prefilter: every exact phrase must contain both, then the
     // snippet text itself remains the authority for the full phrase match.
     if(words.length>=4&&segments.size){const anchors=routedWordIndexes,candidates=new Map<string,string>(),segmentList=[...segments];for(let cursor=0;cursor<segmentList.length;cursor+=128)await Promise.all(segmentList.slice(cursor,cursor+128).map(async segment=>{const maps=await Promise.all(anchors.map(async index=>{const path=termPattern.replace('{segment}',segment).replace('{bucket}',bucketFor(words[index]!,count)),value=await this.get<{entries:Array<[string,Posting[]]>}>(path);return new Map((value.entries.find(x=>x[0]===words[index])?.[1]??[]).map(row=>[row[0],row] as const))}));for(const [id,row]of maps[0]!)if(allowed(id)&&maps[1]!.has(id)){candidates.set(id,segment);if(row[2]!=null)matchDeath.set(id,row[2])}}));trace('routed-prefilter',{segments:segments.size,candidates:candidates.size,anchors:anchors.length});const byPath=new Map<string,Set<string>>();for(const[id,segment]of candidates){const path=snippetPattern.replace('{segment}',segment).replace('{bucket}',bucketFor(id,count)),ids=byPath.get(path)??new Set<string>();ids.add(id);byPath.set(path,ids)}const found:SearchHit[]=[],paths=[...byPath.keys()];for(const cursor of Array.from({length:Math.ceil(paths.length/128)},(_,index)=>index*128)){await Promise.all(paths.slice(cursor,cursor+128).map(async path=>{const wanted=byPath.get(path)!,value=await this.get<{entries:Snippet[]}>(path);for(const row of value.entries)if(wanted.has(row[0])&&normalizeArabicSearch(cleanShamelaPlainText(row[3])).includes(normalizeArabicSearch(query)))found.push(snippetHit(row,query))}))}found.sort((a,b)=>(a.deathYearHijri??matchDeath.get(a.id)??Number.POSITIVE_INFINITY)-(b.deathYearHijri??matchDeath.get(b.id)??Number.POSITIVE_INFINITY)||a.id.localeCompare(b.id));const selected=found.slice(Math.max(0,offset),Math.max(0,offset)+Math.max(0,Math.min(completeResults?Number.MAX_SAFE_INTEGER:500,limit)));trace('routed-snippets',{paths:byPath.size,total:found.length,hits:selected.length});return{total:found.length,hits:selected,networkBytes:this.bytesFetched-before,indexedBooks:manifest.counts?.books??0}}
-    for(const segment of segments){const rows=await Promise.all(words.map(async word=>{const path=termPattern.replace('{segment}',segment).replace('{bucket}',bucketFor(word,count)),value=await this.get<{entries:Array<[string,Posting[]]>}>(path);return value.entries.find(x=>x[0]===word)?.[1]??[]})),termMaps=rows.map(row=>new Map(row.map(([id,pos])=>[id,pos])));for(const id of intersection(termMaps.map(map=>new Set(map.keys()))))if(adjacent(termMaps.map(map=>map.get(id)!))){matches.push(id);matchSegment.set(id,segment);const death=rows[0]?.find(x=>x[0]===id)?.[2];if(death!=null)matchDeath.set(id,death)}}
-    matches.sort((a,b)=>(matchDeath.get(a)??Number.POSITIVE_INFINITY)-(matchDeath.get(b)??Number.POSITIVE_INFINITY))
+    const segmentList=[...segments];for(let cursor=0;cursor<segmentList.length;cursor+=8)await Promise.all(segmentList.slice(cursor,cursor+8).map(async segment=>{const rows=await Promise.all(words.map(async word=>{const path=termPattern.replace('{segment}',segment).replace('{bucket}',bucketFor(word,count)),value=await this.get<{entries:Array<[string,Posting[]]>}>(path);return value.entries.find(x=>x[0]===word)?.[1]??[]})),termMaps=rows.map(row=>new Map(row.map(([id,pos])=>[id,pos])));for(const id of intersection(termMaps.map(map=>new Set(map.keys()))))if(allowed(id)&&adjacent(termMaps.map(map=>map.get(id)!))){matches.push(id);matchSegment.set(id,segment);const death=rows[0]?.find(x=>x[0]===id)?.[2];if(death!=null)matchDeath.set(id,death)}}))
+    matches.sort((a,b)=>(matchDeath.get(a)??Number.POSITIVE_INFINITY)-(matchDeath.get(b)??Number.POSITIVE_INFINITY)||a.localeCompare(b))
     const selected=matches.slice(Math.max(0,offset),Math.max(0,offset)+Math.max(0,Math.min(completeResults?Number.MAX_SAFE_INTEGER:500,limit))),hits:SearchHit[]=[]
     // ابحث عن الوثيقة في bucket المحسوب من هويتها؛ لا يُنزّل نص الكتاب أو الشارد الكامل.
-    for(const id of selected){const segment=matchSegment.get(id)!;const path=snippetPattern.replace('{segment}',segment).replace('{bucket}',bucketFor(id,count)),value=await this.get<{entries:Snippet[]}>(path),row=value.entries.find(x=>x[0]===id);if(row)hits.push(snippetHit(row,query))}
+    for(let cursor=0;cursor<selected.length;cursor+=8){const page=await Promise.all(selected.slice(cursor,cursor+8).map(async id=>{const segment=matchSegment.get(id)!;const path=snippetPattern.replace('{segment}',segment).replace('{bucket}',bucketFor(id,count)),value=await this.get<{entries:Snippet[]}>(path),row=value.entries.find(x=>x[0]===id);if(!row)throw Error('shamela_search_v2_snippet_missing');return snippetHit(row,query)}));hits.push(...page)}
     return{total:matches.length,hits,networkBytes:this.bytesFetched-before,indexedBooks:manifest.counts?.books??0}
   }
 }

@@ -213,7 +213,10 @@ export function render(focusMain = false): void {
   const finishScroll=prepareRouteScroll(routeLocation.hash,route.name==='reader')
   const titleRoute = route.name === 'quran-tafsir' ? 'quran' : route.name === 'sunnah-source' ? 'sunnah' : route.name
   setSourceDocumentTitle(routeDocumentTitle(titleRoute))
-  const metadataReady=Promise.allSettled([hydrateSubjectCategories(),hydrateAuthorDisplayNames()])
+  // Author labels repaint by identity when their sparse public registry arrives;
+  // a slow metadata refresh must not hold a book/category route blank.
+  void hydrateAuthorDisplayNames().catch(() => undefined)
+  const metadataReady=Promise.allSettled([hydrateSubjectCategories()])
   const fullStyles=route.name==='home'?Promise.resolve():import('./route_full_styles')
   const beforeRender=Promise.all([fullStyles,routeNeedsMetadataBeforeRender(route.name)?metadataReady:Promise.resolve()])
   if (route.name === 'reader' && route.param) {

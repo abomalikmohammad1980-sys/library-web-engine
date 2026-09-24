@@ -1,6 +1,8 @@
 /** بحث موسع مستمر: إجمالي ثابت، مؤشرات صفحات Word، ونافذة DOM محدودة. */
 
 import { h, toast, arabicNum } from '../ui'
+import {completeSearchPage,fetchOrderedSearchWindow,searchPageReady} from '../search_page_completion'
+import {canAutoRefreshSearch} from '../search_refresh_policy'
 import {uiTemplateText,uiTemplateAttribute,uiLabelParameter} from '../ui_template_binding'
 import { unavailableBooksDescription } from '../search_unavailable_books'
 import {unavailableBooksUiDescription} from '../search_unavailable_ui'
@@ -27,7 +29,7 @@ import { expandedSearchFields, SEARCH_MODE_OPTIONS, SEARCH_PAGE_TITLE, visibleSe
 import { setSourceDocumentTitle } from '../translation'
 import { orderedBooks } from '../book_ordering'
 import { SEARCH_CONTENT_SCOPE_OPTIONS, parseSearchContentScope } from '../search_content_scope_options'
-import {pageJump} from '../page_jump'
+import {searchPagination,updateSearchNextLabel} from '../search_pagination'
 import {hasSearchFieldRelease} from '../search_field_release'
 
 type SearchSort = 'death' | 'relevance' | 'chronological' | 'tree'
@@ -45,7 +47,7 @@ export function searchSentinelNeedsAdvance(rect: Pick<DOMRect, 'top' | 'bottom'>
 
 export function expandedSearchDocumentTitle(query: string): string {
   const normalized = query.trim().replace(/\s+/gu, ' ')
-  return `${normalized || SEARCH_PAGE_TITLE} - الخزانة`
+  return normalized ? `${normalized} - الخزانة` : SEARCH_PAGE_TITLE
 }
 
 export function searchFacetQueryOptions(current:SearchQueryOptions,facet:SearchTableFacet):SearchQueryOptions{
@@ -103,6 +105,7 @@ export function searchScreen({previewContentScope=false}:{previewContentScope?:b
   let activeSearch: AbortController | undefined
   let activeSignature = ''
   let preparation:AbortController|undefined
+  const mayRefreshVisibleResults=()=>canAutoRefreshSearch(Number(results.dataset.resultPage??0),Boolean(document.querySelector('.search-workspace__preview:not([hidden])')))
   const autoRepairAttempts=new Set<string>()
   resourceScope.add(()=>{activeSearch?.abort();preparation?.abort()})
   const readiness = new SearchReadiness()
@@ -213,7 +216,7 @@ export function searchScreen({previewContentScope=false}:{previewContentScope?:b
             refresh.addEventListener('click',()=>{if(valid()){activeSignature='';void run()}})
             panel.append(refresh)
             repair.textContent='إعادة محاولة الفهرسة';repair.hidden=failures.length===0
-            if(!failures.length)routeTimeout(()=>{if(valid()){activeSignature='';void run()}},0,resourceScope)
+            if(!failures.length)routeTimeout(()=>{if(valid()&&mayRefreshVisibleResults()){activeSignature='';void run()}},0,resourceScope)
           }catch(error){if(valid())status.textContent=job.signal.aborted?'أُوقفت التهيئة. يمكنك استئنافها.':error instanceof DOMException&&error.name==='AbortError'?'أُوقفت التهيئة لتغيّر الجلسة.':'تعذّرت التهيئة؛ أعد المحاولة.'}
           finally{if(preparation===job){preparation=undefined;activeSignature=''}repair.disabled=false;cancel.hidden=true}
         }
@@ -255,7 +258,7 @@ export function searchScreen({previewContentScope=false}:{previewContentScope?:b
     } finally {
       if (current === request) {
         activeSignature = ''
-        if (rendered && readiness.needsRefresh(readinessVersion) && !resourceScope.disposed) {
+        if (rendered && readiness.needsRefresh(readinessVersion) && !resourceScope.disposed && mayRefreshVisibleResults()) {
           routeTimeout(() => { if (current === request && !resourceScope.disposed) void run(true) }, 0, resourceScope)
         }
       }
@@ -281,7 +284,7 @@ export function searchScreen({previewContentScope=false}:{previewContentScope?:b
   })
   // اكتمال الفهارس المساندة يثري النتائج الموجودة في الخلفية؛ لا نعيد
   // الواجهة إلى skeleton بعد أن ظهرت أول نتائج الشاملة السريعة.
-  const refreshReady = () => { readiness.changed(); if(!preparation&&input.value.trim().length>=2)void run(true) }
+  const refreshReady = () => { readiness.changed(); if(!preparation&&input.value.trim().length>=2&&mayRefreshVisibleResults())void run(true) }
   routeEventListener(window,'alkhizana:local-search-index-ready',refreshReady,undefined,resourceScope)
   routeEventListener(window,'alkhizana:local-search-index-failed',refreshReady,undefined,resourceScope)
   routeEventListener(window,'alkhizana:search-metadata-ready',refreshReady,undefined,resourceScope)
@@ -547,12 +550,7 @@ function renderSearchResults(root: HTMLElement, all: SearchResult[] & {localInde
 
   const viewport = h('div', { class: 'search-paged-results', 'aria-label': 'نتائج البحث', tabindex:-1 })
   const list = h('div', { class: 'search-result-list' })
-  const pageStatus=h('p',{class:'search-pagination__status',role:'status','aria-live':'polite'})
-  const previous=h('button',{type:'button',class:'btn btn--secondary','aria-label':'النتائج السابقة'},'السابق')
-  const next=h('button',{type:'button',class:'btn btn--primary','aria-label':'النتائج التالية'},'التالي')
-  const pagination=h('nav',{class:'search-pagination','aria-label':'صفحات نتائج البحث'},previous,pageStatus,next)
-  const jump=pageJump('نتائج البحث',page=>{void goToPage(page)})
-  pagination.append(jump.element)
+  const {element:pagination,previous,next,pageStatus,jump}=searchPagination(page=>{void goToPage(page)})
   viewport.append(list,pagination)
   const partial=all.unopenedBookIds?.length?h('p',{class:'search-results__partial',role:'status'},'يشمل البحث الفهرس العام والكتب المحمّلة على هذا الجهاز. افتح الكتب الإضافية لإدراج نصوصها في البحث.'):all.headingIndexMissingBookIds?.length?h('p',{class:'search-results__partial',role:'status'},`نتائج جزئية: شجرة العناوين غير متاحة في فهرس البحث لـ ${arabicNum(all.headingIndexMissingBookIds.length)} كتاب. لا يمثل العدد جميع عناوين المكتبة.`):all.unavailableBookIds?.length?h('p',{class:'search-results__partial',role:'status'},`نتائج جزئية: تعذّر البحث في ${arabicNum(all.unavailableBookIds.length)} كتاب، وما يظهر أدناه من الكتب التي اكتمل فهرسها.`):all.pendingBookIds?.length?h('p',{class:'search-results__partial',role:'status'},pendingSearchDescription(all.pendingBookIds,arabicNum)):all.coverageComplete===false?h('p',{class:'search-results__partial',role:'status'},'نتائج جزئية من أرشيفات الفهرس المكتملة؛ قد تظهر نتائج أخرى بعد اكتمال الرفع.'):null
   scopeElement?.querySelector('.search-scope__results-footer')?.remove()
@@ -575,29 +573,30 @@ function renderSearchResults(root: HTMLElement, all: SearchResult[] & {localInde
     return groupSearchResultsByBook(values, (a, b) => (firstRelevantBook.get(a.bookId) ?? 0) - (firstRelevantBook.get(b.bookId) ?? 0))
   }
   const filterIsActive=():boolean=>Boolean((scopeValues?.().bookIds?.length)||(scopeValues?.().authors?.length)||(scopeValues?.().categories?.length)||scopeValues?.().deathFrom||scopeValues?.().deathTo||scopeValues?.().deathState)
+  const updateSummary=():void=>{
+    if(centralPaged){summary.replaceChildren(uiTemplateText('search-loaded-summary',{p1:all.totalOccurrences??all.length,p2:all.length}))}
+    else if(scopedLocalPaged&&all.totalOccurrences!==undefined&&searchScopeCountIdentity(appliedScope)===countedScope&&searchScopeCountIdentity(requestedScope?.()??appliedScope)===countedScope){summary.replaceChildren(uiTemplateText('search-scoped-summary',{p1:all.totalOccurrences,p2:''}),...(all.coverageComplete===false?[uiTemplateText('search-available-coverage',{})]:[]))}
+    else if(filterIsActive()||scopedLocalPaged){const occurrences=activeResults.reduce((sum,result)=>sum+(result.occurrenceCount??1),0),bookCount=new Set(activeResults.map(result=>result.bookId)).size;summary.replaceChildren(uiTemplateText('search-filtered-summary',{p1:occurrences,p2:bookCount,p3:''}),...(scopedLocalPaged?[uiTemplateText('search-loaded-only',{})]:[]))}
+    else summary.replaceChildren(uiTemplateText('search-summary',{p1:all.totalOccurrences??all.length,p2:all.length,p3:counts.size}))
+  }
   const renderWindow = (): void => {
     if (!viewport.isConnected||resourceScope.disposed) return
     resultPage=Math.max(0,Math.min(resultPage,Math.ceil(activeResults.length/pageSize)-1))
+    root.dataset.resultPage=String(resultPage)
     const range={start:resultPage*pageSize,end:Math.min(activeResults.length,(resultPage+1)*pageSize)}
 if(range.start!==renderedStart||range.end!==renderedEnd){const rows:SearchTableRow[]=activeResults.slice(range.start,range.end).map(result=>{const stored=books.get(result.bookId),categoryName=stored?effectiveBookCategory(stored):canonicalBookCategory(result.category);return{key:searchResultIdentity(result),ordinal:context.globalNumbers.get(result)??0,bookId:result.bookId,...((result.pageIndex??result.paraIndex)>=0?{pageIndex:result.pageIndex??result.paraIndex}:{}),bookTitle:result.title,authorName:result.author,...(result.deathYearHijri!=null?{deathYearHijri:result.deathYearHijri}:{}),...(categoryName?{categoryName}:{}),snippet:result.snippet,fullText:result.matchText,...(result.sectionHeading?{sectionHeading:result.sectionHeading}:{}),...(result.partLabel?{partLabel:result.partLabel}:{}),...(result.pageLabel?{pageLabel:result.pageLabel}:{}),href:searchResultHref(result),...(result.occurrenceCount?{occurrenceCount:result.occurrenceCount}:{})}});list.replaceChildren(searchResultsTable(rows,effective,applyFacet));renderedStart=range.start;renderedEnd=range.end}
     // التصفية محلية؛ جلب دفعة إضافية لا يبدأ إلا بالنقر على التالي.
     const moreRemote=Boolean(loadMore)&&!exhausted&&fetchedOffset<(all.totalDocuments??all.totalOccurrences??all.length)
     const hasNext=range.end<activeResults.length||moreRemote
-    const sameCountScope=searchScopeCountIdentity(scopeValues?.()??{})===countedScope
-    summary.textContent=`${sameCountScope?(all.totalOccurrences??all.length):activeResults.length} ${sameCountScope?'موضعًا مطابقًا':'نتيجة ضمن المحمّل'} · المعروض ${activeResults.length?range.start+1:0}–${range.end} · ${pageSize} نتيجة في الصفحة`
+    updateSummary()
     pageStatus.replaceChildren(loadError?uiTemplateText('search-next-failed',{}):fetching?uiTemplateText('search-next-loading',{}):uiTemplateText(hasNext?'search-pagination-range':'search-pagination-end',{p1:activeResults.length?range.start+1:0,p2:range.end}))
     pagination.toggleAttribute('aria-busy',fetching)
     previous.disabled=resultPage===0||fetching;next.disabled=!hasNext||fetching
     jump.update(resultPage,Math.ceil((exhausted?activeResults.length:Math.max(activeResults.length,all.totalDocuments??all.totalOccurrences??0))/pageSize),fetching)
-    next.textContent=loadError?'إعادة المحاولة':'التالي'
+    updateSearchNextLabel(next,Boolean(loadError))
   }
   const reset = (preservePage=false): void => {
     viewVersion++;activeResults = filtered();if(!preservePage)resultPage=0;loadError=''
-    const filterActive=filterIsActive()
-    if(centralPaged){summary.replaceChildren(uiTemplateText('search-loaded-summary',{p1:all.totalOccurrences??all.length,p2:all.length}))}
-    else if(scopedLocalPaged&&all.totalOccurrences!==undefined&&searchScopeCountIdentity(appliedScope)===countedScope&&searchScopeCountIdentity(requestedScope?.()??appliedScope)===countedScope){summary.replaceChildren(uiTemplateText('search-scoped-summary',{p1:all.totalOccurrences,p2:''}),...(all.coverageComplete===false?[uiTemplateText('search-available-coverage',{})]:[]))}
-    else if(filterActive||scopedLocalPaged){const occurrences=activeResults.reduce((sum,result)=>sum+(result.occurrenceCount??1),0),bookCount=new Set(activeResults.map(result=>result.bookId)).size;summary.replaceChildren(uiTemplateText('search-filtered-summary',{p1:occurrences,p2:bookCount,p3:''}),...(scopedLocalPaged?[uiTemplateText('search-loaded-only',{})]:[]))}
-    else summary.replaceChildren(uiTemplateText('search-summary',{p1:all.totalOccurrences??all.length,p2:all.length,p3:counts.size}))
     context.globalNumbers = numberOrderedSearchResults(activeResults);renderedStart=-1;renderedEnd=-1
     renderWindow()
   }
@@ -609,12 +608,16 @@ if(range.start!==renderedStart||range.end!==renderedEnd){const rows:SearchTableR
   previous.onclick=()=>{if(fetching||resultPage===0)return;resultPage--;loadError='';renderWindow();focusPage()}
   const advance=async():Promise<void>=>{
     if(resourceScope.disposed||!viewport.isConnected||fetching)return
-    if((resultPage+1)*pageSize<activeResults.length){resultPage++;loadError='';renderWindow();focusPage();return}
-    if(!loadMore||fetching||exhausted||fetchedOffset>=(all.totalDocuments??all.totalOccurrences??all.length))return
+    const target=resultPage+1,more=()=>Boolean(loadMore)&&!exhausted&&fetchedOffset<(all.totalDocuments??all.totalOccurrences??all.length)
+    if(searchPageReady(target,pageSize,activeResults.length,more())){resultPage=target;loadError='';renderWindow();focusPage();return}
+    if(!more())return
     // Fetch only the next visible page. Prefetching five pages made one click
     // wait for many unrelated row ranges and magnified transient failures.
-    fetching=true;loadError='';renderWindow();const requestedOffset=fetchedOffset,fetchedLimit=pageSize,version=viewVersion;let moved=false;fetchedOffset+=fetchedLimit
-    await loadMore(requestedOffset,fetchedLimit).then(batch=>{
+    fetching=true;loadError='';renderWindow();const fetchedLimit=pageSize,version=viewVersion;let moved=false
+    await completeSearchPage(target,pageSize,()=>({loaded:activeResults.length,more:more(),current:version===viewVersion&&!resourceScope.disposed&&viewport.isConnected}),async()=>{
+      const requestedOffset=fetchedOffset
+      const batch=await loadMore!(requestedOffset,fetchedLimit)
+      fetchedOffset=requestedOffset+fetchedLimit
       if(resourceScope.disposed||!viewport.isConnected)return
       const byKey=new Map(all.map(row=>[searchResultIdentity(row),row]))
       for(const row of batch){const key=searchResultIdentity(row),existing=byKey.get(key);if(existing){if(row.field==='body')existing.occurrenceCount=(existing.occurrenceCount??1)+(row.occurrenceCount??1)}else{all.push(row);byKey.set(key,row)}}
@@ -622,15 +625,42 @@ if(range.start!==renderedStart||range.end!==renderedEnd){const rows:SearchTableR
       const values=filtered(),known=new Set(activeResults.map(searchResultIdentity))
       // Keep pages already read stable when the next server batch sorts before them.
       activeResults=version===viewVersion?[...activeResults,...values.filter(row=>!known.has(searchResultIdentity(row)))]:values
-      if(version===viewVersion&&(resultPage+1)*pageSize<activeResults.length){resultPage++;moved=true}
       context.globalNumbers=numberOrderedSearchResults(activeResults);renderedStart=-1;renderedEnd=-1
-      if(centralPaged)summary.replaceChildren(uiTemplateText('search-loaded-summary',{p1:all.totalOccurrences??all.length,p2:all.length}))
-    }).catch(()=>{fetchedOffset=requestedOffset;if(version===viewVersion)loadError='تعذّر تحميل النتائج التالية؛ النتائج الحالية محفوظة.'}).finally(()=>{fetching=false;if(resourceScope.disposed||!viewport.isConnected)return;renderWindow();if(moved)focusPage()})
+    }).then(ready=>{if(ready){resultPage=target;moved=true}}).catch(()=>{if(version===viewVersion)loadError='تعذّر تحميل النتائج التالية؛ النتائج الحالية محفوظة.'}).finally(()=>{fetching=false;if(resourceScope.disposed||!viewport.isConnected)return;renderWindow();if(moved)focusPage()})
   }
   const goToPage=async(target:number):Promise<void>=>{
     if(fetching||resourceScope.disposed)return
-    if(target*pageSize<activeResults.length){resultPage=target;renderWindow();focusPage();return}
+    const more=Boolean(loadMore)&&!exhausted&&fetchedOffset<(all.totalDocuments??all.totalOccurrences??all.length)
+    if(searchPageReady(target,pageSize,activeResults.length,more)){resultPage=target;renderWindow();focusPage();return}
     const version=viewVersion
+    if(centralPaged&&!filterIsActive()&&target>resultPage+1&&loadMore){
+      fetching=true;loadError='';renderWindow();let moved=false
+      try{
+        while(version===viewVersion&&!resourceScope.disposed&&viewport.isConnected){
+          const total=all.totalDocuments??all.totalOccurrences??all.length
+          if(searchPageReady(target,pageSize,activeResults.length,!exhausted&&fetchedOffset<total)||exhausted||fetchedOffset>=total)break
+          const offsets:number[]=[],windowSize=Math.min(3,Math.max(1,Math.ceil(((target+1)*pageSize-activeResults.length)/pageSize)))
+          for(let offset=fetchedOffset;offset<total&&offsets.length<windowSize;offset+=pageSize)offsets.push(offset)
+          if(!offsets.length)break
+          const byKey=new Map(all.map(row=>[searchResultIdentity(row),row]))
+          await fetchOrderedSearchWindow(offsets,offset=>loadMore(offset,pageSize),(offset,batch)=>{
+            if(version!==viewVersion||resourceScope.disposed||!viewport.isConnected)return
+            if(exhausted)return
+            fetchedOffset=offset+pageSize
+            if(!batch.length){exhausted=true;return}
+            for(const row of batch){const key=searchResultIdentity(row),existing=byKey.get(key);if(existing){if(row.field==='body')existing.occurrenceCount=(existing.occurrenceCount??1)+(row.occurrenceCount??1)}else{all.push(row);byKey.set(key,row)}}
+          })
+          if(version!==viewVersion||resourceScope.disposed||!viewport.isConnected)break
+          const values=filtered(),known=new Set(activeResults.map(searchResultIdentity))
+          activeResults=[...activeResults,...values.filter(row=>!known.has(searchResultIdentity(row)))]
+          context.globalNumbers=numberOrderedSearchResults(activeResults);renderedStart=-1;renderedEnd=-1
+        }
+        const remaining=Boolean(loadMore)&&!exhausted&&fetchedOffset<(all.totalDocuments??all.totalOccurrences??all.length)
+        if(version===viewVersion&&searchPageReady(target,pageSize,activeResults.length,remaining)){resultPage=target;moved=true}
+      }catch{if(version===viewVersion)loadError='تعذّر تحميل النتائج التالية؛ النتائج الحالية محفوظة.'}
+      finally{fetching=false;if(!resourceScope.disposed&&viewport.isConnected){renderWindow();if(moved)focusPage()}}
+      return
+    }
     // Cache intermediate batches so returning to an earlier page never loses
     // rows. Stop on failure/disposal; do not silently present a partial jump.
     while(resultPage<target&&!resourceScope.disposed&&version===viewVersion){

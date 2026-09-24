@@ -50,6 +50,8 @@ export function decodeHeadingDeltas(bytes:Uint8Array,count:number,rowCount:numbe
 }
 export class CentralHeadingSearchClient{
  private readonly fetcher:typeof fetch;private readonly base:string;#manifest?:Manifest;private dictionary:Dictionary|undefined;private active=false
+ // A second page of the same unfiltered one-word query must not download and
+ // union the same postings again. Retain only authenticated public row IDs.
  private candidatePageCache?:{query:string;rowIds:number[];workingBytes:number}
  private readonly rowCache=new Map<number,{row:Row;bytes:number}>();private rowCacheBytes=0
  private readonly postingCache=new Map<string,Uint8Array>();private postingCacheBytes=0
@@ -235,6 +237,9 @@ export class CentralHeadingSearchClient{
  }
  private async execute(query:string,{offset=0,limit=20,bookIds,excluded=[],signal}:{offset?:number;limit?:number;bookIds?:readonly string[];excluded?:readonly string[];signal?:AbortSignal}){
   if(!integer(offset)||!integer(limit)||limit>500)throw Error('heading_search_invalid_page')
+  // Positive candidates must use the release's indexed normalizer. Exclusion
+  // terms use the newer punctuation-insensitive contract and match old index
+  // words by substring; row verification remains authoritative for phrases.
   const initStart=performance.now(),wanted=normalizeHeadingReleaseText(query),terms=[wanted,...excluded.map(normalizeArabicSearch)].flatMap(value=>value.split(/\s+/).filter(Boolean))
   const cacheable=!bookIds&&!excluded.length&&wanted.split(/\s+/).filter(Boolean).length===1
   const cached=cacheable&&this.candidatePageCache?.query===wanted?this.candidatePageCache:undefined

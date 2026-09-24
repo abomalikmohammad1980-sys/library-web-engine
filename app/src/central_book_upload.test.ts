@@ -2,6 +2,12 @@ import {it,expect} from 'vitest'
 import {centralBookUploadInput} from './central_book_upload'
 import type {StoredBook} from './engine/library_store'
 const book=()=>({id:'private-local',ownerScope:'secret',title:'كتاب',author:'مؤلف',fileName:'book.docx',mimeType:'application/vnd.openxmlformats-officedocument.wordprocessingml.document',data:new Uint8Array([1,2]),fileSize:2,addedAt:1,originalSha256:'x',pdfStatus:'pending',sourceFormat:'word'} as StoredBook)
+it('ships every JPEG original in reviewed order with a separate reading derivative',async()=>{
+ const stored={...book(),sourceFormat:'jpeg',volumes:[{number:1,fileName:'second.jpg',data:new Uint8Array([2]),mimeType:'image/jpeg'},{number:2,fileName:'first.jpg',data:new Uint8Array([1]),mimeType:'image/jpeg'}],pdfData:new TextEncoder().encode('%PDF-1.7'),pdfFileName:'reading.pdf',pdfStatus:'ready'} as StoredBook
+ const result=centralBookUploadInput({localBookId:stored.id,book:stored,metadata:stored,files:[]})
+ expect(result.file.name).toBe('second.jpg');expect(result.file.type).toBe('image/jpeg');expect(result.volumeFiles?.map(file=>file.name)).toEqual(['first.jpg']);expect(result.pdfFile?.name).toBe('reading.pdf')
+ expect(new Uint8Array(await result.file.arrayBuffer())).toEqual(new Uint8Array([2]))
+})
 it('publishes preserved original BOK bytes rather than derived reader JSON',async()=>{
  const bytes=new Uint8Array(32);bytes.set(new TextEncoder().encode('Standard Jet DB'),4)
  const stored={...book(),sourceFormat:'shamela-bok',fileName:'book.catalog.json',mimeType:'application/json',data:new TextEncoder().encode('{}'),sourceData:bytes} as StoredBook

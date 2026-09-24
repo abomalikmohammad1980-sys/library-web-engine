@@ -3,7 +3,7 @@ import definitions from './quran_source_editions.generated.json'
 import type {ReviewedOriginalBookLink} from './quran_source_reviewed_links'
 interface Anchor {surah:number;ayah:number;from:number;to:number;pageIndex:number;sourceRowId:string;titleId:string;bodySha256:string;sourceTextSha256:string;sectionSha256:string;evidenceSha256:string;destinationNote:string}
 interface Review {schemaVersion:number;sourceManifestSha256:string;bookSha256:string;anchors:readonly Anchor[]}
-const manifest='5a8c794c0a8f55a7db95a21a5f20e2750c62b3d9ef1f7f80c2bc05b251c60354',book='e7c3342ea007fbc94da22eaeb358e5c13944ef25cba4273203cb402d983e92cd'
+const manifest='547ba1332ad26e4aabb844eae930f0a7986c7b7bbe52e9c23adcfc24640d3dd4',book='e7c3342ea007fbc94da22eaeb358e5c13944ef25cba4273203cb402d983e92cd'
 const accepted:Readonly<Record<string,readonly number[]>>={'35':[2,17,18,49],'37':[2,21,22,54],'38':[2,23,24,57],'233':[4,153,159,609]}
 /** Four reviewed original titles only: no generic reversal of invalid ranges. */
 export function fathReviewedLink(review:Review,defs:readonly {slug:string;bookId:number;manifestSha256:string}[],slug:string,surah:number,ayah:number):ReviewedOriginalBookLink|undefined{

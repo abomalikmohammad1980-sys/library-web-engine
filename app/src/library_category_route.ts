@@ -1,4 +1,4 @@
-import { BOOK_CATEGORIES } from './library_metadata'
+import { SUBJECT_CATEGORY_NAMES as BOOK_CATEGORIES } from './subject_categories'
 import { UNCATEGORIZED_CATEGORY, LEGACY_UNCATEGORIZED_LABEL } from './taxonomy_links'
 import {canonicalSubjectCategory} from './subject_categories'
 

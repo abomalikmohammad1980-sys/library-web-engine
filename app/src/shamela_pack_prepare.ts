@@ -15,7 +15,10 @@ export async function prepareShamelaPackBook(packed:Uint8Array,entry:PackPrepara
  return new Promise((resolve,reject)=>{
   const worker=new Worker(new URL('./shamela_pack_prepare.worker.ts',import.meta.url),{type:'module'})
   const finish=()=>{clearTimeout(timer);worker.terminate()}
-  const timer=setTimeout(()=>{finish();reject(new ShamelaPackSeedError('shamela_pack_book_preparation_timeout'))},60000)
+  // A real 10,766-page pack hit the former 60s ceiling under mobile CPU
+  // throttling even though the worker had not failed. Keep a finite guard,
+  // but allow the verified large-book preparation to complete on slow phones.
+  const timer=setTimeout(()=>{finish();reject(new ShamelaPackSeedError('shamela_pack_book_preparation_timeout'))},120000)
   worker.onmessage=event=>{finish();event.data.error?reject(new ShamelaPackSeedError(event.data.error)):resolve(event.data.book)}
   worker.onerror=()=>{finish();reject(new ShamelaPackSeedError('shamela_pack_book_preparation_failed'))}
   try{worker.postMessage({packed,entry},[packed.buffer as ArrayBuffer])}catch(error){finish();reject(new ShamelaPackSeedError('shamela_pack_book_preparation_failed',error))}

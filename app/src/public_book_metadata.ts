@@ -21,13 +21,13 @@ export function parsePublicBookMetadata(value:unknown):PublicBookMetadata|undefi
  return structuredClone(x) as PublicBookMetadata
 }
 export interface PublicBookAsset{id:string;kind:'volume'|'pdf'|'cover';partNumber:number|null;mimeType:string;fileName:string;byteLength:number;fileUrl:string}
-export function parsePublicBookAssets(value:unknown,bookId:string,primaryBytes:number):PublicBookAsset[]{
+export function parsePublicBookAssets(value:unknown,bookId:string,primaryBytes:number,imageSource=false):PublicBookAsset[]{
  if(value===undefined)return []
- if(!Array.isArray(value)||value.length>22)return fail()
+ if(!Array.isArray(value)||value.length>(imageSource?201:22))return fail()
  const seen=new Set<string>(),parts=new Set<number>(),kinds=new Set<string>();let total=primaryBytes
  const result=value.map((a:any)=>{
   if(!record(a,['id','kind','partNumber','mimeType','fileName','byteLength','fileUrl'])||typeof a.id!=='string'||!/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(a.id)||seen.has(a.id)||!['volume','pdf','cover'].includes(a.kind)||!text(a.fileName,120)||!a.fileName||/[/\\%\u0000-\u001f]/.test(a.fileName)||!text(a.mimeType,150)||!int(a.byteLength,1,64*1024*1024)||a.fileUrl!==`/api/account/books/${encodeURIComponent(bookId)}/file?asset=${encodeURIComponent(a.id)}`)return fail()
-  if(a.kind==='volume'){if(!int(a.partNumber,2,21)||parts.has(a.partNumber))return fail();parts.add(a.partNumber)}else{if(a.partNumber!==null||kinds.has(a.kind))return fail();kinds.add(a.kind)}
+  if(a.kind==='volume'){if(!int(a.partNumber,2,imageSource?200:21)||parts.has(a.partNumber)||imageSource&&(a.mimeType!=='image/jpeg'||!/\.jpe?g$/iu.test(a.fileName)))return fail();parts.add(a.partNumber)}else{if(a.partNumber!==null||kinds.has(a.kind))return fail();kinds.add(a.kind)}
   if(a.kind==='pdf'&&a.mimeType!=='application/pdf'||a.kind==='cover'&&(!['image/png','image/jpeg','image/webp'].includes(a.mimeType)||a.byteLength>5*1024*1024))return fail()
   total+=a.byteLength;if(total>64*1024*1024)return fail();seen.add(a.id);return {...a} as PublicBookAsset
  });for(let part=2;part<2+parts.size;part++)if(!parts.has(part))return fail();return result

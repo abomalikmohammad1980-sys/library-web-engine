@@ -1,7 +1,18 @@
 import { describe, expect, it } from 'vitest'
-import { applyBookWordReplacement, mergeAuthorRecords, persistAndVerifyReaderPageCount, restoreBookMetadataSnapshot, sha256Hex, snapshotBookMetadata, type StoredAuthor, type StoredBook } from './library_store'
+import { applyBookWordReplacement, CURRENT_READER_MODEL_VERSION, hasCurrentReaderModel, mergeAuthorRecords, persistAndVerifyReaderPageCount, restoreBookMetadataSnapshot, sha256Hex, snapshotBookMetadata, type StoredAuthor, type StoredBook } from './library_store'
 
 describe('library original file integrity', () => {
+  it('invalidates version 5 cached models after numeric text and spacing repairs', () => {
+    expect(CURRENT_READER_MODEL_VERSION).toBeGreaterThan(5)
+    expect(hasCurrentReaderModel({ readerModel: {} as StoredBook['readerModel'], readerModelVersion: 5 })).toBe(false)
+  })
+  it('rejects a persisted OOXML model from before the header/footer/footnote contract', () => {
+    const model = {} as StoredBook['readerModel']
+    expect(hasCurrentReaderModel({ readerModel: model })).toBe(false)
+    expect(hasCurrentReaderModel({ readerModel: model, readerModelVersion: CURRENT_READER_MODEL_VERSION - 1 })).toBe(false)
+    expect(hasCurrentReaderModel({ readerModel: model, readerModelVersion: CURRENT_READER_MODEL_VERSION })).toBe(true)
+  })
+
   it('computes a stable SHA-256 for the unchanged uploaded bytes', async () => {
     const bytes = new TextEncoder().encode('DOCX original bytes')
     expect(await sha256Hex(bytes)).toBe('5c7bfff4ed2eca3cd84f4b7f7e53f183f6b9fe398690575bb6b97f375c06bab0')
@@ -12,12 +23,12 @@ describe('library original file integrity', () => {
     const book = { id: 'b', title: 'العنوان', author: 'المؤلف', category: 'فقه', fileName: 'old.docx',
       fileSize: 10, addedAt: 1, data: new Uint8Array([1]), mimeType: 'docx', originalSha256: 'old',
       pdfData: new Uint8Array([2]), pdfFileName: 'old.pdf', pdfEngine: 'old', pdfStatus: 'ready',
-      wordPageMap: { totalPages: 9, paragraphCount: 0, starts: [] }, readerModel: {} } as unknown as StoredBook
+      wordPageMap: { totalPages: 9, paragraphCount: 0, starts: [] }, readerModel: {}, readerModelVersion: CURRENT_READER_MODEL_VERSION } as unknown as StoredBook
     applyBookWordReplacement(book, { fileName: 'new.docx', data: new Uint8Array([3, 4]), mimeType: 'docx' }, 'newhash')
     expect({ title: book.title, author: book.author, category: book.category }).toEqual({ title: 'العنوان', author: 'المؤلف', category: 'فقه' })
     expect(book.fileName).toBe('new.docx'); expect(book.originalSha256).toBe('newhash')
     expect(book.pdfStatus).toBe('pending'); expect(book.pdfData).toBeUndefined()
-    expect(book.pdfEngine).toBeUndefined(); expect(book.wordPageMap).toBeUndefined(); expect(book.readerModel).toBeUndefined()
+    expect(book.pdfEngine).toBeUndefined(); expect(book.wordPageMap).toBeUndefined(); expect(book.readerModel).toBeUndefined(); expect(book.readerModelVersion).toBeUndefined()
   })
 })
 

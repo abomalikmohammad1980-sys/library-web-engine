@@ -3,17 +3,7 @@ import { extractFromDocx } from '@engine/ooxml-model'
 
 export {SUBJECT_CATEGORY_NAMES as BOOK_CATEGORIES} from './subject_categories'
 
-export function approximateGregorianYear(hijri: number): number {
-  return Math.round(hijri - hijri / 33 + 622)
-}
-
-export function isDocxFile(file: Pick<File, 'name' | 'type'>): boolean {
-  return /\.docx$/i.test(file.name) || file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-}
-
-export function isWordFile(file: Pick<File, 'name' | 'type'>): boolean {
-  return /\.(docx|doc|rtf)$/i.test(file.name) || isDocxFile(file)
-}
+export {approximateGregorianYear,isDocxFile,isWordFile} from './library_file_identity'
 
 export function fileNameTitle(fileName: string): string {
   return fileName.replace(/\.(docx|doc|rtf|pdf|epub|bok|txt|md)$/i, '').trim() || 'كتاب بدون عنوان'

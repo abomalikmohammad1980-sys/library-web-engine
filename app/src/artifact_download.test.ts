@@ -10,6 +10,8 @@ describe('downloadable artifact contract', () => {
     expect(helper.indexOf('document.body.appendChild(link)')).toBeLessThan(helper.indexOf('link.click()'))
     expect(helper).toContain('link.remove()')
     expect(helper).toContain('revokeTrackedObjectURL(url)')
+    expect(helper).toContain('DOWNLOAD_URL_GRACE_MS = 30_000')
+    expect(helper).not.toContain('revokeTrackedObjectURL(url), 0')
   })
 
   it('routes the reading-data export through the shared artifact downloader', () => {

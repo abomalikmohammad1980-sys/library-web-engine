@@ -37,6 +37,7 @@ export async function assertConvertedPdfPageCardinality(
 }
 
 export function needsPdfRefresh(book: { pdfData?: Uint8Array; pdfEngine?: string; sourceFormat?: string }): boolean {
+  if (book.sourceFormat === 'jpeg') return !hasPdfSignature(book.pdfData)
   if (book.sourceFormat === 'pdf') return !hasPdfSignature(book.pdfData)
   return !hasPdfSignature(book.pdfData) || (!book.pdfEngine?.startsWith('manual-upload') && !book.pdfEngine?.startsWith('published-original') && book.pdfEngine !== 'microsoft-word-companion-v1' && book.pdfEngine !== PDF_ENGINE_VERSION && book.pdfEngine !== BROWSER_PDF_ENGINE_VERSION)
 }

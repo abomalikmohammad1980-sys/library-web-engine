@@ -14,5 +14,5 @@ export function hasOriginalBookPdf(book: PdfBook): boolean {
 export function pdfButtonAction(book: PdfBook, surface: 'standard' | 'pdf-text'): PdfButtonAction {
   if (hasOriginalBookPdf(book)) return 'original'
   if (surface === 'pdf-text') return 'unavailable'
-  return ['shamela-bok', 'epub', 'markdown', 'text'].includes(inferBookFormat(book)) ? 'formatted' : 'unavailable'
+  return ['shamela-bok', 'epub', 'html', 'markdown', 'text'].includes(inferBookFormat(book)) ? 'formatted' : 'unavailable'
 }

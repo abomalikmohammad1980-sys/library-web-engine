@@ -7,6 +7,8 @@ import { REVIEWED_AUTHOR_FORM_ALL_UI } from './i18n/author_form_all.reviewed'
 import { REVIEWED_BOOK_SORT_ALL_UI } from './i18n/book_sort_all.reviewed'
 import { addAuthorInlineTranslations } from './i18n/author_inline_all.reviewed'
 import { REVIEWED_SIGN_IN_ALL_UI } from './i18n/sign_in_all.reviewed'
+import { SIGN_IN_QUOTA_UI } from './i18n/sign_in_quota_all'
+import { EN_COMPLETION_UI } from './i18n/en_completion_ui'
 import { REVIEWED_ACCOUNT_CURRENT_ALL_UI } from './i18n/account_current_all.reviewed'
 import { REVIEWED_WELCOME_CURRENT_ALL_UI } from './i18n/welcome_current_all.reviewed'
 import { REVIEWED_PWA_INSTALL_ALL_UI } from './i18n/pwa_install_all.reviewed'
@@ -676,6 +678,7 @@ for (const [code, reviewed] of Object.entries(REVIEWED_SIGN_IN_ALL_UI)) {
   const catalog = UI_TRANSLATIONS[code] ??= {}
   for (const [source, translated] of Object.entries(reviewed)) catalog[source] ??= translated
 }
+for (const [code, entries] of Object.entries(SIGN_IN_QUOTA_UI)) Object.assign(UI_TRANSLATIONS[code] ??= {}, entries)
 for (const [code, reviewed] of Object.entries(REVIEWED_QUOTES_PUBLIC_ALL_UI)) {
   const catalog = UI_TRANSLATIONS[code] ??= {}
   for (const [source, translated] of Object.entries(reviewed)) catalog[source] ??= translated
@@ -684,6 +687,7 @@ for (const batch of [REVIEWED_ACCOUNT_CURRENT_ALL_UI, REVIEWED_WELCOME_CURRENT_A
   for (const [code, reviewed] of Object.entries(batch)) Object.assign(UI_TRANSLATIONS[code] ??= {}, reviewed)
 }
 Object.assign(UI_TRANSLATIONS.en ??= {}, COMPLETED_EN_UI)
+Object.assign(UI_TRANSLATIONS.en ??= {}, EN_COMPLETION_UI)
 Object.assign(UI_TRANSLATIONS.en ??= {}, REVIEWED_EN_INTERFACE_GAPS)
 for (const catalog of Object.values(UI_TRANSLATIONS)) {
   for (const [source, translated] of Object.entries(catalog)) {

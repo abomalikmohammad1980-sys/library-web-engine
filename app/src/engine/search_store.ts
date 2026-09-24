@@ -3,6 +3,7 @@
 import { currentLibraryIdentityScope, getBook, listAuthorRecords, listBooks, listStoredBooks, type StoredBook } from './library_store'
 import { inferBookFormat } from '../book_format'
 import { storedTextSource, textParagraphs } from '../text_import'
+import {markdownSearchParagraphs} from '../markdown_search_paragraphs'
 import {localIndexKeys,localQueryCandidates} from './local_search_candidates'
 import { searchAuthorChronology } from '../search_author_metadata'
 import type { SearchContentScope } from '../search_content_scope'
@@ -709,8 +710,8 @@ async function cleanRemovedBookIndexes(activeBookIds: Set<string>): Promise<void
 // access too, so older empty PDF/EPUB cache entries cannot claim coverage.
 function localSearchTextUnavailable(book:StoredBook):string|undefined{
   const format=inferBookFormat(book)
-  if(format==='pdf')return format // PDF text extraction/OCR is not implemented here.
-  if(format==='epub'&&!book.extractedText?.trim())return format
+  if(format==='pdf'||format==='jpeg')return format // No OCR: never claim an image is text-indexed.
+  if((format==='epub'||format==='html')&&!book.extractedText?.trim())return format
   if(format==='shamela-bok'&&!book.bokPages?.some(page=>page.text.trim())&&!book.extractedText?.trim())return format
 }
 function assertLocalSearchTextAvailable(book:StoredBook):void{
@@ -736,15 +737,17 @@ export async function indexedParagraphs(book: StoredBook,signal?:AbortSignal,bef
   }
   // Only an uncached Word book needs the parser. The asynchronous boundary must
   // not allow a former account's pending book to enter the new account's cache.
-  const needsDocx = !['text', 'markdown', 'shamela-bok', 'epub', 'pdf'].includes(format)
+  const needsDocx = !['text', 'markdown', 'shamela-bok', 'epub', 'html', 'pdf'].includes(format)
   const extracted = needsDocx ? await (await import('./local_docx_worker')).extractLocalWordParagraphs(book.data,signal,identity.active) : undefined
   identity.active()
   if(signal?.aborted)throw new DOMException('Local index cancelled','AbortError')
-  const paragraphs = format === 'text' || format === 'markdown'
+  const paragraphs = format === 'markdown'
+    ? markdownSearchParagraphs(storedTextSource(book.data,book.extractedText))
+    : format === 'text'
     ? textParagraphs(storedTextSource(book.data,book.extractedText)).map((text, index) => ({ index, text }))
     : format === 'shamela-bok' && book.bokPages?.length
       ? indexedBokPages(book)
-    : format === 'epub' || format === 'shamela-bok'
+    : format === 'epub' || format === 'html' || format === 'shamela-bok'
       ? textParagraphs(book.extractedText ?? '').map((text, index) => ({ index, text }))
     : format === 'pdf'
       ? []

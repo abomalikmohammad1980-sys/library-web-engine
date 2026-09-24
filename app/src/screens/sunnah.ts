@@ -10,13 +10,14 @@ import { searchSunnahCorpus } from '../sunnah_corpus_search'
 import { bookOrdinal, orderedBooks, sortBooks, BOOK_SORT_OPTIONS, type BookSort } from '../book_ordering'
 import {availableAuthorChronology as booksWithAuthorChronology} from '../book_ordering_chronology'
 import { shamelaSearchClient } from '../shamela_search_client'
-import { augmentSunnahLibraryBooks, buildVerifiedSunnahSearchScope, completeSunnahSearchScope, isKnownSunnahAuthorName, searchAllVerifiedSunnahBooks, VERIFIED_SUNNAH_CATEGORIES } from '../sunnah_global_search'
+import { augmentSunnahLibraryBooks, buildVerifiedSunnahSearchScope, completeSunnahSearchScope, isKnownSunnahAuthorName, previewVerifiedSunnahBooks, searchAllVerifiedSunnahBooks, VERIFIED_SUNNAH_CATEGORIES } from '../sunnah_global_search'
 import { silentSkeleton } from '../silent_skeleton'
 import { decorativeImage } from '../safe_image'
 import {icon} from '../icons'
 import {authorLink} from '../taxonomy_links'
 import {appendSearchText} from '../search_presentation'
 import {createSunnahResultPager} from '../sunnah_result_order'
+import {styleOrnamentalVerses} from '../textual_quran_style'
 
 const SUNNAH_TERMS = [
   'كتب السنة', 'متون الحديث', 'شروح الحديث', 'تخريج', 'الأطراف', 'علل الحديث',
@@ -135,11 +136,14 @@ function sunnahTextResult(hit:{bookId:string;paragraphIndex:number;text:string},
 export function sunnahPassageResult(row:{ordinal:number;bookTitle:string;authorName:string;authorId?:string|undefined;deathYearHijri?:number|undefined;fullText:string;href:string;pageLabel?:string|undefined;partLabel?:string|undefined}):HTMLElement {
   const text=h('div',{class:'sunnah-corpus-result__text sunnah-passage-text',dataset:{noTranslate:''}})
   appendSearchText(text,row.fullText)
+  styleOrnamentalVerses(text)
   // Only an explicit numbered entry at the start is a hadith number; never use the page index.
   const number=/^\s*([0-9٠-٩]+)\s*[-–]/u.exec(row.fullText)?.[1]
   const reference=[row.partLabel,row.pageLabel].filter(Boolean).join(' / ')+(number?` - ح ${number}`:'')
+  const author=authorLink(row.authorName,'sunnah-passage-result__author',row.authorId)
+  author.setAttribute('target','_blank');author.setAttribute('rel','noopener noreferrer')
   return h('article',{class:'sunnah-corpus-result sunnah-passage-result'},
-    h('header',{class:'sunnah-passage-result__heading'},h('span',{class:'sunnah-passage-result__ordinal'},`${row.ordinal}-`),h('a',{href:row.href,dataset:{noTranslate:''}},row.bookTitle),reference?h('bdi',{class:'sunnah-passage-result__reference',dir:'ltr'},`(${reference})`):null,h('span',{'aria-hidden':'true'},'—'),authorLink(row.authorName,'sunnah-passage-result__author',row.authorId),Number.isSafeInteger(row.deathYearHijri)&&row.deathYearHijri!==99999?h('span',{class:'sunnah-passage-result__death',dataset:{noTranslate:''}},`(ت ${row.deathYearHijri} هـ)`):null),text)
+    h('header',{class:'sunnah-passage-result__heading'},h('span',{class:'sunnah-passage-result__ordinal'},`${row.ordinal}-`),h('a',{href:row.href.split('?')[0]+'?pageIndex=0',target:'_blank',rel:'noopener noreferrer',dataset:{noTranslate:''}},row.bookTitle),h('a',{href:row.href,target:'_blank',rel:'noopener noreferrer',title:'فتح الموضع في المكتبة','aria-label':'فتح الموضع في المكتبة'},icon('book',20)),reference?h('bdi',{class:'sunnah-passage-result__reference',dir:'ltr'},`(${reference})`):null,h('span',{'aria-hidden':'true'},'—'),author,Number.isSafeInteger(row.deathYearHijri)&&row.deathYearHijri!==99999?h('span',{class:'sunnah-passage-result__death',dataset:{noTranslate:''}},`(ت ${row.deathYearHijri} هـ)`):null),text)
 }
 
 export function verifiedWitnessResult(record: Awaited<ReturnType<typeof loadVerifiedSunnahCorpus>>['records'][number]): HTMLElement | undefined {
@@ -150,7 +154,7 @@ export function verifiedWitnessResult(record: Awaited<ReturnType<typeof loadVeri
     h('h3', { id: `sunnah-witness-${record.id}`, dataset:{noTranslate:''} }, record.title),
     h('p', { class: 'sunnah-corpus-result__text', dataset:{noTranslate:''} }, record.hadithText),
     primarySources.length ? h('p', { class: 'sunnah-corpus-result__meta' }, h('strong', null, 'المصادر الأصلية: '),
-      ...primarySources.flatMap((source, index) => [index ? document.createTextNode('؛ ') : document.createTextNode(''), h('a', { href: `#/reader/${source.publicId}?sequence=${source.sequence}` }, uiTemplateText('a6df55441da8cbbc',{p1:source.book,p2:source.hadithNumber,p3:source.volume,p4:source.page}))])) : null,
+      ...primarySources.flatMap((source, index) => [index ? document.createTextNode('؛ ') : document.createTextNode(''), h('a', { href: `#/reader/${source.publicId}?sequence=${source.sequence}`, target: '_blank', rel: 'noopener noreferrer' }, uiTemplateText('a6df55441da8cbbc',{p1:source.book,p2:source.hadithNumber,p3:source.volume,p4:source.page}))])) : null,
     record.grade ? h('p', { class: 'sunnah-verdict-summary__grade' }, h('strong', null, 'الحكم: '), h('span',{dataset:{noTranslate:''}},record.grade), h('a',{class:'sunnah-verdict-summary__source',href:record.link,target:'_blank',rel:'noopener noreferrer',title:'مصدر الحكم: موسوعة الأحاديث النبوية — HadeethEnc','aria-label':'مصدر الحكم: موسوعة الأحاديث النبوية — HadeethEnc'},icon('book',20))) : null,
     record.takhrij ? h('p', { class: 'sunnah-corpus-result__meta' }, h('strong', null, 'التخريج: '), h('span',{dataset:{noTranslate:''}},record.takhrij)) : null,
     h('details',null,h('summary',null,'الشرح والفوائد من المصدر'),
@@ -165,6 +169,8 @@ export function sunnahScreen(): HTMLElement {
     'aria-label': 'البحث في قسم السنة',
   }) as HTMLInputElement
   const hadithSearch=h('button',{type:'button',class:'btn btn--primary'},'بحث الحديث') as HTMLButtonElement
+  hadithSearch.disabled=true
+  hadithSearch.title='جارٍ تجهيز نطاق البحث'
   let requestedTextSearch=false
   const count = h('strong', { class: 'sunnah-search__count', 'aria-live': 'polite' })
   const category = h('select', { class: 'sunnah-search__category', 'aria-label': 'تصفية كتب السنة حسب الفن' },
@@ -197,7 +203,19 @@ export function sunnahScreen(): HTMLElement {
     writeCachedSunnahScope(indexedScope)
     let sunnahBooks = orderedBooks(augmentSunnahLibraryBooks(localBooks.filter(book=>indexedIds.has(book.id)),indexedScope))
     const indexedBySource = new Map(indexedScope.books.map(book=>[book.sourceBookId,book]))
-    const orderedTextPage=createSunnahResultPager(indexedScope,(query,offset,limit,signal)=>searchAllVerifiedSunnahBooks(shamelaSearchClient(),indexedScope,query,offset,limit,signal))
+    const scopedPagers=new Map<string,ReturnType<typeof createSunnahResultPager>>()
+    const scopedSearchScope=()=>({...indexedScope,books:indexedScope.books.filter(book=>matchesCategoryFilter(book.category,category.value))})
+    const orderedTextPage=(query:string,offset:number,limit:number,sort:BookSort,signal:AbortSignal)=>{
+      const key=category.value
+      let pager=scopedPagers.get(key)
+      if(!pager){
+        const scope=scopedSearchScope()
+        pager=createSunnahResultPager(scope,(q,o,n,s)=>searchAllVerifiedSunnahBooks(shamelaSearchClient(),scope,q,o,n,s))
+        scopedPagers.set(key,pager)
+      }
+      return pager(query,offset,limit,sort,signal)
+    }
+    const passageRows=(hits:Awaited<ReturnType<typeof orderedTextPage>>['hits'],offset:number)=>hits.map((hit,index)=>{const meta=indexedBySource.get(hit.bookId);return{ordinal:offset+index+1,bookTitle:meta?.title??`كتاب السنة ${hit.bookId}`,authorName:meta?.author??hit.author??'المؤلف مجهول',authorId:meta?.authorId?.replace(/^shamela-author-/,'shamela:'),deathYearHijri:meta?.deathYearHijri??hit.deathYearHijri,fullText:hit.text,partLabel:hit.partLabel,pageLabel:hit.pageLabel,href:`#/reader/${410000000+Number(hit.bookId)}?pageIndex=${hit.paragraphIndex}`}})
     const categories = [...new Set(sunnahBooks.map(book => book.category?.trim()).filter((value): value is string => Boolean(value)))]
       .sort((a, b) => a.localeCompare(b, 'ar'))
     category.replaceChildren(h('option', { value: '' }, 'كل فنون السنة'),
@@ -208,18 +226,31 @@ export function sunnahScreen(): HTMLElement {
       if(request!==serial||!activeSearch||textLoadingRequest===request)return
       textLoadingRequest=request;const controller=activeSearch;more.hidden=true;results.setAttribute('aria-busy','true')
       try{
-        const page=await orderedTextPage(search.value.trim(),offset,60,order.value as BookSort,controller.signal)
+        const query=search.value.trim(),sort=order.value as BookSort
+        if(offset===0&&sort==='death'){
+          try{
+            const preview=await previewVerifiedSunnahBooks(shamelaSearchClient(),scopedSearchScope(),query,20,controller.signal)
+            if(request!==serial||activeSearch!==controller)return
+            if(preview.hits.length){
+              results.classList.add('sunnah-results--text')
+              results.replaceChildren(...passageRows(preview.hits,0).map(sunnahPassageResult))
+              count.textContent=preview.scopeCoverageComplete?`عُثر على ${preview.total} موضعًا`:'نتائج أولية — جارٍ استكمال فحص الفهرس والعدد'
+            }
+            if(preview.scopeCoverageComplete&&preview.total<=preview.hits.length){textOffset=0;textTotal=preview.total;return}
+          }catch(error){if(controller.signal.aborted)return;console.warn('sunnah_text_preview_failed',error)}
+        }
+        const page=await orderedTextPage(query,offset,60,sort,controller.signal)
         if(request!==serial||activeSearch!==controller)return
         if(!page.scopeCoverageComplete)throw Error('sunnah_search_incomplete')
         textOffset=offset;textTotal=page.total
-        const rows=page.hits.map((hit,index)=>{const meta=indexedBySource.get(hit.bookId);return{ordinal:offset+index+1,bookTitle:meta?.title??`كتاب السنة ${hit.bookId}`,authorName:meta?.author??hit.author??'المؤلف مجهول',authorId:meta?.authorId?.replace(/^shamela-author-/,'shamela:'),deathYearHijri:meta?.deathYearHijri??hit.deathYearHijri,fullText:hit.text,partLabel:hit.partLabel,pageLabel:hit.pageLabel,href:`#/reader/${410000000+Number(hit.bookId)}?pageIndex=${hit.paragraphIndex}`}})
+        const rows=passageRows(page.hits,offset)
         results.classList.add('sunnah-results--text')
         // Variable-height passages must not use the former fixed 64px row spacers.
         if(offset===0)results.replaceChildren(...(rows.length?rows.map(sunnahPassageResult):[stateView({kind:'empty',title:'لا نتيجة نصية في كتب السنة الموثقة'})]))
         else results.append(...rows.map(sunnahPassageResult))
         more.hidden=offset+rows.length>=page.total;more.textContent='عرض مواضع أخرى'
         count.replaceChildren(uiTemplateText('sunnah-matching-passages',{p1:page.total,p2:page.scopeBooks}))
-      }catch(error){if(request!==serial||error instanceof DOMException&&error.name==='AbortError')return;results.replaceChildren(stateView({kind:'error',title:'توقف البحث النصي احترازيًا',description:'لم تكتمل سلامة نطاق كتب السنة أو فهرسه، لذلك لم تُعرض نتائج ناقصة كتغطية كاملة.'}))}
+      }catch(error){if(request!==serial||error instanceof DOMException&&error.name==='AbortError')return;console.warn('sunnah_text_search_failed',error);results.replaceChildren(stateView({kind:'error',title:'توقف البحث النصي احترازيًا',description:'لم تكتمل سلامة نطاق كتب السنة أو فهرسه، لذلك لم تُعرض نتائج ناقصة كتغطية كاملة.'}))}
       finally{if(textLoadingRequest===request)textLoadingRequest=0;if(activeSearch===controller)results.removeAttribute('aria-busy')}
     }
     const render = (): void => {
@@ -246,6 +277,8 @@ export function sunnahScreen(): HTMLElement {
     let inputTimer:ReturnType<typeof setTimeout>|undefined
     search.addEventListener('input',()=>{requestedTextSearch=false;activeSearch?.abort();serial++;clearTimeout(inputTimer);inputTimer=setTimeout(resetAndRender,180)})
     hadithSearch.onclick=()=>{if(search.value.trim().length<2){search.focus();return}clearTimeout(inputTimer);requestedTextSearch=true;resetAndRender()}
+    hadithSearch.disabled=false
+    hadithSearch.removeAttribute('title')
     search.addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();hadithSearch.click()}})
     captureRouteResourceScope().add(()=>{clearTimeout(inputTimer);activeSearch?.abort()})
     category.addEventListener('change', resetAndRender)
@@ -278,11 +311,7 @@ export function sunnahScreen(): HTMLElement {
       h('div', { class: 'sunnah-search', role: 'search' }, search, hadithSearch,
         h('div', { class: 'sunnah-search__meta' }, category, order, count)),
     ),
-    h('section', { class: 'sunnah-library', 'aria-labelledby': 'sunnah-library-title' },
-      h('header', { class: 'sunnah-library__head' },
-        h('div', null, h('h2', { id: 'sunnah-library-title' }, 'كتب السنة في مكتبتي')),
-        h('a', { class: 'btn btn--secondary', href: '#/library' }, 'إدارة الكتب'),
-      ),
+    h('section', { class: 'sunnah-library', 'aria-label': 'كتب السنة' },
       enrichment,
       results,
       more,

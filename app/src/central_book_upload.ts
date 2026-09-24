@@ -2,7 +2,7 @@ import type {BookIntakeFields,StoredBook} from './engine/library_store'
 import {localOriginalAsset} from './library_card_state'
 import {createWordBundleUpload,type WordBundleProof} from './word_bundle_transfer'
 export type CentralBookPublicMetadata=Pick<BookIntakeFields,'publisher'|'edition'|'investigator'|'publicationYearHijri'|'description'|'rawSourceMetadata'|'volumeCount'|'deathYearHijri'|'contemporary'|'tags'|'coverHue'|'coverTemplate'|'authors'|'authorId'>&{schemaVersion:1;centralAuthorId?:string;parts?:StoredBook['parts']}
-export interface CentralBookUploadInput {file:File;title:string;author:string;category?:string;metadata?:CentralBookPublicMetadata;volumeFiles?:File[];pdfFile?:File;coverFile?:File;wordMapFile?:File;wordBundle?:WordBundleProof}
+export interface CentralBookUploadInput {file:File;title:string;author:string;category?:string;metadata?:CentralBookPublicMetadata;volumeFiles?:File[];pdfFile?:File;coverFile?:File;wordMapFile?:File;wordBundle?:WordBundleProof;htmlResources?:Array<{path:string;file:File}>}
 export async function centralBookUploadWithWordBundle(input:CentralReviewedBook):Promise<CentralBookUploadInput>{
  return {...centralBookUploadInput(input),...await createWordBundleUpload(input.book)}
 }
@@ -34,5 +34,6 @@ export function centralBookUploadInput(input:CentralReviewedBook):CentralBookUpl
  if(files.length>1)result.volumeFiles=files.slice(1)
  if(book.pdfStatus==='ready'&&book.pdfData?.byteLength&&book.sourceFormat!=='pdf')result.pdfFile=binaryFile(book.pdfData,book.pdfFileName||'book.pdf','application/pdf')
  if(book.customCoverData?.byteLength&&book.customCoverMimeType){const extension=({'image/png':'png','image/jpeg':'jpg','image/webp':'webp'} as Record<string,string>)[book.customCoverMimeType];if(!extension)throw Error('account_book_cover_invalid');result.coverFile=binaryFile(book.customCoverData,'cover.'+extension,book.customCoverMimeType)}
+ if(book.sourceFormat==='html'&&book.htmlAssets?.length)result.htmlResources=book.htmlAssets.map(asset=>({path:asset.path,file:binaryFile(asset.data,asset.path.split('/').at(-1)!,asset.mimeType)}))
  return result
 }

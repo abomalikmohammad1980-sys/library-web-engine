@@ -1,4 +1,5 @@
 import DOMPurify from 'dompurify'
+import {styleOrnamentalVerses} from './textual_quran_style'
 import {safeImportedStyle} from './import_style_security'
 import { strFromU8, unzipSync } from 'fflate'
 import { parseEpub } from './epub_import'
@@ -92,6 +93,7 @@ export function renderEpubRendition(data: Uint8Array, fileName: string): EpubRen
     content.dir = doc.documentElement.getAttribute('dir') === 'ltr' || doc.body?.getAttribute('dir') === 'ltr' ? 'ltr' : 'rtl'
     content.appendChild(fragment)
     decorateImportedTextualDom(content)
+    styleOrnamentalVerses(content)
     for (const element of content.querySelectorAll<HTMLElement>('*')) {
       for (const name of element.getAttributeNames()) if (/^on/i.test(name)) element.removeAttribute(name)
       if (element.hasAttribute('style')) element.setAttribute('style', safeStyle(element.getAttribute('style') ?? ''))

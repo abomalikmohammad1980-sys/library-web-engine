@@ -48,6 +48,31 @@ export function readyReaderTotal(renderedPageCount: number): number {
   return Number.isInteger(renderedPageCount) && renderedPageCount > 0 ? renderedPageCount : 0
 }
 
+/** Limit the scroll distance and paint work of distant placeholders in very long books. */
+export function readerEstimatedSlotHeight(estimated:number,pageCount:number):number{
+  if(!Number.isFinite(estimated)||estimated<=0)return 1
+  if(!Number.isSafeInteger(pageCount)||pageCount<=6000)return estimated
+  return Math.min(estimated,Math.max(120,Math.floor(6_000_000/pageCount)))
+}
+
+/** Locate the visible page without measuring every placeholder on each scroll frame. */
+export function readerSlotAtViewportCenter(
+  count:number,center:number,rectAt:(index:number)=>{top:number;bottom:number},
+):number{
+  if(count<=0)return 0
+  let low=0,high=count
+  while(low<high){
+    const middle=low+Math.floor((high-low)/2)
+    if(rectAt(middle).bottom<center)low=middle+1
+    else high=middle
+  }
+  if(low===0)return 0
+  if(low>=count)return count-1
+  const here=rectAt(low),previous=rectAt(low-1)
+  const distance=(rect:{top:number;bottom:number})=>rect.top<=center&&rect.bottom>=center?0:Math.min(Math.abs(rect.top-center),Math.abs(rect.bottom-center))
+  return distance(previous)<distance(here)?low-1:low
+}
+
 /** نافذة ترطيب صغيرة حول الصفحة المرئية، مع سبق أكبر في اتجاه التمرير. */
 export function readerHydrationWindow(center: number, total: number, direction: -1 | 0 | 1): number[] {
   if (!Number.isInteger(total) || total <= 0) return []

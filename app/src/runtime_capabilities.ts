@@ -16,7 +16,7 @@ export function hasDesktopBridge(target: unknown): boolean {
 
 export async function probeWordPdfEndpoint(fetcher: CapabilityFetch): Promise<boolean> {
   try {
-    const response = await fetcher('/api/convert/docx-to-pdf', { method: 'HEAD', cache: 'no-store' })
+    const response = await fetcher('/api/convert/docx-to-pdf', { method: 'HEAD', cache: 'no-store', signal: AbortSignal.timeout(1500) })
     if (response.headers.get('x-khizana-word-pdf-capability') === 'available') return true
     // خادم Vite المحلي القديم يعلن المسار بإجابة «POST only» ذات 405.
     return response.status === 405
@@ -45,7 +45,8 @@ export async function detectRuntimeCapabilities(
 let runtimeCapabilitiesPromise: Promise<RuntimeCapabilities> | undefined
 
 export function getRuntimeCapabilities(): Promise<RuntimeCapabilities> {
-  runtimeCapabilitiesPromise ??= detectRuntimeCapabilities(fetch.bind(window), window)
+  const hosted=/^(?:khzanah\.com|(?:[a-z0-9-]+\.)?khezana\.pages\.dev)$/i.test(location.hostname)&&!hasDesktopBridge(window)
+  runtimeCapabilitiesPromise ??= hosted?Promise.resolve({desktopBridgeAvailable:false,wordPdfEndpointAvailable:false,wordPdfConversionAvailable:false,publicHosted:true,storageScope:'browser-local'}):detectRuntimeCapabilities(fetch.bind(window), window)
   return runtimeCapabilitiesPromise
 }
 

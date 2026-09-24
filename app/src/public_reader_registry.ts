@@ -19,7 +19,7 @@ export function createPublicReaderRegistry(load:(id:string,options:{signal?:Abor
    if(privateAccount){delete book.managedSource;delete book.visibility}
    if(meta.metadata){const {schemaVersion:_,centralAuthorId,...fields}=meta.metadata;Object.assign(book,fields);if(centralAuthorId)book.authorId=centralAuthorId}
    for(const {asset,data} of source.assetData??[]){
-    if(asset.kind==='pdf'){book.pdfData=data;book.pdfFileName=asset.fileName;book.pdfStatus='ready';book.pdfEngine='original'}
+    if(asset.kind==='pdf'){book.pdfData=data;book.pdfFileName=asset.fileName;book.pdfStatus='ready';book.pdfEngine=meta.sourceFormat==='jpeg'?'jpeg-pages-v1':'original'}
     else if(asset.kind==='cover'){book.customCoverData=data;book.customCoverMimeType=asset.mimeType}
     else{book.volumes??=[{number:1,fileName:meta.fileName,data:source.data,mimeType:meta.mimeType}];book.volumes.push({number:asset.partNumber!,fileName:asset.fileName,data,mimeType:asset.mimeType})}
    }
@@ -27,6 +27,12 @@ export function createPublicReaderRegistry(load:(id:string,options:{signal?:Abor
     book.wordPageMap=source.wordPageMap
     book.paginationAuthority='word-map'
     book.pdfEngine='microsoft-word-companion-v1'
+   }
+   if(meta.sourceFormat==='html'){
+    if(source.htmlAssets?.length)book.htmlAssets=source.htmlAssets
+    const parsed=(await import('./html_source')).parseHtmlBook(source.data,meta.fileName,source.htmlAssets)
+    book.extractedText=parsed.text
+    parsed.assetUrls.forEach(url=>URL.revokeObjectURL(url))
    }
    book.volumes?.sort((a,b)=>a.number-b.number)
    active=projectBookAuthorNames(book);return active
