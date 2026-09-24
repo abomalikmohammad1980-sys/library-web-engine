@@ -14,7 +14,7 @@ import {buildShamelaReaderClientConfig} from './build-shamela-reader-client-conf
 
 const root=resolve(import.meta.dirname,'..'),sha=b=>createHash('sha256').update(b).digest('hex')
 const json=async p=>JSON.parse(await readFile(p,'utf8'))
-const client=resolve(root,'.artifacts/reader-merged-client-20260925-v8/compiled')
+const client=resolve(root,'.artifacts/reader-merged-client-20260925-v9/compiled')
 const resources=resolve(root,'.artifacts/reader-preview-app-v4-20260924')
 const smoke=process.argv.includes('--smoke-preview')
 const out=resolve(root,smoke?'.artifacts/reader-integrated-smoke-20260925-v5':'.artifacts/reader-integrated-20260925-v5')
@@ -41,6 +41,12 @@ headers=headers.replace(/ 'sha256-[A-Za-z0-9+/=]+'/g,'')
 if(!plan){
  assert(/^https:\/\/[a-f0-9]{8}\.khezana-reader-01\.pages\.dev\/?$/.test(readerBase??''),'immutable_reader_deployment_required')
  assert(smoke?readerBase==='https://689e316e.khezana-reader-01.pages.dev':!readerBase.includes('689e316e'),'three_book_smoke_is_not_a_release')
+ if(!smoke){
+  const uploaded=await json(resolve(root,'.artifacts/reader-upload-resumable-20260924/receipt.json'))
+  assert.equal(uploaded.uploaded,true);assert.equal(uploaded.remoteVerified,true);assert.equal(uploaded.deploymentUrl,readerBase)
+  const accepted=await json(resolve(root,'.artifacts/reader-integrated-smoke-20260925-v5/smoke-remote-verification.json'))
+  assert.equal(accepted.passed,true)
+ }
  const cfg=smoke?await json(resolve(root,'.artifacts/reader-smoke-public-20260924/data/shamela-pages-release.json')):await buildShamelaReaderClientConfig({releaseManifest:resolve(root,'.artifacts/pages-reader-extended-20260924/601fbdb9ac80f05dd86d2383/release-manifest.json'),sidecars:resolve(root,'.artifacts/shamela-reader-shards-extended-20260924'),baseUrl:readerBase})
  assert.equal(cfg.releaseId,smoke?'5b97084a5b2b060f0c9fc831':'601fbdb9ac80f05dd86d2383')
  assert.equal(Object.keys(cfg.directReaderShards.routeSha256).length,1788)
@@ -51,6 +57,7 @@ if(!plan){
 }else replacement.set('data/shamela-pages-release.json',Buffer.from('{}'))
 const shell=inlineThemeBootstrap(injectSearchBootstrap(await readFile(resolve(client,'index.html'),'utf8'),{defer:true}),
  headers,replacement.get('theme-init.js').toString())
+shell.index=shell.index.replace('</head>',`<meta name="khizana-reader-release" content="${smoke?'5b97084a5b2b060f0c9fc831':'601fbdb9ac80f05dd86d2383'}"></head>`)
 shell.index=await inlineEntryCss(shell.index,path=>readFile(resolve(client,path),'utf8'),{preservePreloadIdentity:true})
 Object.assign(shell,inlineRoutePreloads(shell.index,shell.headers,await json(resolve(client,'route-preload-hints.json'))))
 replacement.set('index.html',Buffer.from(shell.index));replacement.set('_headers',Buffer.from(shell.headers))
@@ -83,6 +90,7 @@ config.env.preview.vars.SEO_HTML_CACHE_VERSION=payload.fingerprint
 await writeFile(resolve(out,'deploy/wrangler.jsonc'),JSON.stringify(config,null,2))
 await put('deploy/pages-dist/q13-manifest.json',JSON.stringify({schemaVersion:1,...payload}))
 const deployed=await inventory(pages),server=await inventory(resolve(out,'deploy/functions'))
+if(!smoke){const tested=await json(resolve(root,'.artifacts/reader-integrated-smoke-20260925-v5/candidate.json'));assert.equal(server.fingerprint,tested.functionsFingerprint,'tested_server_drift')}
 assert(deployed.fileCount<=20000&&deployed.maxFileBytes<=25*1024*1024)
 await put('inventory.json',JSON.stringify(deployed.files))
 await put('candidate.json',JSON.stringify({createdAt:new Date().toISOString(),published:false,productionReady:false,smokeOnly:smoke,baseline:current.version,rollback:current,readerBase,readerBooks:smoke?3:1788,files:deployed.fileCount,payloadFingerprint:payload.fingerprint,deployFingerprint:deployed.fingerprint,functionsFingerprint:server.fingerprint,overlaidFunctions:functions,requiredGates:['remote reader hashes','isolated integrated preview','production migrations 0042/0043','source sync','live verification']},null,2))

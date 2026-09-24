@@ -4,7 +4,7 @@ import {resolve,relative,dirname} from 'node:path'
 import {createHash} from 'node:crypto'
 import assert from 'node:assert/strict'
 import {build,loadConfigFromFile} from 'vite'
-const root=resolve(import.meta.dirname,'..'),out=resolve(root,'.artifacts/reader-merged-client-20260925-v8')
+const root=resolve(import.meta.dirname,'..'),out=resolve(root,'.artifacts/reader-merged-client-20260925-v9')
 await mkdir(out) // Never overwrite a frozen candidate.
 const snapshot=new Map(),rows=[]
 async function collect(dir){for(const e of await readdir(resolve(root,dir),{withFileTypes:true})){
