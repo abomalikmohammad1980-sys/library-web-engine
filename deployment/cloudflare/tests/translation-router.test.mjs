@@ -4,13 +4,19 @@ import { LANGUAGE_ROUTES, routeTranslation, reserveQuota } from '../functions/ap
 
 function db() {
   const counters = new Map()
+  const cache = new Map()
+  const metrics = new Map()
   return {
-    counters,
+    counters, cache, metrics,
     prepare(sql) {
       let args
       return {
         bind(...values) { args = values; return this },
         async first() {
+          if (sql.includes('translation_response_cache')) {
+            const row = cache.get(args[0])
+            return row && row.expires_at > args[1] ? row : null
+          }
           const [key, amount, limit] = args
           const used = counters.get(key) || 0
           if (used + amount > limit) return null
@@ -18,9 +24,19 @@ function db() {
           return { used: used + amount }
         },
         async run() {
-          const [key, amount] = args
-          if (sql.includes('MAX(used,excluded.used)')) counters.set(key, Math.max(counters.get(key) || 0, amount))
-          else counters.set(key, (counters.get(key) || 0) + amount)
+          if (sql.includes('translation_usage_metrics')) {
+            const [period, provider, requests, characters, succeeded, failed, cacheHits, cacheCharactersSaved] = args
+            const key = `${period}:${provider}`, row = metrics.get(key) || { requests: 0, characters: 0, succeeded: 0, failed: 0, cache_hits: 0, cache_characters_saved: 0 }
+            Object.assign(row, { requests: row.requests + requests, characters: row.characters + characters, succeeded: row.succeeded + succeeded, failed: row.failed + failed, cache_hits: row.cache_hits + cacheHits, cache_characters_saved: row.cache_characters_saved + cacheCharactersSaved })
+            metrics.set(key, row)
+          } else if (sql.includes('translation_response_cache')) {
+            const [key, translation, provider, created, expires] = args
+            if (sql.includes('INSERT INTO')) cache.set(key, { translation, provider, created_at: created, expires_at: expires })
+          } else {
+            const [key, amount] = args
+            if (sql.includes('MAX(used,excluded.used)')) counters.set(key, Math.max(counters.get(key) || 0, amount))
+            else if (sql.includes('INSERT INTO translation_provider_usage')) counters.set(key, (counters.get(key) || 0) + amount)
+          }
           return { success: true, meta: { changes: 1 } }
         },
       }
@@ -58,11 +74,26 @@ test('routes to next configured provider when first free cap is exhausted', asyn
   } })
   assert.equal(result.translation, 'hello from azure')
   assert.deepEqual(calls, ['azure'])
-  const again = await routeTranslation({ env: { ...configured, VISITORS_DB: database, TRANSLATION_AZURE_FREE_CHARS: '0' }, text: 'سلام', target: 'en', purpose: 'text', now: new Date('2026-09-24'), adapters: {
+  const again = await routeTranslation({ env: { ...configured, VISITORS_DB: database, TRANSLATION_AZURE_FREE_CHARS: '0' }, text: 'نص مختلف', target: 'en', purpose: 'text', now: new Date('2026-09-24'), adapters: {
     azure: async () => { calls.push('azure2'); throw Error('should not call') },
     google: async () => { calls.push('google'); return 'hello from google' },
   } })
   assert.equal(again.provider, 'google')
+})
+
+test('reuses cached translation and tracks cache savings without another provider request', async () => {
+  const database = db()
+  let calls = 0
+  const args = { env: { ...configured, VISITORS_DB: database }, text: 'هذا نص فريد للاختبار', target: 'en', purpose: 'text', now: new Date('2026-09-24'), adapters: { azure: async () => { calls++; return 'a unique translation' } } }
+  const first = await routeTranslation(args)
+  const second = await routeTranslation(args)
+  assert.equal(first.provider, 'azure')
+  assert.equal(second.provider, 'cache')
+  assert.equal(second.translation, 'a unique translation')
+  assert.equal(calls, 1)
+  assert.equal(database.metrics.get('2026-09:cache').cache_hits, 1)
+  assert.equal(database.metrics.get('2026-09:cache').cache_characters_saved, args.text.length)
+  assert.equal(database.metrics.get('2026-09:azure').succeeded, 1)
 })
 
 test('provider failure continues and failed reservation is retained conservatively', async () => {
@@ -83,12 +114,12 @@ test('explicit provider free-quota exhaustion is persisted and skipped on later 
     azure: async () => { calls.push('azure'); throw Object.assign(new Error('provider_http_403'), { status: 403, providerCode: '403001', providerMessage: 'subscription exceeded its free quota' }) },
     google: async () => { calls.push('google'); return 'hello from google' },
   }
-  const args = { env, text: 'سلام', target: 'en', purpose: 'text', now: new Date('2026-09-24'), adapters }
+  const args = { env, text: 'سلام الأول', target: 'en', purpose: 'text', now: new Date('2026-09-24'), adapters }
   assert.equal((await routeTranslation(args)).provider, 'google')
-  assert.equal((await routeTranslation(args)).provider, 'google')
+  assert.equal((await routeTranslation({ ...args, text: 'سلام الثاني' })).provider, 'google')
   assert.deepEqual(calls, ['azure', 'google', 'google'])
   assert.equal(database.counters.get('azure:2026-09'), 100)
-  assert.equal((await routeTranslation({ ...args, now: new Date('2026-10-01') })).provider, 'google')
+  assert.equal((await routeTranslation({ ...args, text: 'سلام الثالث', now: new Date('2026-10-01') })).provider, 'google')
   assert.deepEqual(calls, ['azure', 'google', 'google', 'azure', 'google'])
   assert.equal(database.counters.get('azure:2026-10'), 100)
 })
@@ -218,10 +249,10 @@ test('Qwen-MT Plus adapter sends a single source-labelled message', async () => 
 
 test('Qwen trial quota does not reset at a month boundary', async () => {
   const database = db()
-  const env = { VISITORS_DB: database, QWEN_API_KEY: 'test', QWEN_ENDPOINT: 'https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions', QWEN_FREE_UNTIL: '2026-12-01', QWEN_FREE_QUOTA_ONLY: '1', TRANSLATION_QWEN_FREE_TOKENS: '24' }
-  const args = { env, text: 'سلام', target: 'en', purpose: 'text', adapters: { qwen: async () => 'hello' } }
+  const env = { VISITORS_DB: database, QWEN_API_KEY: 'test', QWEN_ENDPOINT: 'https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions', QWEN_FREE_UNTIL: '2026-12-01', QWEN_FREE_QUOTA_ONLY: '1', TRANSLATION_QWEN_FREE_TOKENS: '6' }
+  const args = { env, text: 'أ', target: 'en', purpose: 'text', adapters: { qwen: async () => 'hello' } }
   assert.equal((await routeTranslation({ ...args, now: new Date('2026-09-30') })).provider, 'qwen')
-  await assert.rejects(routeTranslation({ ...args, now: new Date('2026-10-01') }))
+  await assert.rejects(routeTranslation({ ...args, text: 'ب', now: new Date('2026-10-01') }))
   assert.equal(database.counters.size, 1)
 })
 
