@@ -15,7 +15,7 @@ export const LANGUAGE_ROUTES = Object.fromEntries(codes.map(code => {
   return [code, { codes: { azure: code === 'ckb' ? 'ku' : code === 'ku' ? 'kmr' : code === 'no' ? 'nb' : code === 'zh' ? 'zh-Hans' : code, google: code, qwen: code === 'no' ? 'nb' : code, aws: code, alibaba: code }, priority }]
 }))
 
-const LIMITS = { azure: 2_000_000, google: 500_000, alibaba: 1_000_000, aws: 2_000_000, qwen: 1_000_000 }
+export const PROVIDER_LIMITS = { azure: 2_000_000, google: 500_000, alibaba: 1_000_000, aws: 2_000_000, qwen: 1_000_000 }
 const secretReady = (env, provider) => ({
   azure: !!env.AZURE_TRANSLATOR_KEY,
   google: !!env.GOOGLE_TRANSLATE_KEY,
@@ -29,8 +29,8 @@ const cap = (env, provider, now) => {
   if (provider === 'aws' && !validUntil(env.AWS_TRANSLATE_FREE_UNTIL, now)) return 0
   if (provider === 'qwen' && !validUntil(env.QWEN_FREE_UNTIL, now)) return 0
   const configured = env[provider === 'qwen' ? 'TRANSLATION_QWEN_FREE_TOKENS' : `TRANSLATION_${provider.toUpperCase()}_FREE_CHARS`]
-  const value = configured === undefined ? LIMITS[provider] : Number(configured)
-  return Number.isSafeInteger(value) && value >= 0 ? Math.min(value, LIMITS[provider]) : 0
+  const value = configured === undefined ? PROVIDER_LIMITS[provider] : Number(configured)
+  return Number.isSafeInteger(value) && value >= 0 ? Math.min(value, PROVIDER_LIMITS[provider]) : 0
 }
 
 // One atomic statement. Missing table/DB fails closed; reservation is never refunded after an
@@ -67,12 +67,79 @@ const quotaPeriod = (provider, env, now) => provider === 'qwen'
   ? `trial:${env.QWEN_FREE_UNTIL}`
   : isoMonth(now)
 
+export function providerQuotaSnapshot(env, provider, now = new Date()) {
+  const period = quotaPeriod(provider, env, now)
+  const limit = cap(env, provider, now)
+  return {
+    provider,
+    period,
+    bucket: `${provider}:${period}`,
+    limit,
+    unit: provider === 'qwen' ? 'token' : 'character',
+    configured: !!secretReady(env, provider),
+    eligible: !!secretReady(env, provider) && limit > 0,
+  }
+}
+
+async function addMetric(db, period, provider, values = {}) {
+  try {
+    await db.prepare(`INSERT INTO translation_usage_metrics(period,provider,requests,characters,succeeded,failed,cache_hits,cache_characters_saved,updated_at)
+      VALUES(?1,?2,?3,?4,?5,?6,?7,?8,?9)
+      ON CONFLICT(period,provider) DO UPDATE SET
+      requests=requests+excluded.requests, characters=characters+excluded.characters,
+      succeeded=succeeded+excluded.succeeded, failed=failed+excluded.failed,
+      cache_hits=cache_hits+excluded.cache_hits,
+      cache_characters_saved=cache_characters_saved+excluded.cache_characters_saved,
+      updated_at=excluded.updated_at`)
+      .bind(period, provider, values.requests || 0, values.characters || 0, values.succeeded || 0,
+        values.failed || 0, values.cacheHits || 0, values.cacheCharactersSaved || 0, Math.floor(Date.now() / 1000)).run()
+  } catch (error) {
+    console.warn('translation_metrics_write_failed', provider, error instanceof Error ? error.message.slice(0, 80) : 'unknown')
+  }
+}
+
+export const recordTranslationUsage = addMetric
+
+async function readCachedTranslation(db, key, now) {
+  try {
+    return await db.prepare('SELECT translation,provider FROM translation_response_cache WHERE cache_key=?1 AND expires_at>?2')
+      .bind(key, Math.floor(now.getTime() / 1000)).first()
+  } catch { return null }
+}
+
+async function writeCachedTranslation(db, key, translation, provider, now) {
+  try {
+    const created = Math.floor(now.getTime() / 1000)
+    await db.prepare(`INSERT INTO translation_response_cache(cache_key,translation,provider,created_at,expires_at)
+      VALUES(?1,?2,?3,?4,?5) ON CONFLICT(cache_key) DO UPDATE SET
+      translation=excluded.translation,provider=excluded.provider,created_at=excluded.created_at,expires_at=excluded.expires_at`)
+      .bind(key, translation, provider, created, created + 30 * 86400).run()
+    await db.prepare('DELETE FROM translation_response_cache WHERE cache_key IN (SELECT cache_key FROM translation_response_cache WHERE expires_at<=?1 LIMIT 100)')
+      .bind(created).run()
+  } catch (error) {
+    console.warn('translation_cache_write_failed', error instanceof Error ? error.message.slice(0, 80) : 'unknown')
+  }
+}
+
+export async function cacheTranslationResponse(db, text, target, purpose, translation, provider, now = new Date()) {
+  const key = `v1:${await sha256(JSON.stringify([text, target, purpose]))}`
+  await writeCachedTranslation(db, key, translation, provider, now)
+}
+
 // Separate free period per provider. Qwen counts tokens, conservatively reserved as UTF-8
 // bytes * 3 (input and expected output); this avoids claiming precision before API usage arrives.
 export async function routeTranslation({ env, text, target, purpose, now = new Date(), adapters = PROVIDERS }) {
   const policy = LANGUAGE_ROUTES[target]
   if (!policy) throw new Error('unsupported_language')
   if (!env.VISITORS_DB?.prepare) throw new Error('translation_quota_store_unavailable')
+  const db = env.VISITORS_DB
+  const key = `v1:${await sha256(JSON.stringify([text, target, purpose]))}`
+  const cached = await readCachedTranslation(db, key, now)
+  const month = isoMonth(now)
+  if (cached) {
+    await addMetric(db, month, 'cache', { cacheHits: 1, cacheCharactersSaved: text.length })
+    return { translation: cached.translation, provider: 'cache', cached: true, sourceProvider: cached.provider }
+  }
   let lastError
   for (const provider of policy.priority) {
     if (provider === 'workers-ai') break
@@ -80,12 +147,16 @@ export async function routeTranslation({ env, text, target, purpose, now = new D
     const limit = cap(env, provider, now)
     const amount = provider === 'qwen' ? new TextEncoder().encode(text).length * 3 : text.length
     const period = quotaPeriod(provider, env, now)
-    if (!await reserveQuota(env.VISITORS_DB, provider, period, amount, limit)) continue
+    if (!await reserveQuota(db, provider, period, amount, limit)) continue
+    await addMetric(db, isoMonth(now), provider, { requests: 1, characters: amount })
     try {
       const translation = await adapters[provider]({ env, text, target: policy.codes[provider], purpose })
       if (typeof translation !== 'string' || !translation.trim()) throw new Error('empty_translation')
+      await addMetric(db, isoMonth(now), provider, { succeeded: 1 })
+      await writeCachedTranslation(db, key, translation.trim(), provider, now)
       return { translation: translation.trim(), provider }
     } catch (error) {
+      await addMetric(db, isoMonth(now), provider, { failed: 1 })
       lastError = error
       if (providerQuotaExhausted(provider, error)) {
         await markQuotaExhausted(env.VISITORS_DB, provider, period, limit)
