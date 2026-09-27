@@ -44,9 +44,24 @@ export async function translateAlibaba({ env, text, target }) {
     'x-acs-signature-method': 'HMAC-SHA1', 'x-acs-signature-nonce': nonce, 'x-acs-version': '2019-01-02',
     authorization: `acs ${env.ALIBABA_TRANSLATE_ACCESS_KEY_ID}:${signature}`,
   }, body })
-  if (!response.ok) throw new Error(`provider_http_${response.status}`)
-  const payload = await response.json()
+  let payload
+  try { payload = await response.json() } catch { payload = null }
+  if (!response.ok) {
+    const error = new Error(`provider_http_${response.status}`)
+    error.status = response.status
+    const result = payload?.TranslateGeneralResponse || payload
+    if (result?.Code !== undefined) error.providerCode = String(result.Code)
+    if (typeof result?.Message === 'string') error.providerMessage = result.Message.slice(0, 200)
+    throw error
+  }
+  if (!payload) throw new Error('provider_invalid_response')
   const result = payload.TranslateGeneralResponse || payload
-  if (Number(result.Code) !== 200 || !result.Data?.Translated) throw new Error('provider_invalid_response')
+  if (Number(result.Code) !== 200 || !result.Data?.Translated) {
+    const error = new Error('provider_invalid_response')
+    if (result?.Code !== undefined) error.providerCode = String(result.Code)
+    if (typeof result?.Message === 'string') error.providerMessage = result.Message.slice(0, 200)
+    throw error
+  }
   return result.Data.Translated
 }
+
