@@ -19,7 +19,7 @@ const LIMITS = { azure: 2_000_000, google: 500_000, alibaba: 1_000_000, aws: 2_0
 const secretReady = (env, provider) => ({
   azure: !!env.AZURE_TRANSLATOR_KEY,
   google: !!env.GOOGLE_TRANSLATE_KEY,
-  qwen: !!(env.QWEN_API_KEY && env.QWEN_ENDPOINT),
+  qwen: !!(env.QWEN_API_KEY && env.QWEN_ENDPOINT && env.QWEN_FREE_QUOTA_ONLY === '1'),
   aws: !!(env.AWS_TRANSLATE_ACCESS_KEY_ID && env.AWS_TRANSLATE_SECRET_ACCESS_KEY && env.AWS_TRANSLATE_REGION),
   alibaba: !!(env.ALIBABA_TRANSLATE_ACCESS_KEY_ID && env.ALIBABA_TRANSLATE_ACCESS_KEY_SECRET),
 })[provider]
@@ -44,6 +44,29 @@ export async function reserveQuota(db, provider, period, amount, limit) {
   return !!row
 }
 
+async function markQuotaExhausted(db, provider, period, limit) {
+  if (!limit || !db?.prepare) throw new Error('translation_quota_store_unavailable')
+  await db.prepare(`INSERT INTO translation_provider_usage(bucket, used, expires_at)
+    VALUES(?1,?2,?3) ON CONFLICT(bucket) DO UPDATE SET
+    used=MAX(used,excluded.used), expires_at=MAX(expires_at,excluded.expires_at)`)
+    .bind(`${provider}:${period}`, limit, Math.floor(Date.now() / 1000) + 45 * 86400).run()
+}
+
+function providerQuotaExhausted(provider, error) {
+  const code = String(error?.providerCode || '').toLowerCase()
+  const detail = `${code} ${String(error?.providerMessage || '')} ${String(error?.message || '')}`.toLowerCase()
+  if (provider === 'azure') return code === '403001' || detail.includes('exceeded its free quota')
+  if (provider === 'google') return /quotaexceeded|dailylimitexceeded/.test(detail)
+  if (provider === 'aws') return /servicequotaexceededexception|limitexceededexception/.test(detail)
+  if (provider === 'alibaba') return /quotaexceeded|quotaexceed|quota.{0,24}(exhaust|limit)/.test(detail)
+  if (provider === 'qwen') return /allocationquota\.freetieronly|freetieronly|free quota.{0,24}(exhaust|deplet)/.test(detail)
+  return false
+}
+
+const quotaPeriod = (provider, env, now) => provider === 'qwen'
+  ? `trial:${env.QWEN_FREE_UNTIL}`
+  : isoMonth(now)
+
 // Separate free period per provider. Qwen counts tokens, conservatively reserved as UTF-8
 // bytes * 3 (input and expected output); this avoids claiming precision before API usage arrives.
 export async function routeTranslation({ env, text, target, purpose, now = new Date(), adapters = PROVIDERS }) {
@@ -56,13 +79,18 @@ export async function routeTranslation({ env, text, target, purpose, now = new D
     if (!secretReady(env, provider) || !adapters[provider] || (provider === 'alibaba' && text.length > 5000)) continue
     const limit = cap(env, provider, now)
     const amount = provider === 'qwen' ? new TextEncoder().encode(text).length * 3 : text.length
-    if (!await reserveQuota(env.VISITORS_DB, provider, provider === 'qwen' ? `trial:${env.QWEN_FREE_UNTIL}` : isoMonth(now), amount, limit)) continue
+    const period = quotaPeriod(provider, env, now)
+    if (!await reserveQuota(env.VISITORS_DB, provider, period, amount, limit)) continue
     try {
       const translation = await adapters[provider]({ env, text, target: policy.codes[provider], purpose })
       if (typeof translation !== 'string' || !translation.trim()) throw new Error('empty_translation')
       return { translation: translation.trim(), provider }
     } catch (error) {
       lastError = error
+      if (providerQuotaExhausted(provider, error)) {
+        await markQuotaExhausted(env.VISITORS_DB, provider, period, limit)
+        console.warn('translation_provider_free_quota_exhausted', provider)
+      }
       console.warn('translation_provider_failed', provider, error instanceof Error ? error.message.slice(0, 120) : 'unknown')
     }
   }
@@ -73,7 +101,17 @@ export async function routeTranslation({ env, text, target, purpose, now = new D
 
 async function postJson(url, init, pick) {
   const response = await fetch(url, { ...init, signal: AbortSignal.timeout(10000) })
-  if (!response.ok) throw new Error(`provider_http_${response.status}`)
+  if (!response.ok) {
+    let payload
+    try { payload = await response.json() } catch { payload = null }
+    const code = payload?.error?.errors?.[0]?.reason ?? payload?.error?.code ?? payload?.__type ?? payload?.code ?? payload?.Code
+    const detail = payload?.error?.message ?? payload?.message ?? payload?.Message
+    const error = new Error(`provider_http_${response.status}`)
+    error.status = response.status
+    if (code !== undefined) error.providerCode = String(code).split('#').at(-1)
+    if (typeof detail === 'string') error.providerMessage = detail.slice(0, 200)
+    throw error
+  }
   const payload = await response.json()
   const translation = pick(payload)
   if (typeof translation !== 'string' || !translation.trim()) throw new Error('provider_empty_response')
@@ -121,3 +159,4 @@ export const PROVIDERS = {
     return postJson(`https://${host}/`, { method: 'POST', headers, body }, data => data?.TranslatedText)
   },
 }
+
