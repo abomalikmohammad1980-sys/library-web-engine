@@ -17,7 +17,12 @@ function db() {
           counters.set(key, used + amount)
           return { used: used + amount }
         },
-        async run() { return { success: true } },
+        async run() {
+          const [key, amount] = args
+          if (sql.includes('MAX(used,excluded.used)')) counters.set(key, Math.max(counters.get(key) || 0, amount))
+          else counters.set(key, (counters.get(key) || 0) + amount)
+          return { success: true, meta: { changes: 1 } }
+        },
       }
     },
   }
@@ -70,6 +75,37 @@ test('provider failure continues and failed reservation is retained conservative
   assert.ok([...database.counters.values()].some(x => x > 0))
 })
 
+test('explicit provider free-quota exhaustion is persisted and skipped on later requests', async () => {
+  const database = db()
+  const calls = []
+  const env = { VISITORS_DB: database, AZURE_TRANSLATOR_KEY: 'test', GOOGLE_TRANSLATE_KEY: 'test', TRANSLATION_AZURE_FREE_CHARS: '100' }
+  const adapters = {
+    azure: async () => { calls.push('azure'); throw Object.assign(new Error('provider_http_403'), { status: 403, providerCode: '403001', providerMessage: 'subscription exceeded its free quota' }) },
+    google: async () => { calls.push('google'); return 'hello from google' },
+  }
+  const args = { env, text: 'سلام', target: 'en', purpose: 'text', now: new Date('2026-09-24'), adapters }
+  assert.equal((await routeTranslation(args)).provider, 'google')
+  assert.equal((await routeTranslation(args)).provider, 'google')
+  assert.deepEqual(calls, ['azure', 'google', 'google'])
+  assert.equal(database.counters.get('azure:2026-09'), 100)
+  assert.equal((await routeTranslation({ ...args, now: new Date('2026-10-01') })).provider, 'google')
+  assert.deepEqual(calls, ['azure', 'google', 'google', 'azure', 'google'])
+  assert.equal(database.counters.get('azure:2026-10'), 100)
+})
+
+test('Alibaba quota exhaustion is persisted for the rest of the month', async () => {
+  const database = db()
+  let calls = 0
+  const env = { VISITORS_DB: database, ALIBABA_TRANSLATE_ACCESS_KEY_ID: 'id', ALIBABA_TRANSLATE_ACCESS_KEY_SECRET: 'secret', TRANSLATION_ALIBABA_FREE_CHARS: '50' }
+  const args = { env, text: 'سلام', target: 'en', purpose: 'text', now: new Date('2026-09-24'), adapters: {
+    alibaba: async () => { calls++; throw Object.assign(new Error('provider_invalid_response'), { providerCode: 'QuotaExceeded', providerMessage: 'free quota exceeded' }) },
+  } }
+  await assert.rejects(routeTranslation(args))
+  await assert.rejects(routeTranslation(args))
+  assert.equal(calls, 1)
+  assert.equal(database.counters.get('alibaba:2026-09'), 50)
+})
+
 test('first reservation cannot exceed the limit', async () => {
   const database = db()
   assert.equal(await reserveQuota(database, 'azure', '2026-09', 11, 10), false)
@@ -81,11 +117,22 @@ test('Alibaba Content-MD5 matches RFC test vector', async () => {
   assert.equal(contentMd5('abc'), 'kAFQmDzST7DWlj99KOF/cg==')
 })
 
+
 test('trial expiry excludes Qwen and AWS even when credentials exist', async () => {
   const database = db()
   const called = []
   await assert.rejects(routeTranslation({ env: { VISITORS_DB: database, QWEN_API_KEY: 'test', QWEN_ENDPOINT: 'https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions', AWS_TRANSLATE_ACCESS_KEY_ID: 'test', AWS_TRANSLATE_SECRET_ACCESS_KEY: 'test', AWS_TRANSLATE_REGION: 'us-east-1' }, text: 'سلام', target: 'en', purpose: 'text', now: new Date('2026-09-24'), adapters: { qwen: async () => { called.push('qwen') }, aws: async () => { called.push('aws') } } }))
   assert.deepEqual(called, [])
+})
+
+test('Qwen is skipped unless provider-side Free Quota Only is explicitly confirmed', async () => {
+  const database = db()
+  const called = []
+  const env = { VISITORS_DB: database, QWEN_API_KEY: 'test', QWEN_ENDPOINT: 'https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions', QWEN_FREE_UNTIL: '2026-12-01' }
+  await assert.rejects(routeTranslation({ env, text: 'سلام', target: 'en', purpose: 'text', now: new Date('2026-09-24'), adapters: { qwen: async () => { called.push('qwen'); return 'hello' } } }))
+  assert.deepEqual(called, [])
+  assert.equal((await routeTranslation({ env: { ...env, QWEN_FREE_QUOTA_ONLY: '1' }, text: 'سلام', target: 'en', purpose: 'text', now: new Date('2026-09-24'), adapters: { qwen: async () => { called.push('qwen'); return 'hello' } } })).provider, 'qwen')
+  assert.deepEqual(called, ['qwen'])
 })
 
 test('provider adapters send Arabic and mapped target without logging secrets', async () => {
@@ -105,6 +152,15 @@ test('provider adapters send Arabic and mapped target without logging secrets', 
   } finally { globalThis.fetch = original }
 })
 
+test('provider adapters preserve structured quota errors for the router', async () => {
+  const { PROVIDERS } = await import('../functions/api/_translation-router.js')
+  const original = globalThis.fetch
+  globalThis.fetch = async () => Response.json({ error: { code: 403001, message: 'subscription exceeded its free quota' } }, { status: 403 })
+  try {
+    await assert.rejects(PROVIDERS.azure({ env: { AZURE_TRANSLATOR_KEY: 'secret' }, text: 'مرحبا', target: 'en' }), error => error.providerCode === '403001')
+  } finally { globalThis.fetch = original }
+})
+
 test('Alibaba adapter signs its actual JSON body and validates response', async () => {
   const { translateAlibaba, contentMd5 } = await import('../functions/api/_translation-alibaba.js')
   const original = globalThis.fetch
@@ -115,6 +171,15 @@ test('Alibaba adapter signs its actual JSON body and validates response', async 
     assert.equal(captured.init.headers['content-md5'], contentMd5(captured.init.body))
     assert.ok(captured.init.headers.authorization.startsWith('acs id:'))
     assert.equal(JSON.parse(captured.init.body).SourceLanguage, 'ar')
+  } finally { globalThis.fetch = original }
+})
+
+test('Alibaba adapter preserves structured quota errors for the router', async () => {
+  const { translateAlibaba } = await import('../functions/api/_translation-alibaba.js')
+  const original = globalThis.fetch
+  globalThis.fetch = async () => Response.json({ Code: 'QuotaExceeded', Message: 'Free quota exceeded' }, { status: 400 })
+  try {
+    await assert.rejects(translateAlibaba({ env: { ALIBABA_TRANSLATE_ACCESS_KEY_ID: 'id', ALIBABA_TRANSLATE_ACCESS_KEY_SECRET: 'secret' }, text: 'سلام', target: 'en' }), error => error.providerCode === 'QuotaExceeded')
   } finally { globalThis.fetch = original }
 })
 
@@ -153,9 +218,10 @@ test('Qwen-MT Plus adapter sends a single source-labelled message', async () => 
 
 test('Qwen trial quota does not reset at a month boundary', async () => {
   const database = db()
-  const env = { VISITORS_DB: database, QWEN_API_KEY: 'test', QWEN_ENDPOINT: 'https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions', QWEN_FREE_UNTIL: '2026-12-01', TRANSLATION_QWEN_FREE_TOKENS: '24' }
+  const env = { VISITORS_DB: database, QWEN_API_KEY: 'test', QWEN_ENDPOINT: 'https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions', QWEN_FREE_UNTIL: '2026-12-01', QWEN_FREE_QUOTA_ONLY: '1', TRANSLATION_QWEN_FREE_TOKENS: '24' }
   const args = { env, text: 'سلام', target: 'en', purpose: 'text', adapters: { qwen: async () => 'hello' } }
   assert.equal((await routeTranslation({ ...args, now: new Date('2026-09-30') })).provider, 'qwen')
   await assert.rejects(routeTranslation({ ...args, now: new Date('2026-10-01') }))
   assert.equal(database.counters.size, 1)
 })
+
