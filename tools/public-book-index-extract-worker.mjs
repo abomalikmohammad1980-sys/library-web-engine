@@ -1,7 +1,7 @@
 import {parentPort,workerData} from 'node:worker_threads'
 import {decodeUtf8Text,textParagraphs} from '../app/src/text_import.ts'
 import {safeWordUpload} from '../alpha-publish/functions/api/_word-upload-safety.js'
-import {extractFromDocx} from '../packages/ooxml-model/dist/index.js'
+import {extractFromDocx,alignWordParagraphIndices} from '../packages/ooxml-model/dist/index.js'
 import {parseBok} from '../app/src/bok_import.ts'
 import {createRequire} from 'node:module'
 import {pathToFileURL} from 'node:url'
@@ -16,28 +16,22 @@ try{
   // compressed-file limit that rejects ordinary books with embedded images.
   // safeWordUpload still enforces inflated XML, archive and expansion limits.
   if(bytes.length>20*1024*1024)throw Error('word_source_bound')
-  if(!map)throw Error('word_map_required')
   if(!await safeWordUpload(new File([bytes],'source.docx')))throw Error('unsafe_word_archive')
-  const paragraphs=extractFromDocx(bytes).paragraphs
-  // This first adapter refuses structures the existing model explicitly excludes.
-  // Skipping tables/fields would falsely declare complete body coverage.
-  if(paragraphs.some(p=>p.excluded&&p.excluded!=='empty'))throw Error('word_structure_unsupported')
-  if(!Array.isArray(map.paragraphs)||!Number.isSafeInteger(map.totalPages)||map.totalPages<1||map.paragraphs.length!==map.paragraphCount)throw Error('invalid_word_map')
-  // Index once: long Word books must not scan the entire map per paragraph.
-  // Duplicate IDs are ambiguous anchors, even when their text happens to match.
-  const paragraphMap=new Map()
-  for(const entry of map.paragraphs){
-   if(!entry||!Number.isSafeInteger(entry.paragraphIndex)||entry.paragraphIndex<0||paragraphMap.has(entry.paragraphIndex))throw Error('invalid_word_map')
-   paragraphMap.set(entry.paragraphIndex,entry)
+  const model=extractFromDocx(bytes),paragraphs=model.paragraphs
+  // Exclusion flags describe layout, not missing searchable content. An empty
+  // field/picture is not text and must not reject an otherwise searchable book.
+  if(paragraphs.some(p=>p.excluded&&p.text?.trim()))throw Error('word_structure_unsupported')
+  let aligned
+  if(map!==undefined&&map!==null){
+   if(!Array.isArray(map.paragraphs)||!Number.isSafeInteger(map.totalPages)||map.totalPages<1||map.paragraphs.length!==map.paragraphCount)throw Error('invalid_word_map')
+   const ids=new Set()
+   for(const p of map.paragraphs){if(!p||typeof p.text!=='string'||!Number.isSafeInteger(p.paragraphIndex)||p.paragraphIndex<0||ids.has(p.paragraphIndex)||!Number.isSafeInteger(p.physicalPage)||p.physicalPage<1||p.physicalPage>map.totalPages)throw Error('invalid_word_map');ids.add(p.paragraphIndex)}
+   aligned=alignWordParagraphIndices(model,map)
+   if(!aligned)throw Error('word_map_source_mismatch')
   }
-  const seen=new Set()
-  rows=paragraphs.filter(p=>p.text?.trim()).map(p=>{
-   const mapped=paragraphMap.get(p.index)
-   if(!mapped||mapped.text!==p.text||!Number.isSafeInteger(mapped.physicalPage)||mapped.physicalPage<1||mapped.physicalPage>map.totalPages)throw Error('word_map_source_mismatch')
-   seen.add(mapped.paragraphIndex)
-   return {text:p.text,paragraphIndex:p.index,pageIndex:mapped.physicalPage-1,volumeIndex:0}
-  })
-  if(map.paragraphs.some(p=>p.text?.trim()&&!seen.has(p.paragraphIndex)))throw Error('word_map_source_mismatch')
+  // Browser imports have no authoritative page map; their valid paragraph
+  // anchors remain searchable without fabricating a physical page number.
+  rows=paragraphs.flatMap((p,index)=>p.text?.trim()?[{text:p.text,paragraphIndex:p.index,volumeIndex:0,...(aligned?{pageIndex:map.paragraphs[aligned[index]].physicalPage-1}:{})}]:[])
   headings=paragraphs.flatMap(p=>p.toc?.entry?.trim()?[{value:p.toc.entry,paragraphIndex:p.index}]:[])
   if(!headings.length)headings=paragraphs.flatMap(p=>p.outlineLevel>=0&&p.outlineLevel<=8&&p.outlineLevel!=null&&p.text.trim()?[{value:p.text,paragraphIndex:p.index}]:[])
  }else if(mime==='text/markdown'){

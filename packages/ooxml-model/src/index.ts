@@ -1623,7 +1623,7 @@ function tableStyleRegionForCell(
   return merged;
 }
 
-function resolveViaStyle(table: StyleTable, styleId: string | null, includeDefaults = true) {
+function resolveViaStyle(table: StyleTable, styleId: string | null, includeDefaults = true, includeFontDefaults = true) {
   let sz: number | null = null, family: string | null = null, jc: string | null = null;
   let bidi: boolean | null = null, suppressAutoHyphens: boolean | null = null, outlineLevel: number | null = null;
   let keepNext: boolean | null = null, keepLines: boolean | null = null;
@@ -1672,7 +1672,8 @@ function resolveViaStyle(table: StyleTable, styleId: string | null, includeDefau
     sp.afterAuto ??= dsp.afterAuto ?? null;
   }
   return {
-    sz: sz ?? table.defaults.sz, family: family ?? table.defaults.family,
+    sz: sz ?? (includeFontDefaults ? table.defaults.sz : null),
+    family: family ?? (includeFontDefaults ? table.defaults.family : null),
     jc: jc ?? table.defaults.jc,
     bidi: bidi ?? table.defaults.bidi,
     suppressAutoHyphens: suppressAutoHyphens ?? table.defaults.suppressAutoHyphens,
@@ -2632,7 +2633,9 @@ export function parseDocument(
       const rpr = first(r, "w:rPr");
       const own = rPrProps(rpr, theme);
       const runStyleId = rpr ? (findAttr(rpr, "w:rStyle")?.["@w:val"] ?? null) : null;
-      const runStyle = resolveViaStyle(styles, runStyleId);
+      // Character styles contribute only their declared/inherited font properties.
+      // Document defaults are already below the paragraph style, not above it.
+      const runStyle = resolveViaStyle(styles, runStyleId, true, false);
       const hidden = rpr ? rpr.some((n) => "w:vanish" in n) : false;
       let text = "";
       const sourceSymbols: { at: number; raw: string }[] = [];
@@ -3580,3 +3583,5 @@ export function extractFromDocx(bytes: Uint8Array): DocumentModelV0 {
     model.headerFooters.set(name, parseHeaderFooterPart(xml, documentXml, styles, numbering, theme, name));
   return model;
 }
+
+export {normalizeWordPageText,matchesWordPageParagraph,alignWordParagraphIndices} from './word_page_alignment.js'

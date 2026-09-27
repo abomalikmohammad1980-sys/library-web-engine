@@ -47,13 +47,14 @@ export async function executePublicBookIndex({db,r2,job,env={},now=()=>Math.floo
   let map
   if(job.source.mime_type==='application/vnd.openxmlformats-officedocument.wordprocessingml.document'){
    const bundle=await db.prepare('SELECT manifest_json,object_key,sha256,byte_length FROM user_book_word_bundles WHERE book_id=?1').bind(job.book_id).first()
-   if(!bundle)throw Error('word_map_required')
+   if(bundle){
    const manifest=JSON.parse(bundle.manifest_json)
    if(manifest.contract!=='khizana-word-bundle/1'||manifest.sourceSha256!==sourceSha256||manifest.mapSha256!==bundle.sha256)throw Error('word_bundle_source_mismatch')
    const mapBytes=await readBounded(r2,bundle.object_key,16*1024*1024)
    if(mapBytes.length!==bundle.byte_length||digest(mapBytes)!==bundle.sha256)throw Error('word_map_digest_mismatch')
    map=JSON.parse(mapBytes.toString('utf8'))
    if(map.totalPages!==manifest.totalPages)throw Error('word_map_source_mismatch')
+   }
   }
   await fence()
   let extracted=await extractPublicBookBounded({mime:job.source.mime_type,bytes:new Uint8Array(bytes),map,PDF_TEXT_INDEXING:env.PDF_TEXT_INDEXING})
