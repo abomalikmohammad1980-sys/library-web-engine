@@ -1,6 +1,6 @@
 const LANGUAGES = new Set(['en','fr','tr','ur','ug','ckb','ku','fa','sw','hi','hu','id','ms','bn','ps','so','ha','ru','uk','de','es','pt','it','nl','sv','no','pl','ro','bs','sq','az','uz','kk','zh','ja','ko'])
 import {translationBody,translationLimited} from './_translation-guard.js'
-import {routeTranslation} from './_translation-router.js'
+import {cacheTranslationResponse,recordTranslationUsage,routeTranslation} from './_translation-router.js'
 // M2M100 does not expose stable target codes for both Kurdish variants on
 // Workers AI, so route them through the multilingual prompt instead.
 const SPECIAL_LLM_LANGUAGES = new Set(['ug','ckb','ku'])
@@ -41,17 +41,33 @@ async function boundedRun(ai, model, input, timeoutMs = MODEL_TIMEOUT_MS) {
   }
 }
 
-async function translateWithLlm(ai, text, target, purpose) {
-  const answer = await boundedRun(ai, '@cf/meta/llama-3.1-8b-instruct', {
+async function trackedWorkersAiRun(context, model, input, text) {
+  if (context.env.TRANSLATION_ROUTER_ENABLED !== '1') return boundedRun(context.env.AI, model, input)
+  const provider = model.includes('m2m100') ? 'workers-ai-m2m100' : 'workers-ai-llm'
+  const month = new Date().toISOString().slice(0, 7)
+  await recordTranslationUsage(context.env.VISITORS_DB, month, provider, { requests: 1, characters: text.length })
+  try {
+    const result = await boundedRun(context.env.AI, model, input)
+    await recordTranslationUsage(context.env.VISITORS_DB, month, provider, { succeeded: 1 })
+    return result
+  } catch (error) {
+    await recordTranslationUsage(context.env.VISITORS_DB, month, provider, { failed: 1 })
+    throw error
+  }
+}
+
+async function translateWithLlm(context, text, target, purpose) {
+  const answer = await trackedWorkersAiRun(context, '@cf/meta/llama-3.1-8b-instruct', {
     messages: [
       { role: 'system', content: `Translate faithfully from Arabic into language code ${target}. ${purpose === 'ui' ? 'The input is a short library-app interface label, book title, or author name; use concise natural interface language and transliterate proper names instead of changing their identity.' : 'Preserve paragraph breaks, quotations, Quran verse markers, names, numbers, and citations.'} Output only the translation. Never add explanations.` },
       { role: 'user', content: text },
     ],
     temperature: 0,
     max_tokens: 4096,
-  })
+  }, text)
   const translation = typeof answer?.response === 'string' ? answer.response.trim() : ''
   if (!translation) throw new Error('empty translation')
+  if (context.env.TRANSLATION_ROUTER_ENABLED === '1') await cacheTranslationResponse(context.env.VISITORS_DB, text, target, purpose, translation, 'workers-ai-llm')
   return translation
 }
 
@@ -81,18 +97,19 @@ export async function onRequestPost(context) {
     }
     if (!context.env.AI) return json({ code: 'translation_not_configured', error: 'خدمة الترجمة غير مفعلة على هذا الإصدار.' }, 503)
     if (purpose === 'ui' || SPECIAL_LLM_LANGUAGES.has(target)) {
-      const translation = await translateWithLlm(context.env.AI, text, target, purpose)
+      const translation = await translateWithLlm(context, text, target, purpose)
       return json({ translation, engine: 'multilingual-review', reviewed: false })
     }
     try {
-      const answer = await boundedRun(context.env.AI, '@cf/meta/m2m100-1.2b', { text, source_lang: 'ar', target_lang: target })
+      const answer = await trackedWorkersAiRun(context, '@cf/meta/m2m100-1.2b', { text, source_lang: 'ar', target_lang: target }, text)
       const translation = typeof answer?.translated_text === 'string' ? answer.translated_text.trim() : ''
       if (!translation) throw new Error('empty translation')
+      if (context.env.TRANSLATION_ROUTER_ENABLED === '1') await cacheTranslationResponse(context.env.VISITORS_DB, text, target, purpose, translation, 'workers-ai-m2m100')
       return json({ translation, engine: 'm2m100', reviewed: false })
     } catch (primaryError) {
       if (isQuotaError(primaryError)) throw primaryError
       console.warn('translation_primary_failed', primaryError instanceof Error ? primaryError.message : String(primaryError))
-      const translation = await translateWithLlm(context.env.AI, text, target, purpose)
+      const translation = await translateWithLlm(context, text, target, purpose)
       return json({ translation, engine: 'multilingual-fallback', reviewed: false })
     }
   } catch (error) {
@@ -107,3 +124,4 @@ export const onRequestGet = ({ request }) => isSameOriginRequest(request)
   : json({ error: 'cross_origin_forbidden' }, 403)
 
 export const onRequest = () => json({ error: 'استخدم GET للإمكانات أو POST للترجمة.' }, 405)
+
