@@ -22,9 +22,14 @@ database_name = "khezana-visitors"
 database_id = "aeb2bf7d-bfc5-4ec1-9ef5-a81371efe800"
 migrations_dir = "./migrations"
 
-# Isolated, read-only heading-query experiment; production remains disabled.
+# Preview-only bindings for isolated tests and translation quota tracking; production stays separate.
 [env.preview]
-d1_databases = []
+
+[[env.preview.d1_databases]]
+binding = "VISITORS_DB"
+database_name = "khezana-translation-staging-20260924"
+database_id = "aada18ef-01fd-4217-af7a-2ca8cfef8f8b"
+migrations_dir = "./migrations"
 
 [env.preview.vars]
 HEADING_RELEASE_SHA256 = "cabacd972e590545e4450be4b364bc049a3da9f30ec2ff3d41dc70ef5d17332f"
@@ -35,3 +40,4 @@ HEADING_QUERY_ENABLED = "1"
 [[env.preview.r2_buckets]]
 binding = "LIBRARY_R2"
 bucket_name = "khzanah-library"
+
