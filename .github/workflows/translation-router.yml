@@ -25,4 +25,5 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: node --test deployment/cloudflare/tests/translation-router.test.mjs deployment/cloudflare/tests/translate-handler.test.mjs
+      - run: node --test deployment/cloudflare/tests/translation-router.test.mjs deployment/cloudflare/tests/translate-handler.test.mjs deployment/cloudflare/tests/translation-gemini.test.mjs deployment/cloudflare/tests/gemini-translation-benchmark.test.mjs
+
