@@ -1,6 +1,6 @@
 // Structural rejection gate, NOT antivirus/CDR or a certificate of file safety.
 // No Office execution, remote resource loading, filesystem extraction or shell calls.
-const MAX_XML=16*1024*1024,MAX_TOTAL=256*1024*1024
+const MAX_XML=64*1024*1024,MAX_TOTAL=256*1024*1024
 const decoder=new TextDecoder('utf-8',{fatal:true})
 const view=b=>new DataView(b.buffer,b.byteOffset,b.byteLength)
 function onlyNavigationRelationships(text){
@@ -15,24 +15,40 @@ function onlyNavigationRelationships(text){
   if(body.slice(end).trim()||attrs.get('TargetMode')!=='External')return whole
   if(!['http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink','http://purl.oclc.org/ooxml/officeDocument/relationships/hyperlink'].includes(attrs.get('Type')))return whole
   const target=attrs.get('Target')??''
-  if(!/^https?:\/\//i.test(target)||/[\x00-\x20\\]/.test(target))return whole
-  try{const url=new URL(target);if(!['http:','https:'].includes(url.protocol)||url.username||url.password)return whole}catch{return whole}
+  if(!/^(?:https?:\/\/|mailto:)/i.test(target)||/[\x00-\x20\\]/.test(target))return whole
+  try{const url=new URL(target);if(!['http:','https:','mailto:'].includes(url.protocol)||url.username||url.password)return whole}catch{return whole}
   return ''
  })
  return !/TargetMode\s*=\s*["']External["']/i.test(remaining)
 }
 async function bytes(file,start,end){return new Uint8Array(await file.slice(start,end).arrayBuffer())}
-async function xmlText(file,entry){
+async function safeXml(file,entry){
  if(entry.size>MAX_XML)throw Error('xml_limit')
+ const relationships=/\.rels$/i.test(entry.name)
+ // Relationship documents are small; scan large body XML incrementally.
+ if(relationships&&entry.size>1024*1024)throw Error('relationships_limit')
  let stream=file.slice(entry.start,entry.end).stream()
  if(entry.method===8)stream=stream.pipeThrough(new DecompressionStream('deflate-raw'))
- const reader=stream.getReader(),chunks=[];let size=0
- try{for(;;){const {done,value}=await reader.read();if(done)break;size+=value.length;if(size>entry.size||size>MAX_XML)throw Error('inflate_limit');chunks.push(value)}}finally{await reader.cancel().catch(()=>{})}
+ const reader=stream.getReader(),utf8=new TextDecoder('utf-8',{fatal:true})
+ let size=0,tail='',xml=''
+ const inspect=text=>{
+  const value=text.replace(/&#(x[0-9a-f]+|[0-9]+);/gi,(_,n)=>String.fromCodePoint(n[0].toLowerCase()==='x'?parseInt(n.slice(1),16):Number(n)))
+  if(value.includes('\0')||/<!DOCTYPE|<!ENTITY|macroEnabled|vbaProject|activeX|oleObject|attachedTemplate|altChunk|DDEAUTO|\bDDE\b/i.test(value))throw Error('active_xml')
+ }
+ try{
+  for(;;){
+   const {done,value}=await reader.read();if(done)break
+   size+=value.length;if(size>entry.size||size>MAX_XML)throw Error('inflate_limit')
+   const text=utf8.decode(value,{stream:true}),combined=tail+text
+   // Bound numeric reference carry so split/overlong encodings cannot hide tokens.
+   if(/&#(?:x[0-9a-f]{32}|[0-9]{32})/i.test(combined))throw Error('entity_limit')
+   inspect(combined);tail=combined.slice(-2048)
+   if(relationships)xml+=text
+  }
+  const final=utf8.decode();inspect(tail+final);if(relationships)xml+=final
+ }finally{await reader.cancel().catch(()=>{})}
  if(size!==entry.size)throw Error('size_mismatch')
- const all=new Uint8Array(size);let offset=0;for(const chunk of chunks){all.set(chunk,offset);offset+=chunk.length}
- // Reject non-UTF8 XML rather than scanning an alternate encoding incorrectly.
- const text=decoder.decode(all);if(text.includes('\0')||/<!DOCTYPE|<!ENTITY/i.test(text))throw Error('xml_entities')
- return text.replace(/&#(x[0-9a-f]+|[0-9]+);/gi,(_,n)=>String.fromCodePoint(n[0].toLowerCase()==='x'?parseInt(n.slice(1),16):Number(n)))
+ return !relationships||onlyNavigationRelationships(xml.replace(/&#(x[0-9a-f]+|[0-9]+);/gi,(_,n)=>String.fromCodePoint(n[0].toLowerCase()==='x'?parseInt(n.slice(1),16):Number(n))))
 }
 export async function safeWordUpload(file){
  const ext=/\.[^.]+$/.exec(file.name.toLowerCase())?.[0]
@@ -61,9 +77,7 @@ export async function safeWordUpload(file){
    const entry={name,local,start:body,end:body+packed,method,size,flags};entries.push(entry)
    if(/\.(?:xml|rels)$/i.test(name)){
     xmlTotal+=size;if(xmlTotal>64*1024*1024)return false
-    const text=await xmlText(file,entry)
-    if(/macroEnabled|vbaProject|activeX|oleObject|attachedTemplate|altChunk|DDEAUTO|\bDDE\b/i.test(text))return false
-    if(/\.rels$/i.test(name)&&!onlyNavigationRelationships(text))return false
+    if(!await safeXml(file,entry))return false
    }
    p+=46+n+extra+comment
   }

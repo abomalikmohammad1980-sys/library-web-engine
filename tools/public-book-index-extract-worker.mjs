@@ -1,6 +1,8 @@
 import {parentPort,workerData} from 'node:worker_threads'
 import {decodeUtf8Text,textParagraphs} from '../app/src/text_import.ts'
-import {safeWordUpload} from '../alpha-publish/functions/api/_word-upload-safety.js'
+// Import the upload gate directly: generated deployment copies must not drift
+// from the validator used by the production extraction worker.
+import {safeWordUpload} from '../deployment/cloudflare/functions/api/_word-upload-safety.js'
 import {extractFromDocx,alignWordParagraphIndices} from '../packages/ooxml-model/dist/index.js'
 import {parseBok} from '../app/src/bok_import.ts'
 import {createRequire} from 'node:module'

@@ -44,6 +44,8 @@ jobs:
           cp deployment/cloudflare/functions/api/_public-book-pdf-policy.js alpha-publish/functions/api/
           cp deployment/cloudflare/functions/api/_public-book-search.js alpha-publish/functions/api/
           cp deployment/cloudflare/functions/api/_public-book-event-outbox.js alpha-publish/functions/api/
+      - name: Verify shared Word gate and actual extraction worker
+        run: node --test tools/word-upload-safety.test.mjs tools/public-book-word-size.test.mjs
       - name: Extract exactly one current public book through restricted gateway
         env:
           PUBLIC_BOOK_INGESTION_ENABLED: 'true'
