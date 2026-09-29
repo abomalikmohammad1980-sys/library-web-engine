@@ -17,6 +17,9 @@ export const LANGUAGE_ROUTES = Object.fromEntries(codes.map(code => {
 }))
 
 const LIMITS = { azure: 2_000_000, google: 500_000, alibaba: 1_000_000, aws: 2_000_000, qwen: 1_000_000 }
+// Account screenshot (2026-09-29): 15 RPM, 250K input TPM, 500 RPD.
+// Keep 20% headroom. CountTokens calls are conservatively counted as requests too.
+export const GEMINI_INTERNAL_LIMITS = Object.freeze({ rpm: 12, inputTpm: 200_000, rpd: 400 })
 const secretReady = (env, provider) => ({
   gemini: env.TRANSLATION_GEMINI_ENABLED === '1' && !!env.GEMINI_API_KEY,
   azure: !!env.AZURE_TRANSLATOR_KEY,
@@ -26,6 +29,11 @@ const secretReady = (env, provider) => ({
   alibaba: !!(env.ALIBABA_TRANSLATE_ACCESS_KEY_ID && env.ALIBABA_TRANSLATE_ACCESS_KEY_SECRET),
 })[provider]
 const isoMonth = now => now.toISOString().slice(0, 7)
+const utcMinute = now => new Date(Math.floor(now.getTime() / 60_000) * 60_000).toISOString().slice(0, 16)
+const pacificDate = now => {
+  const parts = Object.fromEntries(new Intl.DateTimeFormat('en-US', { timeZone: 'America/Los_Angeles', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(now).map(part => [part.type, part.value]))
+  return `${parts.year}-${parts.month}-${parts.day}`
+}
 const validUntil = (value, now) => /^\d{4}-\d\d-\d\d$/.test(value || '') && now < new Date(`${value}T00:00:00Z`)
 const cap = (env, provider, now) => {
   if (provider === 'aws' && !validUntil(env.AWS_TRANSLATE_FREE_UNTIL, now)) return 0
@@ -48,6 +56,21 @@ export async function reserveQuota(db, provider, period, amount, limit) {
   return !!row
 }
 
+// Constrain both the current and immediately preceding UTC minute buckets. This is
+// deliberately conservative at minute boundaries and prevents a fixed-window burst
+// from exceeding the intended rolling one-minute budget.
+async function reserveRollingQuota(db, metric, period, previousPeriod, amount, limit) {
+  if (!limit || amount > limit || amount <= 0 || !db?.prepare) return false
+  const bucket = `gemini-${metric}`
+  const row = await db.prepare(`INSERT INTO translation_provider_usage(bucket, used, expires_at)
+    VALUES(?1,?2,?4) ON CONFLICT(bucket) DO UPDATE SET used=used+excluded.used
+    WHERE used <= ?3-excluded.used AND used + COALESCE(
+      (SELECT used FROM translation_provider_usage WHERE bucket=?5),0) <= ?3-excluded.used
+    RETURNING used`)
+    .bind(`${bucket}:${period}`, amount, limit, Math.floor(Date.now() / 1000) + 2 * 86400, `${bucket}:${previousPeriod}`).first()
+  return !!row
+}
+
 async function releaseQuota(db, provider, period, amount) {
   if (amount <= 0) return
   await db.prepare(`UPDATE translation_provider_usage SET used=MAX(0,used-?2)
@@ -65,17 +88,45 @@ export async function routeTranslation({ env, text, target, purpose, now = new D
     if (provider === 'workers-ai') break
     if (!secretReady(env, provider) || !adapters[provider] || (provider === 'alibaba' && text.length > 5000)) continue
     const limit = cap(env, provider, now)
+    if (!limit) continue
     const period = provider === 'qwen' ? `trial:${env.QWEN_FREE_UNTIL}` : isoMonth(now)
     let amount = provider === 'qwen' ? new TextEncoder().encode(text).length * 3 : text.length
     let maxOutputTokens
     if (provider === 'gemini') {
+      const minute = utcMinute(now)
+      const previousMinute = new Date(now.getTime() - 60_000).toISOString().slice(0, 16)
+      const day = pacificDate(now)
+      // The countTokens endpoint is included in RPM and RPD reservations in case
+      // Google's account-level request counters include token-count calls.
+      if (!await reserveRollingQuota(env.VISITORS_DB, 'rpm', minute, previousMinute, 1, GEMINI_INTERNAL_LIMITS.rpm) ||
+          !await reserveQuota(env.VISITORS_DB, 'gemini-rpd', day, 1, GEMINI_INTERNAL_LIMITS.rpd)) continue
       try {
         const inputTokens = await adapters.geminiTokens({ env, text, target: policy.codes[provider], purpose })
         maxOutputTokens = maxOutputTokensFor(text)
         // Reserve the exact prompt tokens and the full bounded output before generation.
         amount = inputTokens + maxOutputTokens
+        if (!await reserveQuota(env.VISITORS_DB, provider, period, amount, limit)) continue
+        if (!await reserveRollingQuota(env.VISITORS_DB, 'rpm', minute, previousMinute, 1, GEMINI_INTERNAL_LIMITS.rpm) ||
+            !await reserveQuota(env.VISITORS_DB, 'gemini-rpd', day, 1, GEMINI_INTERNAL_LIMITS.rpd) ||
+            !await reserveRollingQuota(env.VISITORS_DB, 'input-tpm', minute, previousMinute, inputTokens, GEMINI_INTERNAL_LIMITS.inputTpm)) {
+          await releaseQuota(env.VISITORS_DB, provider, period, amount)
+          continue
+        }
       } catch (error) {
         lastError = error
+        continue
+      }
+      try {
+        const result = await adapters.gemini({ env, text, target: policy.codes[provider], purpose, maxOutputTokens })
+        const translation = result?.translation
+        if (typeof translation !== 'string' || !translation.trim()) throw new Error('empty_translation')
+        const actualTokens = result.totalTokens
+        if (!Number.isSafeInteger(actualTokens) || actualTokens < 0) throw new Error('gemini_usage_metadata_missing')
+        await releaseQuota(env.VISITORS_DB, provider, period, amount - actualTokens)
+        return { translation: translation.trim(), provider, totalTokens: actualTokens }
+      } catch (error) {
+        lastError = error
+        console.warn('translation_provider_failed', provider, error instanceof Error ? error.message.slice(0, 120) : 'unknown')
         continue
       }
     }
@@ -153,3 +204,4 @@ export const PROVIDERS = {
     return postJson(`https://${host}/`, { method: 'POST', headers, body }, data => data?.TranslatedText)
   },
 }
+
