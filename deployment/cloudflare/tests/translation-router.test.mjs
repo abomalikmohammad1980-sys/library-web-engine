@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { LANGUAGE_ROUTES, routeTranslation, reserveQuota } from '../functions/api/_translation-router.js'
+import { GEMINI_INTERNAL_LIMITS, LANGUAGE_ROUTES, routeTranslation, reserveQuota } from '../functions/api/_translation-router.js'
 
 function db() {
   const counters = new Map()
@@ -11,9 +11,10 @@ function db() {
       return {
         bind(...values) { args = values; return this },
         async first() {
-          const [key, amount, limit] = args
+          const [key, amount, limit, , previousKey] = args
           const used = counters.get(key) || 0
-          if (used + amount > limit) return null
+          const previous = sql.includes('SELECT used FROM translation_provider_usage') ? counters.get(previousKey) || 0 : 0
+          if (used + amount > limit || used + previous + amount > limit) return null
           counters.set(key, used + amount)
           return { used: used + amount }
         },
@@ -82,7 +83,7 @@ test('first reservation cannot exceed the limit', async () => {
   assert.equal(database.counters.size, 0)
 })
 
-test('Gemini is prioritized for all 36 languages and is opt-in with a configured token ceiling', async () => {
+test('Gemini is prioritized for all 36 languages and is opt-in with a configured monthly token ceiling', async () => {
   assert.equal(Object.keys(LANGUAGE_ROUTES).length, 36)
   for (const [language, route] of Object.entries(LANGUAGE_ROUTES)) {
     assert.equal(route.priority[0], 'gemini', `${language} should try Gemini first`)
@@ -104,7 +105,7 @@ test('Gemini is prioritized for all 36 languages and is opt-in with a configured
   assert.equal(database.counters.get('gemini:2026-09'), 110)
 })
 
-test('Gemini stays disabled unless enabled and given an explicit internal token ceiling', async () => {
+test('Gemini stays disabled unless enabled and given an explicit monthly token ceiling', async () => {
   const database = db()
   const calls = []
   const result = await routeTranslation({
@@ -118,6 +119,58 @@ test('Gemini stays disabled unless enabled and given an explicit internal token 
   })
   assert.equal(result.provider, 'google')
   assert.deepEqual(calls, [])
+})
+
+test('Gemini request-per-minute internal limit keeps a 20% buffer and falls through before generation', async () => {
+  assert.deepEqual(GEMINI_INTERNAL_LIMITS, { rpm: 12, inputTpm: 200_000, rpd: 400 })
+  const database = db()
+  database.counters.set('gemini-rpm:2026-09-24T00:00', 11)
+  const called = []
+  const result = await routeTranslation({
+    env: { VISITORS_DB: database, GEMINI_API_KEY: 'test', TRANSLATION_GEMINI_ENABLED: '1', TRANSLATION_GEMINI_FREE_TOKENS: '500', GOOGLE_TRANSLATE_KEY: 'test' },
+    text: 'سلام', target: 'en', purpose: 'text', now: new Date('2026-09-24T00:00:30Z'),
+    adapters: {
+      geminiTokens: async () => { called.push('count'); return 20 },
+      gemini: async () => { called.push('gemini'); return { translation: 'Hello', totalTokens: 30 } },
+      google: async () => 'Hello from Google',
+    },
+  })
+  assert.equal(result.provider, 'google')
+  assert.deepEqual(called, ['count'])
+})
+
+test('Gemini input-token-per-minute internal cap falls through before generating', async () => {
+  const database = db()
+  database.counters.set('gemini-input-tpm:2026-09-24T00:00', 200_000)
+  const called = []
+  const result = await routeTranslation({
+    env: { VISITORS_DB: database, GEMINI_API_KEY: 'test', TRANSLATION_GEMINI_ENABLED: '1', TRANSLATION_GEMINI_FREE_TOKENS: '500', GOOGLE_TRANSLATE_KEY: 'test' },
+    text: 'سلام', target: 'en', purpose: 'text', now: new Date('2026-09-24T00:00:30Z'),
+    adapters: {
+      geminiTokens: async () => 20,
+      gemini: async () => { called.push('gemini'); return { translation: 'Hello', totalTokens: 30 } },
+      google: async () => 'Hello from Google',
+    },
+  })
+  assert.equal(result.provider, 'google')
+  assert.deepEqual(called, [])
+})
+
+test('Gemini daily internal request cap falls through without counting another token request', async () => {
+  const database = db()
+  database.counters.set('gemini-rpd:2026-09-23', 400)
+  const called = []
+  const result = await routeTranslation({
+    env: { VISITORS_DB: database, GEMINI_API_KEY: 'test', TRANSLATION_GEMINI_ENABLED: '1', TRANSLATION_GEMINI_FREE_TOKENS: '500', GOOGLE_TRANSLATE_KEY: 'test' },
+    text: 'سلام', target: 'en', purpose: 'text', now: new Date('2026-09-24T06:30:00Z'),
+    adapters: {
+      geminiTokens: async () => { called.push('count'); return 20 },
+      gemini: async () => { called.push('gemini'); return { translation: 'Hello', totalTokens: 30 } },
+      google: async () => 'Hello from Google',
+    },
+  })
+  assert.equal(result.provider, 'google')
+  assert.deepEqual(called, [])
 })
 
 test('Gemini quota exhaustion falls through before generation', async () => {
@@ -235,3 +288,4 @@ test('Qwen trial quota does not reset at a month boundary', async () => {
   await assert.rejects(routeTranslation({ ...args, now: new Date('2026-10-01') }))
   assert.equal(database.counters.size, 1)
 })
+
