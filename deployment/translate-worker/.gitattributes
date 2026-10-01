@@ -1,0 +1,3 @@
+# Preserve the imported production snapshot byte-for-byte.
+src/index.js -text
+wrangler.toml -text
