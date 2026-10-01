@@ -7,7 +7,7 @@ import {webcrypto} from 'node:crypto'
 const source=await readFile(new URL('../src/index.js',import.meta.url),'utf8')
 async function loadWorker(fetchImpl=async()=>{throw Error('Unexpected provider call')}){
  const context=vm.createContext({Request,Response,Headers,URL,URLSearchParams,TextEncoder,TextDecoder,AbortController,AbortSignal,setTimeout,clearTimeout,crypto:webcrypto,console:{warn(){},error(){}},fetch:fetchImpl})
- const module=new vm.SourceTextModule(source+'\nexport { cleanGeminiTranslation, splitOpenRouterSegments, splitStableTranslationMemorySegments, translationMemoryKeys, checkGeminiBudget, openRouterModelPool, translateWithGemini, translateWithGroq, translateWithMistral, translateWithCloudflareAI };',{context})
+ const module=new vm.SourceTextModule(source+'\nexport { cleanGeminiTranslation, splitOpenRouterSegments, splitStableTranslationMemorySegments, translationMemoryKeys, checkGeminiBudget, openRouterModelPool, translateWithGemini, translateWithGroq, translateWithMistral, translateWithCloudflareAI, translateWithDeepL, translateSegmentBatchWithDeepLRaw };',{context})
  await module.link(async name=>{assert.equal(name,'cloudflare:workers');return new vm.SyntheticModule(['DurableObject'],function(){this.setExport('DurableObject',class{})},{context})})
  await module.evaluate()
  return module.namespace
@@ -140,4 +140,36 @@ test('coordinator joins concurrent identical requests',async()=>{
  const c=new w.TranslationCoordinator({},e),payload={text:'نص',target:'en',purpose:'text',memory:await w.translationMemoryKeys('نص','en','text')}
  const first=c.resolve(payload),second=c.resolve(payload);release()
  const [a,b]=await Promise.all([first,second]);assert.equal(a.role,'leader');assert.equal(b.role,'follower');assert.equal(reads,1);assert.equal(a.value.translation,b.value.translation)
+})
+
+test('all 36 advertised languages reuse approved cached output without any provider calls',async()=>{
+ const w=await loadWorker(),cap=await (await w.default.fetch(new Request(url),env())).json()
+ assert.equal(cap.targetLanguages.length,36)
+ for(const targetLanguage of cap.targetLanguages){
+  const e=env();e.TRANSLATION_CACHE.get=async()=> 'Approved cached output'
+  const r=await w.default.fetch(post(JSON.stringify({text:'عنوان كتاب جديد',targetLanguage,purpose:'ui'})),e)
+  assert.equal(r.status,200,targetLanguage);assert.equal((await r.json()).translation,'Approved cached output')
+ }
+})
+
+test('new book titles, author names and UI text follow the same cached translation pipeline',async()=>{
+ let calls=0
+ const w=await loadWorker(async(_url,options)=>{calls++;const text=JSON.parse(options.body)[0].Text;return Response.json([{translations:[{text:'Translated: '+text}]}])})
+ const e={...env(),TRANSLATION_CACHE:memoryKV(),AZURE_TRANSLATOR_KEY:'test-only',AZURE_TRANSLATOR_REGION:'northeurope',AZURE_TRANSLATOR_ENDPOINT:'https://api.cognitive.microsofttranslator.com'}
+ for(const [text,purpose] of [['عنوان كتاب جديد','text'],['اسم مؤلف جديد','text'],['نص واجهة جديد','ui']]){
+  for(let i=0;i<2;i++){
+   const r=await w.default.fetch(post(JSON.stringify({text,targetLanguage:'en',purpose})),e)
+   assert.equal(r.status,200);assert.equal((await r.json()).translation,'Translated: '+text)
+  }
+ }
+ assert.equal(calls,3)
+})
+
+for(const batch of [false,true])test('DeepL '+(batch?'batch':'whole')+' failed attempts and fallback cannot bypass its guard',async()=>{
+ let calls=0
+ const w=await loadWorker(async()=>{calls++;return new Response('{}',{status:403})})
+ const e={...env(),TRANSLATION_CACHE:memoryKV(),DEEPL_API_KEY:'test-only',DEEPL_TOTAL_LIMIT:'2'}
+ const run=()=>batch?w.translateSegmentBatchWithDeepLRaw(e,[{id:'1',source:'نص'}],'en'):w.translateWithDeepL(e,'نص','en')
+ await assert.rejects(run(),/limit_reached/);assert.equal(calls,1)
+ await assert.rejects(run(),/limit_reached/);assert.equal(calls,1)
 })

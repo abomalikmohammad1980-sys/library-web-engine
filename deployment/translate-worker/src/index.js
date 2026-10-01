@@ -1243,7 +1243,8 @@ async function translateWithDeepL(env, text, target) {
   const deeplTarget = DEEPL_TARGET_MAP[target]
   if (!deeplTarget) throw new Error(`deepl_unsupported_language:${target}`)
 
-  const budget = await checkDeepLBudget(env, text)
+  let budget = await checkDeepLBudget(env, text)
+  await commitDeepLUsage(env, budget)
 
   const primaryEndpoint = deeplEndpoint(env)
   const fallbackEndpoint = 'https://api-free.deepl.com/v2/translate'
@@ -1251,6 +1252,8 @@ async function translateWithDeepL(env, text, target) {
   let response = await callDeepL(primaryEndpoint, env, text, deeplTarget)
 
   if (!response.ok && primaryEndpoint !== fallbackEndpoint && [403, 404].includes(response.status)) {
+    budget = await checkDeepLBudget(env, text)
+    await commitDeepLUsage(env, budget)
     response = await callDeepL(fallbackEndpoint, env, text, deeplTarget)
   }
 
@@ -1263,8 +1266,6 @@ async function translateWithDeepL(env, text, target) {
   const translation = data?.translations?.[0]?.text?.trim()
 
   if (!translation) throw new Error('deepl_empty_translation')
-
-  await commitDeepLUsage(env, budget)
 
   return {
     translation,
@@ -3682,12 +3683,6 @@ async function translateSegmentBatchWithDeepLRaw(
       .map(item => item.source)
       .join('')
 
-  const budget =
-    await checkDeepLBudget(
-      env,
-      sourceText
-    )
-
   const params =
     new URLSearchParams()
 
@@ -3720,6 +3715,8 @@ async function translateSegmentBatchWithDeepLRaw(
     'https://api-free.deepl.com/v2/translate'
 
   async function send(endpoint) {
+    const budget = await checkDeepLBudget(env, sourceText)
+    await commitDeepLUsage(env, budget)
     const controller =
       new AbortController()
 
@@ -3793,11 +3790,6 @@ async function translateSegmentBatchWithDeepLRaw(
       'deepl_segment_batch_size_mismatch'
     )
   }
-
-  await commitDeepLUsage(
-    env,
-    budget
-  )
 
   return items.map(
     (item, index) => {
