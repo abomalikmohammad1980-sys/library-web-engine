@@ -1,0 +1,71 @@
+name = "khezana-translate-router"
+main = "src/index.js"
+compatibility_date = "2026-08-09"
+workers_dev = false
+
+routes = [
+  { pattern = "khzanah.com/api/translate*", zone_name = "khzanah.com" },
+  { pattern = "www.khzanah.com/api/translate*", zone_name = "khzanah.com" }
+]
+
+[vars]
+DO_COORDINATION_ENABLED = "true"
+DO_COORDINATION_MONTHLY_LIMIT = "800000"
+
+OPENROUTER_ENABLED = "true"
+OPENROUTER_DAILY_SOURCE_CHAR_LIMIT = "80000"
+OPENROUTER_MONTHLY_SOURCE_CHAR_LIMIT = "2000000"
+OPENROUTER_MAX_TEXT_CHARS = "4000"
+OPENROUTER_MAX_REQUESTS_PER_DAY = "40"
+
+MISTRAL_ENABLED = "true"
+MISTRAL_MODEL = "mistral-small-latest"
+MISTRAL_DAILY_SOURCE_CHAR_LIMIT = "100000"
+MISTRAL_MONTHLY_SOURCE_CHAR_LIMIT = "3000000"
+MISTRAL_MAX_TEXT_CHARS = "3000"
+MISTRAL_MAX_REQUESTS_PER_DAY = "400"
+
+GROQ_MAX_REQUESTS_PER_DAY = "400"
+GROQ_MAX_TEXT_CHARS = "3500"
+GROQ_MONTHLY_SOURCE_CHAR_LIMIT = "1000000"
+GROQ_DAILY_SOURCE_CHAR_LIMIT = "40000"
+GROQ_MODEL = "qwen/qwen3.8-27b"
+GROQ_ENABLED = "true"
+AZURE_TRANSLATOR_REGION = "northeurope"
+AZURE_TRANSLATOR_ENDPOINT = "https://api.cognitive.microsofttranslator.com"
+
+DEEPL_TOTAL_LIMIT = "950000"
+DEEPL_API_ENDPOINT = "https://api.deepl.com/v2/translate"
+
+CF_AI_ENABLED = "true"
+CF_AI_DAILY_CHAR_LIMIT = "5000"
+CF_AI_MAX_TEXT_CHARS = "700"
+
+GEMINI_ENABLED = "true"
+GEMINI_DAILY_CHAR_LIMIT = "60000"
+GEMINI_MONTHLY_CHAR_LIMIT = "1200000"
+GEMINI_MAX_TEXT_CHARS = "3000"
+GEMINI_MAX_REQUESTS_PER_DAY = "250"
+GEMINI_PRIMARY_MODEL = "gemini-3.8-flash"
+GEMINI_FALLBACK_MODEL = "gemini-3.5-flash-lite"
+
+[[kv_namespaces]]
+binding = "TRANSLATION_CACHE"
+id = "3d02c62abedb4ecd9400ee5c4d720bca"
+
+[ai]
+binding = "AI"
+[[r2_buckets]]
+binding = "TRANSLATION_MEMORY"
+bucket_name = "khezana-translation-memory"
+[[durable_objects.bindings]]
+name = "TRANSLATION_COORDINATOR"
+class_name = "TranslationCoordinator"
+[exports.TranslationCoordinator]
+type = "durable-object"
+storage = "sqlite"
+[[analytics_engine_datasets]]
+binding = "TRANSLATION_ANALYTICS"
+dataset = "khezana_translation_analytics"
+[version_metadata]
+binding = "CF_VERSION_METADATA"
