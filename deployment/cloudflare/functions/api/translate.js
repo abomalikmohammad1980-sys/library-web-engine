@@ -1,5 +1,6 @@
 const LANGUAGES = new Set(['en','fr','tr','ur','ug','ckb','ku','fa','sw','hi','hu','id','ms','bn','ps','so','ha','ru','uk','de','es','pt','it','nl','sv','no','pl','ro','bs','sq','az','uz','kk','zh','ja','ko'])
 import {translationBody,translationLimited} from './_translation-guard.js'
+import {routeTranslation} from './_translation-router.js'
 // M2M100 does not expose stable target codes for both Kurdish variants on
 // Workers AI, so route them through the multilingual prompt instead.
 const SPECIAL_LLM_LANGUAGES = new Set(['ug','ckb','ku'])
@@ -56,7 +57,7 @@ async function translateWithLlm(ai, text, target, purpose) {
 
 export async function onRequestPost(context) {
   if (!context.request.headers.get('origin') || !isSameOriginRequest(context.request)) return json({ error: 'cross_origin_forbidden' }, 403)
-  if (!context.env.AI) return json({ code: 'translation_not_configured', error: 'خدمة الترجمة غير مفعلة على هذا الإصدار.' }, 503)
+  if (!context.env.AI && context.env.TRANSLATION_ROUTER_ENABLED !== '1') return json({ code: 'translation_not_configured', error: 'خدمة الترجمة غير مفعلة على هذا الإصدار.' }, 503)
   if (!(context.request.headers.get('content-type') || '').toLowerCase().includes('application/json')) return json({ error: 'صيغة الطلب غير صحيحة.' }, 415)
   let body
   try { body = await translationBody(context.request) } catch(error) { return json({ error: 'تعذر قراءة طلب الترجمة.' }, error.message==='translation_body_too_large'?413:400) }
@@ -70,6 +71,15 @@ export async function onRequestPost(context) {
     if(retry){const response=json({code:'translation_rate_limited',error:'بلغت حد طلبات الترجمة؛ حاول لاحقًا.'},429);response.headers.set('retry-after',String(retry));return response}
   }catch{return json({code:'translation_temporarily_unavailable',error:'خدمة الترجمة غير متاحة مؤقتًا.'},503)}
   try {
+    if (context.env.TRANSLATION_ROUTER_ENABLED === '1') {
+      try {
+        const routed = await routeTranslation({ env: context.env, text, target, purpose })
+        return json({ translation: routed.translation, engine: routed.provider, reviewed: false })
+      } catch (error) {
+        console.warn('translation_router_fallback', error instanceof Error ? error.message : 'unknown')
+      }
+    }
+    if (!context.env.AI) return json({ code: 'translation_not_configured', error: 'خدمة الترجمة غير مفعلة على هذا الإصدار.' }, 503)
     if (purpose === 'ui' || SPECIAL_LLM_LANGUAGES.has(target)) {
       const translation = await translateWithLlm(context.env.AI, text, target, purpose)
       return json({ translation, engine: 'multilingual-review', reviewed: false })
