@@ -6,6 +6,7 @@ describe('library shelves preview', () => {
     const source = readFileSync(new URL('./screens/library.ts', import.meta.url), 'utf8')
     expect(source).toContain('.slice(0, 3)')
     expect(source).toContain("href: '#/shelves'")
-    expect(source).toContain("h('h2', { id: 'library-shelves-title' }, 'رفوفي')")
+    expect(source).toContain("h('h2', { id: 'library-shelves-title' }, h('a',{href:'#/shelves'},'رفوفي'))")
+    expect(source).toContain('orderedBooks(shelf.bookIds.map(id => byId.get(id))')
   })
 })

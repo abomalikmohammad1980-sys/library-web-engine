@@ -8,9 +8,11 @@ const styles = readFileSync(new URL('./styles/components.css', import.meta.url),
 describe('privacy-preserving visitor counter', () => {
   it('uses the same-origin API and remains hidden on failures or unverified payloads', () => {
     expect(counter).toContain("const VISITORS_ENDPOINT = '/api/visitors'")
-    expect(counter).toContain("credentials: 'same-origin'")
+    expect(counter).toMatch(/credentials:\s*'same-origin'/)
     expect(counter).toContain('if (!response.ok) return')
-    expect(counter).toContain('if (!validTotal(total) || !element.isConnected) return')
+    expect(counter).toContain("hidden:true")
+    expect(counter).not.toContain('response.json')
+    expect(counter).not.toContain("method:'GET'")
     expect(counter).not.toContain('localStorage')
     expect(counter).not.toContain('fingerprint')
   })

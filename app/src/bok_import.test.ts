@@ -1,9 +1,9 @@
-import { readFileSync, readdirSync } from 'node:fs'
+import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { decodeShamelaJetText, parseBok, parseBokBetaka } from './bok_import'
 
 const corpus = new URL('../../../../كتب للاختبار/', import.meta.url)
-const files = readdirSync(corpus).filter(name => name.toLocaleLowerCase().endsWith('.bok'))
+const files = (existsSync(corpus) ? readdirSync(corpus) : []).filter(name => name.toLocaleLowerCase().endsWith('.bok'))
 
 describe('BOK الشاملة — Jet corpus', () => {
   it('decodes the legacy Windows-1256 mojibake without touching valid Arabic', () => {
@@ -12,7 +12,7 @@ describe('BOK الشاملة — Jet corpus', () => {
     expect(decodeShamelaJetText('نص عربي صحيح')).toBe('نص عربي صحيح')
   })
 
-  it('parses every provided BOK with metadata, original pages and TOC', () => {
+  it.runIf(existsSync(corpus))('parses every provided BOK with metadata, original pages and TOC', () => {
     expect(files.length).toBeGreaterThanOrEqual(9)
     let booksWithStructuredPublishingData = 0
     let pagesWithExplicitFootnoteSignals = 0

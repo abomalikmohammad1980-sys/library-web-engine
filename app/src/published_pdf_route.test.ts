@@ -13,9 +13,10 @@ const manifest = JSON.parse(fs.readFileSync(path.join(root, 'public/library/publ
 describe('published standalone PDF routing', () => {
   it('refreshes an existing managed published record before choosing PDF.js routing', () => {
     const reader = readFileSync(new URL('./screens/reader.ts', import.meta.url), 'utf8')
-    expect(reader).toContain("if (!stored || stored.managedSource === 'published')")
-    expect(reader).toContain('stored = await ensurePublishedWorkSeeded(id) ?? stored')
-    expect(reader.indexOf("stored.managedSource === 'published'")).toBeLessThan(reader.indexOf("if (inferBookFormat(stored) === 'pdf')"))
+    expect(reader).toContain("if (!stored) {")
+    expect(reader).toContain("} else if (!publicSource && stored?.managedSource === 'published' && !shamelaPreviewPageLoader(stored)) {")
+    expect(reader).toContain('void ensurePublishedWorkSeeded(id).then((refreshed) => {')
+    expect(reader.indexOf("} else if (!publicSource && stored?.managedSource === 'published' && !shamelaPreviewPageLoader(stored)) {")).toBeLessThan(reader.indexOf("if (inferBookFormat(stored) === 'pdf' || inferBookFormat(stored) === 'jpeg')"))
   })
 
   it('opens the exact Pharaoh PDF as PDF bytes and never requests Word conversion', async () => {

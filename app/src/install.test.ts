@@ -19,7 +19,7 @@ describe('installable app contract', () => {
 
   it('labels the install action honestly for prompt, guidance and installed states', () => {
     expect(installCtaLabel(false, true)).toContain('تثبيت')
-    expect(installCtaLabel(false, false)).toContain('المتصفح')
+    expect(installCtaLabel(false, false)).toBe('طريقة تثبيت التطبيق')
     expect(installCtaLabel(true, false)).toContain('مثبت')
   })
 })

@@ -1,13 +1,14 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 
-const source = readFileSync(new URL('./screens/reader.ts', import.meta.url), 'utf8')
-const css = readFileSync(new URL('./styles/components.css', import.meta.url), 'utf8')
+const source = readFileSync(new URL('./screens/reader.ts', import.meta.url), 'utf8').replace(/\r\n/g, '\n')
+const css = readFileSync(new URL('./styles/components.css', import.meta.url), 'utf8').replace(/\r\n/g, '\n')
 
 describe('standalone PDF toolbar behavior', () => {
   it('persists and announces every current PDF page for bookmarks and notes', () => {
-    expect(source).toContain("localStorage.setItem(`alkhizana:reading-position:${id}`, String(pageIndex))")
-    expect(source).toContain('announceReaderPage(pageIndex, total)')
+    expect(source).toContain('pdfPersistedReaderIndex(standalone, pageIndex, readerIndexForPdf)')
+    expect(source).toContain("identity.setItem(`alkhizana:reading-position:${id}`, String(persistedReaderIndex))")
+    expect(source).toContain("announceReaderPage(persistedReaderIndex, standalone ? total : activeDisplayedTotal || total, 'pdf')")
     expect(source).toContain('currentPageIndex(bookId)')
   })
 
@@ -17,9 +18,10 @@ describe('standalone PDF toolbar behavior', () => {
     expect(source).toContain('setPage(index, true)')
   })
 
-  it('removes meaningless DOM flow/search actions but keeps serenity visible', () => {
+  it('removes meaningless DOM flow while keeping indexed PDF search and serenity visible', () => {
     expect(source).toContain("'[data-reader-action=\"flow\"]')?.remove()")
-    expect(source).toContain("'[data-reader-action=\"search\"]')?.remove()")
+    expect(source).toContain("if (format === 'jpeg') {\n      reader.querySelector<HTMLElement>('[data-reader-action=\"search\"]')?.remove()")
+    expect(source).toContain('const indexPdfText = async')
     expect(css).toContain('.reader--pdf-source.reader--serenity .reader__info--pdf { display: flex !important; }')
   })
 

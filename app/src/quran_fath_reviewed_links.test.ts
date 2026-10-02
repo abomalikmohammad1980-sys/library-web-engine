@@ -7,13 +7,13 @@ import {fathReviewedLink,getFathReviewedLink} from './quran_fath_reviewed_links'
 import {getSourceEditionBookLink} from './quran_source_book_links'
 import {normalized} from '../../tools/build-source-edition-book-links.mjs'
 const read=(p:string)=>JSON.parse(fs.readFileSync(p,'utf8')),sha=(v:string|Buffer)=>createHash('sha256').update(v).digest('hex')
-it('adds exactly the thirteen previously unmapped Fath keys and keeps prior links unchanged',()=>{
+it.runIf(fs.existsSync('artifacts/shuoun-tafsir-20260912/published17-acceptance-20260914.json'))('adds exactly the thirteen previously unmapped Fath keys and keeps prior links unchanged',()=>{
  const published=read('artifacts/shuoun-tafsir-20260912/published17-acceptance-20260914.json'),edition=published.editions.find((e:any)=>e.slug==='fath-al-qadir')
  expect(data.anchors.map(a=>`${a.surah}:${a.ayah}`).sort()).toEqual([...edition.missing].sort());expect(data.anchors).toHaveLength(13)
  for(const e of published.editions)for(const a of e.verifiedLinks){const [s,v]=a.key.split(':').map(Number),link=getSourceEditionBookLink(e.slug,s,v)!;expect([link.bookId,link.pageIndex,link.sourceRowId,link.sharedRange]).toEqual([a.bookId,a.pageIndex,a.sourceRowId,a.sharedRange])}
  for(const a of data.anchors)expect(getSourceEditionBookLink('fath-al-qadir',a.surah,a.ayah)).toEqual(getFathReviewedLink('fath-al-qadir',a.surah,a.ayah))
 })
-it('retains exact original sections, source texts and two unique literal witnesses per key',()=>{
+it.runIf(fs.existsSync('artifacts/shuoun-tafsir-20260912/fath-reversed-title-reviewed-20260914.json')&&fs.existsSync('D:/alkhizana/بيانات-المشروع/shamela/published-corpus-v1/batch-0061/books/23623.json'))('retains exact original sections, source texts and two unique literal witnesses per key',()=>{
  const proof=read('artifacts/shuoun-tafsir-20260912/fath-reversed-title-reviewed-20260914.json'),bytes=fs.readFileSync('D:/alkhizana/بيانات-المشروع/shamela/published-corpus-v1/batch-0061/books/23623.json'),book=JSON.parse(bytes.toString()),all=normalized(book.pages.map((p:any)=>p.body).join(''));expect(sha(bytes)).toBe(data.bookSha256)
  for(const a of data.anchors){const r=proof.anchors.find((r:any)=>r.surah===a.surah&&r.ayah===a.ayah);expect(sha(JSON.stringify(r))).toBe(a.evidenceSha256);expect(book.titles.find((t:any)=>t.sourceRowId===a.titleId)).toEqual(r.title)
   for(const p of r.sectionPages)expect(sha(book.pages[p.pageIndex].body)).toBe(p.bodySha256)

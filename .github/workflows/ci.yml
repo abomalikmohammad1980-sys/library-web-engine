@@ -23,6 +23,12 @@ jobs:
       - name: تثبيت الاعتمادات
         run: pnpm install --frozen-lockfile
 
+      - name: التحقق من مستعيد بيانات البناء
+        run: node --test tools/ci/restore-public-assets.test.mjs
+
+      - name: استعادة بيانات البناء العامة المثبتة بالبصمة
+        run: node tools/ci/restore-public-assets.mjs
+
       - name: فحص الأنواع
         run: pnpm typecheck
 
@@ -30,7 +36,15 @@ jobs:
         run: pnpm build
 
       - name: الاختبارات
-        run: pnpm test
+        run: pnpm test --maxWorkers=2 --reporter=default --reporter=json --outputFile=ci-test-results.json
+
+      - name: حفظ نتائج الاختبارات بما فيها الحالات المتجاوزة
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-test-results
+          path: ci-test-results.json
+          if-no-files-found: ignore
 
       # بوابة عدم انحدار المُحكِّم — تُفعَّل فعليًا بعد بناء oracle-client
       # في المرحلة 0 (تقارن ضد corpus/ground-truth المخزنة في LFS، بلا Word).

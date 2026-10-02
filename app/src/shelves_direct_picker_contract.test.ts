@@ -17,8 +17,10 @@ describe('direct shelf book picker', () => {
     expect(screen).toContain("class: 'shelf-card__picker-results'")
     expect(screen).toContain("role: 'listbox'")
     expect(screen).toContain("choices.filter(book => !query")
-    expect(screen).toContain('setBookOnShelf(shelfId, book.id, true)')
-    expect(screen).toContain('setBookOnShelf(shelf.id, book.id, false)')
+    expect(screen).toContain('if(!isCurrent())return; editor.setBook(shelfId, book.id, true)')
+    expect(screen).toContain('if(!isCurrent())return; editor.setBook(shelf.id, book.id, false)')
+    const store = readFileSync(new URL('./shelf_store.ts', import.meta.url), 'utf8')
+    expect(store).toContain('if(identity.isCurrent())setBookOnShelf(id,bookId,included)')
   })
 
   it('keeps My Shelves after intake and uses a larger 390px-safe card', () => {

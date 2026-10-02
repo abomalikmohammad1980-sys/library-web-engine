@@ -818,7 +818,7 @@
       "slug": "saadi",
       "name": "تفسير السعدي",
       "sourceChecksumSha256": "59fb5cb51086e06b237507e36353cba30cebc22062447adabf17d327ebf740f8",
-      "surahs": 113,
+      "surahs": 114,
       "segments": 2175,
       "files": [
         {
@@ -1538,9 +1538,16 @@
         {
           "surah": 103,
           "file": "saadi/103.json",
-          "byteSize": 5672,
-          "checksumSha256": "b20708b1ac39b5726d4edc62221a3b6cf4c8fabce37eccfd7f69975b263b8796",
-          "segments": 2
+          "byteSize": 2343,
+          "checksumSha256": "9be32a1bc29097cd551be23c8c355421c23fd9dc0eff99d17d5e64e95dc5ae25",
+          "segments": 1
+        },
+        {
+          "surah": 104,
+          "file": "saadi/104.json",
+          "byteSize": 3417,
+          "checksumSha256": "b7a66f4be323b7a1d3fd861e07145117f25aa6e73f361d5737401770363fb9a8",
+          "segments": 1
         },
         {
           "surah": 105,
@@ -2419,6 +2426,3238 @@
           "byteSize": 385021,
           "checksumSha256": "c7d28c5d59c95a4ede5ab5c3079b7d96c3fbdeb073cdc0c2552e92040d3e32e4",
           "segments": 128
+        }
+      ]
+    },
+    {
+      "id": 136,
+      "slug": "ibn-kathir",
+      "name": "تفسير ابن كثير",
+      "sourceChecksumSha256": "a5880591b9320232d6cd996ac90ed3186033ab955494ae318212ede97546044a",
+      "surahs": 114,
+      "segments": 5108,
+      "files": [
+        {
+          "surah": 1,
+          "file": "ibn-kathir/1.json",
+          "byteSize": 362658,
+          "checksumSha256": "d945428f65757f1c08003927bbc9360c4db2594b193f00e70cdd834dc16afc00",
+          "segments": 54
+        },
+        {
+          "surah": 2,
+          "file": "ibn-kathir/2.json",
+          "byteSize": 3887616,
+          "checksumSha256": "b1fcecc75fa5ae9f48b8bcad053e0a81b82c1ca0488334506e6737c75752b8a2",
+          "segments": 624
+        },
+        {
+          "surah": 3,
+          "file": "ibn-kathir/3.json",
+          "byteSize": 1358574,
+          "checksumSha256": "76395b0c89e7fecec977e380f62b438150db3ea72ac318d602c426df60cd2126",
+          "segments": 224
+        },
+        {
+          "surah": 4,
+          "file": "ibn-kathir/4.json",
+          "byteSize": 1948705,
+          "checksumSha256": "fce22ad16a9eeb62ac9edfe703636535121eb13f7b16a7b654d19276bfb65bcf",
+          "segments": 305
+        },
+        {
+          "surah": 5,
+          "file": "ibn-kathir/5.json",
+          "byteSize": 1573819,
+          "checksumSha256": "d117f0398937e3ca69d0c4db13437f14659ee109e1d501fd48238a4145d27b0a",
+          "segments": 250
+        },
+        {
+          "surah": 6,
+          "file": "ibn-kathir/6.json",
+          "byteSize": 996369,
+          "checksumSha256": "2819948af7d90fac3274c1eb667e2cca18ad4080d1420329c8a42a145a11b3df",
+          "segments": 167
+        },
+        {
+          "surah": 7,
+          "file": "ibn-kathir/7.json",
+          "byteSize": 1025692,
+          "checksumSha256": "18833e4cb1433264da85b42fec1dde60b18d5c7263e8f31289fdb1638d359e1e",
+          "segments": 176
+        },
+        {
+          "surah": 8,
+          "file": "ibn-kathir/8.json",
+          "byteSize": 619338,
+          "checksumSha256": "5d9322fbeb98a90ac5d8d2c2dcc2657e526dcd92444348aa8c9501a288911396",
+          "segments": 104
+        },
+        {
+          "surah": 9,
+          "file": "ibn-kathir/9.json",
+          "byteSize": 927630,
+          "checksumSha256": "171857ee75ad8b87709ea4076d9ee5c97b60234e4f653206fc91f28eaad5d82c",
+          "segments": 161
+        },
+        {
+          "surah": 10,
+          "file": "ibn-kathir/10.json",
+          "byteSize": 367186,
+          "checksumSha256": "037158efdee10f4163e2a0b1c88c95cdcf8ca5c3809821a51ddbb0527567c4cf",
+          "segments": 71
+        },
+        {
+          "surah": 11,
+          "file": "ibn-kathir/11.json",
+          "byteSize": 390312,
+          "checksumSha256": "72a977b56d6874cce952511897d62475b64f4d779f0a5b5e972d34495b619d85",
+          "segments": 75
+        },
+        {
+          "surah": 12,
+          "file": "ibn-kathir/12.json",
+          "byteSize": 386553,
+          "checksumSha256": "3d9302babe9cb6d431d8fcbda226ba50e687d09d12d2dacb4f60ba9153ae4ae0",
+          "segments": 75
+        },
+        {
+          "surah": 13,
+          "file": "ibn-kathir/13.json",
+          "byteSize": 297203,
+          "checksumSha256": "a5c9fe91d93a9a202ee3af67e4cfcb78bbd978eb40ca7014673eeaa85ee510a1",
+          "segments": 54
+        },
+        {
+          "surah": 14,
+          "file": "ibn-kathir/14.json",
+          "byteSize": 300937,
+          "checksumSha256": "0c15560aaf6d67dfac9c8c1abbf524c1da6a2a38196f6087470df512de8b68ed",
+          "segments": 53
+        },
+        {
+          "surah": 15,
+          "file": "ibn-kathir/15.json",
+          "byteSize": 192265,
+          "checksumSha256": "2881289548236c9bab4515fcd0e54ee48ac5f988e2c736a711a45172fd3e5f1b",
+          "segments": 36
+        },
+        {
+          "surah": 16,
+          "file": "ibn-kathir/16.json",
+          "byteSize": 403812,
+          "checksumSha256": "888756548e749b1ed0e6b9a486f07a55eff6ef81d85f1dc64bf7b99aaad0cb6a",
+          "segments": 76
+        },
+        {
+          "surah": 17,
+          "file": "ibn-kathir/17.json",
+          "byteSize": 879648,
+          "checksumSha256": "1cf67028ef33c897d45571cbed403c94aa86c609c83fcc1d019dd41c4dbf393a",
+          "segments": 140
+        },
+        {
+          "surah": 18,
+          "file": "ibn-kathir/18.json",
+          "byteSize": 497829,
+          "checksumSha256": "4e3b13643f87b5d48f41c70e31b6002a986cbc4f43876c0c7ec1839208d8b9d8",
+          "segments": 85
+        },
+        {
+          "surah": 19,
+          "file": "ibn-kathir/19.json",
+          "byteSize": 391755,
+          "checksumSha256": "3e3a51a2ae17ec2d55d754e9f38c6829513794b65769349b49a6991264445476",
+          "segments": 67
+        },
+        {
+          "surah": 20,
+          "file": "ibn-kathir/20.json",
+          "byteSize": 384023,
+          "checksumSha256": "d38496438524ecbf704e04a568ecabdb67bb8fe3348d52a43441b1a061e0af5f",
+          "segments": 68
+        },
+        {
+          "surah": 21,
+          "file": "ibn-kathir/21.json",
+          "byteSize": 376720,
+          "checksumSha256": "2f0233c5b7f2492345b6b4ed3135e693000d6803d3b9be0125fa406138c52ebd",
+          "segments": 66
+        },
+        {
+          "surah": 22,
+          "file": "ibn-kathir/22.json",
+          "byteSize": 431453,
+          "checksumSha256": "efd721dc1d8ec2da8dfee196d3a9fcbb359aff8766b3519b12359107c58f94f6",
+          "segments": 78
+        },
+        {
+          "surah": 23,
+          "file": "ibn-kathir/23.json",
+          "byteSize": 280928,
+          "checksumSha256": "390b28b30d924ba681e4b8c7a15041139d1f84096868dc46d9f6aff363be5abd",
+          "segments": 51
+        },
+        {
+          "surah": 24,
+          "file": "ibn-kathir/24.json",
+          "byteSize": 594751,
+          "checksumSha256": "fcf7dbac5d0d9f5f0fab0f981ba95c24ef0d6ee15a2440c800a89696597358b9",
+          "segments": 92
+        },
+        {
+          "surah": 25,
+          "file": "ibn-kathir/25.json",
+          "byteSize": 285335,
+          "checksumSha256": "accb21d739193023f1dcf380aabcd606971e6cafb215ce0804789e17d993c845",
+          "segments": 50
+        },
+        {
+          "surah": 26,
+          "file": "ibn-kathir/26.json",
+          "byteSize": 296822,
+          "checksumSha256": "5e66e7e63846edbb9274d3573246c18acc2d64db0c4358736de8f4a373cce403",
+          "segments": 52
+        },
+        {
+          "surah": 27,
+          "file": "ibn-kathir/27.json",
+          "byteSize": 275551,
+          "checksumSha256": "7e6928680cb5acb3d7aec024437033152afa866bc1c0acb899a4e2e7f2ef67e5",
+          "segments": 50
+        },
+        {
+          "surah": 28,
+          "file": "ibn-kathir/28.json",
+          "byteSize": 288917,
+          "checksumSha256": "9598339360515257600be75b9ea31004c93c01328f55b1964cfdd4cf874bd4c3",
+          "segments": 52
+        },
+        {
+          "surah": 29,
+          "file": "ibn-kathir/29.json",
+          "byteSize": 228967,
+          "checksumSha256": "69bc61c6bc7fd0013a60839dee0315877c3cf537fe593960fe6d3479ab200f93",
+          "segments": 41
+        },
+        {
+          "surah": 30,
+          "file": "ibn-kathir/30.json",
+          "byteSize": 236582,
+          "checksumSha256": "62d58703012fb199a73cbb569c3a10932bde0d17c525ee509454ca8cfe048a6c",
+          "segments": 41
+        },
+        {
+          "surah": 31,
+          "file": "ibn-kathir/31.json",
+          "byteSize": 181762,
+          "checksumSha256": "e9a3132ce0168e75bbe4bb454b7438209941849c9391d4f283264ea299f28d27",
+          "segments": 30
+        },
+        {
+          "surah": 32,
+          "file": "ibn-kathir/32.json",
+          "byteSize": 110399,
+          "checksumSha256": "f5550d8041b797a56a28d46c6c88522dba8ce445242b294d594cd3611bfd4591",
+          "segments": 18
+        },
+        {
+          "surah": 33,
+          "file": "ibn-kathir/33.json",
+          "byteSize": 796305,
+          "checksumSha256": "692a75d174c13919d40836eedab68f9c4abb4ce665fb4a1a8d65708e223c725c",
+          "segments": 126
+        },
+        {
+          "surah": 34,
+          "file": "ibn-kathir/34.json",
+          "byteSize": 250205,
+          "checksumSha256": "e64faba02ee0f0ae5827ca6d8c2da730168442278dcc4df7602cc10bd2666478",
+          "segments": 44
+        },
+        {
+          "surah": 35,
+          "file": "ibn-kathir/35.json",
+          "byteSize": 208454,
+          "checksumSha256": "31e4cbca8a5b9e7d929eb78353f8352ad954ad37f5ea5c2413f7c10e58c5eb0a",
+          "segments": 37
+        },
+        {
+          "surah": 36,
+          "file": "ibn-kathir/36.json",
+          "byteSize": 232334,
+          "checksumSha256": "dd1bcdc93e94a455d013e82a013d95926e9ab4bdb7805eb2da2c1fcba0cadc61",
+          "segments": 40
+        },
+        {
+          "surah": 37,
+          "file": "ibn-kathir/37.json",
+          "byteSize": 293027,
+          "checksumSha256": "33208683633d86aff6eeda9f65d78b35998edc527b7c659507b5c7528065c13b",
+          "segments": 48
+        },
+        {
+          "surah": 38,
+          "file": "ibn-kathir/38.json",
+          "byteSize": 212670,
+          "checksumSha256": "e281d7e1d05af88b494b1838dd736398959b545af00da973cd2b1b26d0df9ec6",
+          "segments": 38
+        },
+        {
+          "surah": 39,
+          "file": "ibn-kathir/39.json",
+          "byteSize": 294255,
+          "checksumSha256": "63fcd65f8e3a6784c2fe4833d791a1be68daec6dfb85402953d1c419315b51f4",
+          "segments": 52
+        },
+        {
+          "surah": 40,
+          "file": "ibn-kathir/40.json",
+          "byteSize": 230705,
+          "checksumSha256": "04998606469c4023ed78d007f8b015171d732d4975821b0c18535661dd07728a",
+          "segments": 43
+        },
+        {
+          "surah": 41,
+          "file": "ibn-kathir/41.json",
+          "byteSize": 186745,
+          "checksumSha256": "bffdc130d70b9ef2a7b6bbf5ca44c906d4d2636053b9e6979074560eb4ed5427",
+          "segments": 33
+        },
+        {
+          "surah": 42,
+          "file": "ibn-kathir/42.json",
+          "byteSize": 196206,
+          "checksumSha256": "aff156cd74a1f7560ed4217ba8f01906e20f5368efd425ddd4508e2c4e79f49e",
+          "segments": 35
+        },
+        {
+          "surah": 43,
+          "file": "ibn-kathir/43.json",
+          "byteSize": 176316,
+          "checksumSha256": "d933b38ee2f843c3e67f5cf05c78701ee76970eac3a2ee356ad805c1e8b68f7c",
+          "segments": 33
+        },
+        {
+          "surah": 44,
+          "file": "ibn-kathir/44.json",
+          "byteSize": 126433,
+          "checksumSha256": "c432b391be8a413533f447410699593f2fee4214f572c8db32afc6207a8f42ae",
+          "segments": 21
+        },
+        {
+          "surah": 45,
+          "file": "ibn-kathir/45.json",
+          "byteSize": 65865,
+          "checksumSha256": "a6fe812a6c7316f91e040b04f981b4b0ef4a24fe42c988513c53750506cd6551",
+          "segments": 13
+        },
+        {
+          "surah": 46,
+          "file": "ibn-kathir/46.json",
+          "byteSize": 221412,
+          "checksumSha256": "f4b4689c85e643f4adef8e86f9a53fcf806ba1595276eea38b09a742c88db120",
+          "segments": 35
+        },
+        {
+          "surah": 47,
+          "file": "ibn-kathir/47.json",
+          "byteSize": 120906,
+          "checksumSha256": "0fb9cec0fcb073ed15d20511e88205eeee97a37307d4ca29ecd9ce52c8564ada",
+          "segments": 22
+        },
+        {
+          "surah": 48,
+          "file": "ibn-kathir/48.json",
+          "byteSize": 266570,
+          "checksumSha256": "9c9b7b0c17cf6e618a8b53723d977f089547bb8d76b5242fb423267b9384c1eb",
+          "segments": 41
+        },
+        {
+          "surah": 49,
+          "file": "ibn-kathir/49.json",
+          "byteSize": 189417,
+          "checksumSha256": "f109c6215bc19d73d10d2a3afbab2edc00b234a83e9c0691f547b43827eda322",
+          "segments": 31
+        },
+        {
+          "surah": 50,
+          "file": "ibn-kathir/50.json",
+          "byteSize": 126626,
+          "checksumSha256": "35666f3503949880609af77934f2334c7ce2eb9e9d5bf670c5dc4d77b3b27a39",
+          "segments": 22
+        },
+        {
+          "surah": 51,
+          "file": "ibn-kathir/51.json",
+          "byteSize": 84840,
+          "checksumSha256": "b641963785f1b45abf884c31d841ccf3610c89eb48c483a3544377f57f9cf77c",
+          "segments": 17
+        },
+        {
+          "surah": 52,
+          "file": "ibn-kathir/52.json",
+          "byteSize": 92707,
+          "checksumSha256": "733c4cde6b49e0b9f83dfbe5800728960a2307884a91c0ec96068c0f9fb09739",
+          "segments": 17
+        },
+        {
+          "surah": 53,
+          "file": "ibn-kathir/53.json",
+          "byteSize": 174336,
+          "checksumSha256": "11c1ddfa01da85ef4c42ca878a693d9a951eed9ef7faa0ccfb35fce9da7e8cf4",
+          "segments": 29
+        },
+        {
+          "surah": 54,
+          "file": "ibn-kathir/54.json",
+          "byteSize": 112417,
+          "checksumSha256": "e82476456910e38893b63f3f75bf58ca51a853b048660931caedd3e89ede4501",
+          "segments": 22
+        },
+        {
+          "surah": 55,
+          "file": "ibn-kathir/55.json",
+          "byteSize": 144101,
+          "checksumSha256": "1bd2e5cc25dff3acff37b38fc241ffe2eda9a00bab06cddf173bd1d7706b87f9",
+          "segments": 27
+        },
+        {
+          "surah": 56,
+          "file": "ibn-kathir/56.json",
+          "byteSize": 252080,
+          "checksumSha256": "14da05e68b5b6cc28946f0d12c6f5bce74ae05ffc3f7d73cd4f1cdc71eadd984",
+          "segments": 42
+        },
+        {
+          "surah": 57,
+          "file": "ibn-kathir/57.json",
+          "byteSize": 193387,
+          "checksumSha256": "5b6eb380c1dc9a69d24af82c9fdc6035f0827eab821060d9d7fe3b213b6017b0",
+          "segments": 33
+        },
+        {
+          "surah": 58,
+          "file": "ibn-kathir/58.json",
+          "byteSize": 152622,
+          "checksumSha256": "fefa61c909045878cef73fe0fe9b76175829e060e35b353caefb281e68bf6039",
+          "segments": 26
+        },
+        {
+          "surah": 59,
+          "file": "ibn-kathir/59.json",
+          "byteSize": 170093,
+          "checksumSha256": "7e99034d6a85b70ba36e890cc1a6cdc507cead7a095c7d3c657c292b68ae5004",
+          "segments": 29
+        },
+        {
+          "surah": 60,
+          "file": "ibn-kathir/60.json",
+          "byteSize": 152319,
+          "checksumSha256": "e3a25217e9ac5a9ce7fb2c8e5b0b68052c18f3f6b9c5e9403ead709e889c7378",
+          "segments": 25
+        },
+        {
+          "surah": 61,
+          "file": "ibn-kathir/61.json",
+          "byteSize": 66058,
+          "checksumSha256": "73241498ff8c0fb826dc1363789110fcd6cbd19e76d08d9a5d41dcae4cf37230",
+          "segments": 11
+        },
+        {
+          "surah": 62,
+          "file": "ibn-kathir/62.json",
+          "byteSize": 63931,
+          "checksumSha256": "a744d6f142ebc53933f0d78000ad146e71cc5b9328924d77bf0e090b850f6321",
+          "segments": 11
+        },
+        {
+          "surah": 63,
+          "file": "ibn-kathir/63.json",
+          "byteSize": 66277,
+          "checksumSha256": "bedd388e5faa59213dcd97d80e04d52d77bccf497b470da8ff8c91024ec1b508",
+          "segments": 11
+        },
+        {
+          "surah": 64,
+          "file": "ibn-kathir/64.json",
+          "byteSize": 42208,
+          "checksumSha256": "87733ecff1830d4d9b70d78ea964b483f7840d9e81f9aae81f2fc8c71cae2698",
+          "segments": 8
+        },
+        {
+          "surah": 65,
+          "file": "ibn-kathir/65.json",
+          "byteSize": 103718,
+          "checksumSha256": "e99a867b6db7a5efed994b63ac7782812c2f3f7f88ba34da201cbb004de50339",
+          "segments": 17
+        },
+        {
+          "surah": 66,
+          "file": "ibn-kathir/66.json",
+          "byteSize": 121522,
+          "checksumSha256": "01b55045d80900fbddd87a844fe4a7a8b4471f2a030022badf78385d8c74e9d3",
+          "segments": 19
+        },
+        {
+          "surah": 67,
+          "file": "ibn-kathir/67.json",
+          "byteSize": 47316,
+          "checksumSha256": "1f7486f3ce5f8d53cdaf0788ca64337219b7d07e6b5375c3c3c9e407c659bef5",
+          "segments": 10
+        },
+        {
+          "surah": 68,
+          "file": "ibn-kathir/68.json",
+          "byteSize": 152353,
+          "checksumSha256": "bdc1926684b2dea821c0568cc3dda1288d27c6b3c37838bb2dbd64b596d82b2c",
+          "segments": 26
+        },
+        {
+          "surah": 69,
+          "file": "ibn-kathir/69.json",
+          "byteSize": 70891,
+          "checksumSha256": "79d1a6803aee1dac7ebe74e0c77c03a2ab8c6d8b87fd742b0da9d5e43b3f2f90",
+          "segments": 14
+        },
+        {
+          "surah": 70,
+          "file": "ibn-kathir/70.json",
+          "byteSize": 68921,
+          "checksumSha256": "5568eefe17469fa1deacfc6df31b53d4013102faec1e3971e8fb51922aad8cf3",
+          "segments": 13
+        },
+        {
+          "surah": 71,
+          "file": "ibn-kathir/71.json",
+          "byteSize": 51875,
+          "checksumSha256": "53a152d897c894b708e658ed617bd3e51746a326558dafec4a8a6293e0a72295",
+          "segments": 9
+        },
+        {
+          "surah": 72,
+          "file": "ibn-kathir/72.json",
+          "byteSize": 67641,
+          "checksumSha256": "57fd2745a3198e4a29f68360ac945040e87da975b8e33f25272bdeb4c32d0f34",
+          "segments": 12
+        },
+        {
+          "surah": 73,
+          "file": "ibn-kathir/73.json",
+          "byteSize": 74150,
+          "checksumSha256": "41ba411923eab78f0319031b2c1aade909a2a5c7420061e1d2c86593f20bd92a",
+          "segments": 13
+        },
+        {
+          "surah": 74,
+          "file": "ibn-kathir/74.json",
+          "byteSize": 90159,
+          "checksumSha256": "d3c6a1bd5ba6667de232195f5ad25337f13f4c4cd90f661e6def2a6c57a1fbca",
+          "segments": 16
+        },
+        {
+          "surah": 75,
+          "file": "ibn-kathir/75.json",
+          "byteSize": 68269,
+          "checksumSha256": "6053c080a3998782fdb492bac30148096b5b7d30aab5ec1dac88d17b96b493b8",
+          "segments": 11
+        },
+        {
+          "surah": 76,
+          "file": "ibn-kathir/76.json",
+          "byteSize": 68971,
+          "checksumSha256": "3d796cf7872a1083c6502fe338a37d56f9f16e469dffad7940637116fa87faf6",
+          "segments": 14
+        },
+        {
+          "surah": 77,
+          "file": "ibn-kathir/77.json",
+          "byteSize": 36931,
+          "checksumSha256": "1e3b8b870c74335bfc54553e6f2adc1334ea7e50c842fa400abd631849a8722b",
+          "segments": 7
+        },
+        {
+          "surah": 78,
+          "file": "ibn-kathir/78.json",
+          "byteSize": 55894,
+          "checksumSha256": "8dac3553861de076771bae8e8f12030849a1c8f09a691a95bafeb47b2449ba7d",
+          "segments": 11
+        },
+        {
+          "surah": 79,
+          "file": "ibn-kathir/79.json",
+          "byteSize": 42190,
+          "checksumSha256": "b4288d4a4c8dc663c2a22d0c302bebeccf24b33c619de94eac388959d05614fe",
+          "segments": 8
+        },
+        {
+          "surah": 80,
+          "file": "ibn-kathir/80.json",
+          "byteSize": 31871,
+          "checksumSha256": "f2a33d7466187b4e92908ea09adaad9527ac3c8ce45cd408e4fd55dd2a529129",
+          "segments": 5
+        },
+        {
+          "surah": 81,
+          "file": "ibn-kathir/81.json",
+          "byteSize": 76082,
+          "checksumSha256": "2ab988281d6ce110d2d78a24a601dd9d9632d6d506f9f84a2a3162583494289b",
+          "segments": 13
+        },
+        {
+          "surah": 82,
+          "file": "ibn-kathir/82.json",
+          "byteSize": 28900,
+          "checksumSha256": "e152023c1fdfd81e79cc3e1c9b80227108bcf44c5a3f1362bf07aadf0c63a2dd",
+          "segments": 5
+        },
+        {
+          "surah": 83,
+          "file": "ibn-kathir/83.json",
+          "byteSize": 49819,
+          "checksumSha256": "01369f88084559b6c6137fc45df8d560ec750516931020ad7301674f035919e4",
+          "segments": 10
+        },
+        {
+          "surah": 84,
+          "file": "ibn-kathir/84.json",
+          "byteSize": 48961,
+          "checksumSha256": "bcef33b2d9177c8e477e3dfbadffa60ab93d1ac792f85e2b2a0984544efa11d9",
+          "segments": 9
+        },
+        {
+          "surah": 85,
+          "file": "ibn-kathir/85.json",
+          "byteSize": 73453,
+          "checksumSha256": "51431b68ff0f3a268bb262fc7a197e1661f904706d3c770b194ec54056ed3640",
+          "segments": 12
+        },
+        {
+          "surah": 86,
+          "file": "ibn-kathir/86.json",
+          "byteSize": 22643,
+          "checksumSha256": "133163a97472a34d00d4569adfd89b75cadc1e0f05def46f769bb0bb4dec9b5c",
+          "segments": 4
+        },
+        {
+          "surah": 87,
+          "file": "ibn-kathir/87.json",
+          "byteSize": 36137,
+          "checksumSha256": "6c3d16c2d647a55f4b3e13e7b1b7bc1e1e6f131e60f6db9fe2274e5d78d58ce1",
+          "segments": 7
+        },
+        {
+          "surah": 88,
+          "file": "ibn-kathir/88.json",
+          "byteSize": 33106,
+          "checksumSha256": "3fa97ce497cdce18266e0359465026d761bff41ae3788375fa8b8d98f59a0582",
+          "segments": 6
+        },
+        {
+          "surah": 89,
+          "file": "ibn-kathir/89.json",
+          "byteSize": 78469,
+          "checksumSha256": "fed0d3ebefdf163f7d93e768f17823bcc08ffb89f3c3118aaa5aa9d09e6603ca",
+          "segments": 13
+        },
+        {
+          "surah": 90,
+          "file": "ibn-kathir/90.json",
+          "byteSize": 46788,
+          "checksumSha256": "4c1d20eb6ec5b349616533ee3b571166aeb0c854535d699e08e90d21593c2cf2",
+          "segments": 8
+        },
+        {
+          "surah": 91,
+          "file": "ibn-kathir/91.json",
+          "byteSize": 30762,
+          "checksumSha256": "c33eb9921e7b88c18b31c937edd2aa762dc9d12cba820c5684522d7f33fe2383",
+          "segments": 6
+        },
+        {
+          "surah": 92,
+          "file": "ibn-kathir/92.json",
+          "byteSize": 46183,
+          "checksumSha256": "3ff420891bf30c5769c1e22ca30084a136acebb3d4df3ba49caa536c31fc679f",
+          "segments": 8
+        },
+        {
+          "surah": 93,
+          "file": "ibn-kathir/93.json",
+          "byteSize": 36268,
+          "checksumSha256": "ae57aec7d184cc3d3eeb7b4ceaa66a1111934b6960401a0a49f339f295c0f74b",
+          "segments": 6
+        },
+        {
+          "surah": 94,
+          "file": "ibn-kathir/94.json",
+          "byteSize": 27450,
+          "checksumSha256": "639a19c7a829ada9b12a134b5461b21f2d284c9ff71ef46faa846b123fe6444a",
+          "segments": 5
+        },
+        {
+          "surah": 95,
+          "file": "ibn-kathir/95.json",
+          "byteSize": 11277,
+          "checksumSha256": "9412169153b5ace00ee3b76cfb107fcc3c524e471a3f45015f6d4c97f275e577",
+          "segments": 2
+        },
+        {
+          "surah": 96,
+          "file": "ibn-kathir/96.json",
+          "byteSize": 26849,
+          "checksumSha256": "bd7fa2e4608d1b6522780231928e6fc285255511c2c787960534e37979871257",
+          "segments": 5
+        },
+        {
+          "surah": 97,
+          "file": "ibn-kathir/97.json",
+          "byteSize": 94654,
+          "checksumSha256": "0d97bea5d639b37dc1e37cab993e32c05cd0d8e72d9164d3a8ba197373216b18",
+          "segments": 15
+        },
+        {
+          "surah": 98,
+          "file": "ibn-kathir/98.json",
+          "byteSize": 22158,
+          "checksumSha256": "62c268814a8d91e15e8d806ce04216e535156b2f9201b0513e5c1c005f874f72",
+          "segments": 5
+        },
+        {
+          "surah": 99,
+          "file": "ibn-kathir/99.json",
+          "byteSize": 31000,
+          "checksumSha256": "1a9285ee1f233397d09bc2616b74c32e7aac28f6dcd47758f27d9936eb034abe",
+          "segments": 5
+        },
+        {
+          "surah": 100,
+          "file": "ibn-kathir/100.json",
+          "byteSize": 17512,
+          "checksumSha256": "0ef5374225ededc945dbd3ef16768203d2dc916374675a1a41c760c1e628d56e",
+          "segments": 4
+        },
+        {
+          "surah": 101,
+          "file": "ibn-kathir/101.json",
+          "byteSize": 19274,
+          "checksumSha256": "9618f5b108eafe4937ce9eb84b553f384762123854d3fa3a9071b596d151443e",
+          "segments": 4
+        },
+        {
+          "surah": 102,
+          "file": "ibn-kathir/102.json",
+          "byteSize": 47022,
+          "checksumSha256": "e2ecbc5ad3594597ab1908515b91d42795ac00d49c7bc526cbbfe48e1f237326",
+          "segments": 8
+        },
+        {
+          "surah": 103,
+          "file": "ibn-kathir/103.json",
+          "byteSize": 2125,
+          "checksumSha256": "1737da0abc0ba3b067bb94e8c65012cf9a19ea432f7c87f8fabf50f535481921",
+          "segments": 1
+        },
+        {
+          "surah": 104,
+          "file": "ibn-kathir/104.json",
+          "byteSize": 8251,
+          "checksumSha256": "34c98ed8489c520926250241811214b8c4bd0e5c54f39e12505683f1f4053af4",
+          "segments": 2
+        },
+        {
+          "surah": 105,
+          "file": "ibn-kathir/105.json",
+          "byteSize": 48148,
+          "checksumSha256": "46253e6eda8c8ff78ffb00fd31705fa798e6d0b5547a752b4e61085e9daff0a4",
+          "segments": 8
+        },
+        {
+          "surah": 106,
+          "file": "ibn-kathir/106.json",
+          "byteSize": 11929,
+          "checksumSha256": "28c4ff9a7dbc7936015a1a446cacb663ae610472de271f8598e37c42d41bdd09",
+          "segments": 2
+        },
+        {
+          "surah": 107,
+          "file": "ibn-kathir/107.json",
+          "byteSize": 29172,
+          "checksumSha256": "c18cf9a602ecb630c866e5b4c6c35ea4dc2cbaa77dc89f2871172395a9a037ff",
+          "segments": 5
+        },
+        {
+          "surah": 108,
+          "file": "ibn-kathir/108.json",
+          "byteSize": 48335,
+          "checksumSha256": "4428fb3f09bdad138bb61bd5c765c16bb2b400d76f6a21a5253a5513fe8622ce",
+          "segments": 9
+        },
+        {
+          "surah": 109,
+          "file": "ibn-kathir/109.json",
+          "byteSize": 13936,
+          "checksumSha256": "f6c713a8e18b5edba15a20f80883e9184b97ea4957e902c7d863df0b81f3b07c",
+          "segments": 2
+        },
+        {
+          "surah": 110,
+          "file": "ibn-kathir/110.json",
+          "byteSize": 30148,
+          "checksumSha256": "61cc5ac1122ea2e2c413125f0fed042ac249fd63d7b1abcd1c3bac32b3339f3a",
+          "segments": 5
+        },
+        {
+          "surah": 111,
+          "file": "ibn-kathir/111.json",
+          "byteSize": 77913,
+          "checksumSha256": "3c38d8a317997e03a6f792c66447004c9a01fcd208371e85e6295c0fd64ad3da",
+          "segments": 13
+        },
+        {
+          "surah": 112,
+          "file": "ibn-kathir/112.json",
+          "byteSize": 41515,
+          "checksumSha256": "2e889658ff5f45a6321063e743210d438cf57c0b0b7b21d5d4b304e5d6cd7866",
+          "segments": 7
+        },
+        {
+          "surah": 113,
+          "file": "ibn-kathir/113.json",
+          "byteSize": 24278,
+          "checksumSha256": "4286c6b2108dd01218ed6538ee2f02a47fc12be453e2d3e88defc51d332a9323",
+          "segments": 4
+        },
+        {
+          "surah": 114,
+          "file": "ibn-kathir/114.json",
+          "byteSize": 789240,
+          "checksumSha256": "0099884e734de46945944e538afa3ea63eca986f4c4451e500a9ec80b2ef4b32",
+          "segments": 177
+        }
+      ]
+    },
+    {
+      "id": 308,
+      "slug": "adwa-al-bayan",
+      "name": "أضواء البيان",
+      "sourceChecksumSha256": "445f96e917e732b98be46f400f3c4fc59cf86a9c78134749a3901974554129b5",
+      "surahs": 114,
+      "segments": 4342,
+      "files": [
+        {
+          "surah": 1,
+          "file": "adwa-al-bayan/1.json",
+          "byteSize": 25728,
+          "checksumSha256": "d7ffbae2830c7e2d41b3cb2f576a94e7128cc15cdc8b6ec901d8fcb9f6e96575",
+          "segments": 5
+        },
+        {
+          "surah": 2,
+          "file": "adwa-al-bayan/2.json",
+          "byteSize": 970879,
+          "checksumSha256": "c80652ee61059e23d7501eb09e76f816a5a755dedb2caaa0c79f7c70e9bc8a7c",
+          "segments": 179
+        },
+        {
+          "surah": 3,
+          "file": "adwa-al-bayan/3.json",
+          "byteSize": 161161,
+          "checksumSha256": "b95b8ef39dc304bb8b91d2526c44314322ab10e09efd5a26cd0902715b385e66",
+          "segments": 31
+        },
+        {
+          "surah": 4,
+          "file": "adwa-al-bayan/4.json",
+          "byteSize": 582721,
+          "checksumSha256": "568c74a3334c4003ef0c7d6c6df681d7eae5b40604abffd5385b2ce5f656bde2",
+          "segments": 106
+        },
+        {
+          "surah": 5,
+          "file": "adwa-al-bayan/5.json",
+          "byteSize": 748161,
+          "checksumSha256": "c4e0ff164d0322feb85d23b08838e8251b872d7beef1db04bc14dc3b80bea1af",
+          "segments": 143
+        },
+        {
+          "surah": 6,
+          "file": "adwa-al-bayan/6.json",
+          "byteSize": 442672,
+          "checksumSha256": "bca598bf6165230fc1b9bd0b2c7bf1c621a2d810dba34bfadef844829eafc0c7",
+          "segments": 81
+        },
+        {
+          "surah": 7,
+          "file": "adwa-al-bayan/7.json",
+          "byteSize": 237544,
+          "checksumSha256": "a7381952a414d64a1b9307108cdf18f374f1070ad71dc3b3654aac0c6806d39f",
+          "segments": 45
+        },
+        {
+          "surah": 8,
+          "file": "adwa-al-bayan/8.json",
+          "byteSize": 341039,
+          "checksumSha256": "1a9fff252d8e1d2a5a63f185aa1b86aaecd16f5b7e482acfb319d39f3c841808",
+          "segments": 65
+        },
+        {
+          "surah": 9,
+          "file": "adwa-al-bayan/9.json",
+          "byteSize": 199059,
+          "checksumSha256": "7828356fcf0efe887e6dfca6e699bcdf7f2b74d52088c16e17d161a9b7171cac",
+          "segments": 38
+        },
+        {
+          "surah": 10,
+          "file": "adwa-al-bayan/10.json",
+          "byteSize": 68387,
+          "checksumSha256": "4aebefb7f66644d1715b077978cb23b5bc3111fba156d6f63737fef70f60b9e0",
+          "segments": 14
+        },
+        {
+          "surah": 11,
+          "file": "adwa-al-bayan/11.json",
+          "byteSize": 193707,
+          "checksumSha256": "7bf40a6b5f5d427f25dca8d360b963a04ec3fe5971d2df4242fb6569234e1e58",
+          "segments": 37
+        },
+        {
+          "surah": 12,
+          "file": "adwa-al-bayan/12.json",
+          "byteSize": 95186,
+          "checksumSha256": "ee96eef8d649a531246507cf721096db0de744e22cff7ff685471cc8d553db46",
+          "segments": 19
+        },
+        {
+          "surah": 13,
+          "file": "adwa-al-bayan/13.json",
+          "byteSize": 109885,
+          "checksumSha256": "68a63618c2b26fd44e9a9faefc6ecdbef9f9e6b5a94d933b9d269c1be578f9d4",
+          "segments": 20
+        },
+        {
+          "surah": 14,
+          "file": "adwa-al-bayan/14.json",
+          "byteSize": 55551,
+          "checksumSha256": "afb9d08e73278c201ddc36f19b85a1c502f28c4d8c530dc16ea3a08cdec6880a",
+          "segments": 11
+        },
+        {
+          "surah": 15,
+          "file": "adwa-al-bayan/15.json",
+          "byteSize": 414049,
+          "checksumSha256": "6a69cbbce2bb4560474562dbf8a04ee56f4b3f03529fa7ff77d02d1537e223e8",
+          "segments": 74
+        },
+        {
+          "surah": 16,
+          "file": "adwa-al-bayan/16.json",
+          "byteSize": 773113,
+          "checksumSha256": "085ca61026998a1f1153beaa9764ecd68495328b7374ee6c60a57007a37bb267",
+          "segments": 144
+        },
+        {
+          "surah": 17,
+          "file": "adwa-al-bayan/17.json",
+          "byteSize": 1028716,
+          "checksumSha256": "971921134b1d14e8ab31a46bd609824338d29932be01548ac9773f86e83192aa",
+          "segments": 188
+        },
+        {
+          "surah": 18,
+          "file": "adwa-al-bayan/18.json",
+          "byteSize": 938936,
+          "checksumSha256": "56b51bd16ca430aa487a0a17dd103798428b236843c92c97caac9be1050b9cf9",
+          "segments": 168
+        },
+        {
+          "surah": 19,
+          "file": "adwa-al-bayan/19.json",
+          "byteSize": 928604,
+          "checksumSha256": "d5f05c4d72bf9f1371024ede5400f04b0bb927871b134e8e2d7eca1a18272bee",
+          "segments": 161
+        },
+        {
+          "surah": 20,
+          "file": "adwa-al-bayan/20.json",
+          "byteSize": 717046,
+          "checksumSha256": "469a92650a7396a69cfc10b189dbe9eb47f3b2f5153a2ea1f1e5f3c4a3dbcd39",
+          "segments": 130
+        },
+        {
+          "surah": 21,
+          "file": "adwa-al-bayan/21.json",
+          "byteSize": 687816,
+          "checksumSha256": "238a41d0b262f25102afe75e545b1878f22186029270fb03162dc171936e85c2",
+          "segments": 121
+        },
+        {
+          "surah": 22,
+          "file": "adwa-al-bayan/22.json",
+          "byteSize": 3177843,
+          "checksumSha256": "bab48b67bfbda45086de5587d48189a385f7e0f4f3bb82b88f4fad03383cee52",
+          "segments": 548
+        },
+        {
+          "surah": 23,
+          "file": "adwa-al-bayan/23.json",
+          "byteSize": 328605,
+          "checksumSha256": "a9bed7b22484c885e5ea5104655a6618224830f137af095032bce1e5c66799a9",
+          "segments": 61
+        },
+        {
+          "surah": 24,
+          "file": "adwa-al-bayan/24.json",
+          "byteSize": 1091024,
+          "checksumSha256": "1518feecc4d382a7fd73dbdf4dc7e32d9604ac74ad909217e345a159f53937e1",
+          "segments": 196
+        },
+        {
+          "surah": 25,
+          "file": "adwa-al-bayan/25.json",
+          "byteSize": 418291,
+          "checksumSha256": "3ce9f4cc3b7556a21b4b7726362240b5212513a8e949f9d0c101cb5daceca5d8",
+          "segments": 83
+        },
+        {
+          "surah": 26,
+          "file": "adwa-al-bayan/26.json",
+          "byteSize": 110008,
+          "checksumSha256": "572c7950d94598154798c4c1e3c759fc24906f3b9b46134d82f245086d2d170a",
+          "segments": 23
+        },
+        {
+          "surah": 27,
+          "file": "adwa-al-bayan/27.json",
+          "byteSize": 220817,
+          "checksumSha256": "b6ce1db7bd13a8c97fbd2052bbf7875b417f4573e6a4102cbc7f9c786be5dc64",
+          "segments": 41
+        },
+        {
+          "surah": 28,
+          "file": "adwa-al-bayan/28.json",
+          "byteSize": 25110,
+          "checksumSha256": "aa88f1d6e7dea4374d9206973ca7242f86607f10e0ed14cde62de4072e26ec22",
+          "segments": 5
+        },
+        {
+          "surah": 29,
+          "file": "adwa-al-bayan/29.json",
+          "byteSize": 40053,
+          "checksumSha256": "5782bdd8dc4f70b5b48e95d507611af6abf6aa859e2b844834982f43241b5ddb",
+          "segments": 9
+        },
+        {
+          "surah": 30,
+          "file": "adwa-al-bayan/30.json",
+          "byteSize": 68086,
+          "checksumSha256": "fedf26954ac539d07822a72e745b225e04f237b9a564816772a068be6a58f657",
+          "segments": 15
+        },
+        {
+          "surah": 31,
+          "file": "adwa-al-bayan/31.json",
+          "byteSize": 16153,
+          "checksumSha256": "941ce392a2fb9131450511dbf3d91dc568975c750e349a7bfa94af14a7a6022c",
+          "segments": 4
+        },
+        {
+          "surah": 32,
+          "file": "adwa-al-bayan/32.json",
+          "byteSize": 23547,
+          "checksumSha256": "30dcdbb354dc884b7e67ae88a08ab6c0f2a854b7ada00c9adc1f44f1ac08d584",
+          "segments": 5
+        },
+        {
+          "surah": 33,
+          "file": "adwa-al-bayan/33.json",
+          "byteSize": 404653,
+          "checksumSha256": "f69d0266af2725139423937bc048fe18c7d97a3a31e6bb023248fc9618b46798",
+          "segments": 73
+        },
+        {
+          "surah": 34,
+          "file": "adwa-al-bayan/34.json",
+          "byteSize": 66522,
+          "checksumSha256": "0d170e08c21b213c28608bce0055db8da23001759bea0c6d777c0ebeb6bbcf13",
+          "segments": 15
+        },
+        {
+          "surah": 35,
+          "file": "adwa-al-bayan/35.json",
+          "byteSize": 46550,
+          "checksumSha256": "04813225e53372f67aca7d17720a86b450b01071ddf0b43c36dee479aa13afeb",
+          "segments": 10
+        },
+        {
+          "surah": 36,
+          "file": "adwa-al-bayan/36.json",
+          "byteSize": 70520,
+          "checksumSha256": "a48fa1ea8a47424215f9b0e11d5542d39b5834e3218d1eea1dcb59b5afaf9ddf",
+          "segments": 15
+        },
+        {
+          "surah": 37,
+          "file": "adwa-al-bayan/37.json",
+          "byteSize": 105734,
+          "checksumSha256": "21c583123708e13f2edb769f4ea003080284f3205d6d1713c3948dab193ff916",
+          "segments": 22
+        },
+        {
+          "surah": 38,
+          "file": "adwa-al-bayan/38.json",
+          "byteSize": 129200,
+          "checksumSha256": "0dd3af8b5470e2d9344f9f723cf8bb51a101c701d0c8a723b1fee483129ff9c5",
+          "segments": 28
+        },
+        {
+          "surah": 39,
+          "file": "adwa-al-bayan/39.json",
+          "byteSize": 93049,
+          "checksumSha256": "9cfca708405e23d5632148ea3a739899fe85950a4e4ea9dcae9fef907ec747f1",
+          "segments": 21
+        },
+        {
+          "surah": 40,
+          "file": "adwa-al-bayan/40.json",
+          "byteSize": 120614,
+          "checksumSha256": "6a4ed5246c2b3a97ff54ef16fd965c1ccc39ea74b1e90f502735a7ed9821319f",
+          "segments": 26
+        },
+        {
+          "surah": 41,
+          "file": "adwa-al-bayan/41.json",
+          "byteSize": 152111,
+          "checksumSha256": "18e46c5da8ef38a4456329d4d89bc0eebff9da29b365b5d41d955ad01742ec7b",
+          "segments": 34
+        },
+        {
+          "surah": 42,
+          "file": "adwa-al-bayan/42.json",
+          "byteSize": 211312,
+          "checksumSha256": "6235b254087ba768980eb39f680c01b4c282005f4b660fd13142474774cece35",
+          "segments": 45
+        },
+        {
+          "surah": 43,
+          "file": "adwa-al-bayan/43.json",
+          "byteSize": 402511,
+          "checksumSha256": "5c063be672ca4cd8a93d364695c83e0e74b746cd060515b11509e57fd756289d",
+          "segments": 90
+        },
+        {
+          "surah": 44,
+          "file": "adwa-al-bayan/44.json",
+          "byteSize": 26883,
+          "checksumSha256": "bc2b419a0ca35ad40c7b878321b8c0cdd0b9e7af8f8068a8e36c91301540832d",
+          "segments": 7
+        },
+        {
+          "surah": 45,
+          "file": "adwa-al-bayan/45.json",
+          "byteSize": 127462,
+          "checksumSha256": "d31ae19b53db1f7feaec0e576a94a720e351a03b11d73da93e563849ac6ef74a",
+          "segments": 28
+        },
+        {
+          "surah": 46,
+          "file": "adwa-al-bayan/46.json",
+          "byteSize": 170848,
+          "checksumSha256": "592d6b2c217878912de55f263f654b0472d241d25693b31c6afc253ec030a039",
+          "segments": 37
+        },
+        {
+          "surah": 47,
+          "file": "adwa-al-bayan/47.json",
+          "byteSize": 669491,
+          "checksumSha256": "c929a031c4ed19a9eb4f2015f478e32b5f758e2200ebce788518d1aa48a0f470",
+          "segments": 149
+        },
+        {
+          "surah": 48,
+          "file": "adwa-al-bayan/48.json",
+          "byteSize": 27635,
+          "checksumSha256": "6c83729bda123366def72515d4bbd22b87e8ade4ab839b30c5389f6b02155266",
+          "segments": 7
+        },
+        {
+          "surah": 49,
+          "file": "adwa-al-bayan/49.json",
+          "byteSize": 105120,
+          "checksumSha256": "07adebf413239be5b10e1394a07562e887ce6f201cc4af60f3c6196d7abc0e30",
+          "segments": 22
+        },
+        {
+          "surah": 50,
+          "file": "adwa-al-bayan/50.json",
+          "byteSize": 54594,
+          "checksumSha256": "095b3f13d8479c71dbaebc961c3a1072106638ad73627f842772d611a52d82ec",
+          "segments": 12
+        },
+        {
+          "surah": 51,
+          "file": "adwa-al-bayan/51.json",
+          "byteSize": 78850,
+          "checksumSha256": "561ef9a4490c1b4d8de6052bb6153cfa65b954e19046435d064fd092b584a8c5",
+          "segments": 17
+        },
+        {
+          "surah": 52,
+          "file": "adwa-al-bayan/52.json",
+          "byteSize": 49833,
+          "checksumSha256": "c73eb2d4c19f21d5cdd59427aac7e80dce19f4e53c63a3640ee09dca602730fa",
+          "segments": 11
+        },
+        {
+          "surah": 53,
+          "file": "adwa-al-bayan/53.json",
+          "byteSize": 63146,
+          "checksumSha256": "ecd2007ad74bbe94fd3fe5b7f9f6c0bde65751de580ad5b0c9cfade0e09c895b",
+          "segments": 14
+        },
+        {
+          "surah": 54,
+          "file": "adwa-al-bayan/54.json",
+          "byteSize": 49947,
+          "checksumSha256": "6eaea3575217ab2a26453133ff6adaf38c5194b1083455b190bb3852c10b217d",
+          "segments": 12
+        },
+        {
+          "surah": 55,
+          "file": "adwa-al-bayan/55.json",
+          "byteSize": 89438,
+          "checksumSha256": "767a8f1e57496d7df7e9ab4689873adfc86c5f24767c5f7cae31912004c5c43a",
+          "segments": 20
+        },
+        {
+          "surah": 56,
+          "file": "adwa-al-bayan/56.json",
+          "byteSize": 152044,
+          "checksumSha256": "e90e0b9fc8db5ed9e631dc04e523e65eda58d86757d3a6fde3666b32ff12ff78",
+          "segments": 32
+        },
+        {
+          "surah": 57,
+          "file": "adwa-al-bayan/57.json",
+          "byteSize": 57131,
+          "checksumSha256": "5abbc6ecaec9b22c93c916dc95984289196587928ff4fd14102f53649c617d33",
+          "segments": 12
+        },
+        {
+          "surah": 58,
+          "file": "adwa-al-bayan/58.json",
+          "byteSize": 27659,
+          "checksumSha256": "da27b1d090826dc7ee07f32d5c14ff880a135e7e666bb9bbf61ed4f92e8af012",
+          "segments": 6
+        },
+        {
+          "surah": 59,
+          "file": "adwa-al-bayan/59.json",
+          "byteSize": 385798,
+          "checksumSha256": "37afa240c1aed7fa30e1226358381ea4930ee16cb2c5b0b1b9b60d8c9d2720a8",
+          "segments": 76
+        },
+        {
+          "surah": 60,
+          "file": "adwa-al-bayan/60.json",
+          "byteSize": 128341,
+          "checksumSha256": "708e4395d0fef29300aa2ebdc54f870a501c14c812972f372f8beb867280331e",
+          "segments": 25
+        },
+        {
+          "surah": 61,
+          "file": "adwa-al-bayan/61.json",
+          "byteSize": 50957,
+          "checksumSha256": "48b197e55fcc1e56c5198cdb28a4d3806ee1c4681ffa561cbdcfe7c97acd8618",
+          "segments": 11
+        },
+        {
+          "surah": 62,
+          "file": "adwa-al-bayan/62.json",
+          "byteSize": 371267,
+          "checksumSha256": "c106a66354179d277e1da113eb57d1aa07c609a77cb3211c6f8d40a9ae8e514f",
+          "segments": 73
+        },
+        {
+          "surah": 63,
+          "file": "adwa-al-bayan/63.json",
+          "byteSize": 37330,
+          "checksumSha256": "91d1fe62356bb3106a835967a5be1c9f6a477af73f8db188f10f13ead2c487b7",
+          "segments": 9
+        },
+        {
+          "surah": 64,
+          "file": "adwa-al-bayan/64.json",
+          "byteSize": 46094,
+          "checksumSha256": "dcd1d578be3c85be9ac7e53c5b4aad32bf36ed4779ba79040a2f0db5886f1170",
+          "segments": 11
+        },
+        {
+          "surah": 65,
+          "file": "adwa-al-bayan/65.json",
+          "byteSize": 49994,
+          "checksumSha256": "2286f1c9d7a395331819d780c0b71bf5ff800bceeeee886a047357b07616d8c0",
+          "segments": 11
+        },
+        {
+          "surah": 66,
+          "file": "adwa-al-bayan/66.json",
+          "byteSize": 39288,
+          "checksumSha256": "544df7366ef1b05d021784d46731c81da270ab4e6080da123c72eafcb8cb69b7",
+          "segments": 9
+        },
+        {
+          "surah": 67,
+          "file": "adwa-al-bayan/67.json",
+          "byteSize": 75502,
+          "checksumSha256": "3ec4bdf14598a8ae8b13297e0294f8056ed6671845e391034a57f1537c85b860",
+          "segments": 17
+        },
+        {
+          "surah": 68,
+          "file": "adwa-al-bayan/68.json",
+          "byteSize": 53220,
+          "checksumSha256": "7b671725715ff9432a0d28eb9f0371821923ba675595faaa08e8f49df5da4b18",
+          "segments": 12
+        },
+        {
+          "surah": 69,
+          "file": "adwa-al-bayan/69.json",
+          "byteSize": 28525,
+          "checksumSha256": "abcf7534e37f767c31b948e3d695a1bda2688934ef75c3af3c246b000ee17121",
+          "segments": 7
+        },
+        {
+          "surah": 70,
+          "file": "adwa-al-bayan/70.json",
+          "byteSize": 188600,
+          "checksumSha256": "55d05c6d3491374a0ebb1c70125726f816195c757d39d6630c4e2de4b101ec41",
+          "segments": 42
+        },
+        {
+          "surah": 71,
+          "file": "adwa-al-bayan/71.json",
+          "byteSize": 46851,
+          "checksumSha256": "9ad6675d2f10c5365e310f30f406fceb9274cf05db4fee9591fb658ea374b05f",
+          "segments": 11
+        },
+        {
+          "surah": 72,
+          "file": "adwa-al-bayan/72.json",
+          "byteSize": 193052,
+          "checksumSha256": "f8e6b8b9e843581f5ca16d39ddf999a2efe8768c12cd11a9e591147872840fb0",
+          "segments": 40
+        },
+        {
+          "surah": 73,
+          "file": "adwa-al-bayan/73.json",
+          "byteSize": 16806,
+          "checksumSha256": "401988b789c5609c2bd34f181099d02fe3a75ea784fca648fd8fa1ce5409333e",
+          "segments": 4
+        },
+        {
+          "surah": 74,
+          "file": "adwa-al-bayan/74.json",
+          "byteSize": 32389,
+          "checksumSha256": "fc28a2c9d8babf041c6ff306902f71e32dc8d5f1c8d11743a50681e12150c8fd",
+          "segments": 8
+        },
+        {
+          "surah": 75,
+          "file": "adwa-al-bayan/75.json",
+          "byteSize": 37604,
+          "checksumSha256": "813c6cf41e16c5ea753d4a722d3b02f5a821078f0c6255ce95e1082c96c6b412",
+          "segments": 9
+        },
+        {
+          "surah": 76,
+          "file": "adwa-al-bayan/76.json",
+          "byteSize": 102476,
+          "checksumSha256": "a463fffbb9754132913e89db08780a7c747e5a3be2abf4da775e117cab3d7b23",
+          "segments": 22
+        },
+        {
+          "surah": 77,
+          "file": "adwa-al-bayan/77.json",
+          "byteSize": 22393,
+          "checksumSha256": "55bfd5eca78dd1e62e88e6714b713052de7bd9596932b70acbb7cdaa1859a9af",
+          "segments": 6
+        },
+        {
+          "surah": 78,
+          "file": "adwa-al-bayan/78.json",
+          "byteSize": 38388,
+          "checksumSha256": "65eca726168936c8b1855bcd21bf8089a9ecb0fee4400b4bb581bb322281d95b",
+          "segments": 9
+        },
+        {
+          "surah": 79,
+          "file": "adwa-al-bayan/79.json",
+          "byteSize": 62970,
+          "checksumSha256": "c9eb485d8e605412f113ca138caf0b159347c4ab0b4f31a1cc4e09e27a993de7",
+          "segments": 15
+        },
+        {
+          "surah": 80,
+          "file": "adwa-al-bayan/80.json",
+          "byteSize": 32787,
+          "checksumSha256": "35bd1844c8a68988d8aa21facc980578096f814c80fcef14b112f06a0f717f72",
+          "segments": 7
+        },
+        {
+          "surah": 81,
+          "file": "adwa-al-bayan/81.json",
+          "byteSize": 48266,
+          "checksumSha256": "42a1158a2306af105002e3d0e8f1f26c3f2f2bc9c9bd13816cd997b22b60f475",
+          "segments": 12
+        },
+        {
+          "surah": 82,
+          "file": "adwa-al-bayan/82.json",
+          "byteSize": 16111,
+          "checksumSha256": "a442d7007d5e26a648c3f457f59b07ddf845ba67115a18bfa2ce44da01b79f82",
+          "segments": 5
+        },
+        {
+          "surah": 83,
+          "file": "adwa-al-bayan/83.json",
+          "byteSize": 47696,
+          "checksumSha256": "db189ab1e5a697fbc8253e15936566be6b83cfe74fa1efc09ab479d99cddff78",
+          "segments": 12
+        },
+        {
+          "surah": 84,
+          "file": "adwa-al-bayan/84.json",
+          "byteSize": 40927,
+          "checksumSha256": "dd17a7b884ee9144c9adabb2633de0954b0b97a54c5804e7e9f00db7b32f149d",
+          "segments": 10
+        },
+        {
+          "surah": 85,
+          "file": "adwa-al-bayan/85.json",
+          "byteSize": 61869,
+          "checksumSha256": "f360e24c027ce122d86d357debefc9da6bfa70459ad55e0b1626cbc783eb8777",
+          "segments": 14
+        },
+        {
+          "surah": 86,
+          "file": "adwa-al-bayan/86.json",
+          "byteSize": 32811,
+          "checksumSha256": "b3d619d1a04c641a5083dd41f64fbfbb6868ff4f898e118b3965efc888b5578d",
+          "segments": 8
+        },
+        {
+          "surah": 87,
+          "file": "adwa-al-bayan/87.json",
+          "byteSize": 41574,
+          "checksumSha256": "c015d8264b0eaef76ca5ac84d18ae00c004f8c67302088980905e5abb5696153",
+          "segments": 10
+        },
+        {
+          "surah": 88,
+          "file": "adwa-al-bayan/88.json",
+          "byteSize": 56684,
+          "checksumSha256": "b26c5484c0130cc41b6656c59275c0df5332cfa47ed442175b1728b1e645c910",
+          "segments": 13
+        },
+        {
+          "surah": 89,
+          "file": "adwa-al-bayan/89.json",
+          "byteSize": 32793,
+          "checksumSha256": "a908fe7d629da5b8eca4c9af6efebda543b863d65af0e1f5e949ec7053279f43",
+          "segments": 8
+        },
+        {
+          "surah": 90,
+          "file": "adwa-al-bayan/90.json",
+          "byteSize": 28447,
+          "checksumSha256": "bf48f0f5f071f4996e76a026f87fab2751aed7db2c2af50838e1a856c52416f7",
+          "segments": 7
+        },
+        {
+          "surah": 91,
+          "file": "adwa-al-bayan/91.json",
+          "byteSize": 35742,
+          "checksumSha256": "0fb232ff1efa8fe0e5c2572d8ceb8fcb03eb22edfc3576f8f36db5d9ef621337",
+          "segments": 8
+        },
+        {
+          "surah": 92,
+          "file": "adwa-al-bayan/92.json",
+          "byteSize": 44844,
+          "checksumSha256": "fe016657469239b8f3e24a860aefc627502808ea4bbcbc841791cfc721d9108b",
+          "segments": 10
+        },
+        {
+          "surah": 93,
+          "file": "adwa-al-bayan/93.json",
+          "byteSize": 84461,
+          "checksumSha256": "a659c5e2e9c32b472692758ad49c0268ff2c45d4af9eb5dcee58252f31786760",
+          "segments": 18
+        },
+        {
+          "surah": 94,
+          "file": "adwa-al-bayan/94.json",
+          "byteSize": 41327,
+          "checksumSha256": "3953c182cd666ac5ba39fa8f859f348ff6bac4fdc96478665cc21223672f7e0a",
+          "segments": 9
+        },
+        {
+          "surah": 95,
+          "file": "adwa-al-bayan/95.json",
+          "byteSize": 41393,
+          "checksumSha256": "06f05f5f080fb5a06226706d12b5376c71aeb86eca5e341a85ef26a8307aaf3c",
+          "segments": 9
+        },
+        {
+          "surah": 96,
+          "file": "adwa-al-bayan/96.json",
+          "byteSize": 86165,
+          "checksumSha256": "f656f1be5feb6778ba07c2f0e9f99f294bf2452cc823ffd9913a305030a8acde",
+          "segments": 18
+        },
+        {
+          "surah": 97,
+          "file": "adwa-al-bayan/97.json",
+          "byteSize": 36421,
+          "checksumSha256": "97addcf3088476d850202daf157b15378420fc2f403b48e57c18cab2434c0ef4",
+          "segments": 9
+        },
+        {
+          "surah": 98,
+          "file": "adwa-al-bayan/98.json",
+          "byteSize": 74202,
+          "checksumSha256": "da192072f0fc6000c1013d4a959e26170872abdce1826e4102f464efcf398a43",
+          "segments": 17
+        },
+        {
+          "surah": 99,
+          "file": "adwa-al-bayan/99.json",
+          "byteSize": 20239,
+          "checksumSha256": "04dfdef1431c0ffe6926db89e0c7e5afdc3580f30bdd5912ae3d5ea8a84bd1b5",
+          "segments": 5
+        },
+        {
+          "surah": 100,
+          "file": "adwa-al-bayan/100.json",
+          "byteSize": 31120,
+          "checksumSha256": "22dc39ec87d3ae340aa92a6eca411ad399d183b8966530b95c89c251b76cc6b7",
+          "segments": 9
+        },
+        {
+          "surah": 101,
+          "file": "adwa-al-bayan/101.json",
+          "byteSize": 19325,
+          "checksumSha256": "783749ccf7de66be2f440cfc1a3f8291cd545517303d129291150b83f379b700",
+          "segments": 6
+        },
+        {
+          "surah": 102,
+          "file": "adwa-al-bayan/102.json",
+          "byteSize": 43107,
+          "checksumSha256": "5a57fedba0242866e27734a909a795b0de98d32d530c05b41c7f94203ea19d1f",
+          "segments": 11
+        },
+        {
+          "surah": 103,
+          "file": "adwa-al-bayan/103.json",
+          "byteSize": 49031,
+          "checksumSha256": "c7cba6415eea2c6d284394b75f4479d10799e85e8c26670615e3948225fda921",
+          "segments": 12
+        },
+        {
+          "surah": 104,
+          "file": "adwa-al-bayan/104.json",
+          "byteSize": 12217,
+          "checksumSha256": "2cd9a1f388d7719b86409a10722020b9dbb62a347369eda625ff77ad3418e335",
+          "segments": 4
+        },
+        {
+          "surah": 105,
+          "file": "adwa-al-bayan/105.json",
+          "byteSize": 22737,
+          "checksumSha256": "05e84f777ceacd8d23203e2bffa779decc2b0104e9967ac035afbbdb4af51bc6",
+          "segments": 6
+        },
+        {
+          "surah": 106,
+          "file": "adwa-al-bayan/106.json",
+          "byteSize": 16061,
+          "checksumSha256": "63b0bd6c4831ab5126672e02eb95f1cf1d408b99b257eeba98a592bd7d8a9b20",
+          "segments": 5
+        },
+        {
+          "surah": 107,
+          "file": "adwa-al-bayan/107.json",
+          "byteSize": 45711,
+          "checksumSha256": "64baa9512de2e952cb79305d4a482d49fa67c137f6bbd4ab2042285409b4df95",
+          "segments": 12
+        },
+        {
+          "surah": 108,
+          "file": "adwa-al-bayan/108.json",
+          "byteSize": 23652,
+          "checksumSha256": "6df811d1c0fdba7b7b143fb730b3682ecf1c2b618dd246780ebe731bc786739e",
+          "segments": 6
+        },
+        {
+          "surah": 109,
+          "file": "adwa-al-bayan/109.json",
+          "byteSize": 18824,
+          "checksumSha256": "027ad23c4f7c120210851e551d0e13a766359472ad34bdb6980698cf76bc68e9",
+          "segments": 5
+        },
+        {
+          "surah": 110,
+          "file": "adwa-al-bayan/110.json",
+          "byteSize": 26606,
+          "checksumSha256": "7b475ba2c92f39accba7e4ccfa195b2109aa77895a40458a46296fd6ee79e828",
+          "segments": 6
+        },
+        {
+          "surah": 111,
+          "file": "adwa-al-bayan/111.json",
+          "byteSize": 11548,
+          "checksumSha256": "b32a39db026a9d1e8a3538814630e7c4ff205e3f5c4ef88c6ad5e965ac499c69",
+          "segments": 4
+        },
+        {
+          "surah": 112,
+          "file": "adwa-al-bayan/112.json",
+          "byteSize": 41456,
+          "checksumSha256": "ed8fde2cc117cffa3b361bc211d77b3ca7d9892e679ee84f8b5b8c8cb626e6fc",
+          "segments": 11
+        },
+        {
+          "surah": 113,
+          "file": "adwa-al-bayan/113.json",
+          "byteSize": 51030,
+          "checksumSha256": "ed8db23439586ae46eba38b43616dfb4e1da7ecb5d5c07a0464417493dbd4b4d",
+          "segments": 13
+        },
+        {
+          "surah": 114,
+          "file": "adwa-al-bayan/114.json",
+          "byteSize": 272370,
+          "checksumSha256": "c57fa5bbf30d447c8e0f5f224420c2a42a0e559cdacf5935aebc19ca8ec29ad5",
+          "segments": 61
+        }
+      ]
+    },
+    {
+      "id": 66703,
+      "slug": "fi-zilal",
+      "name": "في ظلال القرآن",
+      "sourceChecksumSha256": "8aec169b5904d137e11dcb9c46a18dc74623dfcb7b5befea668eefd25632a0c6",
+      "surahs": 114,
+      "segments": 314,
+      "files": [
+        {
+          "surah": 1,
+          "file": "fi-zilal/1.json",
+          "byteSize": 76065,
+          "checksumSha256": "d58983094041dba100608b76ab4a9454c27e39601f099d3e031daee0fb531f46",
+          "segments": 1
+        },
+        {
+          "surah": 2,
+          "file": "fi-zilal/2.json",
+          "byteSize": 1575617,
+          "checksumSha256": "0dab34ed629d8085d0e638c227cca9489e7c64941a8ac181042eacf337d1af90",
+          "segments": 21
+        },
+        {
+          "surah": 3,
+          "file": "fi-zilal/3.json",
+          "byteSize": 1075747,
+          "checksumSha256": "14af089751520cb3cef6ae103a1163450d3dd110fccfdad17d1cb469b7c313f6",
+          "segments": 7
+        },
+        {
+          "surah": 4,
+          "file": "fi-zilal/4.json",
+          "byteSize": 1270662,
+          "checksumSha256": "9245350c4fe5f61ee1870500873d25f88b996c661ef1e9367bbe5c66acdd1c38",
+          "segments": 16
+        },
+        {
+          "surah": 5,
+          "file": "fi-zilal/5.json",
+          "byteSize": 979233,
+          "checksumSha256": "8533225d6b88b943d5c5e5297eef87cb2023a470420b78ab5dd35aae9341bf9a",
+          "segments": 9
+        },
+        {
+          "surah": 6,
+          "file": "fi-zilal/6.json",
+          "byteSize": 1085698,
+          "checksumSha256": "c45f2e04c79f0209fa884890dc1fd58bc1865b0d83564dc056876491471cb21d",
+          "segments": 17
+        },
+        {
+          "surah": 7,
+          "file": "fi-zilal/7.json",
+          "byteSize": 1083792,
+          "checksumSha256": "aa9aff04df3e27e127055e003229b070670a55c0d7e3c91b8b9e8e6f19d7ad4d",
+          "segments": 11
+        },
+        {
+          "surah": 8,
+          "file": "fi-zilal/8.json",
+          "byteSize": 562723,
+          "checksumSha256": "7a8f92cfa3764517e15b8ac67dfc0b64f0ecf8bc94881c85278165d2f45fb6d7",
+          "segments": 4
+        },
+        {
+          "surah": 9,
+          "file": "fi-zilal/9.json",
+          "byteSize": 854820,
+          "checksumSha256": "d1e683c4aa7c23bfd173bd125c99c1b940be5d37a0732fa4765ba3c341110f47",
+          "segments": 8
+        },
+        {
+          "surah": 10,
+          "file": "fi-zilal/10.json",
+          "byteSize": 395414,
+          "checksumSha256": "4b4e90be6d4044a6bdc23cea82d3b09a4c6d044532d46b824f9b32ccbfc90f21",
+          "segments": 4
+        },
+        {
+          "surah": 11,
+          "file": "fi-zilal/11.json",
+          "byteSize": 569074,
+          "checksumSha256": "baf3fa9ec9a2bbb6ce7ece6a31ec6301b44d7948cd0071495357a1beb1837ec2",
+          "segments": 7
+        },
+        {
+          "surah": 12,
+          "file": "fi-zilal/12.json",
+          "byteSize": 292521,
+          "checksumSha256": "d46adbac69909660f60a52bc8bd89f97480133a7e6b428708f3e0055cd9abe14",
+          "segments": 6
+        },
+        {
+          "surah": 13,
+          "file": "fi-zilal/13.json",
+          "byteSize": 196569,
+          "checksumSha256": "0708a884fd6d1fc1184ac82e16a784f42a12150d605b991d45514eae72934e56",
+          "segments": 2
+        },
+        {
+          "surah": 14,
+          "file": "fi-zilal/14.json",
+          "byteSize": 175689,
+          "checksumSha256": "5c15121ec8a772d95d505a02771a7a281c194a7bfe4be565be4336224084cb00",
+          "segments": 2
+        },
+        {
+          "surah": 15,
+          "file": "fi-zilal/15.json",
+          "byteSize": 147227,
+          "checksumSha256": "ebaa8753736145be5f5d7c64235908c584867d428d4d9d5fee2d977a2b48d521",
+          "segments": 5
+        },
+        {
+          "surah": 16,
+          "file": "fi-zilal/16.json",
+          "byteSize": 235053,
+          "checksumSha256": "bfd7700b65da2b831136ebef596fdbac28187c91f99df7978a2b63dc6656d351",
+          "segments": 6
+        },
+        {
+          "surah": 17,
+          "file": "fi-zilal/17.json",
+          "byteSize": 235674,
+          "checksumSha256": "02a5110e59dbf5e1e6aacc1351426e9b535b9178b5ca07a359785a17962aa6ef",
+          "segments": 5
+        },
+        {
+          "surah": 18,
+          "file": "fi-zilal/18.json",
+          "byteSize": 182162,
+          "checksumSha256": "e8a56a0ac66d680193ce8ab81f025baa15258d1d581835af597af928dc716b92",
+          "segments": 5
+        },
+        {
+          "surah": 19,
+          "file": "fi-zilal/19.json",
+          "byteSize": 117641,
+          "checksumSha256": "f59861ba3cc302d62c6db47d63e6747d9f42f3b61e79d215c8e2c8743057b0ea",
+          "segments": 3
+        },
+        {
+          "surah": 20,
+          "file": "fi-zilal/20.json",
+          "byteSize": 171643,
+          "checksumSha256": "37bcb305640d6d002afbb6dc43da6939ae9c4d9f0091cf408519620c8a51aed8",
+          "segments": 2
+        },
+        {
+          "surah": 21,
+          "file": "fi-zilal/21.json",
+          "byteSize": 187729,
+          "checksumSha256": "9274188e856b9c3eed0720d59e78adad70bc8fec59fdbaeb8b99a64c94d9155d",
+          "segments": 4
+        },
+        {
+          "surah": 22,
+          "file": "fi-zilal/22.json",
+          "byteSize": 215214,
+          "checksumSha256": "0fb5bef408bb422bc3d8138c71beaa9b068ebbbe273a6f880f00191e487190a3",
+          "segments": 4
+        },
+        {
+          "surah": 23,
+          "file": "fi-zilal/23.json",
+          "byteSize": 151747,
+          "checksumSha256": "f2ca54f7c8242c08f7cfbdb539f5ee4d2a0d36a0b808a3fbc79d545b71866ab5",
+          "segments": 4
+        },
+        {
+          "surah": 24,
+          "file": "fi-zilal/24.json",
+          "byteSize": 268361,
+          "checksumSha256": "b53c607e500a4a44eaa83a3e79c3df2a73ea4ae3fe4e610633c1f6c3f705ac7b",
+          "segments": 5
+        },
+        {
+          "surah": 25,
+          "file": "fi-zilal/25.json",
+          "byteSize": 195701,
+          "checksumSha256": "b99fff57231604ce2e5788a2a2921250c7269fc2ce60d83cf6b822526f15cc56",
+          "segments": 4
+        },
+        {
+          "surah": 26,
+          "file": "fi-zilal/26.json",
+          "byteSize": 191387,
+          "checksumSha256": "3eef0dce0555964e29887f4eb1890d42cc5e8696dd71a36a4d742468f6960fac",
+          "segments": 9
+        },
+        {
+          "surah": 27,
+          "file": "fi-zilal/27.json",
+          "byteSize": 207269,
+          "checksumSha256": "d0d4e2f03e463ae5f4d082f6241410427722df30d80ce5513e6a43d4cb8d1e6f",
+          "segments": 6
+        },
+        {
+          "surah": 28,
+          "file": "fi-zilal/28.json",
+          "byteSize": 225816,
+          "checksumSha256": "bba764c2a305c6a0d343b3658f2ccc034ccd88ae396e18c359d1d97244c4dd5b",
+          "segments": 4
+        },
+        {
+          "surah": 29,
+          "file": "fi-zilal/29.json",
+          "byteSize": 149872,
+          "checksumSha256": "6f154c45f6967fe3f8803e56a0914c6db6c69ff838e657a3b8f9b633edf996f6",
+          "segments": 3
+        },
+        {
+          "surah": 30,
+          "file": "fi-zilal/30.json",
+          "byteSize": 129473,
+          "checksumSha256": "66c84d2298ef857c471b66d3c371170e342b6dc17d23a1adfaccd56bee1cb558",
+          "segments": 2
+        },
+        {
+          "surah": 31,
+          "file": "fi-zilal/31.json",
+          "byteSize": 108557,
+          "checksumSha256": "e588d074a7438deb976a9c9694c2f23bfd7f6b1e986b3a1712f680f1dcaaafee",
+          "segments": 2
+        },
+        {
+          "surah": 32,
+          "file": "fi-zilal/32.json",
+          "byteSize": 75414,
+          "checksumSha256": "69c7dc2727c2c3c2626466019f8a6a020b0070bf84a67a6a82b08c86c9481978",
+          "segments": 1
+        },
+        {
+          "surah": 33,
+          "file": "fi-zilal/33.json",
+          "byteSize": 328967,
+          "checksumSha256": "1f6473315725a5445cdcadbf7492b159d9d1cc984701bf57e7924733802cd779",
+          "segments": 6
+        },
+        {
+          "surah": 34,
+          "file": "fi-zilal/34.json",
+          "byteSize": 142663,
+          "checksumSha256": "deee3680930c04e80baaffb5990c19111aaa1b6a0db72a8cd5356d868784af82",
+          "segments": 5
+        },
+        {
+          "surah": 35,
+          "file": "fi-zilal/35.json",
+          "byteSize": 154764,
+          "checksumSha256": "d944a6193cf542d3459313c44ef61625f26174cd77984878a8fc6ec15e5d1c91",
+          "segments": 6
+        },
+        {
+          "surah": 36,
+          "file": "fi-zilal/36.json",
+          "byteSize": 116023,
+          "checksumSha256": "97347508db06009a57a27c1db662cf45b7ebc9a7c7f8151e732f710bef0f0f09",
+          "segments": 3
+        },
+        {
+          "surah": 37,
+          "file": "fi-zilal/37.json",
+          "byteSize": 107983,
+          "checksumSha256": "97db2e4cee4b7c12e1cdc2e04c34e4bc6e4ca35f8e2d894ba65e81c8969a9101",
+          "segments": 3
+        },
+        {
+          "surah": 38,
+          "file": "fi-zilal/38.json",
+          "byteSize": 123152,
+          "checksumSha256": "f042c78ea0c0516d932ad60d59be9826b3d8b40a194749302e6ec02ddfa8533b",
+          "segments": 4
+        },
+        {
+          "surah": 39,
+          "file": "fi-zilal/39.json",
+          "byteSize": 143384,
+          "checksumSha256": "8c585c9afdc02ddcd1b081f34f7a0f97d2128109452812945ae85d0524aaac46",
+          "segments": 8
+        },
+        {
+          "surah": 40,
+          "file": "fi-zilal/40.json",
+          "byteSize": 189053,
+          "checksumSha256": "d1c6edb33d5631b0f2ee1da98c43bc094a50881408e1bb7e0adbde5a855f7cf6",
+          "segments": 4
+        },
+        {
+          "surah": 41,
+          "file": "fi-zilal/41.json",
+          "byteSize": 139564,
+          "checksumSha256": "0d98fa6a2c5aceadf2d35bd5d7b91d57a2d6a80cd3a79add6af02a8def7dfa08",
+          "segments": 2
+        },
+        {
+          "surah": 42,
+          "file": "fi-zilal/42.json",
+          "byteSize": 186013,
+          "checksumSha256": "6241876d42aa6ce4a22d81b64ab77f455ab5a638a97bde4d25186af58b5ae5b4",
+          "segments": 2
+        },
+        {
+          "surah": 43,
+          "file": "fi-zilal/43.json",
+          "byteSize": 157158,
+          "checksumSha256": "faa406312cf8828d7ebe091edff3018a38fd48100f2bf2036cdf0e0bcdddfe98",
+          "segments": 3
+        },
+        {
+          "surah": 44,
+          "file": "fi-zilal/44.json",
+          "byteSize": 65808,
+          "checksumSha256": "5bd4501d7f3ab85aa7fbca715e310ec7ea24826e1b242a66725dd8d3a8173307",
+          "segments": 1
+        },
+        {
+          "surah": 45,
+          "file": "fi-zilal/45.json",
+          "byteSize": 87671,
+          "checksumSha256": "fa1dde7a3db0db113cf650347a39355ddbcd80951775c0ef6b4cb5c988c216da",
+          "segments": 2
+        },
+        {
+          "surah": 46,
+          "file": "fi-zilal/46.json",
+          "byteSize": 128212,
+          "checksumSha256": "9814546a9872f9a7b0c1717465424d003fd22c6bd4ef9d6ca38094ccbec0c88d",
+          "segments": 4
+        },
+        {
+          "surah": 47,
+          "file": "fi-zilal/47.json",
+          "byteSize": 137325,
+          "checksumSha256": "fe6e0629000e54df10bcc8fa34c150d85bc9a05d7efc3ee62daf626d00604e5a",
+          "segments": 3
+        },
+        {
+          "surah": 48,
+          "file": "fi-zilal/48.json",
+          "byteSize": 149901,
+          "checksumSha256": "eea33e538d719e4acd73ef630976369ed2923051012461c03b1c173a28363ca0",
+          "segments": 2
+        },
+        {
+          "surah": 49,
+          "file": "fi-zilal/49.json",
+          "byteSize": 103153,
+          "checksumSha256": "bfff1e401c8349d53c8e188246fce2f237bdd83cf3a74d28b5057d91da64ecc8",
+          "segments": 1
+        },
+        {
+          "surah": 50,
+          "file": "fi-zilal/50.json",
+          "byteSize": 64541,
+          "checksumSha256": "9b87d7fc2015e8b1308da6b45524776ede6624a3acda2d591a15aa79800dd6be",
+          "segments": 1
+        },
+        {
+          "surah": 51,
+          "file": "fi-zilal/51.json",
+          "byteSize": 88629,
+          "checksumSha256": "711e293acb9c6e74cc55086a952c2a383f81a64b5c0b162a4a73a2d038325ff5",
+          "segments": 1
+        },
+        {
+          "surah": 52,
+          "file": "fi-zilal/52.json",
+          "byteSize": 63906,
+          "checksumSha256": "9e56ffb841d856ff41787030e19d55f171ac40c6f2083935f0e700f13cbbd7d1",
+          "segments": 1
+        },
+        {
+          "surah": 53,
+          "file": "fi-zilal/53.json",
+          "byteSize": 97789,
+          "checksumSha256": "9b4d23b7e5634c7daa594d0a739e8cca58570345c573c7685497bb3902e3d103",
+          "segments": 1
+        },
+        {
+          "surah": 54,
+          "file": "fi-zilal/54.json",
+          "byteSize": 91745,
+          "checksumSha256": "186d410d8c6c3f1ecb65c8498f988532b12a78afc2307226f8bc9de707af5249",
+          "segments": 1
+        },
+        {
+          "surah": 55,
+          "file": "fi-zilal/55.json",
+          "byteSize": 71534,
+          "checksumSha256": "8b15df6ebae6303f961e1ce4d3f6b402da02e7b26c8b63e6011adea860a5b396",
+          "segments": 1
+        },
+        {
+          "surah": 56,
+          "file": "fi-zilal/56.json",
+          "byteSize": 68411,
+          "checksumSha256": "3a381f1b9a511549578c93d23d0162bfc6e99fc1033055eeafd9e1e3846d35b7",
+          "segments": 1
+        },
+        {
+          "surah": 57,
+          "file": "fi-zilal/57.json",
+          "byteSize": 119838,
+          "checksumSha256": "28607860fad0fded6b5a0487be85f0309a3a36f09030b01d5a5eac2f8a26fffa",
+          "segments": 2
+        },
+        {
+          "surah": 58,
+          "file": "fi-zilal/58.json",
+          "byteSize": 77414,
+          "checksumSha256": "eb1b86821b461fc8a3476bd7f359c2985643440834dfd2c104342ec69f833a53",
+          "segments": 1
+        },
+        {
+          "surah": 59,
+          "file": "fi-zilal/59.json",
+          "byteSize": 89446,
+          "checksumSha256": "b392947fee4df49d8c5937d1a90f06736f589096d4296263b5045eb0b6150034",
+          "segments": 1
+        },
+        {
+          "surah": 60,
+          "file": "fi-zilal/60.json",
+          "byteSize": 67178,
+          "checksumSha256": "ba2373897948fbd56aaa6918e183c71588163b2eab252543e2fc533617a9ef3c",
+          "segments": 1
+        },
+        {
+          "surah": 61,
+          "file": "fi-zilal/61.json",
+          "byteSize": 65990,
+          "checksumSha256": "9548f1f852f16542d2820a82149e6d8a5eef4676a88c4492e5f88a6dd884957b",
+          "segments": 1
+        },
+        {
+          "surah": 62,
+          "file": "fi-zilal/62.json",
+          "byteSize": 43460,
+          "checksumSha256": "3c5a88a1f56758fdaddd32e25d1485e7148cb39f9fa5652e302891f79d92b1fb",
+          "segments": 1
+        },
+        {
+          "surah": 63,
+          "file": "fi-zilal/63.json",
+          "byteSize": 48735,
+          "checksumSha256": "77274839abea8344db113ac38f10b9970148667bde14a73d4c90e9b735001a03",
+          "segments": 1
+        },
+        {
+          "surah": 64,
+          "file": "fi-zilal/64.json",
+          "byteSize": 46825,
+          "checksumSha256": "c7e7ccd66adbc4da7669496d3a40d119d362a28330ddf89df1199cf6b4c3f324",
+          "segments": 1
+        },
+        {
+          "surah": 65,
+          "file": "fi-zilal/65.json",
+          "byteSize": 75705,
+          "checksumSha256": "6a606ff8318e70ac7c0d98c1116a39e6d1a8f01979efa8714c38655c7c084df5",
+          "segments": 1
+        },
+        {
+          "surah": 66,
+          "file": "fi-zilal/66.json",
+          "byteSize": 73303,
+          "checksumSha256": "1fbf90ac7e12763d8ab8a81e33333b668e0828a0d1496271a4193fd558930a6c",
+          "segments": 1
+        },
+        {
+          "surah": 67,
+          "file": "fi-zilal/67.json",
+          "byteSize": 106310,
+          "checksumSha256": "5a8b5d68d61ebd955fa213791cf1c098a9e5c16a5f58552f0913828ec21fde7c",
+          "segments": 1
+        },
+        {
+          "surah": 68,
+          "file": "fi-zilal/68.json",
+          "byteSize": 112701,
+          "checksumSha256": "9de1c5275eb11352be6a742d655f5ef9fc6e56b289ec008102ee5f86ebd81e4c",
+          "segments": 1
+        },
+        {
+          "surah": 69,
+          "file": "fi-zilal/69.json",
+          "byteSize": 86732,
+          "checksumSha256": "d8512085f5863394e0a41a134b41435b2d63a0a9f8e5c3e95905c79914e3f75c",
+          "segments": 1
+        },
+        {
+          "surah": 70,
+          "file": "fi-zilal/70.json",
+          "byteSize": 66130,
+          "checksumSha256": "029b15a7f49b4dbb4ba4aca04b224222b04259be96a77a2fb74b73bcebb5f1a6",
+          "segments": 1
+        },
+        {
+          "surah": 71,
+          "file": "fi-zilal/71.json",
+          "byteSize": 68856,
+          "checksumSha256": "922a3c73e1488430a4df90df03ec81326cc9a782281c9194c4b9c7f8ec1797a7",
+          "segments": 1
+        },
+        {
+          "surah": 72,
+          "file": "fi-zilal/72.json",
+          "byteSize": 99520,
+          "checksumSha256": "c3300a3b2cc4c6f803df38e008ad0bf1a19d02cd1adc8b0f0b559d918f0ddd4e",
+          "segments": 1
+        },
+        {
+          "surah": 73,
+          "file": "fi-zilal/73.json",
+          "byteSize": 48287,
+          "checksumSha256": "b620a16aca18ba54494a05b5ed574fcb3673c64504e8857e3df9dccc9d45031c",
+          "segments": 1
+        },
+        {
+          "surah": 74,
+          "file": "fi-zilal/74.json",
+          "byteSize": 71035,
+          "checksumSha256": "9512831dcfffa5743f0e7dd6c6b7716365112e9373260fd52cfb27162c17fcfb",
+          "segments": 1
+        },
+        {
+          "surah": 75,
+          "file": "fi-zilal/75.json",
+          "byteSize": 48304,
+          "checksumSha256": "28dd72d5c42e06bc890a9af4555890da5198c3f8a080b069d8b3c31163cc45ea",
+          "segments": 1
+        },
+        {
+          "surah": 76,
+          "file": "fi-zilal/76.json",
+          "byteSize": 57230,
+          "checksumSha256": "ca9ba0fc909ec61c8fb3adf8869f5580af6a71f2d603c037e93f3192d24c4af5",
+          "segments": 1
+        },
+        {
+          "surah": 77,
+          "file": "fi-zilal/77.json",
+          "byteSize": 33336,
+          "checksumSha256": "f13e5b3ec166660a6baea4621339f1abd4a7b83c4bdeb6c69cd1794197984173",
+          "segments": 1
+        },
+        {
+          "surah": 78,
+          "file": "fi-zilal/78.json",
+          "byteSize": 55773,
+          "checksumSha256": "dda7eaf7c78a5c01938c4e0aea6838f03851aaadae48aeb438dd80aa7c5cbb90",
+          "segments": 1
+        },
+        {
+          "surah": 79,
+          "file": "fi-zilal/79.json",
+          "byteSize": 51109,
+          "checksumSha256": "55d72d33163a8c0b3d68fc574212d2d1bfe574f5b929e0d8e1fabbf8b9416e6a",
+          "segments": 1
+        },
+        {
+          "surah": 80,
+          "file": "fi-zilal/80.json",
+          "byteSize": 66737,
+          "checksumSha256": "8357f8eca8489e651a1553a09f1dbbb02d001c4d7ec4f238f106e68ca1dfd7b0",
+          "segments": 1
+        },
+        {
+          "surah": 81,
+          "file": "fi-zilal/81.json",
+          "byteSize": 37007,
+          "checksumSha256": "014b8337db7d7341c8bf8b35ba4f81e87b45ca754bf21c3effb418fe7ab6566b",
+          "segments": 1
+        },
+        {
+          "surah": 82,
+          "file": "fi-zilal/82.json",
+          "byteSize": 35558,
+          "checksumSha256": "d0cf465b3b14ebbc0372b723c60930afee9df88e262d23645c0c235b183c05d2",
+          "segments": 1
+        },
+        {
+          "surah": 83,
+          "file": "fi-zilal/83.json",
+          "byteSize": 51120,
+          "checksumSha256": "7e9070950b38dbe745eee639a9123e7b52a75db5ab9a04074b55274c290808d7",
+          "segments": 1
+        },
+        {
+          "surah": 84,
+          "file": "fi-zilal/84.json",
+          "byteSize": 29429,
+          "checksumSha256": "6ba2089688706d6121637d7ba1c108356929011884a0b39e28169e452611cafc",
+          "segments": 1
+        },
+        {
+          "surah": 85,
+          "file": "fi-zilal/85.json",
+          "byteSize": 27359,
+          "checksumSha256": "77f27735b96efd10504f3b88c9548dae9830196773226b3e5673f7d843fe4f47",
+          "segments": 1
+        },
+        {
+          "surah": 86,
+          "file": "fi-zilal/86.json",
+          "byteSize": 22132,
+          "checksumSha256": "d2ef50a5f419e6d216cb6520bc89a98dc0631c7581fbcd3b8e4ffc61440d111c",
+          "segments": 1
+        },
+        {
+          "surah": 87,
+          "file": "fi-zilal/87.json",
+          "byteSize": 60375,
+          "checksumSha256": "306ba90b54d883ff2c86d0b7216bac27444887207dfc92a78ff4d6571f560710",
+          "segments": 1
+        },
+        {
+          "surah": 88,
+          "file": "fi-zilal/88.json",
+          "byteSize": 26060,
+          "checksumSha256": "8e5194e7b9d91515dfec8d680248ef4b308e4080e2e08addbe0e599abeed9a84",
+          "segments": 1
+        },
+        {
+          "surah": 89,
+          "file": "fi-zilal/89.json",
+          "byteSize": 32280,
+          "checksumSha256": "45fdaa3f878ccc4ab4023aa97258493a37a5c6a318a6248e02d50e5f4cba08ce",
+          "segments": 1
+        },
+        {
+          "surah": 90,
+          "file": "fi-zilal/90.json",
+          "byteSize": 31251,
+          "checksumSha256": "4ec615e93322a8c786aa979434b3e94c3a0e95fb3dde8fb9a5bb2ac6d95f0c6f",
+          "segments": 1
+        },
+        {
+          "surah": 91,
+          "file": "fi-zilal/91.json",
+          "byteSize": 21705,
+          "checksumSha256": "673be3fc306fb47dacf76493a233a1f55ba1679b2cdd300b3ce98a4e02bd4971",
+          "segments": 1
+        },
+        {
+          "surah": 92,
+          "file": "fi-zilal/92.json",
+          "byteSize": 18934,
+          "checksumSha256": "1a533392fbf4458e3fbbf73fefc1ed013087c3f8feb18e3c63b257db92fa2a8b",
+          "segments": 1
+        },
+        {
+          "surah": 93,
+          "file": "fi-zilal/93.json",
+          "byteSize": 13551,
+          "checksumSha256": "3d10ec314a20256ec86f76256c1cd98929beba911f041166a718d5e3903c1ff8",
+          "segments": 1
+        },
+        {
+          "surah": 94,
+          "file": "fi-zilal/94.json",
+          "byteSize": 7863,
+          "checksumSha256": "decdb4dacd7dd07909465101cf1d7f49d0c566794f514ee3298d0c09a4d11123",
+          "segments": 1
+        },
+        {
+          "surah": 95,
+          "file": "fi-zilal/95.json",
+          "byteSize": 11334,
+          "checksumSha256": "ce4838b66c8bddc35605428fc2f085514f3018e8e3f6ff7215f3fc990c670784",
+          "segments": 1
+        },
+        {
+          "surah": 96,
+          "file": "fi-zilal/96.json",
+          "byteSize": 39184,
+          "checksumSha256": "d6909910fb02496806b48b10b65e5e803007e2cc93f17ebf3b0329a5f1554f12",
+          "segments": 1
+        },
+        {
+          "surah": 97,
+          "file": "fi-zilal/97.json",
+          "byteSize": 11241,
+          "checksumSha256": "ea372b556b29c40094c8780d6e55712fdd6cfa54bd351a0eaea92129d764bddb",
+          "segments": 1
+        },
+        {
+          "surah": 98,
+          "file": "fi-zilal/98.json",
+          "byteSize": 31762,
+          "checksumSha256": "a28d7c0c0a57943e1a6d4873d31385fb122f6909f43e903ed2d1b90a4704ec04",
+          "segments": 1
+        },
+        {
+          "surah": 99,
+          "file": "fi-zilal/99.json",
+          "byteSize": 10069,
+          "checksumSha256": "5fc89dcf9e54fde6aa8257bb3d41adf4cb2989a8ce7255578cc25787fcb68fdb",
+          "segments": 1
+        },
+        {
+          "surah": 100,
+          "file": "fi-zilal/100.json",
+          "byteSize": 9549,
+          "checksumSha256": "71e7ec8a66fa6051b1477e6fe3bd28669f19d8fd4ae0a472581770deba156ff1",
+          "segments": 1
+        },
+        {
+          "surah": 101,
+          "file": "fi-zilal/101.json",
+          "byteSize": 6023,
+          "checksumSha256": "fcbe425d1d9d78db45cdb0b7f2081d7326817062d269f14d56475db02812a32f",
+          "segments": 1
+        },
+        {
+          "surah": 102,
+          "file": "fi-zilal/102.json",
+          "byteSize": 5256,
+          "checksumSha256": "03a166320797596ef127b08735232202240ad8c9af42d44525de6c89897cda24",
+          "segments": 1
+        },
+        {
+          "surah": 103,
+          "file": "fi-zilal/103.json",
+          "byteSize": 36457,
+          "checksumSha256": "69cc5f255464cb5542e5b5a6b087bd9ef5cb91aef96f50df33cb74ae0be09d47",
+          "segments": 1
+        },
+        {
+          "surah": 104,
+          "file": "fi-zilal/104.json",
+          "byteSize": 6854,
+          "checksumSha256": "5c50f9baa71b1006ec34565079eda60217032ac98621fd259d946b50af1f7a01",
+          "segments": 1
+        },
+        {
+          "surah": 105,
+          "file": "fi-zilal/105.json",
+          "byteSize": 36396,
+          "checksumSha256": "c96daf649a03761ceb132da011c7e3bb86219d7b09dfc06b567b20db7e5a7c5b",
+          "segments": 1
+        },
+        {
+          "surah": 106,
+          "file": "fi-zilal/106.json",
+          "byteSize": 6130,
+          "checksumSha256": "a3939c34dec35527ab70850783bc664d32531f299a65933ea1a531d5edcac4d7",
+          "segments": 1
+        },
+        {
+          "surah": 107,
+          "file": "fi-zilal/107.json",
+          "byteSize": 10458,
+          "checksumSha256": "10aef307a150363e5e9a6a7325153e94d78f72146371ddd833b059854d1e75c9",
+          "segments": 1
+        },
+        {
+          "surah": 108,
+          "file": "fi-zilal/108.json",
+          "byteSize": 9702,
+          "checksumSha256": "4795e71c0f5fc972ab9cd6880e06d9237618b0072d6929c7f694da6bfa890a7d",
+          "segments": 1
+        },
+        {
+          "surah": 109,
+          "file": "fi-zilal/109.json",
+          "byteSize": 15283,
+          "checksumSha256": "7952801fc7a1e637081a6f006b13ca27c13da04a20329c24bd1fd999f26e4cde",
+          "segments": 1
+        },
+        {
+          "surah": 110,
+          "file": "fi-zilal/110.json",
+          "byteSize": 18465,
+          "checksumSha256": "b051f81c0df25025fdde26a364b47ef2a49379a79259f84f8c993b2d32663ad9",
+          "segments": 1
+        },
+        {
+          "surah": 111,
+          "file": "fi-zilal/111.json",
+          "byteSize": 11976,
+          "checksumSha256": "d7a1036a28b674e6fc20d41ea0a634bca85062eb3bd51c4a0a48027a46a67b11",
+          "segments": 1
+        },
+        {
+          "surah": 112,
+          "file": "fi-zilal/112.json",
+          "byteSize": 13729,
+          "checksumSha256": "62c8a9a449d0b8736b985e35e56b29ca699c2506b04639ac2254a06f9d5be05f",
+          "segments": 1
+        },
+        {
+          "surah": 113,
+          "file": "fi-zilal/113.json",
+          "byteSize": 13739,
+          "checksumSha256": "278a0df0f3660c2deaf84791e6e63aad58511844af7190ad0163e6d598464bff",
+          "segments": 1
+        },
+        {
+          "surah": 114,
+          "file": "fi-zilal/114.json",
+          "byteSize": 15958,
+          "checksumSha256": "5c697777c47182da499a15317d4d624491fac7083643ac7a9d4ec16c3af33f4f",
+          "segments": 1
+        }
+      ]
+    },
+    {
+      "id": 2556,
+      "slug": "qurtubi",
+      "name": "الجامع لأحكام القرآن",
+      "sourceChecksumSha256": "52763d0ac6ed1dc8e06be0226243bd2739425d71cb0cf6bba388ecfd24aff5d9",
+      "surahs": 114,
+      "segments": 2722,
+      "files": [
+        {
+          "surah": 1,
+          "file": "qurtubi/1.json",
+          "byteSize": 292524,
+          "checksumSha256": "063cbc25c059102e24600c153ad3fbbebe82d6637384cfe3f58b133c07a69aee",
+          "segments": 6
+        },
+        {
+          "surah": 2,
+          "file": "qurtubi/2.json",
+          "byteSize": 5775686,
+          "checksumSha256": "e68a16e65b2faaa8cf168122778fa00977324e590bfc3615537a752114a92334",
+          "segments": 249
+        },
+        {
+          "surah": 3,
+          "file": "qurtubi/3.json",
+          "byteSize": 1603689,
+          "checksumSha256": "53b356e5506bb13189d148aff858b1e09e9d113cc822b23855eddd0d5c42193b",
+          "segments": 127
+        },
+        {
+          "surah": 4,
+          "file": "qurtubi/4.json",
+          "byteSize": 2260691,
+          "checksumSha256": "35f9284947f7febb0d14ab8cdd37458a740cebd848375ffff9a1c2bdee0bfc4c",
+          "segments": 114
+        },
+        {
+          "surah": 5,
+          "file": "qurtubi/5.json",
+          "byteSize": 1748531,
+          "checksumSha256": "fcb2b81ef504d8d6ec2a53c8d5349b27e5035c25c95d0e2492414e8578ce717e",
+          "segments": 85
+        },
+        {
+          "surah": 6,
+          "file": "qurtubi/6.json",
+          "byteSize": 1027843,
+          "checksumSha256": "3318a836ebf265e64e55738204f49caf47dae5b14cfa6703ff06444f78a18b7b",
+          "segments": 108
+        },
+        {
+          "surah": 7,
+          "file": "qurtubi/7.json",
+          "byteSize": 909677,
+          "checksumSha256": "23eef5777ed6f298172cb5f9698962a451592158b29206e2223c2c35af81684e",
+          "segments": 106
+        },
+        {
+          "surah": 8,
+          "file": "qurtubi/8.json",
+          "byteSize": 494254,
+          "checksumSha256": "40606b8f365352f4f13394b45814a9072d7d266067be816ecd129991c92261a0",
+          "segments": 45
+        },
+        {
+          "surah": 9,
+          "file": "qurtubi/9.json",
+          "byteSize": 1149368,
+          "checksumSha256": "bf5ebe3b0238d04c259a17ccebd7dc7a979b4c0dbb279e271ef650068a580f72",
+          "segments": 90
+        },
+        {
+          "surah": 10,
+          "file": "qurtubi/10.json",
+          "byteSize": 369543,
+          "checksumSha256": "88ab07f8cd03a2fa8c66861b2beeb90a93f26365e910d82e421dbccbed6ffcc9",
+          "segments": 63
+        },
+        {
+          "surah": 11,
+          "file": "qurtubi/11.json",
+          "byteSize": 541393,
+          "checksumSha256": "2927c9d31f134f83c14b3cd0beacd74df5a07182c2bc90ae277650fba4d2e1ab",
+          "segments": 41
+        },
+        {
+          "surah": 12,
+          "file": "qurtubi/12.json",
+          "byteSize": 758874,
+          "checksumSha256": "619930aa8190e788be95a65f61608cdc5d34ec1b1d8b927eca035685d0af6762",
+          "segments": 63
+        },
+        {
+          "surah": 13,
+          "file": "qurtubi/13.json",
+          "byteSize": 288067,
+          "checksumSha256": "2e7944587bda65150f667dd38d7f6230ba09ae742a912796ab26112d600bdd74",
+          "segments": 29
+        },
+        {
+          "surah": 14,
+          "file": "qurtubi/14.json",
+          "byteSize": 226743,
+          "checksumSha256": "671ac949ff672b16bacf09bcbd5b3c7e4d9e8400d16da84badfac4ae664091fe",
+          "segments": 25
+        },
+        {
+          "surah": 15,
+          "file": "qurtubi/15.json",
+          "byteSize": 288573,
+          "checksumSha256": "cca354cd2c53362d0bed3c664731b966fe0eee026039ca03975d37c2733f0e04",
+          "segments": 40
+        },
+        {
+          "surah": 16,
+          "file": "qurtubi/16.json",
+          "byteSize": 640148,
+          "checksumSha256": "7e28dc8f3a3648b06755f4f5c5752f20de7536e96bf807265a25c61b7d35a8ff",
+          "segments": 77
+        },
+        {
+          "surah": 17,
+          "file": "qurtubi/17.json",
+          "byteSize": 662740,
+          "checksumSha256": "73e736adfe34bca803ec9b2d174328f4afd3cdee356c6cc87b1e3d7103efae22",
+          "segments": 74
+        },
+        {
+          "surah": 18,
+          "file": "qurtubi/18.json",
+          "byteSize": 721418,
+          "checksumSha256": "a59138a56806318fb69bafad5b62dc2f9eddf30d2b7b87d771d0020bf52bea8d",
+          "segments": 45
+        },
+        {
+          "surah": 19,
+          "file": "qurtubi/19.json",
+          "byteSize": 445458,
+          "checksumSha256": "129b1f25f0046c55b8794867e7fcb04f7ddf484796e59fa27515c096712756c4",
+          "segments": 21
+        },
+        {
+          "surah": 20,
+          "file": "qurtubi/20.json",
+          "byteSize": 492583,
+          "checksumSha256": "bdbf35716f57f39073b452cfd467f792d93b13bdf4cf1cda8b3cdfb01b2629d9",
+          "segments": 31
+        },
+        {
+          "surah": 21,
+          "file": "qurtubi/21.json",
+          "byteSize": 415212,
+          "checksumSha256": "d5dbc7cfe3582cd39cbaebc01ded5739ffa006340b20fb7ae66e0d49907608bc",
+          "segments": 39
+        },
+        {
+          "surah": 22,
+          "file": "qurtubi/22.json",
+          "byteSize": 474419,
+          "checksumSha256": "dbc4b5e115b3f17994484b16bdcd430d616663ae0a1c87dd27c0b8668d79579f",
+          "segments": 45
+        },
+        {
+          "surah": 23,
+          "file": "qurtubi/23.json",
+          "byteSize": 253797,
+          "checksumSha256": "d340a8cd2fd18d3e2741b8710b06c35577e1141bf96223b08b0ddb0340e2c18b",
+          "segments": 38
+        },
+        {
+          "surah": 24,
+          "file": "qurtubi/24.json",
+          "byteSize": 811143,
+          "checksumSha256": "6074507f9e54557c236c0cd41f330e2e0cfc15e9f08a3e2b7de25269b4ced758",
+          "segments": 36
+        },
+        {
+          "surah": 25,
+          "file": "qurtubi/25.json",
+          "byteSize": 407194,
+          "checksumSha256": "95b3fece6186a52d7433ac1daf40450e992cf9d26fe0073c9281e51a0f401351",
+          "segments": 38
+        },
+        {
+          "surah": 26,
+          "file": "qurtubi/26.json",
+          "byteSize": 304576,
+          "checksumSha256": "95d82c5b68df5bc6c9bf2ba067796e4511c1049202f9f59971d4e0894dd5df8a",
+          "segments": 20
+        },
+        {
+          "surah": 27,
+          "file": "qurtubi/27.json",
+          "byteSize": 450132,
+          "checksumSha256": "695932ddadbc69e6fde102ff0e34b6466ffc3f4878628ac5da7725746e615822",
+          "segments": 25
+        },
+        {
+          "surah": 28,
+          "file": "qurtubi/28.json",
+          "byteSize": 350118,
+          "checksumSha256": "5542e9ca94edec1b382d4127c5259638ddb9e6a8729fae5e41a40bc7df006176",
+          "segments": 28
+        },
+        {
+          "surah": 29,
+          "file": "qurtubi/29.json",
+          "byteSize": 204092,
+          "checksumSha256": "14699c9852152e4c247dbca48805f7ba92008828ccec84521d6259b9a26765b7",
+          "segments": 24
+        },
+        {
+          "surah": 30,
+          "file": "qurtubi/30.json",
+          "byteSize": 225985,
+          "checksumSha256": "e7f01495d20e365fce1beb32c6a62c983a83e5dc8841892c62b8629506ed9e99",
+          "segments": 27
+        },
+        {
+          "surah": 31,
+          "file": "qurtubi/31.json",
+          "byteSize": 155623,
+          "checksumSha256": "c78f8e6af87b012599df7bd25da2fb9e1884eb4322bd499df3506de456afde5b",
+          "segments": 20
+        },
+        {
+          "surah": 32,
+          "file": "qurtubi/32.json",
+          "byteSize": 136415,
+          "checksumSha256": "703e82aa463b2a1c1496c49173daff40fb903edb179aa8e31c3e28701920e99b",
+          "segments": 19
+        },
+        {
+          "surah": 33,
+          "file": "qurtubi/33.json",
+          "byteSize": 698063,
+          "checksumSha256": "59af9d41ec73e61709035c4d278710485cbe7c4ff3a7f934b64debecb8d99a69",
+          "segments": 51
+        },
+        {
+          "surah": 34,
+          "file": "qurtubi/34.json",
+          "byteSize": 277718,
+          "checksumSha256": "48a58121702a4773f6e75831918e95fd7f97277a9fd394e5e2e33937258eb85f",
+          "segments": 35
+        },
+        {
+          "surah": 35,
+          "file": "qurtubi/35.json",
+          "byteSize": 192859,
+          "checksumSha256": "38fe51ba4eb56b360c0161f49858dbfe3a52b174bf9785fe9dfa5481f9b05181",
+          "segments": 24
+        },
+        {
+          "surah": 36,
+          "file": "qurtubi/36.json",
+          "byteSize": 272990,
+          "checksumSha256": "d58289ebb99497abfc67dcb5014afe0f9233ad1230e9c83d562a4a6a09d9f7c7",
+          "segments": 23
+        },
+        {
+          "surah": 37,
+          "file": "qurtubi/37.json",
+          "byteSize": 378818,
+          "checksumSha256": "9a58e0db0fd25462940dc8e5684791b4a0fd3011588008b4d4d9e06c0471cf01",
+          "segments": 27
+        },
+        {
+          "surah": 38,
+          "file": "qurtubi/38.json",
+          "byteSize": 430863,
+          "checksumSha256": "538daf5a4513383b8f4f3774d5136850de12d329a300209c840e746ceb8b3667",
+          "segments": 23
+        },
+        {
+          "surah": 39,
+          "file": "qurtubi/39.json",
+          "byteSize": 263868,
+          "checksumSha256": "555f38b5b97f4a17322af4ba590938419d0c86d1959d1c777c63a9eb90efec78",
+          "segments": 28
+        },
+        {
+          "surah": 40,
+          "file": "qurtubi/40.json",
+          "byteSize": 222138,
+          "checksumSha256": "e9cfc226d8d50b051e76d08f2ae7d5f22ee7c85a6a383ca7eb30b4c3c6db3140",
+          "segments": 20
+        },
+        {
+          "surah": 41,
+          "file": "qurtubi/41.json",
+          "byteSize": 179234,
+          "checksumSha256": "858bfa37e7ff058d57649219d15122c314ea0a537a508f4f92532b8928971cd4",
+          "segments": 16
+        },
+        {
+          "surah": 42,
+          "file": "qurtubi/42.json",
+          "byteSize": 283224,
+          "checksumSha256": "bc49611739a0a6f2e4a21a0cea6055243376e9716d3cdb84260ace8824f605ff",
+          "segments": 33
+        },
+        {
+          "surah": 43,
+          "file": "qurtubi/43.json",
+          "byteSize": 299570,
+          "checksumSha256": "5891f5812ae73bf31e321462ecf3ad3c036f4a68e52d61aa91bb72398d253e70",
+          "segments": 39
+        },
+        {
+          "surah": 44,
+          "file": "qurtubi/44.json",
+          "byteSize": 142580,
+          "checksumSha256": "deaea6d618b3f35f0484787c116431ce461de732c7be012b0ad62a2866b4457d",
+          "segments": 22
+        },
+        {
+          "surah": 45,
+          "file": "qurtubi/45.json",
+          "byteSize": 96832,
+          "checksumSha256": "832a4dd1684b9a9e5afcb3c614936540fb2ec31c5a171a9da31dbc24e517abfd",
+          "segments": 17
+        },
+        {
+          "surah": 46,
+          "file": "qurtubi/46.json",
+          "byteSize": 207494,
+          "checksumSha256": "279089a08e87291ddf2d7524eae7a25377ed6636aab65e4dca657ebf47f88e41",
+          "segments": 21
+        },
+        {
+          "surah": 47,
+          "file": "qurtubi/47.json",
+          "byteSize": 163423,
+          "checksumSha256": "0302ab3846c2528bedfaf7971427295e04485cda3e7f011e51632e6ee6368941",
+          "segments": 21
+        },
+        {
+          "surah": 48,
+          "file": "qurtubi/48.json",
+          "byteSize": 190806,
+          "checksumSha256": "17114fd27f7e73d553b0b98f1345b339c18bed1d3e005bd183f3484d647bf8ba",
+          "segments": 21
+        },
+        {
+          "surah": 49,
+          "file": "qurtubi/49.json",
+          "byteSize": 241210,
+          "checksumSha256": "61a6bce98a85430edeeed5f43c14753d01173beee5cda77fb7c3f3b80d4d50bc",
+          "segments": 15
+        },
+        {
+          "surah": 50,
+          "file": "qurtubi/50.json",
+          "byteSize": 129439,
+          "checksumSha256": "a0c9e22c354c93c1208896ebd09660f9962af7d03e53210d88e77b29c023958e",
+          "segments": 9
+        },
+        {
+          "surah": 51,
+          "file": "qurtubi/51.json",
+          "byteSize": 132570,
+          "checksumSha256": "a5407f5582a33e3fd2dd8d2e3820831009aac3b5ceda8bd8fb54c82edbec9293",
+          "segments": 13
+        },
+        {
+          "surah": 52,
+          "file": "qurtubi/52.json",
+          "byteSize": 109829,
+          "checksumSha256": "28a26e010851a0a73306a612a6b0b3ee946a48a564540d968b2d200eced9fcba",
+          "segments": 8
+        },
+        {
+          "surah": 53,
+          "file": "qurtubi/53.json",
+          "byteSize": 198944,
+          "checksumSha256": "ecb78d3e3487b2919796903a7499f4d33ea37ee98137f8b22ba7c9225c44c6ff",
+          "segments": 11
+        },
+        {
+          "surah": 54,
+          "file": "qurtubi/54.json",
+          "byteSize": 120455,
+          "checksumSha256": "35b112b1229fabdb60b3d79fdfa3c4579b5a2d20451c2d744744050235b8d597",
+          "segments": 10
+        },
+        {
+          "surah": 55,
+          "file": "qurtubi/55.json",
+          "byteSize": 187528,
+          "checksumSha256": "0bb250110e2160a75d8031cacc8d1fa7576b2043dc2453948dd960896da02041",
+          "segments": 18
+        },
+        {
+          "surah": 56,
+          "file": "qurtubi/56.json",
+          "byteSize": 188186,
+          "checksumSha256": "6457711a16cc7e6668dd5a6d713b5cdd076c05b5db8cc0d374ecfd5c3a7f5cb8",
+          "segments": 12
+        },
+        {
+          "surah": 57,
+          "file": "qurtubi/57.json",
+          "byteSize": 156251,
+          "checksumSha256": "e35fb1dc4f134f95ab2d05eb6516901321807bf8eb48bc3d459bd2afe747791d",
+          "segments": 13
+        },
+        {
+          "surah": 58,
+          "file": "qurtubi/58.json",
+          "byteSize": 191136,
+          "checksumSha256": "e9cf8e42d9499f6891050173592b86a7b9b9fe6621e4e25d0a34e7dc30702a06",
+          "segments": 12
+        },
+        {
+          "surah": 59,
+          "file": "qurtubi/59.json",
+          "byteSize": 227464,
+          "checksumSha256": "3762ef340d064a19c7f41a97c81b3f9f546c9b5d4dcec77f17c6aabec9ffd367",
+          "segments": 17
+        },
+        {
+          "surah": 60,
+          "file": "qurtubi/60.json",
+          "byteSize": 134385,
+          "checksumSha256": "6e162a3402151cf332656e123766905cc77f618dedea903b9cd788e2b290ee64",
+          "segments": 9
+        },
+        {
+          "surah": 61,
+          "file": "qurtubi/61.json",
+          "byteSize": 63307,
+          "checksumSha256": "a1d441cf7b60054e15554c84df2fe36ddde7a7e98746ba74e0c028f20e4bfcc1",
+          "segments": 7
+        },
+        {
+          "surah": 62,
+          "file": "qurtubi/62.json",
+          "byteSize": 139972,
+          "checksumSha256": "0aec903dd82490840603037c1f31e37ba7e1a1180e5a6f762cad06ed66252447",
+          "segments": 8
+        },
+        {
+          "surah": 63,
+          "file": "qurtubi/63.json",
+          "byteSize": 55539,
+          "checksumSha256": "0cf6c470b1239cbc4cd991f058f66788535aceaec5cbe28f32ae972858795d4f",
+          "segments": 6
+        },
+        {
+          "surah": 64,
+          "file": "qurtubi/64.json",
+          "byteSize": 68273,
+          "checksumSha256": "9443a174afc0de23676b905d5c2f4790753b5f1afc4ecf083abd7e27bc5abca3",
+          "segments": 8
+        },
+        {
+          "surah": 65,
+          "file": "qurtubi/65.json",
+          "byteSize": 145343,
+          "checksumSha256": "d462076839b8fb54a308e1f0ba1d6e3832761d13d108c4a4542a600aaa0e3d85",
+          "segments": 7
+        },
+        {
+          "surah": 66,
+          "file": "qurtubi/66.json",
+          "byteSize": 131759,
+          "checksumSha256": "b618f7c1eb10581daa070c714a65fffc995fafbf53fa8b58a51bde8414b27e11",
+          "segments": 10
+        },
+        {
+          "surah": 67,
+          "file": "qurtubi/67.json",
+          "byteSize": 76169,
+          "checksumSha256": "04e4a4c2cc706b8886493f7709af2fb378cdd1ff9e5f0c39182d38c415466582",
+          "segments": 17
+        },
+        {
+          "surah": 68,
+          "file": "qurtubi/68.json",
+          "byteSize": 150288,
+          "checksumSha256": "ab655ece227c7ee770e804769ca36ca2b5dcd7d0ebbd2d97a1e1486a4a0b8a38",
+          "segments": 20
+        },
+        {
+          "surah": 69,
+          "file": "qurtubi/69.json",
+          "byteSize": 93111,
+          "checksumSha256": "1d21624de2b4797de516bd2d36845ee50c2201c90bff1768ec2d0201eb29081d",
+          "segments": 13
+        },
+        {
+          "surah": 70,
+          "file": "qurtubi/70.json",
+          "byteSize": 85739,
+          "checksumSha256": "042457b58ff68e7045e93ea707358a2641f307fc29df45fbb20550e572faca09",
+          "segments": 11
+        },
+        {
+          "surah": 71,
+          "file": "qurtubi/71.json",
+          "byteSize": 72861,
+          "checksumSha256": "b4ce352b4a10702d6d45daa6a32c9edaa6eec5436e9747ff3a989f8e0be8927f",
+          "segments": 12
+        },
+        {
+          "surah": 72,
+          "file": "qurtubi/72.json",
+          "byteSize": 140432,
+          "checksumSha256": "4317865a4f70de65768c3a7eb53a911175e8b227a0d8a6f4aae8b82209a355d0",
+          "segments": 11
+        },
+        {
+          "surah": 73,
+          "file": "qurtubi/73.json",
+          "byteSize": 133737,
+          "checksumSha256": "fc631c4f7e1e055e7eb5065827a1c4ebb15b67af1f52f59c1102b6a0d637db87",
+          "segments": 8
+        },
+        {
+          "surah": 74,
+          "file": "qurtubi/74.json",
+          "byteSize": 147893,
+          "checksumSha256": "db7f24705b752040a473ac822e64312a0060b6e500dd1f8403446922a7230ed7",
+          "segments": 11
+        },
+        {
+          "surah": 75,
+          "file": "qurtubi/75.json",
+          "byteSize": 121674,
+          "checksumSha256": "f453af920b7e63d84faeaac67243366ed7b5d87f8bf1da889d9e8bb818bdd98f",
+          "segments": 8
+        },
+        {
+          "surah": 76,
+          "file": "qurtubi/76.json",
+          "byteSize": 163241,
+          "checksumSha256": "1049481fe454fd1704c1680f34716d993a1627c5fb5b9d6c9e35f3aa5824b7d6",
+          "segments": 11
+        },
+        {
+          "surah": 77,
+          "file": "qurtubi/77.json",
+          "byteSize": 68790,
+          "checksumSha256": "951c605c6d37b098c76ba71ec59d46947dbdcdfdab836f6f0369498aa2bfa3f5",
+          "segments": 7
+        },
+        {
+          "surah": 78,
+          "file": "qurtubi/78.json",
+          "byteSize": 94745,
+          "checksumSha256": "c2847095aa2a96c7338c4d8c00ea1f5e0a17f70d0aff8adf0731e1fb5f455fd6",
+          "segments": 6
+        },
+        {
+          "surah": 79,
+          "file": "qurtubi/79.json",
+          "byteSize": 93232,
+          "checksumSha256": "d2c0e36ccb0305861fbe7eddc4df98aa31cd11cdfe7496ee28c20de6744a3e13",
+          "segments": 6
+        },
+        {
+          "surah": 80,
+          "file": "qurtubi/80.json",
+          "byteSize": 71728,
+          "checksumSha256": "6de9fdcec167b5703af9959e32ad57d20e495b69e8e90c35e523d373947efec6",
+          "segments": 6
+        },
+        {
+          "surah": 81,
+          "file": "qurtubi/81.json",
+          "byteSize": 76661,
+          "checksumSha256": "ae1fe3f9ee06b0ea389569b1121414fdfcba1f5ff385208a265eaf0f28ce3569",
+          "segments": 3
+        },
+        {
+          "surah": 82,
+          "file": "qurtubi/82.json",
+          "byteSize": 26101,
+          "checksumSha256": "5047d646e1a9b945799cec2f56caaedc3a3fffaba9b05a27c409b1de6b36568b",
+          "segments": 4
+        },
+        {
+          "surah": 83,
+          "file": "qurtubi/83.json",
+          "byteSize": 90523,
+          "checksumSha256": "f294b5226ab22c919cdea3aa888e9ce98fe4e10b453a285f5c746956a301beca",
+          "segments": 7
+        },
+        {
+          "surah": 84,
+          "file": "qurtubi/84.json",
+          "byteSize": 62412,
+          "checksumSha256": "67cb45443566609681ee49d2ba5b21970bc77581ad7f7cde20e8ee6d46bedc66",
+          "segments": 5
+        },
+        {
+          "surah": 85,
+          "file": "qurtubi/85.json",
+          "byteSize": 76224,
+          "checksumSha256": "635dd02f60daaf46e0728a05f5d8b110cdc8525ab30bfcc7eff446d90fc56086",
+          "segments": 7
+        },
+        {
+          "surah": 86,
+          "file": "qurtubi/86.json",
+          "byteSize": 49347,
+          "checksumSha256": "5fa606cb71fdd97a9e3d0824a49a12a8bfedada8b7434d025ec94528417af76d",
+          "segments": 6
+        },
+        {
+          "surah": 87,
+          "file": "qurtubi/87.json",
+          "byteSize": 55445,
+          "checksumSha256": "761033da93b71c9ee7d87723a2f0422069339c51c986397c0ac8193ca38906a4",
+          "segments": 7
+        },
+        {
+          "surah": 88,
+          "file": "qurtubi/88.json",
+          "byteSize": 58186,
+          "checksumSha256": "6b2618d6d67d5e4b9cc71628ddda65cf42bd1a6fb5ed10ee659b46785bda86a6",
+          "segments": 9
+        },
+        {
+          "surah": 89,
+          "file": "qurtubi/89.json",
+          "byteSize": 94980,
+          "checksumSha256": "39c23bc219dd349d2ff3a877ec8a07417a2fd993d87ac658a3b7a3c0ef517160",
+          "segments": 14
+        },
+        {
+          "surah": 90,
+          "file": "qurtubi/90.json",
+          "byteSize": 60811,
+          "checksumSha256": "e4ede2af4d9a4c1a1690aa8f475535882e333e17e656b5e5cf3e97e09068a1b0",
+          "segments": 10
+        },
+        {
+          "surah": 91,
+          "file": "qurtubi/91.json",
+          "byteSize": 34705,
+          "checksumSha256": "7f66015f873928e866a332a31d71c3ec6022ec32d8ed7ebc6787502a838443cc",
+          "segments": 7
+        },
+        {
+          "surah": 92,
+          "file": "qurtubi/92.json",
+          "byteSize": 51589,
+          "checksumSha256": "7f643ad9334c02c8bc9ba7882029bb0f06f45f696d267df09ba302b9e7a6c12d",
+          "segments": 5
+        },
+        {
+          "surah": 93,
+          "file": "qurtubi/93.json",
+          "byteSize": 61041,
+          "checksumSha256": "163e9292f1e4c15b541804bbdc156d97a2ae76df61f091700cfc0088d98ba33d",
+          "segments": 5
+        },
+        {
+          "surah": 94,
+          "file": "qurtubi/94.json",
+          "byteSize": 27583,
+          "checksumSha256": "bb88448e337b6050e56284f8321daaa803f26597789b3ef5c685bb4c60c1469b",
+          "segments": 5
+        },
+        {
+          "surah": 95,
+          "file": "qurtubi/95.json",
+          "byteSize": 31503,
+          "checksumSha256": "34a9756af3690f623c4738967a6ab970fab7c792ffdd529f2a3a82708de13234",
+          "segments": 5
+        },
+        {
+          "surah": 96,
+          "file": "qurtubi/96.json",
+          "byteSize": 52144,
+          "checksumSha256": "a621a2389a2646c68d0594cc67c91c926ce40d0e9e0af687a11cd0779f6c37df",
+          "segments": 7
+        },
+        {
+          "surah": 97,
+          "file": "qurtubi/97.json",
+          "byteSize": 54913,
+          "checksumSha256": "0f9af9f7410c237259a32e39ed493aeeb80d54e8d11033ac253863dce11fe0ac",
+          "segments": 4
+        },
+        {
+          "surah": 98,
+          "file": "qurtubi/98.json",
+          "byteSize": 32071,
+          "checksumSha256": "bf8a1faff340d63125fc1c6dde7a8c8f27707ef12ff84bf0ca7cf7eb314441fc",
+          "segments": 5
+        },
+        {
+          "surah": 99,
+          "file": "qurtubi/99.json",
+          "byteSize": 28029,
+          "checksumSha256": "9968b11b6d3c8f29d8740c0db210d3a6d34ff21f5601abd8b403c664d98350fc",
+          "segments": 3
+        },
+        {
+          "surah": 100,
+          "file": "qurtubi/100.json",
+          "byteSize": 47431,
+          "checksumSha256": "b79ef8a468119b84157c0f2acdcdc5512f4222916e4d0f0973c44928c0c39b70",
+          "segments": 5
+        },
+        {
+          "surah": 101,
+          "file": "qurtubi/101.json",
+          "byteSize": 16225,
+          "checksumSha256": "9b051aed05ad64018ab6a62ef57883c32a3730f7667b28f2c4a8789c28356565",
+          "segments": 3
+        },
+        {
+          "surah": 102,
+          "file": "qurtubi/102.json",
+          "byteSize": 48425,
+          "checksumSha256": "24af4ac23a396894ff7281c2576f7d7f4f11c58ded66b9b3649307fa89c56769",
+          "segments": 4
+        },
+        {
+          "surah": 103,
+          "file": "qurtubi/103.json",
+          "byteSize": 13238,
+          "checksumSha256": "dd18d08af67af24ee373513150e57c133a6c9f3f71ed3a79ec46c905dfaff94a",
+          "segments": 3
+        },
+        {
+          "surah": 104,
+          "file": "qurtubi/104.json",
+          "byteSize": 25574,
+          "checksumSha256": "6ca2b5386e0f3d7a50e67b40c93def4a2435b3f7d4b0af911153352872f4f0f2",
+          "segments": 4
+        },
+        {
+          "surah": 105,
+          "file": "qurtubi/105.json",
+          "byteSize": 61242,
+          "checksumSha256": "469c4c54f8ec94b86b360e666585b51b257cbd7287ef1361c1160de951558a10",
+          "segments": 5
+        },
+        {
+          "surah": 106,
+          "file": "qurtubi/106.json",
+          "byteSize": 44873,
+          "checksumSha256": "a5042e6b8de12c4fda6ad66a9dcea7608a69bfe846760b841f15e96af06727a2",
+          "segments": 4
+        },
+        {
+          "surah": 107,
+          "file": "qurtubi/107.json",
+          "byteSize": 27175,
+          "checksumSha256": "088b7b85e5a86eb0923b2f66967da7196ee20b4147548c115f3f4ab06be2fc38",
+          "segments": 1
+        },
+        {
+          "surah": 108,
+          "file": "qurtubi/108.json",
+          "byteSize": 40744,
+          "checksumSha256": "0a46cfaeecf96636c853fa2412ed5bc6a17440e20f09334d51fa4ed256af5eaf",
+          "segments": 3
+        },
+        {
+          "surah": 109,
+          "file": "qurtubi/109.json",
+          "byteSize": 19281,
+          "checksumSha256": "ca8315a09e2b9301c8e6f316ec9c540ee6bef3bedf0fab6e5727614a889ace66",
+          "segments": 1
+        },
+        {
+          "surah": 110,
+          "file": "qurtubi/110.json",
+          "byteSize": 24161,
+          "checksumSha256": "927aa18b4e054c6deed9d7fb1c7cbd6ef093e091989129df0efb1c55be182caa",
+          "segments": 3
+        },
+        {
+          "surah": 111,
+          "file": "qurtubi/111.json",
+          "byteSize": 44526,
+          "checksumSha256": "6723ccfec964832fdc939066cae0d18b4edfe5257b88adaaec899ac7dbf4680f",
+          "segments": 4
+        },
+        {
+          "surah": 112,
+          "file": "qurtubi/112.json",
+          "byteSize": 37241,
+          "checksumSha256": "5e3e478447d9c283b321ddb45632b1cb59fb60201821d3d05f67757c40dd5008",
+          "segments": 1
+        },
+        {
+          "surah": 113,
+          "file": "qurtubi/113.json",
+          "byteSize": 34889,
+          "checksumSha256": "6456e586e8b89ec9d310cdc78c3fbba4ccf5eaa26915ff9c997cfaf67e5fb030",
+          "segments": 1
+        },
+        {
+          "surah": 114,
+          "file": "qurtubi/114.json",
+          "byteSize": 20726,
+          "checksumSha256": "1e8e4918813cbc903ca0268d4dabd9ddc0584e154176e3b6994b73371c8dcf10",
+          "segments": 3
         }
       ]
     }

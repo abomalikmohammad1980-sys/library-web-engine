@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 
 describe('Cloudflare translation function', () => {
-  const source = readFileSync(resolve(import.meta.dirname, '../../alpha-publish/functions/api/translate.js'), 'utf8')
+  const source = readFileSync(resolve(import.meta.dirname, '../../deployment/cloudflare/functions/api/translate.js'), 'utf8')
 
   it('validates method, content type, language and text size', () => {
     expect(source).toContain('onRequestPost')

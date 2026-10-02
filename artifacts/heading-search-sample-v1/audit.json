@@ -1,0 +1,69 @@
+{
+  "verification": {
+    "complete": true,
+    "rows": 5808,
+    "unresolvedAnchors": 0,
+    "postings": 26810
+  },
+  "audit": {
+    "equal": true,
+    "scanned": 5808,
+    "results": [
+      {
+        "query": "النسخ",
+        "directCount": 9,
+        "indexedCount": 9,
+        "candidates": 9,
+        "missing": 0,
+        "directIdsSha256": "90291262c3b8246421eea03929fcef33cd044ef58804f0fa20cb9691fe9d72bd",
+        "indexedIdsSha256": "90291262c3b8246421eea03929fcef33cd044ef58804f0fa20cb9691fe9d72bd"
+      },
+      {
+        "query": "النسخة",
+        "directCount": 4,
+        "indexedCount": 4,
+        "candidates": 4,
+        "missing": 0,
+        "directIdsSha256": "71ff15ac3d64f5c048030a52201594fdc84bd866cb2eb8168ae254a9b8cfe20f",
+        "indexedIdsSha256": "71ff15ac3d64f5c048030a52201594fdc84bd866cb2eb8168ae254a9b8cfe20f"
+      },
+      {
+        "query": "النسخ المعتمدة",
+        "directCount": 2,
+        "indexedCount": 2,
+        "candidates": 2,
+        "missing": 0,
+        "directIdsSha256": "c12dc913fd87410d123d4c52e618f3415fa3ef5810dc9966ccb8e265aa904682",
+        "indexedIdsSha256": "c12dc913fd87410d123d4c52e618f3415fa3ef5810dc9966ccb8e265aa904682"
+      },
+      {
+        "query": "اختلاف العلماء",
+        "directCount": 0,
+        "indexedCount": 0,
+        "candidates": 0,
+        "missing": 0,
+        "directIdsSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "indexedIdsSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "query": "باب النسخ",
+        "directCount": 0,
+        "indexedCount": 0,
+        "candidates": 1,
+        "missing": 0,
+        "directIdsSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "indexedIdsSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "query": "لفظة معدومة يقينا",
+        "directCount": 0,
+        "indexedCount": 0,
+        "candidates": 0,
+        "missing": 0,
+        "directIdsSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "indexedIdsSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    ],
+    "rss": 84254720
+  }
+}
