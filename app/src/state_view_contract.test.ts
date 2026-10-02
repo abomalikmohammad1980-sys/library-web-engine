@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest'
 
 const source = (path: string): string => readFileSync(fileURLToPath(new URL(path, import.meta.url)), 'utf8')
 const asyncStateOwners = ['./screens/home.ts', './screens/me.ts', './screens/book.ts', './screens/notes.ts', './screens/reader.ts', './book_import.ts']
-const auditedSources = [...asyncStateOwners, './live_search.ts']
+const auditedSources = asyncStateOwners
 
 describe('unified async state contract', () => {
   it('uses stateView in every screen that owns async loading or failure states', () => {

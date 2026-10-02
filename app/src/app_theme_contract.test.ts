@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import fs from 'node:fs'
 import path from 'node:path'
+import { runInNewContext } from 'node:vm'
 import { getSettings, resetSettings, saveSettings } from './settings_store'
 
 const root = path.resolve(import.meta.dirname)
@@ -45,7 +46,13 @@ describe('whole-app theme contract', () => {
 
   it('prevents flash and exposes a clear header selector without altering source pages', () => {
     const html = read('../index.html'), shell = read('shell.ts'), tokens = read('styles/tokens.css'), components = read('styles/components.css'), screens = read('styles/screens.css')
-    expect(html).toContain("document.documentElement.dataset.appTheme = theme")
+    const initTag = html.match(/<script\b[^>]*src=["']\/theme-init\.js["'][^>]*><\/script>/)?.[0]
+    expect(initTag).toBeDefined()
+    expect(initTag).not.toMatch(/\s(?:async|defer)(?:\s|=|>)/)
+    expect(initTag).not.toMatch(/\stype\s*=/)
+    const moduleIndex = html.search(/<script\b[^>]*type=["']module["']/)
+    expect(moduleIndex).toBeGreaterThan(html.indexOf(initTag!))
+    expect(html.indexOf(initTag!)).toBeLessThan(html.indexOf('</head>'))
     expect(shell).toContain("'aria-label': 'اختيار ألوان الخِزانة'")
     for (const theme of ['light', 'dark', 'sepia']) expect(tokens).toContain(`[data-app-theme='${theme}']`)
     expect(tokens.lastIndexOf("[data-app-theme='dark']")).toBeGreaterThan(tokens.indexOf(':root {'))
@@ -60,6 +67,32 @@ describe('whole-app theme contract', () => {
     expect(screens).toContain("[data-app-theme='dark'] .daily-card")
     expect(screens).toMatch(/\[data-app-theme='dark'\] \.home-hero__brand,[\s\S]*background: var\(--paper-surface\);[\s\S]*color: var\(--text-body\);/)
     expect(screens).toMatch(/\[data-app-theme='dark'\] \.continue-card[\s\S]*var\(--paper-surface-alt\)/)
+  })
+
+  it('executes the external pre-app initializer with saved themes and safe fallbacks', () => {
+    const initializer = read('../public/theme-init.js')
+    for (const [saved, theme] of [
+      [null, 'original'], ['{}', 'original'], ['{broken', 'original'],
+      ['{"theme":"unknown"}', 'original'], ['{"theme":"original"}', 'original'],
+      ['{"theme":"light"}', 'light'], ['{"theme":"dark"}', 'dark'], ['{"theme":"sepia"}', 'sepia'],
+    ] as const) {
+      const element = { dataset: {} as Record<string, string>, style: { colorScheme: '' } }
+      const meta = { content: '' }
+      runInNewContext(initializer, {
+        localStorage: { getItem: (key: string) => { expect(key).toBe('alkhizana:settings:v1'); return saved } },
+        document: { documentElement: element, querySelector: (selector: string) => { expect(selector).toBe('meta[name="theme-color"]'); return meta } },
+      })
+      expect(element.dataset.appTheme).toBe(theme)
+      expect(element.style.colorScheme).toBe(theme === 'dark' ? 'dark' : 'light')
+      expect(meta.content).toBe({ original: '#f1ede3', light: '#ffffff', dark: '#171816', sepia: '#eadcc3' }[theme])
+    }
+    const element = { dataset: {} as Record<string, string>, style: { colorScheme: '' } }
+    expect(() => runInNewContext(initializer, {
+      localStorage: { getItem: () => { throw new Error('Storage unavailable') } },
+      document: { documentElement: element, querySelector: () => null },
+    })).not.toThrow()
+    expect(element.dataset.appTheme).toBe('original')
+    expect(element.style.colorScheme).toBe('light')
   })
 
   it('keeps the reader book card opaque and theme-aware in all four app themes', () => {

@@ -32,7 +32,7 @@ describe('translation feature contract', () => {
 
   it('translates accessible names, hints, and placeholders from the local dictionary and restores Arabic', () => {
     const source = readFileSync(resolve(import.meta.dirname, 'translation.ts'), 'utf8')
-    expect(source).toContain("const UI_TRANSLATABLE_ATTRIBUTES = ['aria-label', 'placeholder', 'title'] as const")
+    expect(source).toContain("const UI_TRANSLATABLE_ATTRIBUTES = ['aria-label', 'placeholder', 'title', 'alt', 'data-ui-busy-label', 'data-tooltip'] as const")
     expect(source).toContain('translateKnownUiAttributes(target)')
     expect(source).toContain('restoreOriginalUiAttributes()')
     expect(source).toContain("element.closest('.reading__page-slot,.reader__pdf-viewport,[data-no-translate]')")
@@ -60,9 +60,9 @@ describe('translation feature contract', () => {
     expect(source).toContain("fetch('/api/translate'")
     expect(source).not.toMatch(/api[_-]?key|bearer\s/i)
     expect(source).toContain('6000')
-    const endpoint = readFileSync(resolve(import.meta.dirname, '../../alpha-publish/functions/api/translate.js'), 'utf8')
-    expect(endpoint).toContain('freePublicTranslation')
-    expect(endpoint).toContain('public-free-fallback')
+    const endpoint = readFileSync(resolve(import.meta.dirname, '../../deployment/cloudflare/functions/api/translate.js'), 'utf8')
+    expect(endpoint).toContain('ai.run')
+    expect(endpoint).toContain('translationLimited')
   })
 
   it('exposes translation from header, footer, and textual reader selection', () => {
@@ -71,15 +71,15 @@ describe('translation feature contract', () => {
     const source = readFileSync(resolve(import.meta.dirname, 'translation.ts'), 'utf8')
     expect(shell).toContain("translationButton('app-header__translation')")
     expect(shell).not.toContain("translationButton('site-footer__translation')")
-    expect(shell).toContain("'aria-label': `ألوان الخِزانة — ${themeNames[selectedTheme]}`")
+    expect(shell).toContain("'aria-label': 'اختيار ألوان الخِزانة'")
     expect(shell).not.toContain("class: 'app-header__theme-label'")
     expect(reader).toContain('openTranslationDialog(text)')
-    expect(reader).toContain('reading__translate-page')
-    expect(source).toContain('DAILY_REQUEST_LIMIT = 80')
-    expect(source).toContain('translateMissingUiLabels')
-    expect(source).toContain('تبقى البيانات المتغيرة بأصلها')
+    expect(reader).toContain("class: 'reader__selection-translate'")
+    expect(source).toContain("localStorage.setItem(key, localTranslation)")
+    expect(source).toContain('uiDictionary.ready()')
+    expect(source).toContain('if (!translated) continue')
     expect(source).toContain('if (!resolved) { node.textContent = original; continue }')
-    expect(source).toContain('[[KHZ_')
+    expect(source).toContain("purpose: 'text' | 'ui' = 'text'")
   })
 
   it('anchors the site-language picker under a visible translation button instead of a side modal', () => {
@@ -101,15 +101,15 @@ describe('translation feature contract', () => {
     const router = readFileSync(resolve(import.meta.dirname, 'router.ts'), 'utf8')
     const source = readFileSync(resolve(import.meta.dirname, 'translation.ts'), 'utf8')
     expect(router).toMatch(/import \{[^}]*restoreSelectedSiteLanguage[^}]*\} from '\.\/translation'/)
-    expect(router).toMatch(/root\.replaceChildren\(content, globalRemembrance\(\)\)\s+\/\/[^\n]*\s+restoreSelectedSiteLanguage\(\)/)
+    expect(router).toMatch(/function finishRoute[\s\S]*root\.replaceChildren\([\s\S]*globalRemembrance\(\)\)\s+restoreSelectedSiteLanguage\(\)/)
     expect(router).toMatch(/root\.replaceChildren\(readerScreen\(bookId\), globalRemembrance\(\)\)\s+restoreSelectedSiteLanguage\(\)/)
     expect(source).toContain("localStorage.setItem(SITE_LANGUAGE_KEY, target.code)")
     expect(source).toContain("localStorage.removeItem(SITE_LANGUAGE_KEY)")
     expect(source).toContain("else localStorage.setItem(SITE_LANGUAGE_KEY, language.code)")
     expect(source).toContain('new MutationObserver(records =>')
-    expect(source).toContain('{ childList: true, subtree: true }')
+    expect(source).toContain('{ childList: true, subtree: true, attributes: true, attributeFilter: [...UI_TRANSLATABLE_ATTRIBUTES] }')
     expect(source).toContain('ensureDynamicTranslationObserver()')
-    expect(source).toContain('if (language) translateKnownUiNodes(language)')
+    expect(source).toContain('if (language && document.documentElement.lang === language.code) translateKnownUiNodes(language)')
   })
 
   it('keeps book text out of UI translation while preserving Arabic source direction', () => {

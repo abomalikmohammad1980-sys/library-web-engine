@@ -1,0 +1,2 @@
+# Crawler policy is managed by Cloudflare; do not duplicate its groups here.
+Sitemap: https://khzanah.com/sitemap.xml

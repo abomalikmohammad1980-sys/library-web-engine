@@ -19,10 +19,12 @@ describe('uthmani multi-line selection', () => {
     expect(quranWordIndexAtPoint(words, 10, 10, () => [hit])).toBe(1)
   })
 
-  it('keeps word click separate and opens all researcher tools only after a drag', () => {
+  it('leaves native cross-line selection unobstructed and opens tools only after selection ends', () => {
     const source = readFileSync(new URL('./screens/quran.ts', import.meta.url), 'utf8')
-    expect(source).toContain('if (moved) {')
-    expect(source).toContain('quranWordIndexAtPoint(words')
+    expect(source).toContain("overlay.addEventListener('pointerup'")
+    expect(source).toContain('range.intersectsNode(word)')
+    expect(source).not.toContain("word.addEventListener('pointerdown'")
+    expect(source).not.toContain('moveEvent.preventDefault()')
     for (const label of ['نسخ عثماني', 'نسخ إملائي', 'تظليل', 'في الخِزانة', 'في Google']) expect(source).toContain(label)
     expect(source).toContain('formatQuranCopyRange')
   })

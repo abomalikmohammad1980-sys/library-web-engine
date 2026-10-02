@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { parseEpub } from './epub_import'
 import { textParagraphs } from './text_import'
@@ -6,7 +6,7 @@ import { textParagraphs } from './text_import'
 const file = new URL('../../../../كتب للاختبار/الماجريات.epub', import.meta.url)
 
 describe('EPUB Arabic real corpus', () => {
-  it('preserves Arabic metadata, RTL text and NCX destinations', () => {
+  it.runIf(existsSync(file))('preserves Arabic metadata, RTL text and NCX destinations', () => {
     const parsed = parseEpub(readFileSync(file), 'الماجريات.epub')
     expect(parsed.title).toBe('الماجريات')
     expect(parsed.author).toBe('إبراهيم عمر السكران')

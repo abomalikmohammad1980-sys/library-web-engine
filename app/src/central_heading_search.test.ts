@@ -1,5 +1,6 @@
 import {it,expect} from 'vitest'
 import {readFile} from 'node:fs/promises'
+import {existsSync} from 'node:fs'
 import {resolve} from 'node:path'
 import {createHash} from 'node:crypto'
 import {gzipSync,gunzipSync} from 'node:zlib'
@@ -91,7 +92,7 @@ it('retains verified postings between searches without changing filtered and exc
  expect(f.requests.filter(path=>path.startsWith('postings/'))).toHaveLength(1)
  await expect(client.search('النسخ',{signal:AbortSignal.abort()})).rejects.toThrow()
 })
-it('overlaps two required real posting shards without changing the exact total',async()=>{
+it.runIf(existsSync('artifacts/heading-dictionary-binary-v1/descriptor.json'))('overlaps two required real posting shards without changing the exact total',async()=>{
  // @ts-expect-error Local artifact adapter is tooling, not application runtime.
  const {localHeadingFetch}=await import('../../tools/local-heading-server.mjs')
  const io=await localHeadingFetch('artifacts/heading-search-central-v2','artifacts/heading-dictionary-binary-v1'),release=JSON.parse(await readFile('artifacts/heading-search-central-v2/client-release.json','utf8'))
@@ -99,7 +100,7 @@ it('overlaps two required real posting shards without changing the exact total',
  const client=new CentralHeadingSearchClient({baseURL:'https://heading.local/',dictionaryBinary:release.dictionaryBinary,planTokens:true,fetch:async(url,init)=>{if(!String(url).includes('/postings/'))return io.fetcher(url,init);active++;peak=Math.max(peak,active);try{await new Promise(ok=>setTimeout(ok,5));return await io.fetcher(url,init)}finally{active--}}})
  expect((await client.search('النسخ')).total).toBe(3849);expect(peak).toBe(2);expect(active).toBe(0)
 },30000)
-it('keeps the client busy until failed or aborted lookahead I/O actually settles, then permits retry',async()=>{
+it.runIf(existsSync('artifacts/heading-dictionary-binary-v1/descriptor.json'))('keeps the client busy until failed or aborted lookahead I/O actually settles, then permits retry',async()=>{
  // @ts-expect-error Local adapter is tooling only.
  const {localHeadingFetch}=await import('../../tools/local-heading-server.mjs')
  const release=JSON.parse(await readFile('artifacts/heading-search-central-v2/client-release.json','utf8'))
@@ -126,7 +127,7 @@ it('plans normalized single-token exclusions before row retrieval and exact pagi
   expect(f.requests.filter(path=>path.startsWith('rows/')).length).toBeLessThanOrEqual(2)
  }
 })
-it('narrows real phrase candidates at word boundaries without losing any of the 112 audited titles',async()=>{
+it.runIf(existsSync('artifacts/heading-search-central-v1/audit.json'))('narrows real phrase candidates at word boundaries without losing any of the 112 audited titles',async()=>{
  const base=resolve('artifacts/heading-search-central-v2'),release=JSON.parse(await readFile(resolve(base,'client-release.json'),'utf8')),audit=JSON.parse(await readFile(resolve('artifacts/heading-search-central-v1/audit.json'),'utf8')),old=JSON.parse(await readFile(resolve('artifacts/heading-search-central-v1/manifest.json'),'utf8')),manifest=JSON.parse(await readFile(resolve(base,'manifest.json'),'utf8'))
  expect(manifest.sourceRecordsSha256).toBe(old.sourceRecordsSha256)
  let rowRequests=0;const fetch:typeof globalThis.fetch=async(input,init)=>{const path=new URL(String(input)).pathname.slice(1),body=await readFile(resolve(path.endsWith('.compact.bin.gz')?'artifacts/heading-dictionary-binary-v1':base,path)),range=new Headers(init?.headers).get('range');if(!range)return new Response(body);rowRequests++;const [,a,b]=range.match(/^bytes=(\d+)-(\d+)$/)!;return new Response(body.subarray(Number(a),Number(b)+1),{status:206,headers:{'content-range':`bytes ${a}-${b}/${body.length}`,'content-length':String(Number(b)-Number(a)+1)}})}

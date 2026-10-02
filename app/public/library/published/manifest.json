@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
-  "datasetVersion": "2026.08.10-complete-28-tafsir4-metadata1",
-  "generatedAt": "2026-08-10",
-  "sourceFileCount": 33,
-  "workCount": 27,
-  "readyCount": 27,
+  "datasetVersion": "2026-08-11-test-fallback-tafsir5",
+  "generatedAt": "2026-08-11T00:15:09.498Z",
+  "sourceFileCount": 62,
+  "workCount": 46,
+  "readyCount": 46,
   "works": [
     {
       "id": "alpha-8714fd3287040b0f",
@@ -36,9 +36,18 @@
       "metadata": {
         "category": "الحديث وعلومه",
         "tags": [
-          { "name": "تخريج الحديث", "source": "manual" },
-          { "name": "نقد الأسانيد", "source": "manual" },
-          { "name": "بعثت بالسيف", "source": "manual" }
+          {
+            "name": "تخريج الحديث",
+            "source": "manual"
+          },
+          {
+            "name": "نقد الأسانيد",
+            "source": "manual"
+          },
+          {
+            "name": "بعثت بالسيف",
+            "source": "manual"
+          }
         ]
       },
       "coverStrategy": "pdf-page-1",
@@ -620,6 +629,559 @@
       "coverStrategy": "pdf-page-1"
     },
     {
+      "id": "tafsir-mokhtasar-tafsir",
+      "title": "المختصر في تفسير القرآن الكريم",
+      "author": "مركز تفسير للدراسات القرآنية",
+      "status": "ready",
+      "security": {
+        "verdict": "allow",
+        "reasons": []
+      },
+      "sources": [
+        {
+          "format": "markdown",
+          "role": "primary",
+          "compression": "gzip",
+          "path": "./library/published/assets/6398d70015b98ed1.md.gz",
+          "fileName": "المختصر في تفسير القرآن الكريم - مركز تفسير.md",
+          "bytes": 527327,
+          "contentBytes": 2035307,
+          "sha256": "6398d70015b98ed1fbdb98cf54cf8c1251f7975ed8f35125c0fedb55c52a9772",
+          "contentSha256": "e74361429c4b7ca1201b4c4abc2b91d52304d518d8f5a7b7ef00ff06ccdb7eae"
+        }
+      ],
+      "metadata": {
+        "category": "التفاسير",
+        "description": "تفسير ميسر مرتبط بآيات المصحف، ويُقرأ ويُبحث فيه كأي كتاب آخر في الخِزانة.",
+        "sourceCitation": "الموسوعة القرآنية — الكتاب 2003؛ نسخة محلية موثقة البصمة"
+      },
+      "coverStrategy": "generated"
+    },
+    {
+      "id": "quran-resource-gharib-ibn-qutaybah",
+      "title": "غريب القرآن",
+      "author": "ابن قتيبة الدينوري",
+      "status": "ready",
+      "security": {
+        "verdict": "allow",
+        "reasons": []
+      },
+      "sources": [
+        {
+          "format": "markdown",
+          "role": "primary",
+          "compression": "gzip",
+          "path": "./library/published/assets/9489de686aa42497.md.gz",
+          "fileName": "غريب القرآن.md",
+          "bytes": 190508,
+          "contentBytes": 628437,
+          "sha256": "9489de686aa42497d47c81819067ded5e2008a95237fd1a07a813f1b46da97c5"
+        }
+      ],
+      "metadata": {
+        "category": "علوم القرآن",
+        "description": "غريب القرآن مرتبط بمواضع الآيات من الحزمة المحلية الموثقة.",
+        "sourceCitation": "Quranpedia — المورد 341؛ حزمة محلية موثقة البصمة"
+      },
+      "coverStrategy": "generated"
+    },
+    {
+      "id": "quran-resource-surahpedia-irab-word",
+      "title": "إعراب القرآن الكريم على مستوى الكلمة",
+      "author": "الفريق العلمي بمركز تفسير للدراسات القرآنية",
+      "status": "ready",
+      "security": {
+        "verdict": "allow",
+        "reasons": []
+      },
+      "sources": [
+        {
+          "format": "markdown",
+          "role": "primary",
+          "compression": "gzip",
+          "path": "./library/published/assets/f343761eaafb5813.md.gz",
+          "fileName": "إعراب القرآن الكريم على مستوى الكلمة.md",
+          "bytes": 1186165,
+          "contentBytes": 21806920,
+          "sha256": "f343761eaafb58132cd3951ca5ea7274e193ed762699f40b0b5498e680d4db69"
+        }
+      ],
+      "metadata": {
+        "category": "إعراب القرآن",
+        "description": "إعراب القرآن على مستوى الكلمة من إعداد الفريق العلمي بمركز تفسير، مرتبط بكل آيات المصحف.",
+        "sourceCitation": "Quranpedia — المورد 22؛ حزمة محلية موثقة البصمة"
+      },
+      "coverStrategy": "generated"
+    },
+    {
+      "id": "test-6fbd18f9366300db",
+      "title": "الجمعة.. آداب وأحكام دراسة فقهية مقارنة",
+      "author": "سامي الساعدي",
+      "status": "ready",
+      "security": {
+        "verdict": "allow",
+        "reasons": []
+      },
+      "sources": [
+        {
+          "format": "pdf",
+          "role": "alternate",
+          "path": "./library/published/assets/f005716ea37ab205.pdf",
+          "fileName": "a5e3f441a29b.pdf",
+          "bytes": 1080564,
+          "sha256": "f005716ea37ab2057027096c6255ff541e80342ab9ef537af92068e71f6ec8b4"
+        },
+        {
+          "format": "word",
+          "role": "primary",
+          "path": "./library/published/assets/a5e3f441a29b2fc4.docx",
+          "fileName": "الجمعة.. آداب وأحكام دراسة فقهية مقارنة - سامي الساعدي.docx",
+          "bytes": 156078,
+          "sha256": "a5e3f441a29b2fc4723390153c5f6b9d8a7db0a1c34bc612f51a1ee53c7354d5"
+        }
+      ],
+      "metadata": {
+        "category": "غير مصنف",
+        "tags": []
+      },
+      "coverStrategy": "pdf-page-1",
+      "wordArtifact": {
+        "path": "./library/published/assets/82c3ba6c97651350.json",
+        "totalPages": 148,
+        "paragraphCount": 664
+      }
+    },
+    {
+      "id": "test-b521feffe2552f1c",
+      "title": "الجواب المسدد لمن بدل دين الرسول محمد",
+      "author": "فارس الزهراني",
+      "status": "ready",
+      "security": {
+        "verdict": "allow",
+        "reasons": []
+      },
+      "sources": [
+        {
+          "format": "pdf",
+          "role": "alternate",
+          "path": "./library/published/assets/6ab6be1cc2ad0e10.pdf",
+          "fileName": "801664cef5f5.pdf",
+          "bytes": 5489128,
+          "sha256": "6ab6be1cc2ad0e1092c672f61704e1dcc35b7b81d9ef9f9b5c7abd4735c826a7"
+        },
+        {
+          "format": "word",
+          "role": "primary",
+          "path": "./library/published/assets/801664cef5f5ba1c.docx",
+          "fileName": "الجواب المسدد لمن بدل دين الرسول محمد - فارس الزهراني.docx",
+          "bytes": 674411,
+          "sha256": "801664cef5f5ba1c7f9cf61b96001b304c33e4653e75378daffee93747ce7f5c"
+        }
+      ],
+      "metadata": {
+        "category": "غير مصنف",
+        "tags": []
+      },
+      "coverStrategy": "pdf-page-1",
+      "wordArtifact": {
+        "path": "./library/published/assets/91c35668de7b3c98.json",
+        "totalPages": 395,
+        "paragraphCount": 2461
+      }
+    },
+    {
+      "id": "test-32f86230fcd664f1",
+      "title": "المستقبل لهذ الدين",
+      "author": "سيد قطب",
+      "status": "ready",
+      "security": {
+        "verdict": "allow",
+        "reasons": []
+      },
+      "sources": [
+        {
+          "format": "pdf",
+          "role": "alternate",
+          "path": "./library/published/assets/4ed78ed49c2004d0.pdf",
+          "fileName": "المستقبل لهذ الدين - سيد قطب.pdf",
+          "bytes": 1095939,
+          "sha256": "4ed78ed49c2004d09a795b1d92a165de3f2f2bb3cb6d122c968a9480d65c913b"
+        },
+        {
+          "format": "word",
+          "role": "primary",
+          "path": "./library/published/assets/9db889177bed0ae7.docx",
+          "fileName": "المستقبل لهذ الدين - سيد قطب.docx",
+          "bytes": 98738,
+          "sha256": "9db889177bed0ae7a468df1a162802ce27c27765b2367eaba0cf6a8e9905cf64"
+        }
+      ],
+      "metadata": {
+        "category": "غير مصنف",
+        "tags": []
+      },
+      "coverStrategy": "pdf-page-1",
+      "wordArtifact": {
+        "path": "./library/published/assets/f32b5ebe0541ae54.json",
+        "totalPages": 76,
+        "paragraphCount": 486
+      }
+    },
+    {
+      "id": "test-4da9df562a3d1151",
+      "title": "خصائص التصور الإسلامي ومقوماته",
+      "author": "سيد قطب",
+      "status": "ready",
+      "security": {
+        "verdict": "allow",
+        "reasons": []
+      },
+      "sources": [
+        {
+          "format": "pdf",
+          "role": "alternate",
+          "path": "./library/published/assets/d96b151dd9ed1e0d.pdf",
+          "fileName": "خصائص التصور الإسلامي ومقوماته - سيد قطب.pdf",
+          "bytes": 10069002,
+          "sha256": "d96b151dd9ed1e0d55db7bb980518e356bdea3ae7e2a553727ee6f78e6baed50"
+        },
+        {
+          "format": "word",
+          "role": "primary",
+          "path": "./library/published/assets/a5693552a5bbd6d3.docx",
+          "fileName": "خصائص التصور الإسلامي ومقوماته - سيد قطب.docx",
+          "bytes": 244645,
+          "sha256": "a5693552a5bbd6d3693d8f7211543636869e12a7115b79c1033f468f1cba936b"
+        }
+      ],
+      "metadata": {
+        "category": "غير مصنف",
+        "tags": []
+      },
+      "coverStrategy": "pdf-page-1",
+      "wordArtifact": {
+        "path": "./library/published/assets/7861c1441e4d1ea2.json",
+        "totalPages": 201,
+        "paragraphCount": 1597
+      }
+    },
+    {
+      "id": "test-dce0bb4838159113",
+      "title": "خطوط عريضة في منهج الجماعة الإسلامية المقاتلة",
+      "author": "سامي الساعدي",
+      "status": "ready",
+      "security": {
+        "verdict": "allow",
+        "reasons": []
+      },
+      "sources": [
+        {
+          "format": "pdf",
+          "role": "alternate",
+          "path": "./library/published/assets/8a13739e8fa53f46.pdf",
+          "fileName": "fc1034c90c96.pdf",
+          "bytes": 1015734,
+          "sha256": "8a13739e8fa53f46efd583a124795f471ccc928e0210613d9d7575c4c0752aec"
+        },
+        {
+          "format": "word",
+          "role": "primary",
+          "path": "./library/published/assets/fc1034c90c9632cc.docx",
+          "fileName": "خطوط عريضة في منهج الجماعة الإسلامية المقاتلة - سامي الساعدي.docx",
+          "bytes": 178683,
+          "sha256": "fc1034c90c9632ccdb982b2cd6e47c0075dc0ca4b29bd75b1ea718f9122ef0f1"
+        }
+      ],
+      "metadata": {
+        "category": "غير مصنف",
+        "tags": []
+      },
+      "coverStrategy": "pdf-page-1",
+      "wordArtifact": {
+        "path": "./library/published/assets/c2d094857fc6a46d.json",
+        "totalPages": 165,
+        "paragraphCount": 766
+      }
+    },
+    {
+      "id": "test-246edb4888f08c32",
+      "title": "دراسات إسلامية",
+      "author": "سيد قطب",
+      "status": "ready",
+      "security": {
+        "verdict": "allow",
+        "reasons": []
+      },
+      "sources": [
+        {
+          "format": "pdf",
+          "role": "alternate",
+          "path": "./library/published/assets/16fd7a5ce8adc6eb.pdf",
+          "fileName": "5bcfc347cfe6.pdf",
+          "bytes": 1086858,
+          "sha256": "16fd7a5ce8adc6eb92f5d90c71175f62c57e8ccb19d26dc8867005ccb13f6153"
+        },
+        {
+          "format": "word",
+          "role": "primary",
+          "path": "./library/published/assets/5bcfc347cfe6e6f2.docx",
+          "fileName": "دراسات إسلامية - سيد قطب.docx",
+          "bytes": 368248,
+          "sha256": "5bcfc347cfe6e6f2bc828c72e5904220c6d39a71affa98ba92ca88ae11f077e1"
+        }
+      ],
+      "metadata": {
+        "category": "غير مصنف",
+        "tags": []
+      },
+      "coverStrategy": "pdf-page-1",
+      "wordArtifact": {
+        "path": "./library/published/assets/6b5621dee754203b.json",
+        "totalPages": 142,
+        "paragraphCount": 1064
+      }
+    },
+    {
+      "id": "test-9be5f2f1fe395bd8",
+      "title": "قصيدة.. كذب المنافق وافترى",
+      "author": "سامي الساعدي",
+      "status": "ready",
+      "security": {
+        "verdict": "allow",
+        "reasons": []
+      },
+      "sources": [
+        {
+          "format": "pdf",
+          "role": "alternate",
+          "path": "./library/published/assets/50f64cde23fa3093.pdf",
+          "fileName": "8e588cb33fa8.pdf",
+          "bytes": 99043,
+          "sha256": "50f64cde23fa3093714086fd52cf5acbff4e0003be6819ddf2ea405b9cb9fe90"
+        },
+        {
+          "format": "word",
+          "role": "primary",
+          "path": "./library/published/assets/8e588cb33fa8d1fe.docx",
+          "fileName": "قصيدة.. كذب المنافق وافترى - سامي الساعدي.docx",
+          "bytes": 25557,
+          "sha256": "8e588cb33fa8d1fe0d33c1144ca2f9b8ea4919c7d67b474158d06523da2b5fc6"
+        }
+      ],
+      "metadata": {
+        "category": "غير مصنف",
+        "tags": []
+      },
+      "coverStrategy": "pdf-page-1",
+      "wordArtifact": {
+        "path": "./library/published/assets/33deb64d475362c7.json",
+        "totalPages": 2,
+        "paragraphCount": 64
+      }
+    },
+    {
+      "id": "test-8903a8c13d8c5876",
+      "title": "قصيدة.. موكب الحجارة",
+      "author": "سامي الساعدي",
+      "status": "ready",
+      "security": {
+        "verdict": "allow",
+        "reasons": []
+      },
+      "sources": [
+        {
+          "format": "pdf",
+          "role": "alternate",
+          "path": "./library/published/assets/a79749717c7169cb.pdf",
+          "fileName": "20df83e31b52.pdf",
+          "bytes": 104553,
+          "sha256": "a79749717c7169cb2c58f1b0927b24eb63d94aed393089a0b0cc2d09515a3f64"
+        },
+        {
+          "format": "word",
+          "role": "primary",
+          "path": "./library/published/assets/20df83e31b52257d.docx",
+          "fileName": "قصيدة.. موكب الحجارة - سامي الساعدي.docx",
+          "bytes": 25514,
+          "sha256": "20df83e31b52257d2d6c3c008fd37c8797dc9448cd08ad5baf3946ead4cbfe94"
+        }
+      ],
+      "metadata": {
+        "category": "غير مصنف",
+        "tags": []
+      },
+      "coverStrategy": "pdf-page-1",
+      "wordArtifact": {
+        "path": "./library/published/assets/58a4e578f6de0d51.json",
+        "totalPages": 2,
+        "paragraphCount": 52
+      }
+    },
+    {
+      "id": "test-e9d24a604280965c",
+      "title": "وجوب استنقاذ المستضعفين من سجون الطواغيت والمرتدين",
+      "author": "فارس الزهراني",
+      "status": "ready",
+      "security": {
+        "verdict": "allow",
+        "reasons": []
+      },
+      "sources": [
+        {
+          "format": "pdf",
+          "role": "alternate",
+          "path": "./library/published/assets/5e1941b99d7c9c15.pdf",
+          "fileName": "d55ec78c1bdc.pdf",
+          "bytes": 1001282,
+          "sha256": "5e1941b99d7c9c1583e9695948c874de07c75906255aa0507042040b687f2ad4"
+        },
+        {
+          "format": "word",
+          "role": "primary",
+          "path": "./library/published/assets/d55ec78c1bdcc72c.docx",
+          "fileName": "وجوب استنقاذ المستضعفين من سجون الطواغيت والمرتدين - فارس الزهراني.docx",
+          "bytes": 216165,
+          "sha256": "d55ec78c1bdcc72c3a38242f87723601d906dd89f34e63eaf7ceae7d5686b3b4"
+        }
+      ],
+      "metadata": {
+        "category": "غير مصنف",
+        "tags": []
+      },
+      "coverStrategy": "pdf-page-1",
+      "wordArtifact": {
+        "path": "./library/published/assets/9ad7af940f125b91.json",
+        "totalPages": 125,
+        "paragraphCount": 780
+      }
+    },
+    {
+      "id": "test-4a3e61ab3b660a72",
+      "title": "ديوان سيد قطب؛ لعبد الباقي حسين",
+      "author": "سيد قطب",
+      "status": "ready",
+      "security": {
+        "verdict": "allow",
+        "reasons": []
+      },
+      "sources": [
+        {
+          "format": "word",
+          "role": "primary",
+          "path": "./library/published/assets/f21266f0bba8d2d9.docx",
+          "fileName": "ديوان سيد قطب؛ لعبد الباقي حسين - سيد قطب.docx",
+          "bytes": 688204,
+          "sha256": "f21266f0bba8d2d9b3f6fb0ed4a487c3caa98379a0b3461d7efb2cf47deb7902"
+        }
+      ],
+      "metadata": {
+        "category": "غير مصنف",
+        "tags": []
+      },
+      "coverStrategy": "generated",
+      "wordArtifact": {
+        "path": "./library/published/assets/f21266f0bba8d2d9.word-page-map.json",
+        "totalPages": 299,
+        "paragraphCount": 12542,
+        "fragmentCount": 6720
+      }
+    },
+    {
+      "id": "test-749d9fbf8122c97c",
+      "title": "سلسلة العلاقات الدولية في الإسلام",
+      "author": "فارس الزهراني",
+      "status": "ready",
+      "security": {
+        "verdict": "allow",
+        "reasons": []
+      },
+      "sources": [
+        {
+          "format": "word",
+          "role": "primary",
+          "path": "./library/published/assets/91295616d42caa93.docx",
+          "fileName": "سلسلة العلاقات الدولية في الإسلام - فارس الزهراني.docx",
+          "bytes": 260987,
+          "sha256": "91295616d42caa933f410b11bbee48fd962506d7dc39244c4f89744cb006bf58"
+        }
+      ],
+      "metadata": {
+        "category": "غير مصنف",
+        "tags": []
+      },
+      "coverStrategy": "generated",
+      "wordFallback": {
+        "paragraphCount": 696,
+        "extractedTextSha256": "f81a60a3708d16c44780a6526ce3f0b632035a215fa5a56f9fa61e3af3c7ade3"
+      }
+    },
+    {
+      "id": "test-c155de1fe8f574b9",
+      "title": "مجموع مؤلفات الشيخ فارس آل شويل",
+      "author": "فارس الزهراني",
+      "status": "ready",
+      "security": {
+        "verdict": "allow",
+        "reasons": []
+      },
+      "sources": [
+        {
+          "format": "word",
+          "role": "primary",
+          "path": "./library/published/assets/7d65a27983b1fd9e.docx",
+          "fileName": "مجموع مؤلفات الشيخ فارس آل شويل - فارس الزهراني.docx",
+          "bytes": 3007718,
+          "sha256": "7d65a27983b1fd9e2a2270b213e7878ef54243e21cf54750e7604e68a623f928"
+        }
+      ],
+      "metadata": {
+        "category": "غير مصنف",
+        "tags": []
+      },
+      "coverStrategy": "generated",
+      "wordFallback": {
+        "paragraphCount": 17352,
+        "extractedTextSha256": "4adf7a77f1c50c327e4c28dfee91840616db96edbfb19834b09ab99883d5508f"
+      }
+    },
+    {
+      "id": "test-edcc8485aa1f1385",
+      "title": "مسائل من فقه الجهاد",
+      "author": "عبد الرحمن العلي",
+      "status": "ready",
+      "security": {
+        "verdict": "allow",
+        "reasons": []
+      },
+      "sources": [
+        {
+          "format": "pdf",
+          "role": "alternate",
+          "path": "./library/published/assets/968d0c1551f94f74.pdf",
+          "fileName": "مسائل من فقه الجهاد - عبد الرحمن العلي.pdf",
+          "bytes": 35203486,
+          "sha256": "968d0c1551f94f749170e5e8166ad7966dd65f949ba9a7b100cc83a4ed08d5ca"
+        },
+        {
+          "format": "word",
+          "role": "primary",
+          "path": "./library/published/assets/b6bc1573ff82185f.docx",
+          "fileName": "مسائل من فقه الجهاد - عبد الرحمن العلي.docx",
+          "bytes": 1528576,
+          "sha256": "b6bc1573ff82185f32436a9fb2291ee84678efae7ecaf1724f555806751fe3b7"
+        }
+      ],
+      "metadata": {
+        "category": "غير مصنف",
+        "tags": []
+      },
+      "coverStrategy": "pdf-page-1",
+      "wordFallback": {
+        "paragraphCount": 4684,
+        "extractedTextSha256": "ddbc3d3caae08d4882766cac666452cc88541f44fc1617b660027aaff386ec29"
+      }
+    },
+    {
       "id": "tafsir-saadi",
       "title": "تفسير السعدي",
       "author": "عبد الرحمن بن ناصر السعدي",
@@ -637,13 +1199,13 @@
           "fileName": "تفسير السعدي - عبد الرحمن بن ناصر السعدي.md",
           "bytes": 1874160,
           "contentBytes": 7245416,
-          "sha256": "0b493aef04dae72486524a97124ad1147766063ce56755f58b3c17a7c7303d6e"
+          "sha256": "0b493aef04dae72486524a97124ad1147766063ce56755f58b3c17a7c7303d6e",
+          "contentSha256": "0f5c2d32aea774a5351ee325d24f39a8409dee1693c7aece5ebdf1899766b4d5"
         }
       ],
       "metadata": {
         "category": "التفاسير",
-        "description": "كتاب تفسير محلي مرتبط بآيات المصحف، ويُقرأ ويُبحث فيه كأي كتاب آخر في الخِزانة.",
-        "sourceCitation": "الموسوعة القرآنية — الكتاب 3؛ نسخة محلية موثقة البصمة"
+        "description": "كتاب تفسير محلي مرتبط بآيات المصحف، ويُقرأ ويُبحث فيه كأي كتاب آخر في الخِزانة."
       },
       "coverStrategy": "generated"
     },
@@ -665,13 +1227,13 @@
           "fileName": "معالم التنزيل - الحسين بن مسعود البغوي.md",
           "bytes": 3361457,
           "contentBytes": 16193444,
-          "sha256": "e33ce655e9d2e8eae37dcb145b04fc2e6c33f1aaba25781a07c2587fd4052a84"
+          "sha256": "e33ce655e9d2e8eae37dcb145b04fc2e6c33f1aaba25781a07c2587fd4052a84",
+          "contentSha256": "5e132e18efc139fbdd515818798bdb159ac1aca198e00565fa5728d3e9097760"
         }
       ],
       "metadata": {
         "category": "التفاسير",
-        "description": "كتاب تفسير محلي مرتبط بآيات المصحف، ويُقرأ ويُبحث فيه كأي كتاب آخر في الخِزانة.",
-        "sourceCitation": "الموسوعة القرآنية — الكتاب 2؛ نسخة محلية موثقة البصمة"
+        "description": "كتاب تفسير محلي مرتبط بآيات المصحف، ويُقرأ ويُبحث فيه كأي كتاب آخر في الخِزانة."
       },
       "coverStrategy": "generated"
     },
@@ -693,20 +1255,20 @@
           "fileName": "جامع البيان - محمد بن جرير الطبري.md",
           "bytes": 8383892,
           "contentBytes": 37815916,
-          "sha256": "d1259a47ee20b7ebfd73bd122991b66a07fade60bf1ecd8f539dfa3a5ca46b1a"
+          "sha256": "d1259a47ee20b7ebfd73bd122991b66a07fade60bf1ecd8f539dfa3a5ca46b1a",
+          "contentSha256": "5696280c87e7057f75b7e86e261f24915ed8bcd31f394056cd9ef66b5a0c842d"
         }
       ],
       "metadata": {
         "category": "التفاسير",
-        "description": "كتاب تفسير محلي مرتبط بآيات المصحف، ويُقرأ ويُبحث فيه كأي كتاب آخر في الخِزانة.",
-        "sourceCitation": "الموسوعة القرآنية — الكتاب 4؛ نسخة محلية موثقة البصمة"
+        "description": "كتاب تفسير محلي مرتبط بآيات المصحف، ويُقرأ ويُبحث فيه كأي كتاب آخر في الخِزانة."
       },
       "coverStrategy": "generated"
     },
     {
-      "id": "tafsir-mokhtasar-tafsir",
-      "title": "المختصر في تفسير القرآن الكريم",
-      "author": "مركز تفسير للدراسات القرآنية",
+      "id": "tafsir-ibn-kathir",
+      "title": "تفسير القرآن العظيم",
+      "author": "إسماعيل بن عمر ابن كثير",
       "status": "ready",
       "security": {
         "verdict": "allow",
@@ -717,17 +1279,105 @@
           "format": "markdown",
           "role": "primary",
           "compression": "gzip",
-          "path": "./library/published/assets/6398d70015b98ed1.md.gz",
-          "fileName": "المختصر في تفسير القرآن الكريم - مركز تفسير.md",
-          "bytes": 527327,
-          "contentBytes": 2035307,
-          "sha256": "6398d70015b98ed1fbdb98cf54cf8c1251f7975ed8f35125c0fedb55c52a9772"
+          "path": "./library/published/assets/76779a43fc108d64.md.gz",
+          "fileName": "تفسير القرآن العظيم - إسماعيل بن عمر ابن كثير.md",
+          "bytes": 5679257,
+          "contentBytes": 27909928,
+          "sha256": "76779a43fc108d643961b1fad991252ad0e3af515e5817e78b91a0d3e4825b0f",
+          "contentSha256": "86874aa2a97357c436a089089ef78f36c03a0c35f89d17f34a9babe32de04ff3"
         }
       ],
       "metadata": {
         "category": "التفاسير",
-        "description": "تفسير ميسر مرتبط بآيات المصحف، ويُقرأ ويُبحث فيه كأي كتاب آخر في الخِزانة.",
-        "sourceCitation": "الموسوعة القرآنية — الكتاب 2003؛ نسخة محلية موثقة البصمة"
+        "description": "كتاب تفسير محلي مرتبط بآيات المصحف، ويُقرأ ويُبحث فيه كأي كتاب آخر في الخِزانة."
+      },
+      "coverStrategy": "generated"
+    },
+    {
+      "id": "tafsir-adwa-al-bayan",
+      "title": "أضواء البيان في إيضاح القرآن بالقرآن",
+      "author": "محمد الأمين الشنقيطي",
+      "status": "ready",
+      "security": {
+        "verdict": "allow",
+        "reasons": []
+      },
+      "sources": [
+        {
+          "format": "markdown",
+          "role": "primary",
+          "compression": "gzip",
+          "path": "./library/published/assets/df416bc40b1fbc02.md.gz",
+          "fileName": "أضواء البيان في إيضاح القرآن بالقرآن - محمد الأمين الشنقيطي.md",
+          "bytes": 4101365,
+          "contentBytes": 21872191,
+          "sha256": "df416bc40b1fbc02a9360bab5d36a4a115cc5a87b326bfdd0298706b2571321a",
+          "contentSha256": "fadb571657ab7fc234cccc2841b4573f0bb605263aed15aea969b25e3e08fe46"
+        }
+      ],
+      "metadata": {
+        "category": "التفاسير",
+        "description": "كتاب تفسير محلي مرتبط بآيات المصحف، ويُقرأ ويُبحث فيه كأي كتاب آخر في الخِزانة."
+      },
+      "coverStrategy": "generated"
+    },
+    {
+      "id": "tafsir-fi-zilal",
+      "title": "في ظلال القرآن",
+      "author": "سيد قطب",
+      "status": "ready",
+      "security": {
+        "verdict": "allow",
+        "reasons": [
+          "verified_microsoft_jet_signature_and_dedicated_bok_parser"
+        ]
+      },
+      "sources": [
+        {
+          "format": "shamela-bok",
+          "role": "primary",
+          "path": "./library/published/assets/8aec169b5904d137.bok",
+          "fileName": "في ظلال القرآن - سيد قطب.bok",
+          "bytes": 15413248,
+          "sha256": "8aec169b5904d137e11dcb9c46a18dc74623dfcb7b5befea668eefd25632a0c6"
+        }
+      ],
+      "metadata": {
+        "category": "التفسير",
+        "publicationYearHijri": 1412,
+        "deathYearHijri": 1385,
+        "description": "نسخة BOK محلية كاملة مرتبطة بالآيات وفق حقول النطاق الصريحة في المصدر.",
+        "sourceCitation": "نسخة BOK قدمها المستخدم؛ SHA-256 مثبت في سجل الاستيراد."
+      },
+      "coverStrategy": "generated"
+    },
+    {
+      "id": "tafsir-qurtubi",
+      "title": "الجامع لأحكام القرآن",
+      "author": "محمد بن أحمد القرطبي",
+      "status": "ready",
+      "security": {
+        "verdict": "allow",
+        "reasons": []
+      },
+      "sources": [
+        {
+          "format": "markdown",
+          "role": "primary",
+          "compression": "gzip",
+          "path": "./library/published/assets/062c3754941ee8cc.md.gz",
+          "fileName": "الجامع لأحكام القرآن - محمد بن أحمد القرطبي.md",
+          "bytes": 7631218,
+          "contentBytes": 34562593,
+          "sha256": "062c3754941ee8ccd637789049299cf053b07e6bf8710ec21e56d2b7e58b6daa",
+          "contentSha256": "661678c6b0301bc128daf40bdde10f6bacf32f95a77b7f8da446a0222a0f3798"
+        }
+      ],
+      "metadata": {
+        "category": "التفاسير",
+        "deathYearHijri": 671,
+        "description": "تفسير محلي مرتبط بالسور والآيات ويفتح ككتاب ثابت في الخزانة.",
+        "sourceCitation": "المكتبة الشاملة القديمة — الكتاب 2556؛ نسخة محلية موثقة البصمة."
       },
       "coverStrategy": "generated"
     }

@@ -23,10 +23,14 @@ describe('authors directory filtering', () => {
     ]
     expect(filterAuthorEntries(entries, 'ابن تيمية', true).map(entry => entry.value)).toEqual([1])
     expect(filterAuthorEntries(entries, 'ابن تيمية', false).map(entry => entry.value)).toEqual([1, 2])
+    expect(filterAuthorEntries([
+      { value: 3, name: 'موثق', bookCount: 0, hasBooks: true },
+      { value: 4, name: 'بلا كتب', bookCount: 9, hasBooks: false },
+    ], '', true).map(entry => entry.value)).toEqual([3])
   })
 
   it('advances in bounded batches until every matching author is visible', () => {
-    expect(nextAuthorVisibleCount(80, 205)).toBe(160)
+    expect(nextAuthorVisibleCount(100, 205)).toBe(200)
     expect(nextAuthorVisibleCount(160, 205)).toBe(205)
     expect(nextAuthorVisibleCount(205, 205)).toBe(205)
   })

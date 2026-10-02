@@ -6,7 +6,8 @@ describe('route accessibility contract', () => {
     const routes = ['home', 'library', 'authors', 'search', 'shelves', 'settings'] as const
     const titles = routes.map(routeDocumentTitle)
     expect(new Set(titles).size).toBe(titles.length)
-    expect(titles.every(title => title.endsWith('— الخِزانة'))).toBe(true)
+    expect(titles.every(title => title.endsWith('- الخِزانة'))).toBe(true)
+    expect(titles.every(title => !/[—–]/u.test(title))).toBe(true)
   })
 
   it('names reader and author destinations explicitly', () => {
@@ -14,4 +15,3 @@ describe('route accessibility contract', () => {
     expect(routeDocumentTitle('author')).toContain('رف المؤلف')
   })
 })
-

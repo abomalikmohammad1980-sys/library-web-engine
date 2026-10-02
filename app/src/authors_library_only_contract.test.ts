@@ -6,11 +6,12 @@ import { mergeAuthorRecords, type StoredAuthor } from './engine/library_store'
 const screen = readFileSync(new URL('./screens/library.ts', import.meta.url), 'utf8')
 
 describe('authors are a directory for the real local library', () => {
-  it('counts cards from StoredBook matches and never exposes source-catalog book totals', () => {
-    expect(screen).toContain('books.length} كتاب في الخزانة')
-    expect(screen).toContain('groupedById')
-    expect(screen).toContain('groupedByName')
-    expect(screen).not.toContain('shamelaBookCount')
+  it('counts only authors with published books from the lightweight verified index', () => {
+    expect(screen).toContain('loadShamelaAuthorMetadata()')
+    expect(screen).toContain("uiTemplateText('3a35fec055ff569c', { p1: bookCount })")
+    expect(screen).toContain('index.authors.map')
+    expect(screen).not.toContain('groupedById')
+    expect(screen).not.toContain('groupedByName')
     expect(screen).not.toContain('كتب المؤلف في الشاملة')
   })
 

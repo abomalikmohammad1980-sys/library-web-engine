@@ -1,11 +1,11 @@
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { loadBookFromBuffer } from './engine/bridge'
 import { plainReaderGroups } from './reader_failure'
 
 const CAMP = new URL('../../../../كتب للاختبار/منهاج مخيم جيل العزة - المخيم الصيفي لمدة أسبوع.docx', import.meta.url)
 
-describe('QA-012 — منهاج مخيم جيل العزة', () => {
+describe.runIf(existsSync(CAMP))('QA-012 — منهاج مخيم جيل العزة', () => {
   it('keeps the real DOCX parseable and supplies a non-empty safe reading fallback', () => {
     const bytes = new Uint8Array(readFileSync(CAMP))
     const loaded = loadBookFromBuffer(bytes)

@@ -3,7 +3,7 @@ import { readerDocumentTitle, readerIdentityLabel } from './reader_identity'
 
 describe('reader identity', () => {
   it('يعرّف لسان المتصفح باسم الكتاب ثم الخزانة', () => {
-    expect(readerDocumentTitle('الطريق إلى القرآن')).toBe('الطريق إلى القرآن — الخِزانة')
+    expect(readerDocumentTitle('الطريق إلى القرآن')).toBe('الطريق إلى القرآن - الخِزانة')
   })
 
   it('يبني هوية موجزة من الكتاب والمؤلف مع fallback صريح', () => {

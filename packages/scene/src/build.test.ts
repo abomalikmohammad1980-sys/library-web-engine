@@ -49,7 +49,7 @@ function provider() {
   return registryProvider({ "al-jazeera arabic": jazeera, "al-jazeera-arabic-regular": jazeera }, "Al-Jazeera-Arabic-Regular");
 }
 
-describe("scene corpus — منهاج مخيم جيل العزة", () => {
+describe.runIf(existsSync(MINHAJ_CAMP))("scene corpus — منهاج مخيم جيل العزة", () => {
   it("يبني الجداول ويكرر tblHeader الحقيقي ويحفظ vAlign دون exception", async () => {
     const camp = extractFromDocx(readFileSync(MINHAJ_CAMP));
     const scene = await buildScene(camp, provider());

@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { describe, expect, it, vi } from 'vitest'
 import { extractFromDocx } from '@engine/ooxml-model'
 import { auditWordPageMap, auditWordPageMapStructure, domFontFaces, effectivePageHeight, groupsFromWordPageMap, registerDomFonts, requireWordPageGroups, runtimeDomFontBase, WordPageMapMismatchError, wordLabelForPhysicalPage } from './dom_render'
@@ -19,7 +19,7 @@ describe('DOM render — خطوط المستند المخدومة', () => {
     expect(runtimeDomFontBase('https://example.test/index.html')).toBe('https://example.test/fonts/')
   })
 
-  it('يطابق خريطة Word الحقيقية لمنهاج مخيم جيل العزة', () => {
+  it.runIf(existsSync(MINHAJ))('يطابق خريطة Word الحقيقية لمنهاج مخيم جيل العزة', () => {
     const model = extractFromDocx(readFileSync(MINHAJ))
     // Captured independently from Microsoft Word COM (41 physical pages / 686
     // Word paragraphs), then reconciled once to the 558 OOXML model paragraphs.
@@ -155,7 +155,7 @@ describe('DOM render — خطوط المستند المخدومة', () => {
     expect(wordLabelForPhysicalPage(map, slot + 1)).toBe(8)
   })
 
-  it('يحفظ حدود Word الفيزيائية في توحيد الحاكمية ولا يدمج ص3 وص4', () => {
+  it.runIf(existsSync(TAWHID))('يحفظ حدود Word الفيزيائية في توحيد الحاكمية ولا يدمج ص3 وص4', () => {
     const model = extractFromDocx(readFileSync(TAWHID))
     const starts = [0, 1, 2, 8, 18, 24, 28, 32, 42, 49, 56, 60, 63, 68, 73, 77,
       80, 85, 91, 96, 99, 107, 113, 118, 125, 127, 131, 144, 155, 162, 167, 175]
@@ -225,13 +225,17 @@ describe('DOM render — خطوط المستند المخدومة', () => {
     class TestFontFace { load = async (): Promise<TestFontFace> => { await load(); return this } }
     vi.stubGlobal('FontFace', TestFontFace)
     vi.stubGlobal('document', { fonts: { add } })
+    const fetchFont = vi.fn(async () => ({ ok: true, arrayBuffer: async () => new ArrayBuffer(0) }))
+    vi.stubGlobal('fetch', fetchFont)
     try {
       await registerDomFonts(model, '/lifecycle-fonts/')
       const firstLoads = load.mock.calls.length
+      const firstFetches = fetchFont.mock.calls.length
       expect(firstLoads).toBeGreaterThan(0)
       await registerDomFonts(model, '/lifecycle-fonts/')
       expect(load).toHaveBeenCalledTimes(firstLoads)
       expect(add).toHaveBeenCalledTimes(firstLoads)
+      expect(fetchFont).toHaveBeenCalledTimes(firstFetches)
     } finally { vi.unstubAllGlobals() }
   })
 

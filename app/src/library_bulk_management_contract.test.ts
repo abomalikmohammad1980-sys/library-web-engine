@@ -10,7 +10,8 @@ describe('filtered library management UI contract', () => {
     expect(source).toContain('مسح التحديد')
     expect(source).toContain('تطبيق على المحدد')
     expect(source).toContain('نقل إلى الرف')
-    expect(source).toMatch(/if \(!confirm\(`حذف/)
+    expect(source).toContain('const prompt=`حذف ${arabicCount(chosen.length)} كتاب؟')
+    expect(source).toContain('if (!confirm(await resolveUiLabel(prompt,document.documentElement.dataset.siteLanguage??\'ar\'))) return')
     expect(source).toContain('bulkDeleteBooks([...selected]')
   })
 

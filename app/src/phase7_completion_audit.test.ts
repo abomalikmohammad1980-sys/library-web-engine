@@ -24,15 +24,18 @@ describe('phase 7 completion static gate', () => {
     expect(ACCESSIBLE_ROUTES.length).toBeGreaterThanOrEqual(19)
     expect(new Set(ACCESSIBLE_ROUTES)).toHaveProperty('size', ACCESSIBLE_ROUTES.length)
     expect(new Set(ACCESSIBLE_ROUTES.map(routeDocumentTitle))).toHaveProperty('size', ACCESSIBLE_ROUTES.length)
-    for (const route of ACCESSIBLE_ROUTES.filter(route => route !== 'home' && route !== 'book')) expect(router).toContain(`route.name === '${route}'`)
-    expect(router).toContain("if (first === 'book' && second) return { name: 'reader', param: second }")
-    expect(router).toContain("content = appFrame(homeScreen(), '#/')")
+    for (const route of ACCESSIBLE_ROUTES.filter(route => route !== 'reader' && route !== 'book')) expect(router).toMatch(new RegExp(`(?:'${route}'|${route}):\\s*async`))
+    expect(router).toContain("if (first === 'book' && second) {")
+    expect(router).toContain('resolveCanonicalBookDeepLink(bookRoutes, segment, query)')
+    expect(router).toContain("home: async () => ({ content: (await import('./screens/home')).homeScreen(), activeHash: '#/' })")
     expect(router).toContain('setSourceDocumentTitle(routeDocumentTitle(')
   })
 
   it('provides one application main and screen-level H1 contracts without nested anchor construction', () => {
     expect(read('./shell.ts').match(/h\('main'/g)).toHaveLength(1)
-    for (const name of ['home', 'quran', 'browse', 'library', 'search', 'me', 'settings', 'notes', 'shelves', 'reading_plans', 'research_projects', 'editions', 'series', 'data_quality', 'welcome']) expect(read(`./screens/${name}.ts`)).toContain("h('h1'")
+    for (const name of ['home', 'quran', 'browse', 'library', 'search', 'me', 'settings', 'notes', 'shelves', 'reading_plans', 'research_projects', 'editions', 'series', 'data_quality', 'welcome']) expect(read(`./screens/${name}.ts`)).toMatch(/h\('h1'|publicPageHero\(|sectionServiceHero\(/)
+    expect(read('./public_page_hero.ts')).toContain("h('h1'")
+    expect(read('./section_service_hero.ts')).toContain("h('h1'")
     expect(nestedAnchorCount(screens)).toBe(0)
   })
 

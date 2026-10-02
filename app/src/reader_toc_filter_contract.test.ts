@@ -6,7 +6,11 @@ const css = readFileSync(new URL('./styles/components.css', import.meta.url), 'u
 
 describe('تصفية الفهرس المشتركة لكل صيغ القارئ', () => {
   it('تخفي العناصر غير المطابقة فعليًا وتعيدها عند المسح', () => {
-    expect(reader).toContain('item.el.hidden = !matched')
+    expect(reader).toContain('indexed.filter(item=>item.query.includes(query))')
+    expect(reader).toContain('list.replaceChildren();appendWindow()')
+    expect(reader).toContain('Math.min(matches.length,shown+200)')
+    expect(reader).toContain("more.addEventListener('click',appendWindow)")
+    expect(reader).toContain('__tocNavigate?.(it)')
     expect(reader).toContain("search.value = ''; filter(); search.focus()")
     expect(css).toMatch(/\.reader__toc-item\[hidden\]\s*\{\s*display:\s*none\s*!important;/)
   })

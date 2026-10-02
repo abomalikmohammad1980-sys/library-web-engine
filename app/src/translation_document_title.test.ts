@@ -1,8 +1,10 @@
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { setSourceDocumentTitle } from './translation'
+import { uiDictionary } from './ui_dictionary_loader'
 
 describe('translated route document title', () => {
-  beforeAll(() => {
+  beforeAll(async () => {
+    await uiDictionary.ready()
     const values = new Map<string, string>()
     vi.stubGlobal('localStorage', {
       clear: () => values.clear(),
@@ -22,19 +24,19 @@ describe('translated route document title', () => {
     document.title = ''
   })
 
-  it('replaces the previous translated route title with the current route title', () => {
+  it('replaces the previous translated route title with the current route title', async () => {
     localStorage.setItem('khizana:site-language', 'en')
     setSourceDocumentTitle('الرئيسية — الخِزانة')
-    expect(document.title).toBe('Home — Al-Khezana')
+    await vi.waitFor(() => expect(document.title).toBe('Home - Al-Khezana'))
 
     setSourceDocumentTitle('القرآن — الخِزانة')
-    expect(document.title).toBe('Quran — Al-Khezana')
+    await vi.waitFor(() => expect(document.title).toBe('Quran - Al-Khezana'))
   })
 
-  it('keeps an Arabic book name while translating the known reader suffix', () => {
+  it('keeps an Arabic book name while translating the known reader suffix', async () => {
     localStorage.setItem('khizana:site-language', 'en')
     setSourceDocumentTitle('تفسير السعدي — قراءة — الخِزانة')
-    expect(document.title).toContain('Tafsir al-Sa‘di')
+    await vi.waitFor(() => expect(document.title).toContain('Tafsir al-Sa‘di'))
     expect(document.title).not.toContain('Home')
   })
 })

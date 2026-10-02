@@ -268,7 +268,8 @@ describe("ظل Word القديم", () => {
 const ARCHIVE_SHADOW = new URL("../../../../../كتب للاختبار/الأرشيف الجامع لكلمات وخطابات الشيخ أبي مصعب الزرقاوي ـ شبكة البراق الإسلامية.docx", import.meta.url);
 const describeArchiveShadow = existsSync(ARCHIVE_SHADOW) ? describe : describe.skip;
 describeArchiveShadow("انحدار w:shadow في الأرشيف الجامع", () => {
-  const model = extractFromDocx(readFileSync(ARCHIVE_SHADOW));
+  let model: ReturnType<typeof extractFromDocx>;
+  beforeAll(() => { model = extractFromDocx(readFileSync(ARCHIVE_SHADOW)); });
   it("يحفظ مئات الظلال القديمة بالقيمة المقاسة بدل إسقاطها", () => {
     const shadowed = model.paragraphs.flatMap(paragraph => paragraph.runs)
       .filter(run => run.textShadow?.color === "C0C0C0" && run.textShadow.blurTwips === 0);
@@ -589,7 +590,8 @@ describePublishedIbhaj("علاقات OPC ذات namespace معاد تسميته"
   });
 });
 it.runIf(existsSync(SANITIZED_IBHAJ))("يحفظ مرساة غلاف إبهاج الكاملة page-coordinate رغم RTL وهوامش متساوية", () => {
-  const model = extractFromDocx(readFileSync(SANITIZED_IBHAJ));
+  let model: ReturnType<typeof extractFromDocx>;
+  beforeAll(() => { model = extractFromDocx(readFileSync(SANITIZED_IBHAJ)); });
   expect(model.sections[0]).toMatchObject({ pageWTwips: 11906, pageHTwips: 16838,
     marLeftTwips: 2275, marRightTwips: 2275, marTopTwips: 2275, marBottomTwips: 2275 });
   const cover = model.paragraphs.flatMap(paragraph => paragraph.anchors)
@@ -622,7 +624,8 @@ describeShami("انحدار غلاف سيرة الشيخ أبي أنس الشا�
 });
 const describeTawhidContextualSpacing = existsSync(TAWHID) ? describe : describe.skip;
 describeTawhidContextualSpacing("انحدار contextualSpacing في توحيد الحاكمية", () => {
-  const model = extractFromDocx(readFileSync(TAWHID));
+  let model: ReturnType<typeof extractFromDocx>;
+  beforeAll(() => { model = extractFromDocx(readFileSync(TAWHID)); });
   it("يحسم الخاصية الموروثة على فقرات corpus ولا يتركها وسمًا ميتًا", () => {
     const contextual = model.paragraphs.filter(paragraph => paragraph.contextualSpacing);
     expect(contextual.length).toBeGreaterThan(100);
@@ -639,7 +642,8 @@ describeTawhidContextualSpacing("انحدار contextualSpacing في توحيد 
 });
 const describeSiyasa = existsSync(SIYASA) ? describe : describe.skip;
 describeSiyasa("انحدار علامات الحواشي المخصصة في السياسة الشرعية", () => {
-  const model = extractFromDocx(readFileSync(SIYASA));
+  let model: ReturnType<typeof extractFromDocx>;
+  beforeAll(() => { model = extractFromDocx(readFileSync(SIYASA)); });
 
   it("يحفظ العلامات الإحدى عشرة من corpus بلا استبدالها بأرقام آلية", () => {
     const refs = model.paragraphs.flatMap(paragraph => paragraph.runs)
@@ -674,7 +678,7 @@ const IBHAJ = new URL("../../../../../كتب للاختبار/إبهاج أهل 
 const ARBAUN = new URL("../../../../../كتب للاختبار/الأربعون الجياد لأهل التوحيد والجهاد.docx", import.meta.url);
 const describeCorpusFrames = existsSync(IBHAJ) && existsSync(ARBAUN) ? describe : describe.skip;
 describeCorpusFrames("انحدار framePr في كتب الاختبار", () => {
-  const frames = [IBHAJ, ARBAUN].flatMap(url => [...extractFromDocx(readFileSync(url)).headerFooters.values()]
+  const frames = [IBHAJ, ARBAUN].filter(existsSync).flatMap(url => [...extractFromDocx(readFileSync(url)).headerFooters.values()]
     .flat().filter(paragraph => paragraph.framePr));
 
   it("يحفظ الإطارات الستة من الرؤوس والتذييلات بدل رصفها كفقرات عادية", () => {
@@ -948,7 +952,8 @@ describe("إعدادات الحواشي الخاصة بالمقطع", () => {
 
 const describeTawhidFooter = existsSync(TAWHID) ? describe : describe.skip;
 describeTawhidFooter("تذييل توحيد الحاكمية داخل Content Control", () => {
-  const model = extractFromDocx(readFileSync(TAWHID));
+  let model: ReturnType<typeof extractFromDocx>;
+  beforeAll(() => { model = extractFromDocx(readFileSync(TAWHID)); });
 
   it("يحفظ فقرة PAGE داخل w:sdt قبل الفقرة الفارغة", () => {
     const footer = model.headerFooters.get("footer1.xml") ?? [];

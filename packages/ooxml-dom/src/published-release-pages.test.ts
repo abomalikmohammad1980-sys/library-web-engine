@@ -59,16 +59,27 @@ describe("published Word release — every authoritative page", () => {
     const groups = groupsFromWordPageMap(model, map as unknown as Parameters<typeof groupsFromWordPageMap>[1]);
     expect(groups).not.toBeNull();
     expect(auditWordPageMap(model, map as unknown as Parameters<typeof auditWordPageMap>[1]).mismatches).toEqual([]);
-    const ownership = new Int32Array(model.paragraphs.length); ownership.fill(-1);
-    const paragraphIndexes = new Map(model.paragraphs.map((paragraph, index) => [paragraph, index]));
+    const ownership = new Map<number, Set<number>>();
+    const pieces = new Map<number, string[]>();
     for (let physical = 0; physical < groups!.length; physical++) {
       for (const paragraph of groups![physical]!) {
-        const index = paragraphIndexes.get(paragraph)!;
-        expect(ownership[index]).toBe(-1);
-        ownership[index] = physical;
+        const pages = ownership.get(paragraph.index) ?? new Set<number>();
+        pages.add(physical); ownership.set(paragraph.index, pages);
+        const text = pieces.get(paragraph.index) ?? [];
+        text.push(paragraph.text); pieces.set(paragraph.index, text);
       }
     }
-    expect(Array.from(ownership).every(page => page >= 0)).toBe(true);
+    for (const paragraph of model.paragraphs) {
+      const text = pieces.get(paragraph.index);
+      if (!text) {
+        expect({ excluded: paragraph.excluded, text: paragraph.text }).toEqual({ excluded: "field", text: "" });
+        continue;
+      }
+      // A paragraph may cross a physical Word boundary.  Its fragments are
+      // not duplicate ownership: their ordered concatenation must equal the
+      // authored OOXML text exactly, with no clipped or invented character.
+      expect(text.join(""), `fragmented paragraph ${paragraph.index}`).toBe(paragraph.text);
+    }
 
     const rendered = renderDocument(model, groups!) as unknown as FakeNode;
     const nodes = descendants(rendered), pages = nodes.filter(node => node.attrs.get("class")?.split(/\s+/).includes("page"));
@@ -90,7 +101,7 @@ describe("published Word release — every authoritative page", () => {
     }
     for (const paragraph of model.paragraphs) {
       if (!paragraph.bookmarkIds?.length) continue;
-      expect(ownership[paragraphIndexes.get(paragraph)!]).toBeGreaterThanOrEqual(0);
+      expect(ownership.get(paragraph.index)?.size).toBeGreaterThan(0);
     }
     for (const section of model.sections) {
       for (const part of [...Object.values(section.headerRefs ?? {}), ...Object.values(section.footerRefs ?? {})])
@@ -115,8 +126,8 @@ describe("published Word release — every authoritative page", () => {
     });
   }, 120_000);
 
-  it("covers high-risk page classes across the six-work release", () => {
-    expect(riskSummary).toHaveLength(6);
+  it("covers high-risk page classes across every declared Word work", () => {
+    expect(riskSummary).toHaveLength(wordWorks.length);
     const total = (key: keyof Omit<(typeof riskSummary)[number], "title">): number =>
       riskSummary.reduce((sum, work) => sum + work[key], 0);
     expect(total("images")).toBeGreaterThan(0);

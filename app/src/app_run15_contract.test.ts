@@ -24,6 +24,6 @@ describe('run15 interface regression contract', () => {
       expect(source).not.toContain("sourceIsPdf ? 'تحميل PDF الأصلي'")
     }
     expect(reader).toContain("format === 'pdf' ? 'تحميل PDF'")
-    expect(reader).toContain("if (format === 'pdf')")
+    expect(reader).toContain("if (format === 'pdf' || format === 'jpeg')")
   })
 })

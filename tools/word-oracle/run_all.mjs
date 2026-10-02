@@ -19,6 +19,13 @@ const books = Object.entries(MAP)
     && existsSync(cfg.horizFont) && existsSync(cfg.vertSubset))
   .map(([book]) => book);
 
+if (CHECK) {
+  const missing = Object.keys(BASELINES).filter(book => !books.includes(book));
+  if (!books.length || missing.length) {
+    throw new Error(`Word oracle fixtures missing (restore Git LFS assets): ${missing.join(', ')}`);
+  }
+}
+
 const runOracle = (script, book, family, font) => {
   const env = { ...process.env, BOOK: book, FAMILY: family, FONT_FILE: font };
   const result = spawnSync("node", [`tools/word-oracle/${script}`], { env, encoding: "utf-8" });

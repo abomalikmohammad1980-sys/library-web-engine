@@ -1,0 +1,4 @@
+Contact: https://t.me/khezaana
+Preferred-Languages: ar, en
+Canonical: https://khzanah.com/.well-known/security.txt
+Expires: 2027-08-11T00:00:00Z

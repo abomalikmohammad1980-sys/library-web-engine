@@ -12,7 +12,8 @@ describe('global remembrance', () => {
     expect(shell).toContain("khizana:remembrance-shown:v2")
     expect(shell).toContain("'aria-live': 'polite'")
     expect(shell).toContain("'aria-atomic': 'true'")
-    expect(router).toContain('root.replaceChildren(content, globalRemembrance())')
+    expect(router).toContain("root.replaceChildren(activeHash === '#/welcome' ? content : appFrame(content, activeHash), globalRemembrance())")
+    expect(router).toContain('root.replaceChildren(readerScreen(bookId), globalRemembrance())')
   })
 
   it('keeps a broad sourced corpus of complete reminders under ten words', () => {

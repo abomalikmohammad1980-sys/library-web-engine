@@ -13,7 +13,9 @@ describe('saved BOK offline audit',()=>{
  it('reads local storage during visibility lookup without exposing a hidden book',async()=>{
   vi.stubGlobal('navigator',{onLine:true})
   let finish!: (value:Response)=>void
-  const fetcher=vi.fn(()=>new Promise<Response>(resolve=>{finish=resolve}))
+  const fetcher=vi.fn((input:RequestInfo|URL)=>String(input).includes('/api/library/central-overrides')
+   ?new Promise<Response>(resolve=>{finish=resolve})
+   :Promise.resolve(new Response(null,{status:404})))
   vi.stubGlobal('fetch',fetcher);vi.mocked(getBook).mockClear()
   const opening=ensureShamelaBookReady('410001001')
   let settled=false;void opening.then(()=>{settled=true},()=>{settled=true})

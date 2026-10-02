@@ -19,12 +19,21 @@ describe('BOK real-corpus reader pipeline', () => {
     expect(reader).toContain("bookmark: `bok-toc-${index + 1}`")
     expect(reader).toContain('nav.goToBookmark?.(item.bookmark)')
     expect(reader).toContain("document.getElementById(bookmark)?.scrollIntoView")
+    expect(reader).toContain('page.dataset.tocBookmarks=')
+    expect(reader).toContain("pages.findIndex(page => (page.dataset.tocBookmarks ?? '').split('|')")
+    expect(reader).toContain("for (const entry of matches) page.appendChild(h('h2', { class: 'reader__text-heading', id: entry.bookmark")
+    expect(reader).toContain("block: 'start'")
+    expect(reader).toContain("behavior: 'auto', block: 'start'")
+    expect(reader).toContain('const displayed=bokDisplayPages[index]??source.page')
+    expect(reader).toContain('Number(item.page.dataset.partNumber) === selectedPart')
     expect(reader).not.toMatch(/nav\.goTo\(Math\.max\([^)]*-\s*[23]/)
   })
 
   it('keeps RTL text, explicit footnotes, TOC filtering and 390px-safe pages', () => {
     expect(reader).toContain("aria-label': 'حواشي الصفحة'")
-    expect(reader).toContain('shamelaTextBlocks(source.text)')
+    // inline controls carry source-authored separator/style offsets; dropping
+    // them silently loses the page's structured BOK typography.
+    expect(reader).toContain('shamelaTextBlocks(source.text,source.controls)')
     expect(reader).toContain("search.addEventListener('input', filter)")
     expect(css).toContain('.reader--textual .reader__text-notes')
     expect(css).toContain('@media (max-width: 640px)')

@@ -21,7 +21,8 @@ describe('generic Markdown and tafsir reader contract', () => {
   it('hides edit and delete affordances for immutable system books', () => {
     const LIBRARY = readFileSync(new URL('./screens/library.ts', import.meta.url), 'utf8')
     expect(LIBRARY).toContain("book.managedSource !== 'published'")
-    expect(LIBRARY).toContain('كتاب أصلي مثبّت')
+    expect(LIBRARY).toContain("managedBookLock('library-card__managed-lock')")
     expect(READER).toContain("book.managedSource !== 'published'")
+    expect(READER).toContain("managedBookLock('reader__metadata-fixed')")
   })
 })
