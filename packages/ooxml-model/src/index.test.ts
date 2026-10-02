@@ -590,8 +590,7 @@ describePublishedIbhaj("علاقات OPC ذات namespace معاد تسميته"
   });
 });
 it.runIf(existsSync(SANITIZED_IBHAJ))("يحفظ مرساة غلاف إبهاج الكاملة page-coordinate رغم RTL وهوامش متساوية", () => {
-  let model: ReturnType<typeof extractFromDocx>;
-  beforeAll(() => { model = extractFromDocx(readFileSync(SANITIZED_IBHAJ)); });
+  const model = extractFromDocx(readFileSync(SANITIZED_IBHAJ));
   expect(model.sections[0]).toMatchObject({ pageWTwips: 11906, pageHTwips: 16838,
     marLeftTwips: 2275, marRightTwips: 2275, marTopTwips: 2275, marBottomTwips: 2275 });
   const cover = model.paragraphs.flatMap(paragraph => paragraph.anchors)
