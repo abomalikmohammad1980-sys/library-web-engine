@@ -27,7 +27,12 @@ jobs:
         run: pnpm typecheck
 
       - name: بناء الحزم
+        env:
+          KHIZANA_ANDROID_ASSETLINKS_JSON: ${{ secrets.KHIZANA_ANDROID_ASSETLINKS_JSON }}
         run: pnpm build
+
+      - name: Android linking source contracts
+        run: node --test tools/android-assetlinks.test.mjs tools/android-assetlinks-source.test.mjs
 
       - name: الاختبارات
         run: pnpm test
