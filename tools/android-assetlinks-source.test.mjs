@@ -37,3 +37,10 @@ test('CI accepts JSON input, rejects malformed data and local file overrides, an
  await assert.rejects(readAndroidAssetlinks({env:{KHIZANA_ANDROID_ASSETLINKS_JSON:'bad'}}))
  await assert.rejects(prepareAndroidAssetlinks('unused',{source:join(tmpdir(),'absent-'+Date.now()+'.json'),required:false}),{code:'ENOENT'})
 })
+test('fingerprint updates select the validated relation even with another statement for the same package',async()=>{
+ const dir=await mkdtemp(join(tmpdir(),'android-relations-'));try{
+  const source=join(dir,'source.json'),unrelated={target:{namespace:'android_app',package_name:'com.khzanah'}}
+  await writeFile(source,JSON.stringify([unrelated,...empty]));await setAndroidFingerprints([fp],{source})
+  const value=JSON.parse(await readFile(source));assert.deepEqual(value[0],unrelated);assert.deepEqual(value[1].target.sha256_cert_fingerprints,[fp])
+ }finally{await rm(dir,{recursive:true,force:true})}
+})

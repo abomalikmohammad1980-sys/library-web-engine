@@ -13,7 +13,7 @@ export async function setAndroidFingerprints(fingerprints,{source=androidAssetli
   if(!fingerprints.length||fingerprints.some(value=>!/^([0-9A-Fa-f]{2}:){31}[0-9A-Fa-f]{2}$/u.test(value)))throw Error('android_assetlinks_fingerprint_invalid: expected 32 colon-separated hexadecimal bytes')
   const value=await readAndroidAssetlinks({source})
   validateAndroidAssetlinks(value,{allowUnconfigured:true})
-  const target=value.find(item=>item?.target?.namespace==='android_app'&&item.target.package_name==='com.khzanah'&&item.relation.includes('delegate_permission/common.handle_all_urls')).target
+  const target=value.find(item=>item?.target?.namespace==='android_app'&&item.target.package_name==='com.khzanah'&&Array.isArray(item.relation)&&item.relation.includes('delegate_permission/common.handle_all_urls')).target
   target.sha256_cert_fingerprints=[...new Set([...target.sha256_cert_fingerprints,...fingerprints].map(value=>value.toUpperCase()))]
   validateAndroidAssetlinks(value)
   const temporary=source+'.'+process.pid+'.tmp'
