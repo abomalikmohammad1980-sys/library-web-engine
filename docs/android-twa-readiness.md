@@ -82,3 +82,4 @@ node tools/verify-android-links.mjs --origin https://khzanah.com
 مشروع Android المستقل في `D:/alkhizana/alkhizana-android`، وقرار الفصل في `docs/adr/ADR-android-independent-repository-20261003.md`. سير generate-keystore يطبع بصمة Upload بصيغة صالحة للأمر، ويذكر إضافة App signing. لم يُشغّل سير توليد مفتاح دائم؛ لم تُرفع مفاتيح خاصة.
 
 الربط الإلزامي النهائي يبقى معلقًا إلى وصول شهادة Play الحقيقية. نجاح اختبار مصدر معزول بشهادة اصطناعية يثبت الشيفرة فقط، ولا يثبت ربط النطاق أو تطبيق Play.
+دليل المرحلة الثانية ومخرجات البوابة الفعلية في docs/qa/android-linking-phase2-20261003.md. اختبار الهيدر الأحمر المشار إليه سابقًا أُصلح ونجح؛ المجموعة الكاملة تحتوي إخفاقات أخرى موثقة في مهمة متابعة مستقلة.
