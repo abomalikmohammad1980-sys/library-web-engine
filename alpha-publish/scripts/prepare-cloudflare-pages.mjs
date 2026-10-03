@@ -1,6 +1,6 @@
 import { cp, mkdir, readFile, rm, writeFile } from 'node:fs/promises'
-import {prepareAndroidAssetlinks,assetlinksHeaders} from '../../../tools/android-assetlinks.mjs'
-import { resolve } from 'node:path'
+import {prepareAndroidAssetlinks,assetlinksHeaders} from '../../tools/android-assetlinks.mjs'
+import { isAbsolute, relative, resolve, sep } from 'node:path'
 import {satelliteCspSources} from './satellite-build-config.mjs'
 import {stampServiceWorkerRelease,assertServiceWorkerRelease} from './service-worker-release.mjs'
 import {prepareSeoIndex} from '../../tools/prepare-seo-index.mjs'
@@ -8,8 +8,10 @@ import {inlineThemeBootstrap} from '../../tools/inline-theme-bootstrap.mjs'
 import {inlineRoutePreloads} from '../../tools/route-preload-hints.mjs'
 
 const root = resolve(import.meta.dirname, '..')
-const source = resolve(root, 'public/khizana')
-const output = resolve(root, 'pages-dist')
+const isolatedStageRoot=resolve(root,'../.artifacts')
+function isolatedPath(value){const path=resolve(value),rel=relative(isolatedStageRoot,path);if(!rel||rel==='..'||rel.startsWith(`..${sep}`)||isAbsolute(rel))throw Error('isolated_stage_path_outside_artifacts');return path}
+const source = process.env.KHIZANA_STAGE_PUBLIC?isolatedPath(process.env.KHIZANA_STAGE_PUBLIC):resolve(root, 'public/khizana')
+const output = process.env.KHIZANA_STAGE_PAGES_DIST?isolatedPath(process.env.KHIZANA_STAGE_PAGES_DIST):resolve(root, 'pages-dist')
 
 await rm(output, { recursive: true, force: true })
 await mkdir(output, { recursive: true })
@@ -21,6 +23,16 @@ const worker=stampServiceWorkerRelease(await readFile(resolve(output,'sw.js'),'u
 assertServiceWorkerRelease(worker,index)
 await writeFile(resolve(output,'sw.js'),worker,'utf8')
 const satelliteCsp=satelliteCspSources(index)
+let readerConnectSource=''
+try{
+  const client=JSON.parse(await readFile(resolve(output,'data/shamela-pages-release.json'),'utf8'))
+  if(client.directReaderShards){
+    const project=client.projects?.find(item=>item.name===client.directReaderShards.project&&item.group==='corpus')
+    const url=new URL(project?.baseUrl)
+    if(url.protocol!=='https:'||! /^(?:[a-z0-9-]+\.)?khezana-reader-01\.pages\.dev$/u.test(url.hostname))throw Error('reader_asset_origin_invalid')
+    readerConnectSource=` ${url.origin}`
+  }
+}catch(error){if(error?.code!=='ENOENT')throw error}
 // Only the official embeddable map endpoint; no broad external frame access.
 const mapFrameSources = "'self' https://www.openstreetmap.org/export/embed.html https://www.google.com/maps/embed/"
 
@@ -33,7 +45,7 @@ await writeFile(resolve(output, '_headers'), `/*
   Strict-Transport-Security: max-age=31536000; includeSubDomains
   Cross-Origin-Opener-Policy: same-origin
   Cross-Origin-Resource-Policy: same-origin
-  Content-Security-Policy: default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self'; frame-src ${mapFrameSources}; form-action 'self'; script-src 'self' 'wasm-unsafe-eval'${satelliteCsp.script}; style-src 'self' 'unsafe-inline'${satelliteCsp.style}; img-src 'self' data: blob:${satelliteCsp.img}; font-src 'self' data:; connect-src 'self' http://localhost:43129; media-src 'self' blob: https://*.mp3quran.net https://cdn.quranpedia.net https://wikiquran.nyc3.digitaloceanspaces.com; worker-src 'self' blob:; manifest-src 'self'; upgrade-insecure-requests
+  Content-Security-Policy: default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self'; frame-src ${mapFrameSources}; form-action 'self'; script-src 'self' 'wasm-unsafe-eval'${satelliteCsp.script}; style-src 'self' 'unsafe-inline'${satelliteCsp.style}; img-src 'self' data: blob:${satelliteCsp.img}; font-src 'self' data:; connect-src 'self' http://localhost:43129${readerConnectSource}; media-src 'self' blob: https://*.mp3quran.net https://cdn.quranpedia.net https://wikiquran.nyc3.digitaloceanspaces.com; worker-src 'self' blob:; manifest-src 'self'; upgrade-insecure-requests
   Cache-Control: no-cache
 
 /sw.js
