@@ -11,17 +11,19 @@ export async function extractPdfDocumentBookmarks(pdf,{sourceSha256,parserVersio
  if(!/^[a-f0-9]{64}$/.test(sourceSha256??'')||typeof parserVersion!=='string'||!parserVersion.length)throw Error('pdf_provenance_required')
  if(!Number.isSafeInteger(pdf.numPages)||pdf.numPages<1||pdf.numPages>100000)throw Error('pdf_page_bound')
  const headings=[],stack=(await pdf.getOutline()??[]).map(item=>({item,depth:0})).reverse()
- let visited=0,outputBytes=0,lowTextPages=0
+ let visited=0,outputBytes=0,lowTextPages=0,invalidBookmarks=0
  const reserve=value=>{outputBytes+=Buffer.byteLength(JSON.stringify(value));if(outputBytes>MAX_OUTPUT)throw Error('extraction_output_bound')}
  while(stack.length){
   const {item,depth}=stack.pop()
   if(++visited>100000||depth>128)throw Error('pdf_outline_bound')
-  const destination=typeof item.dest==='string'?await pdf.getDestination(item.dest):item.dest
-  if(item.title?.trim()&&Array.isArray(destination)&&destination.length){
-   const ref=destination[0],pageIndex=typeof ref==='number'?ref:await pdf.getPageIndex(ref)
-   if(!Number.isSafeInteger(pageIndex)||pageIndex<0||pageIndex>=pdf.numPages)throw Error('pdf_outline_destination_invalid')
-   const heading={value:item.title.trim(),pageIndex};reserve(heading);headings.push(heading)
-  }
+  // A dangling outline reference does not invalidate the page tree. Reject that
+  // bookmark rather than aborting a readable PDF or inventing its destination.
+  let pageIndex
+  try{const destination=typeof item.dest==='string'?await pdf.getDestination(item.dest):item.dest
+   if(item.title?.trim()&&Array.isArray(destination)&&destination.length){const ref=destination[0];pageIndex=typeof ref==='number'?ref:await pdf.getPageIndex(ref);if(!Number.isSafeInteger(pageIndex)||pageIndex<0||pageIndex>=pdf.numPages)pageIndex=undefined}
+  }catch{pageIndex=undefined}
+  if(item.title?.trim()&&pageIndex!==undefined){const heading={value:item.title.trim(),pageIndex};reserve(heading);headings.push(heading)}
+  else if(item.title?.trim()&&item.dest)invalidBookmarks++
   for(let i=(item.items?.length??0)-1;i>=0;i--)stack.push({item:item.items[i],depth:depth+1})
  }
  for(let pageIndex=0;pageIndex<pdf.numPages;pageIndex++){
@@ -34,7 +36,7 @@ export async function extractPdfDocumentBookmarks(pdf,{sourceSha256,parserVersio
   }finally{page.cleanup?.()}
  }
  const ocrRequired=lowTextPages*5>=pdf.numPages*4
- const result={coverageMode:'pdf-bookmarks-only',rows:[],headings,pdfClassification:{contract:PDF_CLASSIFICATION_CONTRACT,sourceSha256,parserVersion,pageCount:pdf.numPages,lowTextPages,kind:ocrRequired?'scanned':'text',ocrPending:ocrRequired}}
+ const result={coverageMode:'pdf-bookmarks-only',rows:[],headings,pdfClassification:{contract:PDF_CLASSIFICATION_CONTRACT,sourceSha256,parserVersion,pageCount:pdf.numPages,lowTextPages,kind:ocrRequired?'scanned':'text',ocrPending:ocrRequired,...(invalidBookmarks?{invalidBookmarks}:{})}}
  if(Buffer.byteLength(JSON.stringify(result))>MAX_OUTPUT)throw Error('extraction_output_bound')
  return result
 }
