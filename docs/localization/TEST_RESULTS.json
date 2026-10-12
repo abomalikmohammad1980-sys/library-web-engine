@@ -1,0 +1,21 @@
+{
+  "runtime": "Node.js 22.16.0",
+  "core_tests": {
+    "total": 40,
+    "passed": 40,
+    "failed": 0,
+    "storage": "node:sqlite in-memory",
+    "providers": "mocked"
+  },
+  "extraction_tests": {
+    "total": 6,
+    "passed": 6,
+    "failed": 0,
+    "typescript": "locally installed"
+  },
+  "client_typecheck": "passed against minimal translation-module declaration; not a full project build",
+  "cloudflare_deployed": false,
+  "full_site_build_tested": false,
+  "browser_end_to_end_tested": false,
+  "provider_live_tested": false
+}

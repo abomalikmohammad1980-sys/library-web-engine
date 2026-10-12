@@ -1,0 +1,27 @@
+name = "khezana-localization-engine"
+main = "index.mjs"
+compatibility_date = "2026-10-01"
+workers_dev = true
+# Pilot: no production routes, no cron, no processing until authenticated enable.
+[vars]
+NAME_API_ENABLED = "false"
+NAME_MODEL = "mistral-small-latest"
+DAILY_CALLS = "200"
+DAILY_CHARACTERS = "50000"
+MONTHLY_CALLS = "5000"
+MONTHLY_CHARACTERS = "1000000"
+[durable_objects]
+bindings = [{ name = "LOCALIZATION_COORDINATOR", class_name = "LocalizationCoordinator" }]
+[[migrations]]
+tag = "site-localization-v1"
+new_sqlite_classes = ["LocalizationCoordinator"]
+[[r2_buckets]]
+binding = "LOCALE_FILES"
+bucket_name = "khezana-site-locales"
+[[services]]
+binding = "TRANSLATOR"
+service = "khezana-translate-router"
+# Proper names require the separate adapter contract, never generic translation:
+# [[services]]
+# binding = "NAME_TRANSLATOR"
+# service = "khezana-name-translator"
