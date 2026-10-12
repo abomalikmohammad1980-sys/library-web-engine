@@ -19,7 +19,7 @@ async function readBounded(r2,key,limit){
 }
 export function extractPublicBookBounded(input,{timeoutMs=30000}={}){
  if(!Number.isSafeInteger(timeoutMs)||timeoutMs<1||timeoutMs>30000)throw Error('invalid_extraction_timeout')
- if(!(input?.bytes instanceof Uint8Array)||!input.bytes.length||input.bytes.length>20*1024*1024)throw Error('source_size_bound')
+ if(!(input?.bytes instanceof Uint8Array)||!input.bytes.length||input.bytes.length>(String(input.mime).split(';',1)[0].trim().toLowerCase()==='application/pdf'?64:20)*1024*1024)throw Error('source_size_bound')
  if(input.map!==undefined&&Buffer.byteLength(JSON.stringify(input.map))>16*1024*1024)throw Error('word_map_size_bound')
  return new Promise((resolve,reject)=>{
   // PDF.js may load a native canvas dependency. Isolate it in a process so a
@@ -41,7 +41,7 @@ export async function executePublicBookIndex({db,r2,job,env={},now=()=>Math.floo
   await fence()
   const assets=await db.prepare("SELECT COUNT(*) n FROM user_book_assets WHERE book_id=?1 AND kind='volume'").bind(job.book_id).first()
   if(Number(assets?.n)>0)throw Error('multipart_adapter_required')
-  const bytes=await readBounded(r2,job.source.object_key,20*1024*1024)
+  const bytes=await readBounded(r2,job.source.object_key,(job.source.mime_type==='application/pdf'?64:20)*1024*1024)
   if(bytes.length!==job.source.byte_length)throw Error('source_size_mismatch')
   const sourceSha256=digest(bytes)
   let map
@@ -67,7 +67,7 @@ export async function executePublicBookIndex({db,r2,job,env={},now=()=>Math.floo
   try{await r2.put(artifactKey,payload,{httpMetadata:{contentType:'application/json'}})}catch{throw Error('storage_unavailable')}
   if(digest(await readBounded(r2,artifactKey,16*1024*1024))!==manifestSha256)throw Error('artifact_digest_mismatch')
   // Detect a same-key replacement, not merely a changed metadata generation.
-  if(digest(await readBounded(r2,job.source.object_key,20*1024*1024))!==sourceSha256)throw Error('source_changed')
+  if(digest(await readBounded(r2,job.source.object_key,(job.source.mime_type==='application/pdf'?64:20)*1024*1024))!==sourceSha256)throw Error('source_changed')
   await fence()
   if(extracted.pdfClassification&&!await attestPdfClassification(db,job,now(),extracted.pdfClassification,sourceSha256))throw Error('publication_changed')
   const checkpoint=Math.max(1,job.checkpoint)

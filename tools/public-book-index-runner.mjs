@@ -44,7 +44,7 @@ export function ingestionGateway(config,fetcher=fetch){
    throw Error(`gateway_${op}_${response.status}_${reason}`)
   }
   const reader=response.body.getReader(),chunks=[];let size=0
-  try{for(;;){const {done,value}=await reader.read();if(done)break;size+=value.byteLength;if(size>20*1024*1024)throw Error('ingestion_response_bound');chunks.push(value)}}finally{await reader.cancel().catch(()=>{})}
+  try{for(;;){const {done,value}=await reader.read();if(done)break;size+=value.byteLength;if(size>64*1024*1024)throw Error('ingestion_response_bound');chunks.push(value)}}finally{await reader.cancel().catch(()=>{})}
   const bytes=Buffer.concat(chunks,size)
   if(binary)return {bytes,sourceSha256:response.headers.get('X-Source-Sha256')}
   try{return JSON.parse(bytes.toString('utf8'))}catch{throw Error(`gateway_${op}_invalid_response`)}
