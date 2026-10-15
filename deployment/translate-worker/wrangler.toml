@@ -9,6 +9,9 @@ routes = [
 ]
 
 [vars]
+HY_MT_ENABLED = "false"
+HY_MT_REQUEST_ENABLED = "false"
+HY_MT_WAIT_MS = "10000"
 DO_COORDINATION_ENABLED = "true"
 DO_COORDINATION_MONTHLY_LIMIT = "800000"
 
@@ -69,3 +72,16 @@ binding = "TRANSLATION_ANALYTICS"
 dataset = "khezana_translation_analytics"
 [version_metadata]
 binding = "CF_VERSION_METADATA"
+
+# Staged locally only. Deploying provisions this new durable queue after approval.
+# Keep the existing TranslationCoordinator export and binding unchanged.
+[[durable_objects.bindings]]
+name = "LOCAL_TRANSLATION_QUEUE"
+class_name = "LocalTranslationQueue"
+[exports.LocalTranslationQueue]
+type = "durable-object"
+storage = "sqlite"
+
+# Secrets (never put values here):
+# LOCAL_TRANSLATION_AGENT_TOKEN: pull/renew/result/complete/fail/status only
+# LOCAL_TRANSLATION_ENQUEUE_TOKEN: enqueue/retry only

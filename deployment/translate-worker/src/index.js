@@ -1,4 +1,7 @@
 import { DurableObject } from 'cloudflare:workers'
+import { LocalTranslationService } from './local-service.mjs'
+import { HY_MT_LANGUAGES, HY_MT_MODEL, HY_MT_PROVIDER, LOCAL_SHARDS, LOCAL_PREFIX,
+  UTF8_PROBE, localEnabled, validSource, queueStub } from './local-policy.mjs'
 
 const LANGUAGES = new Set([
   'en','fr','tr','ur','ug','ckb','ku','fa','sw','hi',
@@ -886,8 +889,9 @@ async function translationMemoryKeys(text, target, purpose) {
   }
 }
 
-async function readR2TranslationMemory(env, r2Key) {
+async function readR2TranslationMemory(env, r2Key, strict = false) {
   if (!env.TRANSLATION_MEMORY) {
+    if (strict) throw new Error('translation_memory_not_bound')
     return null
   }
 
@@ -1008,6 +1012,7 @@ async function readR2TranslationMemory(env, r2Key) {
     }
 
   } catch (error) {
+    if (strict) throw error
     console.warn(
       'translation_memory_r2_read_failed',
       r2Key,
@@ -1050,16 +1055,28 @@ async function writeR2TranslationMemory(
      * No duplicate sourceHash/provider/model/timestamps/etc.
      * Provider telemetry is already stored in Analytics Engine.
      */
-    await env.TRANSLATION_MEMORY.put(
+    const written = await env.TRANSLATION_MEMORY.put(
       r2Key,
       translation,
       {
+        onlyIf: new Headers({ 'If-None-Match': '*' }),
         httpMetadata: {
           contentType:
             'text/plain; charset=utf-8',
         },
       }
     )
+
+    // First committed translation wins, including races with the local agent.
+    if (written === null) {
+      const winner = await readR2TranslationMemory(env, r2Key, true)
+      if (!winner) return false
+      record.translation = winner.translation
+      const match = /^tm\/v2\/(full|segment)\/([^/]+)\/([^/]+)\/([a-f0-9]+)\.json$/.exec(r2Key)
+      if (match) await warmTranslationMemoryKV(env,
+        `tm:v2:${match[1] === 'segment' ? 'seg' : 'full'}:${match[2]}:${match[3]}:${match[4]}`,
+        winner.translation, match[3])
+    }
 
     return true
 
@@ -2178,6 +2195,7 @@ const PROVIDER_HEALTH_VERSION = 'health:v1'
 const PROVIDER_HEALTH_SUCCESS_HEARTBEAT_MS = 15 * 60 * 1000
 
 const MONITORED_PROVIDERS = Object.freeze([
+  'hymt2-local',
   'azure-translator',
   'deepl',
   'gemini',
@@ -2707,6 +2725,7 @@ function writeProviderAnalytics(
     remainingChars = 0,
     estimatedNeurons = 0,
     batchItems = 1,
+    sourceType = '',
   }
 ) {
   if (!env.TRANSLATION_ANALYTICS) {
@@ -2741,6 +2760,7 @@ function writeProviderAnalytics(
           String(httpStatus || 0), // blob9
           String(errorCode || '').slice(0, 240), // blob10
           version,          // blob11
+          String(sourceType || ''), // blob12 (local task source type)
         ],
 
         doubles: [
@@ -3531,6 +3551,8 @@ async function writeSegmentTranslationMemory(
       item.memory.r2Key,
       record
     )
+
+  item.translation = record.translation
 
   const kvWritten =
     await warmTranslationMemoryKV(
@@ -5093,6 +5115,7 @@ async function resolveWholeProviderRoute(
 
       return {
         ...providerResult,
+        translation: memoryRecord.translation,
 
         translationMemory: {
           version:
@@ -5137,6 +5160,8 @@ async function resolveTranslationAfterWholeMiss(
     memory,
   } = payload
 
+  if (payload.skipLocal) env = { ...env, HY_MT_ENABLED: 'false' }
+
   /*
    * First check whether another request already produced
    * the translation before this coordinator started.
@@ -5151,6 +5176,9 @@ async function resolveTranslationAfterWholeMiss(
   if (existing) {
     return existing
   }
+
+  const local = await attemptLocalPrimary(env, { text, target, purpose, memory })
+  if (local) return local
 
   /*
    * v15 remains fully active.
@@ -5330,6 +5358,8 @@ return json({
     contract: 'alkhizana-translation-capabilities/18',
     sourceLanguages: ['ar'],
     targetLanguages: [...LANGUAGES].sort(),
+    localProvider: { enabled: localEnabled(env), provider: HY_MT_PROVIDER, model: HY_MT_MODEL,
+      targetLanguages: Object.keys(HY_MT_LANGUAGES), mode: 'durable-pull-with-existing-fallback' },
     maxTextCharacters: 6000,
     cache: {
       enabled: true,
@@ -6191,6 +6221,9 @@ async function handlePost(request, env) {
    * to providers. If anything unexpected happens, we safely
    * fall back to the existing v14 whole-text provider route.
    */
+  const local = await attemptLocalPrimary(env, { text, target, purpose, memory })
+  if (local) return json(local)
+
   try {
     const segmentResult =
       await translateThroughSegmentMemory(
@@ -6259,6 +6292,7 @@ async function handlePost(request, env) {
 
       return json({
         ...providerResult,
+        translation: memoryRecord.translation,
 
         translationMemory: {
           version:
@@ -6286,8 +6320,221 @@ async function handlePost(request, env) {
   }, 503)
 }
 
+// Local translation reuses the exact v18 keys, segmentation and compact format.
+async function localSave(unit, translation, payload, env) {
+  const object = await env.TRANSLATION_MEMORY.put(unit.memory.r2Key, translation, {
+    onlyIf: new Headers({ 'If-None-Match': '*' }),
+    httpMetadata: { contentType: 'text/plain; charset=utf-8' },
+  })
+  const winner = object === null
+    ? await readR2TranslationMemory(env, unit.memory.r2Key, true)
+    : { translation }
+  if (!winner) throw new Error('memory_commit_unconfirmed')
+  const kvWritten = await warmTranslationMemoryKV(env,unit.memory.kvKey,winner.translation,payload.purpose)
+  return { translation:winner.translation, created:object !== null, kvWritten }
+}
+
+async function localPlan(payload, env) {
+  const { text, target, purpose } = payload
+  const memory = await translationMemoryKeys(text,target,purpose)
+  const full = await readR2TranslationMemory(env,memory.r2Key,true)
+  if (full) {
+    await warmTranslationMemoryKV(env,memory.kvKey,full.translation,purpose)
+    return { translation:full.translation, units:[] }
+  }
+  const segments = purpose !== 'ui' && codePointLength(text)>=SEGMENT_MEMORY_MIN_TEXT_CHARS
+    ? splitStableTranslationMemorySegments(text) : []
+  const segmented = segments.length>=2 && segments.length<=SEGMENT_MEMORY_MAX_SEGMENTS
+  const units = []
+  for (const segment of segmented ? segments : [{id:0,source:text,joinAfter:''}]) {
+    const unit = {index:segment.id, text:segment.source, joinAfter:segment.joinAfter,
+      memory:segmented ? await segmentTranslationMemoryKeys(segment.source,target,purpose) : memory}
+    const record = await readR2TranslationMemory(env,unit.memory.r2Key,true)
+    unit.translation = record?.translation || null
+    if (!unit.translation) {
+      // A KV-only entry is reused and made durable before acknowledging the job.
+      const cached = await env.TRANSLATION_CACHE.get(unit.memory.kvKey)
+      if (cached) unit.translation = (await localSave(unit,cached,payload,env)).translation
+    }
+    units.push(unit)
+  }
+  if (units.every(unit=>unit.translation)) {
+    const translation = units.map(unit=>unit.translation+unit.joinAfter).join('').trim()
+    await warmTranslationMemoryKV(env,memory.kvKey,translation,purpose)
+    return { translation, units }
+  }
+  // Preserve both normalized full KV entries and the legacy exact-key memory.
+  const legacy = await env.TRANSLATION_CACHE.get(memory.kvKey) ||
+    await env.TRANSLATION_CACHE.get(await cacheKey(text,target,purpose))
+  if (legacy) {
+    const saved = await localSave({memory},legacy,payload,env)
+    return { translation:saved.translation, units:[] }
+  }
+  return { translation:null, units }
+}
+
+async function localTelemetry(payload, result, env) {
+  if (result.error) await markProviderFailure(env,HY_MT_PROVIDER,new Error(result.error),{model:HY_MT_MODEL})
+  else await markProviderSuccess(env,HY_MT_PROVIDER,{model:HY_MT_MODEL})
+  writeProviderAnalytics(env,{
+    provider:HY_MT_PROVIDER, model:HY_MT_MODEL, engine:HY_MT_PROVIDER,
+    outcome:result.error ? 'failure' : 'success', healthState:result.error ? 'unavailable' : 'healthy',
+    target:payload.target, purpose:payload.purpose, sourceType:payload.sourceType,
+    sourceChars:result.sourceChars || codePointLength(payload.text), latencyMs:result.latencyMs || 0,
+    errorCode:result.error || '',
+  })
+}
+
+export class LocalTranslationQueue extends DurableObject {
+  constructor(ctx, env) {
+    super(ctx,env)
+    this.service = new LocalTranslationService(ctx.storage.sql,{
+      plan:payload=>localPlan(payload,env),
+      save:(unit,translation,payload)=>localSave(unit,translation,payload,env),
+      telemetry:(payload,result)=>localTelemetry(payload,result,env),
+      fallback:async payload=>{
+        const memory = await translationMemoryKeys(payload.text,payload.target,payload.purpose)
+        const request = {...payload,memory,skipLocal:true}
+        if (coordinationEnabled(env)) {
+          const reservation = await reserveCoordinationAttempt(env,memory.hash)
+          if (reservation?.allowed) {
+            const result = await env.TRANSLATION_COORDINATOR.getByName(memory.hash).resolve(request)
+            if (!result?.ok) throw new Error('fallback_unavailable')
+            return result.value
+          }
+        }
+        return resolveTranslationAfterWholeMiss({...env,HY_MT_ENABLED:'false'},request)
+      },
+    })
+  }
+  enqueue(payload) { return this.service.enqueue(payload) }
+  claim() { return this.service.claim() }
+  renew(id,token) { return this.service.renew(id,token) }
+  prepare(id,token,index) { return this.service.prepare(id,token,index) }
+  result(body) { return this.service.result(body) }
+  complete(id,token) { return this.service.complete(id,token) }
+  fail(id,token,reason) { return this.service.fail(id,token,reason) }
+  heartbeat() { this.service.store.presence(); return {online:true} }
+  online() { return this.service.store.online() }
+  status() { return this.service.store.status() }
+  retry(id) { return this.service.store.retryFailed(id) }
+}
+
+async function attemptLocalPrimary(env, payload) {
+  if (!localEnabled(env) || env.HY_MT_REQUEST_ENABLED==='false' ||
+      !Object.hasOwn(HY_MT_LANGUAGES,payload.target) || !validSource(payload.text)) return null
+  try {
+    const id = payload.memory.hash
+    const queued = await queueStub(env,id).enqueue({id,text:payload.text,target:payload.target,
+      purpose:payload.purpose,sourceType:payload.purpose==='ui' ? 'ui' : 'selection'})
+    if (queued.cached) return {translation:queued.translation,engine:'translation-memory',cached:true,reviewed:false}
+    const online = await env.LOCAL_TRANSLATION_QUEUE.getByName('hymt2:v1:0').online()
+    // Offline laptop must not stall the site's current synchronous API.
+    if (!online || queued.state==='failed') return null
+    const waitMs = numberFromEnv(env,'HY_MT_WAIT_MS',10000,20000)
+    const deadline = Date.now()+waitMs
+    while (Date.now()<deadline) {
+      await new Promise(resolve=>setTimeout(resolve,1000))
+      const plan = await localPlan(payload,env)
+      if (plan.translation) return {translation:plan.translation,engine:HY_MT_PROVIDER,
+        model:HY_MT_MODEL,cached:false,reviewed:false}
+    }
+    // Deadline exceeded: the unchanged provider chain remains the fallback.
+    // Concurrent successful writers converge through R2 If-None-Match: *.
+  } catch (error) {
+    console.warn('local_translation_primary_unavailable',String(error).slice(0,120))
+  }
+  return null
+}
+
+async function localAuthorized(request, secret) {
+  if (typeof secret !== 'string' || secret.length<32 || request.headers.has('origin')) return false
+  const url = new URL(request.url)
+  if (url.protocol!=='https:' && !['localhost','127.0.0.1','[::1]'].includes(url.hostname)) return false
+  const header = request.headers.get('authorization') || ''
+  if (!header.startsWith('Bearer ') || header.length>1024) return false
+  const digests = await Promise.all([secret,header.slice(7)].map(value=>crypto.subtle.digest('SHA-256',new TextEncoder().encode(value))))
+  const a = new Uint8Array(digests[0]), b = new Uint8Array(digests[1])
+  let difference = 0
+  for (let i=0;i<a.length;i++) difference |= a[i]^b[i]
+  return difference===0
+}
+
+async function handleLocalRequest(request, env) {
+  if (!localEnabled(env)) return json({error:'local_translation_disabled'},404)
+  const action = new URL(request.url).pathname.slice(LOCAL_PREFIX.length)
+  const admin = ['enqueue','retry'].includes(action)
+  if (!await localAuthorized(request, admin ? env.LOCAL_TRANSLATION_ENQUEUE_TOKEN : env.LOCAL_TRANSLATION_AGENT_TOKEN)) {
+    return json({error:'unauthorized'},401)
+  }
+  if (action==='status' && request.method==='GET') {
+    const parts = await Promise.all(Array.from({length:LOCAL_SHARDS},(_,i)=>
+      env.LOCAL_TRANSLATION_QUEUE.getByName(`hymt2:v1:${i}`).status()))
+    const result = {completed:0,pending:0,processing:0,failed:0,total:0,completedLastMinute:0,current:[],failedItems:[]}
+    for (const part of parts) {
+      for (const key of ['completed','pending','processing','failed','total','completedLastMinute']) result[key]+=part[key]
+      result.current.push(...part.current)
+      result.failedItems.push(...part.failedItems)
+    }
+    return json({...result,scope:'enqueued-unique-text-language-purpose-jobs',utf8Probe:UTF8_PROBE})
+  }
+  if (request.method!=='POST') return json({error:'method_not_allowed'},405)
+  if ((request.headers.get('content-type')||'').split(';')[0].trim().toLowerCase()!=='application/json') return json({error:'json_required'},415)
+  const parsed = await readTranslationRequest(request)
+  if (parsed.error) return parsed.error
+  const body = parsed.body
+  try {
+    if (action==='enqueue') {
+      if (!validSource(body.text) || !Object.hasOwn(HY_MT_LANGUAGES,body.targetLanguage) ||
+        ![undefined,'text','ui'].includes(body.purpose)) return json({error:'invalid_job_or_language'},400)
+      const text=body.text.trim(),target=body.targetLanguage,purpose=body.purpose||'text'
+      const memory=await translationMemoryKeys(text,target,purpose)
+      const sourceType=['title','author','ui','text','catalog','selection'].includes(body.sourceType) ? body.sourceType : purpose
+      return json(await queueStub(env,memory.hash).enqueue({id:memory.hash,text,target,purpose,sourceType}))
+    }
+    if (action==='heartbeat' || action==='pull') {
+      if (body.utf8Probe!==UTF8_PROBE || body.model!==HY_MT_MODEL) return json({error:'model_or_utf8_mismatch'},400)
+      await env.LOCAL_TRANSLATION_QUEUE.getByName('hymt2:v1:0').heartbeat()
+      if (action==='heartbeat') return json({ok:true,utf8Probe:UTF8_PROBE})
+      const start=Number.isInteger(body.shard) ? Math.abs(body.shard)%LOCAL_SHARDS : 0
+      for(let i=0;i<LOCAL_SHARDS;i++) {
+        const job=await env.LOCAL_TRANSLATION_QUEUE.getByName(`hymt2:v1:${(start+i)%LOCAL_SHARDS}`).claim()
+        if (job) return json({job,nextShard:(start+i+1)%LOCAL_SHARDS})
+      }
+      return json({job:null,nextShard:(start+1)%LOCAL_SHARDS})
+    }
+    if (!/^[a-f0-9]{64}$/.test(body.id||'')) return json({error:'invalid_id'},400)
+    const stub=queueStub(env,body.id)
+    if (action==='retry') return json(await stub.retry(body.id))
+    if (typeof body.token!=='string' || body.token.length>64) return json({error:'invalid_lease'},400)
+    if (action==='renew') return json(await stub.renew(body.id,body.token))
+    if (action==='prepare') {
+      if (!Number.isInteger(body.index)) return json({error:'invalid_unit'},400)
+      return json(await stub.prepare(body.id,body.token,body.index))
+    }
+    if (action==='result') {
+      if (!Number.isInteger(body.index) || typeof body.translation!=='string' || typeof body.finishReason!=='string') return json({error:'invalid_result'},400)
+      return json(await stub.result({id:body.id,token:body.token,index:body.index,translation:body.translation,
+        finishReason:body.finishReason,latencyMs:body.latencyMs}))
+    }
+    if (action==='complete') return json(await stub.complete(body.id,body.token))
+    if (action==='fail') {
+      const reason=['inference_failed','validation_failed','context_limit','wrong_model','incomplete_generation'].includes(body.reason) ? body.reason : 'inference_failed'
+      return json(await stub.fail(body.id,body.token,reason))
+    }
+    return json({error:'not_found'},404)
+  } catch (error) {
+    const leaseLost = String(error).includes('lease_lost')
+    console.warn('local_translation_request_failed',action,leaseLost ? 'lease_lost' : 'storage_or_provider_failure')
+    return json({error:leaseLost ? 'lease_lost' : 'local_translation_retry_later'},leaseLost ? 409 : 503)
+  }
+}
+
 export default {
   async fetch(request, env) {
+    if (new URL(request.url).pathname.startsWith(LOCAL_PREFIX)) {
+      return handleLocalRequest(request, env)
+    }
     const method = request.method.toUpperCase()
 
     if (method === 'GET') {
