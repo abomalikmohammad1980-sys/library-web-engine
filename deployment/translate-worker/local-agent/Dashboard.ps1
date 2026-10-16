@@ -74,21 +74,7 @@ Add-Button 'إيقاف العامل المحلي' 575 {
     $queue.Text='العامل المحلي متوقف؛ تقدم Cloudflare محفوظ. المزودات الأخرى مستقلة.'
 }
 Add-Button 'تحديث الآن' 350 { $script:nextPoll=[datetime]::MinValue }
-$startup=New-Object Windows.Forms.CheckBox
-$startup.Text='تشغيل واستئناف تلقائي عند دخولي إلى Windows'; $startup.Location=New-Object Drawing.Point(420,685); $startup.Size=New-Object Drawing.Size(590,30)
-$shortcut=Join-Path ([Environment]::GetFolderPath('Startup')) 'Khzanah Translation.lnk'
-$startup.Checked=Test-Path -LiteralPath $shortcut
-$startup.Add_CheckedChanged({
-    try {
-        if($startup.Checked){
-            $shell=New-Object -ComObject WScript.Shell; $link=$shell.CreateShortcut($shortcut)
-            $link.TargetPath=(Get-Command powershell.exe).Source
-            $link.Arguments='-NoProfile -STA -WindowStyle Hidden -ExecutionPolicy Bypass -File "'+(Join-Path $PSScriptRoot 'Dashboard.ps1')+'" -StartAgent'
-            $link.WorkingDirectory=$PSScriptRoot; $link.Save()
-        } elseif(Test-Path -LiteralPath $shortcut){Remove-Item -LiteralPath $shortcut}
-    } catch { $connection.Text='تعذر تغيير التشغيل التلقائي؛ أعد فتح اللوحة وحاول مجددًا.' }
-})
-$form.Controls.Add($startup)
+$null=Add-Label 'تشغيل يدوي فقط: افتح الملف للاستكمال من سجل Cloudflare، حتى بعد انقطاع الجهاز.' 20 685 990 30
 $null=Add-Label 'الأرقام أزواج نص/لغة، وليست صفحات كتب. إغلاق اللوحة لا يوقف العامل.' 20 720 990 25 10
 try {
     $url=[IO.File]::ReadAllText((Join-Path $settings 'worker-url.txt'),$utf8).Trim().TrimEnd('/')
