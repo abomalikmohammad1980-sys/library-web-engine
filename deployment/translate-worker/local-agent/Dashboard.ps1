@@ -122,7 +122,16 @@ function Update-RunControls {
 }
 try {
     $connectionStage='read-url'
-    $url=[IO.File]::ReadAllText((Join-Path $settings 'worker-url.txt'),$utf8).Trim().TrimEnd('/')
+    $urlFile=Join-Path $settings 'worker-url.txt'
+    $url=$null
+    for($attempt=1;$attempt -le 5 -and -not $url;$attempt++){
+        try {
+            $candidate=[IO.File]::ReadAllText($urlFile,$utf8).Trim().TrimEnd('/')
+            if($candidate){$url=$candidate;break}
+        } catch { if($attempt -eq 5){throw} }
+        Start-Sleep -Milliseconds 200
+    }
+    if(-not $url){throw 'Worker URL is empty'}
     if(([uri]$url).Scheme -ne 'https'){throw 'HTTPS required'}
     $connectionStage='decrypt-settings'
     $secure=Import-Clixml -LiteralPath (Join-Path $settings 'agent-token.xml')
