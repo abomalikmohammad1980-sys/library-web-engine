@@ -23,6 +23,7 @@ $script:verified=$false
 $script:cloudOnline=$false
 $script:activeJobs=0
 $script:nextState=[datetime]::MinValue
+$script:announcedRunning=$false
 function Get-RunState([bool]$desired,[bool]$agent,[bool]$launcher,[bool]$online,[int]$jobs) {
     if($agent){
         if(-not $online){$text='العامل مفتوح — تعذر تأكيد الاتصال';$color='DarkOrange';$hint='تُعاد محاولة الاتصال تلقائيًا. الأرقام المعروضة قديمة حتى يعود الاتصال.'}
@@ -47,6 +48,18 @@ function Start-LocalAgent {
     # Loading the model can take longer than the supervision interval.
     if(@(Get-LauncherProcesses).Count -gt 0 -or @(Get-AgentProcesses).Count -gt 0){return}
     Start-Process powershell.exe -ArgumentList @('-NoProfile','-ExecutionPolicy','Bypass','-File',('"'+$launcherFile+'"')) -WindowStyle Hidden -RedirectStandardOutput $logFile -RedirectStandardError (Join-Path $settings 'agent-error.log') | Out-Null
+}
+function Stop-LocalProcesses {
+    # Stop only this project's exact agent, launcher, and its model child.
+    $launchers=@(Get-LauncherProcesses)
+    $agents=@(Get-AgentProcesses)
+    foreach($p in $agents){Stop-Process -Id $p.ProcessId -Force -ErrorAction SilentlyContinue}
+    foreach($p in $launchers){
+        foreach($child in @(Get-CimInstance Win32_Process -Filter ('ParentProcessId='+$p.ProcessId))){
+            if($child.Name -eq 'llama-server.exe'){Stop-Process -Id $child.ProcessId -Force -ErrorAction SilentlyContinue}
+        }
+        Stop-Process -Id $p.ProcessId -Force -ErrorAction SilentlyContinue
+    }
 }
 $form=New-Object Windows.Forms.Form
 $form.Text='الخزانة | متابعة الترجمة'
@@ -91,14 +104,7 @@ $stopButton=Add-Button 'إيقاف العامل المحلي' 575 {
     $script:desired=$false
     $stopButton.Enabled=$false; $startButton.Enabled=$false; $runStatus.Text='جارٍ إيقاف العامل المحلي…'; $form.Refresh()
     try {
-    foreach($p in Get-AgentProcesses){Stop-Process -Id $p.ProcessId -ErrorAction SilentlyContinue}
-    # Also honor stop while the launcher is waiting for model health.
-    foreach($launcher in Get-LauncherProcesses){
-        foreach($child in @(Get-CimInstance Win32_Process -Filter ('ParentProcessId='+$launcher.ProcessId))){
-            if($child.Name -eq 'llama-server.exe'){Stop-Process -Id $child.ProcessId -ErrorAction SilentlyContinue}
-        }
-        Stop-Process -Id $launcher.ProcessId -ErrorAction SilentlyContinue
-    }
+    Stop-LocalProcesses
     } catch {$connection.Text='تعذر إيقاف إحدى العمليات؛ تحقق من الحالة قبل المحاولة مجددًا.'}
     $script:nextState=[datetime]::MinValue
 }
@@ -106,8 +112,8 @@ $refreshButton=Add-Button 'تحديث الأرقام' 350 { $script:nextPoll=[da
 $startButton.BackColor=[Drawing.Color]::DarkGreen; $startButton.ForeColor=[Drawing.Color]::White; $startButton.UseVisualStyleBackColor=$false
 $stopButton.BackColor=[Drawing.Color]::Firebrick; $stopButton.ForeColor=[Drawing.Color]::White; $stopButton.UseVisualStyleBackColor=$false
 $stateHelp=Add-Label 'جارٍ التحقق…' 20 645 990 30
-$null=Add-Label 'الإيقاف يخص هذا الجهاز فقط؛ المزودات الأخرى تتابع حسب حصصها. التقدم محفوظ في Cloudflare.' 20 682 990 30 10
-$null=Add-Label 'إغلاق اللوحة يترك العامل يعمل. لإيقافه اضغط الزر الأحمر أولًا. الأرقام نصوص × لغات، وليست صفحات.' 20 717 990 28 10
+$null=Add-Label 'الإيقاف يخص هذا الجهاز فقط؛ المزودات الأخرى تتابع حسب حصصها. الأرقام تقرأ مباشرة من Cloudflare.' 20 682 990 30 10
+$null=Add-Label 'إغلاق اللوحة يترك العامل يعمل. لإيقافه استخدم زر الإيقاف أو «إغلاق العامل بالكامل» من قائمة الأيقونة.' 20 717 990 28 10
 function Update-RunControls {
     if((Get-Date) -lt $script:nextState){return}
     $script:nextState=(Get-Date).AddSeconds(3)
@@ -119,6 +125,10 @@ function Update-RunControls {
     $stateHelp.Text=$state.Hint; $startButton.Enabled=$state.StartEnabled; $stopButton.Enabled=$state.StopEnabled
     if($state.StartEnabled){$startButton.BackColor=[Drawing.Color]::DarkGreen}else{$startButton.BackColor=[Drawing.Color]::Gainsboro}
     if($state.StopEnabled){$stopButton.BackColor=[Drawing.Color]::Firebrick}else{$stopButton.BackColor=[Drawing.Color]::Gainsboro}
+    if($state.Text -match '^العامل يعمل' -and -not $script:announcedRunning){
+        $notify.ShowBalloonTip(4000,'الخزانة','العامل يعمل بالفعل في الخلفية. التقدم محفوظ في Cloudflare.',[Windows.Forms.ToolTipIcon]::Info)
+        $script:announcedRunning=$true
+    } elseif($state.Text -notmatch '^العامل يعمل'){$script:announcedRunning=$false}
 }
 try {
     $connectionStage='read-url'
@@ -208,7 +218,7 @@ $trayDetails=$trayMenu.Items.Add('عرض التفاصيل')
 $trayStart=$trayMenu.Items.Add('استئناف الترجمة');$trayStart.Enabled=$false
 $trayStop=$trayMenu.Items.Add('إيقاف الترجمة المحلية');$trayStop.Enabled=$false
 [void]$trayMenu.Items.Add((New-Object Windows.Forms.ToolStripSeparator))
-$trayExit=$trayMenu.Items.Add('إخفاء الأيقونة فقط — تستمر الترجمة')
+$trayExit=$trayMenu.Items.Add('إغلاق العامل بالكامل — إنهاء مهامه من الجهاز')
 $notify.ContextMenuStrip=$trayMenu
 function Show-TranslationWindow {
     $form.Show();$form.WindowState='Normal';$form.Activate()
@@ -244,7 +254,13 @@ $notify.Add_DoubleClick({Show-TranslationWindow})
 $notify.Add_MouseClick({param($sender,$eventArgs) if($eventArgs.Button -eq [Windows.Forms.MouseButtons]::Left){$trayMenu.Show([Windows.Forms.Cursor]::Position)}})
 $trayStart.Add_Click({if($startButton.Enabled){& $startButton.Tag}})
 $trayStop.Add_Click({if($stopButton.Enabled){& $stopButton.Tag}})
-$trayExit.Add_Click({$script:exitMonitor=$true;$form.Close();[Windows.Forms.Application]::ExitThread()})
+$trayExit.Add_Click({
+    $script:exitMonitor=$true
+    try { Stop-LocalProcesses } catch {}
+    $script:desired=$false
+    $form.Close()
+    [Windows.Forms.Application]::ExitThread()
+})
 $form.Add_FormClosing({param($sender,$eventArgs)
     if(-not $script:exitMonitor -and $eventArgs.CloseReason -eq [Windows.Forms.CloseReason]::UserClosing){$eventArgs.Cancel=$true;$form.Hide()}
 })

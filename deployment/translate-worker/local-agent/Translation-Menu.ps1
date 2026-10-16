@@ -21,7 +21,21 @@ function Open-TranslationTool($name,[switch]$Tray){
     if($Tray){$arguments+='-Tray'}
     Start-Process powershell.exe -ArgumentList $arguments -WindowStyle Hidden | Out-Null
 }
-$start.Add_Click({try{Open-TranslationTool 'Start-Background.ps1';Open-TranslationTool 'Dashboard.ps1' -Tray;$form.Close()}catch{[void][Windows.Forms.MessageBox]::Show('تعذر التشغيل. افتح عرض التقدم للمراجعة.','الخزانة')}})
+function Test-AgentAlreadyRunning {
+    $mutex=New-Object Threading.Mutex($false,'Local\KhzanahHyMTTranslationAgent')
+    $owned=$false
+    try { $owned=$mutex.WaitOne(0) } catch [Threading.AbandonedMutexException] { $owned=$true }
+    if($owned){$mutex.ReleaseMutex()}
+    $mutex.Dispose()
+    return (-not $owned)
+}
+$start.Add_Click({try{
+    $already=Test-AgentAlreadyRunning
+    Open-TranslationTool 'Start-Background.ps1'
+    Open-TranslationTool 'Dashboard.ps1' -Tray
+    if($already){[void][Windows.Forms.MessageBox]::Show('المترجم يعمل بالفعل في الخلفية. التقدم محفوظ في Cloudflare.','الخزانة')}
+    $form.Close()
+}catch{[void][Windows.Forms.MessageBox]::Show('تعذر التشغيل. افتح عرض التقدم للمراجعة.','الخزانة')}})
 $view.Add_Click({try{Open-TranslationTool 'Dashboard.ps1';$form.Close()}catch{[void][Windows.Forms.MessageBox]::Show('تعذر فتح لوحة التقدم.','الخزانة')}})
 try {
     if($CheckOnly){
