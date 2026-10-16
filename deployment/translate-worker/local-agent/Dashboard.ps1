@@ -128,9 +128,12 @@ try {
         try {
             $candidate=[IO.File]::ReadAllText($urlFile,$utf8).Trim().TrimEnd('/')
             if($candidate){$url=$candidate;break}
-        } catch { if($attempt -eq 5){throw} }
+        } catch { if($attempt -eq 5){$url=$null} }
         Start-Sleep -Milliseconds 200
     }
+    # The activated site is the canonical Worker endpoint. Use it only as a
+    # tray-mode fallback when the small local URL file is momentarily locked.
+    if(-not $url -and $Tray){$url='https://khzanah.com';$connectionStage='read-url-fallback'}
     if(-not $url){throw 'Worker URL is empty'}
     if(([uri]$url).Scheme -ne 'https'){throw 'HTTPS required'}
     $connectionStage='decrypt-settings'
