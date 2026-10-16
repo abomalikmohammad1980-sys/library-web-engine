@@ -143,12 +143,14 @@ try {
     $connectionStage='read-url'
     $urlFile=Join-Path $settings 'worker-url.txt'
     $url=$null
-    for($attempt=1;$attempt -le 5 -and -not $url;$attempt++){
+    # A cold start may briefly race with the settings writer. Wait quietly
+    # instead of showing a diagnostic dialog during that short window.
+    for($attempt=1;$attempt -le 20 -and -not $url;$attempt++){
         try {
             $candidate=[IO.File]::ReadAllText($urlFile,$utf8).Trim().TrimEnd('/')
             if($candidate){$url=$candidate;break}
         } catch { if($attempt -eq 5){$url=$null} }
-        Start-Sleep -Milliseconds 200
+        Start-Sleep -Milliseconds 500
     }
     # The activated site is the canonical Worker endpoint. Use it only as a
     # tray-mode fallback when the small local URL file is momentarily locked.
