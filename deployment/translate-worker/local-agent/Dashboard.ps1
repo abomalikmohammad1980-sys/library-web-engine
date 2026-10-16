@@ -18,10 +18,14 @@ $names=@{en='الإنجليزية';fr='الفرنسية';tr='التركية';ur=
 function Get-AgentProcesses {
     @(Get-CimInstance Win32_Process -Filter "Name='node.exe'" | Where-Object { $_.CommandLine -and $_.CommandLine.Contains($agentFile) })
 }
+function Get-LauncherProcesses {
+    @(Get-CimInstance Win32_Process -Filter "Name='powershell.exe'" | Where-Object { $_.CommandLine -and $_.CommandLine.Contains($launcherFile) })
+}
 function Start-LocalAgent {
     if(((Get-Date)-$script:lastStart).TotalSeconds -lt 30){return}
     $script:lastStart=Get-Date
-    if((Get-AgentProcesses).Count -gt 0){return}
+    # Loading the model can take longer than the supervision interval.
+    if((Get-LauncherProcesses).Count -gt 0 -or (Get-AgentProcesses).Count -gt 0){return}
     Start-Process powershell.exe -ArgumentList @('-NoProfile','-ExecutionPolicy','Bypass','-File',('"'+$launcherFile+'"')) -WindowStyle Hidden -RedirectStandardOutput $logFile -RedirectStandardError (Join-Path $settings 'agent-error.log') | Out-Null
 }
 $form=New-Object Windows.Forms.Form
@@ -57,7 +61,18 @@ function Add-Button($text,$x,$action) {
     $b.Add_Click($action); $form.Controls.Add($b)
 }
 Add-Button 'تشغيل / استئناف' 800 { $script:desired=$true; $script:lastStart=[datetime]::MinValue; Start-LocalAgent }
-Add-Button 'إيقاف العامل المحلي' 575 { $script:desired=$false; foreach($p in Get-AgentProcesses){Stop-Process -Id $p.ProcessId -ErrorAction SilentlyContinue}; $queue.Text='العامل المحلي متوقف؛ تقدم Cloudflare محفوظ. المزودات الأخرى مستقلة.' }
+Add-Button 'إيقاف العامل المحلي' 575 {
+    $script:desired=$false
+    foreach($p in Get-AgentProcesses){Stop-Process -Id $p.ProcessId -ErrorAction SilentlyContinue}
+    # Also honor stop while the launcher is waiting for model health.
+    foreach($launcher in Get-LauncherProcesses){
+        foreach($child in @(Get-CimInstance Win32_Process -Filter ('ParentProcessId='+$launcher.ProcessId))){
+            if($child.Name -eq 'llama-server.exe'){Stop-Process -Id $child.ProcessId -ErrorAction SilentlyContinue}
+        }
+        Stop-Process -Id $launcher.ProcessId -ErrorAction SilentlyContinue
+    }
+    $queue.Text='العامل المحلي متوقف؛ تقدم Cloudflare محفوظ. المزودات الأخرى مستقلة.'
+}
 Add-Button 'تحديث الآن' 350 { $script:nextPoll=[datetime]::MinValue }
 $startup=New-Object Windows.Forms.CheckBox
 $startup.Text='تشغيل واستئناف تلقائي عند دخولي إلى Windows'; $startup.Location=New-Object Drawing.Point(420,685); $startup.Size=New-Object Drawing.Size(590,30)
