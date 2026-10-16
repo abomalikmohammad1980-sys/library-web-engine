@@ -1,6 +1,6 @@
 # Project Memory Index
 
-Updated: 2026-10-15
+Updated: 2026-10-16
 
 This file is a bounded routing layer. Do not put long memory content here.
 
