@@ -24,6 +24,14 @@ try {
     }
     $stage='start-process'
     Start-Process powershell.exe -ArgumentList @('-NoProfile','-ExecutionPolicy','Bypass','-File',('"'+$launcher+'"')) -WindowStyle Hidden -RedirectStandardOutput (Join-Path $settings 'agent-output.log') -RedirectStandardError (Join-Path $settings 'agent-error.log') | Out-Null
+    # Keep the tray monitor coupled to the one-click background start. The
+    # dashboard has its own mutex, so launching it repeatedly is harmless and
+    # cannot create a second monitor. This also repairs the case where the
+    # agent survived a previous dashboard crash and the tray icon disappeared.
+    $dashboard=Join-Path $PSScriptRoot 'Dashboard.ps1'
+    if(Test-Path -LiteralPath $dashboard){
+        Start-Process powershell.exe -ArgumentList @('-NoProfile','-STA','-ExecutionPolicy','Bypass','-File',('"'+$dashboard+'"'),'-Tray') -WindowStyle Hidden | Out-Null
+    }
 } catch {
     $problem=[pscustomobject]@{stage=$stage;type=$_.Exception.GetType().FullName;hresult=$_.Exception.HResult;time=[datetime]::UtcNow.ToString('o')}
     try {$problem|ConvertTo-Json|Set-Content -LiteralPath (Join-Path $settings 'background-start-error.json') -Encoding UTF8}catch {
