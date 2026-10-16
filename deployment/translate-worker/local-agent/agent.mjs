@@ -28,8 +28,8 @@ try {
   delete process.env.LOCAL_TRANSLATION_AGENT_TOKEN
   const model=await verifyLlama()
   console.log(`UTF-8 OK: ${UTF8_PROBE}\nModel: ${model}\nProgress is stored in Cloudflare. Ctrl+C stops safely.`)
-  await api('heartbeat',hello,controller.signal)
-  await progress(true)
+  // Pull also sends presence. Keep the first network request inside the retry loop
+  // so a background launch while offline can recover without an open dashboard.
   while (!controller.signal.aborted) {
     try {
       await verifyLlama()
