@@ -77,18 +77,29 @@ Add-Button 'تحديث الآن' 350 { $script:nextPoll=[datetime]::MinValue }
 $null=Add-Label 'تشغيل يدوي فقط: افتح الملف للاستكمال من سجل Cloudflare، حتى بعد انقطاع الجهاز.' 20 685 990 30
 $null=Add-Label 'الأرقام أزواج نص/لغة، وليست صفحات كتب. إغلاق اللوحة لا يوقف العامل.' 20 720 990 25 10
 try {
+    $connectionStage='read-url'
     $url=[IO.File]::ReadAllText((Join-Path $settings 'worker-url.txt'),$utf8).Trim().TrimEnd('/')
     if(([uri]$url).Scheme -ne 'https'){throw 'HTTPS required'}
+    $connectionStage='decrypt-settings'
     $secure=Import-Clixml -LiteralPath (Join-Path $settings 'agent-token.xml')
     $ptr=[Runtime.InteropServices.Marshal]::SecureStringToBSTR($secure)
     try { $token=[Runtime.InteropServices.Marshal]::PtrToStringBSTR($ptr) } finally {[Runtime.InteropServices.Marshal]::ZeroFreeBSTR($ptr);$secure.Dispose()}
+    $connectionStage='http-client'
     $handler=New-Object Net.Http.HttpClientHandler
     $handler.AllowAutoRedirect=$false; $handler.Proxy=[Net.WebRequest]::DefaultWebProxy
     $client=New-Object Net.Http.HttpClient($handler)
     $client.Timeout=[timespan]::FromSeconds(20)
     $client.DefaultRequestHeaders.Authorization=New-Object Net.Http.Headers.AuthenticationHeaderValue('Bearer',$token)
     $token=$null
-} catch { [Windows.Forms.MessageBox]::Show('إعداد الاتصال غير جاهز. افتح Start-Translation.cmd أولًا.','الخزانة')|Out-Null; exit 1 }
+    try { [IO.File]::WriteAllText((Join-Path $settings 'dashboard-connection-status.json'),('{"stage":"ready","time":"'+[DateTime]::UtcNow.ToString('o')+'"}'),$utf8) } catch {}
+} catch {
+    # Record only diagnostic metadata, never exception text, headers or credentials.
+    $diagnostic=[pscustomobject]@{stage=$connectionStage;type=$_.Exception.GetType().FullName;hresult=$_.Exception.HResult;line=$_.InvocationInfo.ScriptLineNumber;time=[DateTime]::UtcNow.ToString('o')}
+    try { $diagnostic|ConvertTo-Json|Set-Content -LiteralPath (Join-Path $settings 'dashboard-connection-status.json') -Encoding UTF8 } catch {}
+    if($CheckOnly){$diagnostic|ConvertTo-Json -Compress;exit 1}
+    [Windows.Forms.MessageBox]::Show(('تعذر فتح الاتصال في هذه المحاولة. أغلق هذه الرسالة وافتح Khzanah-Translate.cmd مجددًا. لا تحذف إعداداتك ولا تدخل مفتاحًا جديدًا. رمز التشخيص: '+$connectionStage),'الخزانة')|Out-Null
+    exit 1
+}
 function Refresh-View($data) {
     if($data.utf8Probe -ne 'مرحبا بالعالم' -or -not $data.library.byLanguage){throw 'Invalid status'}
     $ready=0L; $left=0L; $localLeft=0L; $remoteLeft=0L
