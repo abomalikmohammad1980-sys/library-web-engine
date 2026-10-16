@@ -1,7 +1,13 @@
-﻿param([switch]$StartAgent,[switch]$CheckOnly)
+﻿param([switch]$StartAgent,[switch]$CheckOnly,[string]$PreviewPath)
 $ErrorActionPreference='Stop'
 Add-Type -AssemblyName System.Windows.Forms,System.Drawing,System.Net.Http
 [System.Windows.Forms.Application]::EnableVisualStyles()
+$uiMutex=New-Object Threading.Mutex($false,'Local\KhzanahTranslationDashboard')
+$uiLocked=$false
+if(-not $CheckOnly){
+    try {$uiLocked=$uiMutex.WaitOne(0)} catch [Threading.AbandonedMutexException] {$uiLocked=$true}
+    if(-not $uiLocked){$shell=New-Object -ComObject WScript.Shell; [void]$shell.AppActivate('الخزانة | متابعة الترجمة'); $uiMutex.Dispose(); exit}
+}
 $utf8=New-Object System.Text.UTF8Encoding($false,$true)
 $settings=Join-Path $env:LOCALAPPDATA 'KhzanahLocalTranslation'
 $agentFile=Join-Path $PSScriptRoot 'agent.mjs'
@@ -13,6 +19,19 @@ $script:request=$null
 $script:nextPoll=[datetime]::MinValue
 $script:lastGood=$null
 $script:verified=$false
+$script:cloudOnline=$false
+$script:activeJobs=0
+$script:nextState=[datetime]::MinValue
+function Get-RunState([bool]$desired,[bool]$agent,[bool]$launcher,[bool]$online,[int]$jobs) {
+    if($agent){
+        if(-not $online){$text='العامل مفتوح — تعذر تأكيد الاتصال';$color='DarkOrange';$hint='تُعاد محاولة الاتصال تلقائيًا. الأرقام المعروضة قديمة حتى يعود الاتصال.'}
+        elseif($jobs -gt 0){$text='يعمل الآن — ترجمة جارية';$color='DarkGreen';$hint='يمكنك إيقاف العامل المحلي. كل ما وصل إلى Cloudflare يبقى محفوظًا.'}
+        else{$text='العامل يعمل — ينتظر المهمة التالية';$color='DarkGreen';$hint='العامل مفتوح ويتابع السحب؛ قد ينتظر مهمة أو موعد إعادة المحاولة.'}
+    } elseif($launcher){$text='جارٍ تجهيز النموذج المحلي…';$color='DarkOrange';$hint='انتظر اكتمال التحميل. لا تحتاج الضغط على تشغيل مرة أخرى.'}
+    elseif($desired){$text='بانتظار بدء العامل — يعيد المحاولة';$color='DarkOrange';$hint='تُعاد محاولة التشغيل كل 30 ثانية. زر الإيقاف يلغي هذه المحاولات.'}
+    else{$text='متوقف — العامل المحلي لا يعمل';$color='DimGray';$hint='اضغط «استئناف الترجمة» ليكمل الناقص من سجل Cloudflare، دون تصفير التقدم.'}
+    [pscustomobject]@{Text=$text;Color=$color;Hint=$hint;StartEnabled=(-not $agent -and -not $launcher -and -not $desired);StopEnabled=($agent -or $launcher -or $desired)}
+}
 $localCodes='en fr tr ur ug fa hi id ms bn ru uk de es pt it nl pl kk zh ja ko'.Split(' ')
 $names=@{en='الإنجليزية';fr='الفرنسية';tr='التركية';ur='الأردية';ug='الأويغورية';fa='الفارسية';hi='الهندية';id='الإندونيسية';ms='الملايوية';bn='البنغالية';ru='الروسية';uk='الأوكرانية';de='الألمانية';es='الإسبانية';pt='البرتغالية';it='الإيطالية';nl='الهولندية';pl='البولندية';kk='الكازاخية';zh='الصينية';ja='اليابانية';ko='الكورية';ckb='الكردية السورانية';ku='الكردية';sw='السواحيلية';hu='المجرية';ps='البشتوية';so='الصومالية';ha='الهوسا';sv='السويدية';no='النرويجية';ro='الرومانية';bs='البوسنية';sq='الألبانية';az='الأذربيجانية';uz='الأوزبكية'}
 function Get-AgentProcesses {
@@ -43,26 +62,34 @@ function Add-Label($text,$x,$y,$w,$h,$size=11) {
     $v.Font=New-Object Drawing.Font('Segoe UI',$size); $form.Controls.Add($v); return $v
 }
 $null=Add-Label 'الخزانة — ترجمة متواصلة من حيث توقفت' 20 15 990 42 22
-$connection=Add-Label 'جارٍ الاتصال بسجل Cloudflare…' 20 65 990 30
-$totals=Add-Label 'الجاهز —     المتبقي —     نسبة الإنجاز —' 20 105 990 40 18
+$runStatus=Add-Label 'جارٍ التحقق من حالة العامل…' 20 65 990 36 17
+$connection=Add-Label 'جارٍ الاتصال بسجل Cloudflare…' 20 105 990 30
+$totals=Add-Label 'الجاهز —     المتبقي —     نسبة الإنجاز —' 20 140 990 40 18
 $bar=New-Object Windows.Forms.ProgressBar
-$bar.Location=New-Object Drawing.Point(20,150); $bar.Size=New-Object Drawing.Size(990,18); $bar.Maximum=10000; $form.Controls.Add($bar)
-$groups=Add-Label 'المحلي: 22 لغة  |  المزودات الأخرى: 14 لغة بالتوازي حسب حصصها' 20 180 990 30
-$activity=Add-Label 'المهمة الحالية —' 20 215 990 50
-$queue=Add-Label 'حالة العامل —' 20 270 990 30
+$bar.Location=New-Object Drawing.Point(20,185); $bar.Size=New-Object Drawing.Size(990,18); $bar.Maximum=10000; $form.Controls.Add($bar)
+$groups=Add-Label 'المحلي: 22 لغة  |  المزودات الأخرى: 14 لغة بالتوازي حسب حصصها' 20 210 990 30
+$activity=Add-Label 'المهمة الحالية —' 20 245 990 50
+$queue=Add-Label 'حالة العامل —' 20 300 990 30
 $grid=New-Object Windows.Forms.DataGridView
-$grid.Location=New-Object Drawing.Point(20,315); $grid.Size=New-Object Drawing.Size(990,300)
+$grid.Location=New-Object Drawing.Point(20,340); $grid.Size=New-Object Drawing.Size(990,235)
 $grid.ReadOnly=$true; $grid.AllowUserToAddRows=$false; $grid.AllowUserToDeleteRows=$false
-$grid.RowHeadersVisible=$false; $grid.AutoSizeColumnsMode='Fill'; $grid.BackgroundColor=[Drawing.Color]::White
+$grid.ColumnHeadersHeight=32; $grid.RowTemplate.Height=26; $grid.RowHeadersVisible=$false; $grid.AutoSizeColumnsMode='Fill'; $grid.BackgroundColor=[Drawing.Color]::White
 foreach($column in @('اللغة','المسار المفضل','الجاهز','المتبقي','الإنجاز','المحاولة التالية')){[void]$grid.Columns.Add($column,$column)}
 $form.Controls.Add($grid)
 function Add-Button($text,$x,$action) {
-    $b=New-Object Windows.Forms.Button; $b.Text=$text; $b.Location=New-Object Drawing.Point($x,630); $b.Size=New-Object Drawing.Size(210,40)
-    $b.Add_Click($action); $form.Controls.Add($b)
+    $b=New-Object Windows.Forms.Button; $b.Text=$text; $b.Location=New-Object Drawing.Point($x,590); $b.Size=New-Object Drawing.Size(210,45)
+    $b.Add_Click($action); $form.Controls.Add($b); return $b
 }
-Add-Button 'تشغيل / استئناف' 800 { $script:desired=$true; $script:lastStart=[datetime]::MinValue; Start-LocalAgent }
-Add-Button 'إيقاف العامل المحلي' 575 {
+$startButton=Add-Button 'استئناف الترجمة' 800 {
+    $script:desired=$true; $startButton.Enabled=$false; $stopButton.Enabled=$true
+    $runStatus.Text='جارٍ بدء العامل…'; $form.Refresh()
+    try {$script:lastStart=[datetime]::MinValue; Start-LocalAgent} catch {$connection.Text='تعذر بدء العامل؛ ستعاد المحاولة. تقدم Cloudflare محفوظ.'}
+    $script:nextState=[datetime]::MinValue
+}
+$stopButton=Add-Button 'إيقاف العامل المحلي' 575 {
     $script:desired=$false
+    $stopButton.Enabled=$false; $startButton.Enabled=$false; $runStatus.Text='جارٍ إيقاف العامل المحلي…'; $form.Refresh()
+    try {
     foreach($p in Get-AgentProcesses){Stop-Process -Id $p.ProcessId -ErrorAction SilentlyContinue}
     # Also honor stop while the launcher is waiting for model health.
     foreach($launcher in Get-LauncherProcesses){
@@ -71,11 +98,24 @@ Add-Button 'إيقاف العامل المحلي' 575 {
         }
         Stop-Process -Id $launcher.ProcessId -ErrorAction SilentlyContinue
     }
-    $queue.Text='العامل المحلي متوقف؛ تقدم Cloudflare محفوظ. المزودات الأخرى مستقلة.'
+    } catch {$connection.Text='تعذر إيقاف إحدى العمليات؛ تحقق من الحالة قبل المحاولة مجددًا.'}
+    $script:nextState=[datetime]::MinValue
 }
-Add-Button 'تحديث الآن' 350 { $script:nextPoll=[datetime]::MinValue }
-$null=Add-Label 'تشغيل يدوي فقط: افتح الملف للاستكمال من سجل Cloudflare، حتى بعد انقطاع الجهاز.' 20 685 990 30
-$null=Add-Label 'الأرقام أزواج نص/لغة، وليست صفحات كتب. إغلاق اللوحة لا يوقف العامل.' 20 720 990 25 10
+$refreshButton=Add-Button 'تحديث الأرقام' 350 { $script:nextPoll=[datetime]::MinValue }
+$startButton.BackColor=[Drawing.Color]::DarkGreen; $startButton.ForeColor=[Drawing.Color]::White; $startButton.UseVisualStyleBackColor=$false
+$stopButton.BackColor=[Drawing.Color]::Firebrick; $stopButton.ForeColor=[Drawing.Color]::White; $stopButton.UseVisualStyleBackColor=$false
+$stateHelp=Add-Label 'جارٍ التحقق…' 20 645 990 30
+$null=Add-Label 'الإيقاف يخص هذا الجهاز فقط؛ المزودات الأخرى تتابع حسب حصصها. التقدم محفوظ في Cloudflare.' 20 682 990 30 10
+$null=Add-Label 'إغلاق اللوحة يترك العامل يعمل. لإيقافه اضغط الزر الأحمر أولًا. الأرقام نصوص × لغات، وليست صفحات.' 20 717 990 28 10
+function Update-RunControls {
+    if((Get-Date) -lt $script:nextState){return}
+    $script:nextState=(Get-Date).AddSeconds(3)
+    $state=Get-RunState $script:desired ((Get-AgentProcesses).Count -gt 0) ((Get-LauncherProcesses).Count -gt 0) $script:cloudOnline $script:activeJobs
+    $runStatus.Text=$state.Text; $runStatus.ForeColor=[Drawing.Color]::FromName($state.Color)
+    $stateHelp.Text=$state.Hint; $startButton.Enabled=$state.StartEnabled; $stopButton.Enabled=$state.StopEnabled
+    if($state.StartEnabled){$startButton.BackColor=[Drawing.Color]::DarkGreen}else{$startButton.BackColor=[Drawing.Color]::Gainsboro}
+    if($state.StopEnabled){$stopButton.BackColor=[Drawing.Color]::Firebrick}else{$stopButton.BackColor=[Drawing.Color]::Gainsboro}
+}
 try {
     $connectionStage='read-url'
     $url=[IO.File]::ReadAllText((Join-Path $settings 'worker-url.txt'),$utf8).Trim().TrimEnd('/')
@@ -107,7 +147,7 @@ function Refresh-View($data) {
     foreach($property in $data.library.byLanguage.PSObject.Properties){
         $code=$property.Name; $row=$property.Value; $ready+=$row.ready; $left+=$row.remaining
         $isLocal=$localCodes -contains $code
-        if($isLocal){$localLeft+=$row.remaining;$route='المحلي + بدلاء عند الفشل'}else{$remoteLeft+=$row.remaining;$route='المزودات الأخرى'}
+        if($isLocal){$localLeft+=$row.remaining;$route='محلي + بدلاء'}else{$remoteLeft+=$row.remaining;$route='المزودات الأخرى'}
         $percent=100*$row.ready/[math]::Max(1,($row.ready+$row.remaining))
         $retry='متاحة'
         if($row.remaining -eq 0){$retry='مكتملة'}elseif($row.retryAt -gt [DateTimeOffset]::Now.ToUnixTimeMilliseconds()){$retry=[DateTimeOffset]::FromUnixTimeMilliseconds([long]$row.retryAt).LocalDateTime.ToString('MM-dd HH:mm')}
@@ -116,11 +156,12 @@ function Refresh-View($data) {
     $pct=100*$ready/[math]::Max(1,($ready+$left)); $bar.Value=[math]::Min(10000,[int]($pct*100))
     $totals.Text='الجاهز {0:N0}     المتبقي {1:N0}     الإنجاز {2:N2}%' -f $ready,$left,$pct
     $groups.Text='المتبقي: اللغات الـ22 = {0:N0}   |   اللغات الـ14 = {1:N0}' -f $localLeft,$remoteLeft
-    $queue.Text='الطابور المحلي: مكتمل {0} | منتظر {1} | جارٍ {2} | فاشل {3} | السرعة {4}/دقيقة' -f $data.completed,$data.pending,$data.processing,$data.failed,$data.completedLastMinute
-    $current=@($data.current | ForEach-Object { $names[$_.target]+' — '+$_.id.Substring(0,[math]::Min(16,$_.id.Length)) }) -join ' / '
-    if(-not $current){$current='انتظار المهمة التالية'}
-    $activity.Text='المحلي: '+$current
-    if(Test-Path -LiteralPath $logFile){
+    $queue.Text='سجل Cloudflare: مكتمل {0} | منتظر {1} | محجوز {2} | فاشل {3} | آخر دقيقة {4}' -f $data.completed,$data.pending,$data.processing,$data.failed,$data.completedLastMinute
+    $sourceNames=@{ui='نص واجهة';title='عنوان كتاب';author='اسم مؤلف';text='نص';catalog='فهرس'}
+    $current=@($data.current | ForEach-Object { $names[$_.target]+' — '+$sourceNames[$_.sourceType] }) -join ' / '
+    if(-not $current){$current='لا توجد مهمة محجوزة'}
+    $activity.Text='المهمة المسجلة في Cloudflare: '+$current
+    if(@($data.current).Count -gt 0 -and (Test-Path -LiteralPath $logFile)){
         $line=Get-Content -LiteralPath $logFile -Encoding UTF8 -Tail 18 | Where-Object {$_ -match '^current language=.+current item='} | Select-Object -Last 1
         if($line -and $line -notmatch 'current item=-'){$item=(($line -split 'current item=',2)[1] -replace ' \| source=.*$',''); $activity.Text+=' — '+$item.Substring(0,[math]::Min(75,$item.Length))}
     }
@@ -129,6 +170,7 @@ function Refresh-View($data) {
     elseif($data.library.lastError){$remote+=' — تعذرت المحاولة الأخيرة؛ إعادة المحاولة تلقائية'}
     $activity.Text+="`r`n"+$remote
     $script:lastGood=Get-Date; $script:verified=$true
+    $script:cloudOnline=$true; $script:activeJobs=@($data.current).Count
     $connection.Text='متصل بـCloudflare — آخر تحديث '+$script:lastGood.ToString('HH:mm:ss')+' — تحديث كل 15 ثانية'
 }
 $timer=New-Object Windows.Forms.Timer; $timer.Interval=1000
@@ -139,10 +181,11 @@ $tick={
             try {
                 $response=$script:request.GetAwaiter().GetResult()
                 try { if(-not $response.IsSuccessStatusCode){throw 'Status unavailable'}; $body=$response.Content.ReadAsStringAsync().GetAwaiter().GetResult(); Refresh-View ($body|ConvertFrom-Json) } finally {$response.Dispose()}
-            } catch { $connection.Text='تعذر الاتصال — الأرقام المعروضة آخر قراءة ناجحة. ستعاد المحاولة تلقائيًا.' }
+            } catch { $script:cloudOnline=$false; $connection.Text='تعذر الاتصال — الأرقام المعروضة آخر قراءة ناجحة. ستعاد المحاولة تلقائيًا.' }
             $script:request=$null; $script:nextPoll=(Get-Date).AddSeconds(15)
         }
         if(-not $script:request -and (Get-Date) -ge $script:nextPoll){$script:request=$client.GetAsync($url+'/api/translate/internal/local/status')}
+        Update-RunControls
     } catch { $connection.Text='تعذر تشغيل العامل أو الاتصال. تقدم Cloudflare محفوظ؛ ستعاد المحاولة.' }
 }
 $timer.Add_Tick($tick)
@@ -151,6 +194,7 @@ try {
         $deadline=(Get-Date).AddSeconds(45)
         while(-not $script:verified -and (Get-Date) -lt $deadline){& $tick; Start-Sleep -Milliseconds 200}
         if(-not $script:verified){throw 'Dashboard live check failed'}
+        if($PreviewPath){$form.Show();[Windows.Forms.Application]::DoEvents();$bitmap=New-Object Drawing.Bitmap($form.Width,$form.Height);try{$form.DrawToBitmap($bitmap,(New-Object Drawing.Rectangle(0,0,$form.Width,$form.Height)));$bitmap.Save($PreviewPath,[Drawing.Imaging.ImageFormat]::Png)}finally{$bitmap.Dispose()}}
         [pscustomobject]@{languages=$grid.Rows.Count;totals=$totals.Text;groups=$groups.Text;utf8=$true}|ConvertTo-Json -Compress
     } else { $timer.Start(); [void]$form.ShowDialog() }
-} finally {$timer.Stop();$timer.Dispose();$client.Dispose();$form.Dispose()}
+} finally {$timer.Stop();$timer.Dispose();$client.Dispose();$form.Dispose();if($uiLocked){$uiMutex.ReleaseMutex()};$uiMutex.Dispose()}
