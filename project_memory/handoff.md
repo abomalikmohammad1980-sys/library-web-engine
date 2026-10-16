@@ -26,3 +26,6 @@ User explicitly chose ONE file with start/progress menu. Desktop Khzanah-Transla
 ## Background launcher permission fix — 2026-10-16
 User reported generic start error from Desktop menu. Reproduced Access denied at Get-CimInstance in restricted context. Start-Background now checks the existing launcher mutex instead of enumerating processes; releases locks before showing errors and records only safe diagnostic stage/type/HResult/time. Verified Windows PowerShell syntax, mocked fresh launch with CIM denied, and actual already-running path without duplicate agent. Existing process pair preserved. No Cloudflare deployment or progress changes.
 
+
+Follow-up: user reported settings-stage error on Desktop. Existing settings and DPAPI decryption verified via Explorer ShellExecute (same user yahya); actual background helper also returned without error. Root cause of that screenshot remains unconfirmed. Moved existing-agent mutex check before settings, uses Windows known-folder path, identifies exact settings filename on failure and falls back to temp diagnostic if settings directory cannot be written. Fresh-start path tested with process start mocked; live existing-agent path passed.
+
