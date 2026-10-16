@@ -8,6 +8,8 @@ $settingsDir = Join-Path $env:LOCALAPPDATA 'KhzanahLocalTranslation'
 $mutex = New-Object System.Threading.Mutex($false, 'Local\KhzanahHyMTTranslationAgent')
 $locked = $false
 $server = $null
+$oldConcurrency = $env:LOCAL_TRANSLATION_CONCURRENCY
+$oldLlamaPort = $env:LOCAL_LLAMA_PORT
 $oldUrl = $env:LOCAL_TRANSLATION_URL
 $oldToken = $env:LOCAL_TRANSLATION_AGENT_TOKEN
 $oldHttpsProxy = $env:HTTPS_PROXY
@@ -50,17 +52,29 @@ try {
     $pointer = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($secure)
     try { $env:LOCAL_TRANSLATION_AGENT_TOKEN = [Runtime.InteropServices.Marshal]::PtrToStringBSTR($pointer) }
     finally { [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($pointer) }
+    $parallelFile=Join-Path $settingsDir 'local-parallel.txt'
+    $parallel='1'
+    if(Test-Path -LiteralPath $parallelFile){$parallel=[IO.File]::ReadAllText($parallelFile).Trim()}
+    if($parallel -notmatch '^(1|2|4)$'){throw 'Invalid local parallel setting.'}
+    $env:LOCAL_TRANSLATION_CONCURRENCY=$parallel
+    $contextSize=[string](2048*[int]$parallel)
+    $portFile=Join-Path $settingsDir 'local-model-port.txt'
+    $modelPort='8080'
+    if(Test-Path -LiteralPath $portFile){$modelPort=[IO.File]::ReadAllText($portFile).Trim()}
+    if($modelPort -notmatch '^(8080|8081)$'){throw 'Invalid local model port setting.'}
+    $env:LOCAL_LLAMA_PORT=$modelPort
+    $modelHealth='http://127.0.0.1:'+ $modelPort +'/health'
     $healthy = $false
-    try { $healthy = (Invoke-RestMethod 'http://127.0.0.1:8080/health' -TimeoutSec 3).status -eq 'ok' } catch {}
+    try { $healthy = (Invoke-RestMethod $modelHealth -TimeoutSec 3).status -eq 'ok' } catch {}
     if (-not $healthy) {
         $llama = (Get-Command llama-server.exe -ErrorAction Stop).Source
-        $arguments = @('-m', ('"' + $modelPath + '"'), '--device', 'Vulkan0', '-c', '2048', '--parallel', '1', '--jinja', '--host', '127.0.0.1', '--port', '8080')
+        $arguments = @('-m', ('"' + $modelPath + '"'), '--device', 'Vulkan0', '-c', $contextSize, '--parallel', $parallel, '--kv-unified-per-slot', '2048', '--jinja', '--host', '127.0.0.1', '--port', $modelPort)
         Write-Host 'Starting Hy-MT2. Waiting for model health...'
         $server = Start-Process -FilePath $llama -ArgumentList $arguments -PassThru -WindowStyle Hidden -RedirectStandardOutput (Join-Path $settingsDir 'llama-output.log') -RedirectStandardError (Join-Path $settingsDir 'llama-error.log')
         $deadline = (Get-Date).AddMinutes(5)
         while ((Get-Date) -lt $deadline) {
             if ($server.HasExited) { throw "llama-server stopped. See logs in $settingsDir" }
-            try { $healthy = (Invoke-RestMethod 'http://127.0.0.1:8080/health' -TimeoutSec 3).status -eq 'ok' } catch {}
+            try { $healthy = (Invoke-RestMethod $modelHealth -TimeoutSec 3).status -eq 'ok' } catch {}
             if ($healthy) { break }
             Start-Sleep -Seconds 2
         }
@@ -74,6 +88,8 @@ try {
 } finally {
     # Stop only the server created by this launcher, never an existing user's process.
     if ($server -and -not $server.HasExited) { Stop-Process -Id $server.Id -ErrorAction SilentlyContinue }
+    $env:LOCAL_TRANSLATION_CONCURRENCY = $oldConcurrency
+    $env:LOCAL_LLAMA_PORT = $oldLlamaPort
     $env:LOCAL_TRANSLATION_URL = $oldUrl
     $env:LOCAL_TRANSLATION_AGENT_TOKEN = $oldToken
     $env:HTTPS_PROXY = $oldHttpsProxy

@@ -14,3 +14,13 @@ test('background agent reconnects after offline startup without a dashboard',{ti
  assert.match(stdout,/completed=1/);
  assert.match(stdout,/Stopped/);
 });
+
+test('four lanes preserve job leases and save each translation exactly once',{timeout:15000},async()=>{
+ const fixture=new URL('./fixtures/concurrent-agent.mjs',import.meta.url).href
+ const agent=fileURLToPath(new URL('../local-agent/agent.mjs',import.meta.url))
+ const {stdout}=await promisify(execFile)(process.execPath,['--import',fixture,agent],{
+  timeout:12000,env:{...process.env,LOCAL_TRANSLATION_URL:'https://example.test',LOCAL_TRANSLATION_AGENT_TOKEN:'test-only-'.repeat(5),LOCAL_TRANSLATION_CONCURRENCY:'4',LOCAL_LLAMA_PORT:'8081'}
+ })
+ assert.match(stdout,/CONCURRENT_PEAK=4 SAVED=4/)
+ assert.match(stdout,/Stopped/)
+})
