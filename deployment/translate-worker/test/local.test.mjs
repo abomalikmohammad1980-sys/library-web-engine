@@ -57,4 +57,6 @@ test('validation rejects corruption, truncation, missing numbers, explanations a
     assert(validateLocalTranslation('المجلد ١٢', output, 'en'), output)
   }
   assert(validateLocalTranslation('نص عربي', 'Arabic text', 'en', 'length'))
+  assert.equal(validateLocalTranslation('الكتاب {p0}', 'Book {x0}', 'en'), 'placeholders_changed')
+  assert.equal(validateLocalTranslation('الكتاب {p0}', 'Book {p0}', 'en'), null)
 })

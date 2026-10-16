@@ -8,7 +8,7 @@ import {DatabaseSync} from 'node:sqlite'
 const source=await readFile(new URL('../src/index.js',import.meta.url),'utf8')
 export async function loadWorker(fetchImpl=async()=>{throw Error('Unexpected provider call')}){
  const context=vm.createContext({Request,Response,Headers,URL,URLSearchParams,TextEncoder,TextDecoder,AbortController,AbortSignal,setTimeout,clearTimeout,crypto:webcrypto,console:{warn(){},error(){}},fetch:fetchImpl})
- const module=new vm.SourceTextModule(source+'\nexport { localPlan, localSave, handleLocalRequest, providerOrderForPurpose, segmentTranslationMemoryKeys, writeR2TranslationMemory, cleanGeminiTranslation, splitOpenRouterSegments, splitStableTranslationMemorySegments, translationMemoryKeys, checkGeminiBudget, openRouterModelPool, translateWithGemini, translateWithGroq, translateWithMistral, translateWithCloudflareAI, translateWithDeepL, translateSegmentBatchWithDeepLRaw };',{context,identifier:new URL('../src/index.js',import.meta.url).href})
+ const module=new vm.SourceTextModule(source+'\nexport { AutomaticTranslations, sourceHash, reserveQuota, localPlan, localSave, handleLocalRequest, providerOrderForPurpose, segmentTranslationMemoryKeys, writeR2TranslationMemory, cleanGeminiTranslation, splitOpenRouterSegments, splitStableTranslationMemorySegments, translationMemoryKeys, checkGeminiBudget, openRouterModelPool, translateWithGemini, translateWithGroq, translateWithMistral, translateWithCloudflareAI, translateWithDeepL, translateSegmentBatchWithDeepLRaw };',{context,identifier:new URL('../src/index.js',import.meta.url).href})
  const modules=new Map()
  async function linker(name, parent){
   if(name==='cloudflare:workers')return new vm.SyntheticModule(['DurableObject'],function(){this.setExport('DurableObject',class{})},{context})
@@ -184,7 +184,7 @@ for(const batch of [false,true])test('DeepL '+(batch?'batch':'whole')+' failed a
 
 function memoryR2() {
  const data=new Map()
- return {data,get:async key=>data.has(key)?{text:async()=>data.get(key).text,httpMetadata:data.get(key).httpMetadata}:null,
+ return {data,get:async key=>data.has(key)?{text:async()=>data.get(key).text,json:async()=>JSON.parse(data.get(key).text),httpMetadata:data.get(key).httpMetadata}:null,
   put:async(key,text,options)=>{
    if(options?.onlyIf?.get('If-None-Match')==='*' && data.has(key))return null
    data.set(key,{text,httpMetadata:options?.httpMetadata});return {key}
@@ -348,4 +348,93 @@ test('prepare rechecks R2 and a stale lease cannot submit a translation',async()
  assert.equal((await localCall(w,e,'prepare',lease)).needed,false)
  assert.equal((await localCall(w,e,'result',{...lease,token:'old-lease',translation:'Wrong late value',finishReason:'stop'})).status,409)
  assert.equal(e.TRANSLATION_MEMORY.data.get(memory.r2Key).text,'Another completed request')
+})
+
+function durableLedger() {
+ const data=new Map();let alarm=null
+ const storage={data,get:async key=>structuredClone(data.get(key)),
+  put:async(key,value)=>{data.set(key,structuredClone(value))},delete:async key=>data.delete(key),
+  list:async({prefix='',limit=1000,startAfter=''}={})=>new Map([...data.entries()].filter(([k])=>k.startsWith(prefix)&&k>startAfter).sort(([a],[b])=>a<b?-1:1).slice(0,limit).map(([k,v])=>[k,structuredClone(v)])),
+  transaction:async fn=>fn(storage),setAlarm:async value=>{alarm=value},getAlarm:async()=>alarm,deleteAlarm:async()=>{alarm=null}}
+ return storage
+}
+async function automaticFixture(w,languages=['en','sw']) {
+ const e=localEnv(w),storage=durableLedger(),quota=durableLedger()
+ e.HY_MT_AUTOMATIC_ENABLED='true'
+ let automatic=new w.AutomaticTranslations(storage,e,languages,null,async()=>{throw Error('Unexpected old batch')})
+ const coordinator={automaticStatus:()=>automatic.status(),feedLocal:()=>automatic.feedLocal(),completeLocal:(p,t)=>automatic.completeLocal(p,t),reserveQuota:entries=>w.reserveQuota(quota,entries)}
+ e.TRANSLATION_COORDINATOR={idFromName:name=>name,get:()=>coordinator}
+ await automatic.enqueue([{source:'مرحبا بالعالم',kind:'title'}])
+ await storage.put('lastDiscovery',Date.now())
+ await storage.put('completedTranslations',100)
+ return {e,storage,quota,get automatic(){return automatic},restart(){automatic=new w.AutomaticTranslations(storage,e,languages,null,async()=>{throw Error('Unexpected old batch')})}}
+}
+test('existing automatic ledger feeds local work, publishes the existing lookup format and advances old progress exactly once',async()=>{
+ const w=await loadWorker(),f=await automaticFixture(w),{e,storage}=f
+ const {job}=await localCall(w,e,'pull',localHello)
+ assert.equal(job.target,'en');assert.equal(job.sourceType,'title')
+ const body={id:job.id,token:job.token,index:0,translation:'Hello world',finishReason:'stop'}
+ assert.equal((await localCall(w,e,'result',body)).accepted,true)
+ for(let i=0;i<2;i++)assert.equal((await localCall(w,e,'complete',body)).completed,true)
+ const hash=await w.sourceHash('مرحبا بالعالم'),key=`auto/v1/en/${hash}.json`
+ assert.deepEqual(JSON.parse(e.TRANSLATION_MEMORY.data.get(key).text),{source:'مرحبا بالعالم',translation:'Hello world'})
+ const lookup=await w.default.fetch(new Request(url+'/lookup',{method:'POST',headers,body:JSON.stringify({language:'en',keys:[hash]})}),e)
+ assert.equal((await lookup.json()).translations[hash],'Hello world')
+ const stats=await localCall(w,e,'status')
+ assert.equal(stats.library.completedTranslations,101);assert.equal(stats.library.sources,1)
+ assert.equal(stats.library.byLanguage.en.remaining,0);assert.equal(stats.library.byLanguage.sw.remaining,1)
+ assert.equal(stats.completed,1)
+ f.restart();assert.equal((await f.automatic.status()).completedTranslations,101)
+ assert.equal([...storage.data.keys()].filter(k=>k.startsWith('pending/')).length,1)
+})
+test('automatic memory from another device completes stale pending state without inference or replacement',async()=>{
+ const w=await loadWorker(),f=await automaticFixture(w),hash=await w.sourceHash('مرحبا بالعالم')
+ const key=`auto/v1/en/${hash}.json`,record=JSON.stringify({source:'مرحبا بالعالم',translation:'Previously saved translation'})
+ f.e.TRANSLATION_MEMORY.data.set(key,{text:record,httpMetadata:{contentType:'application/json'}})
+ const {job}=await localCall(w,f.e,'pull',localHello)
+ assert.equal(job,null);assert.equal(f.e.TRANSLATION_MEMORY.data.get(key).text,record)
+ assert.equal((await f.automatic.status()).byLanguage.en.remaining,0)
+ assert.equal((await localCall(w,f.e,'status')).completed,0)
+})
+test('saved automatic result survives interruption before completion and reconciles the old ledger on lease reclaim',async()=>{
+ const w=await loadWorker(),f=await automaticFixture(w),{e}=f
+ const {job}=await localCall(w,e,'pull',localHello)
+ await localCall(w,e,'result',{id:job.id,token:job.token,index:0,translation:'Hello world',finishReason:'stop'})
+ const shard=parseInt(job.id.slice(0,2),16)%4,queue=e.LOCAL_TRANSLATION_QUEUE.getByName(`hymt2:v1:${shard}`)
+ queue.service.store.sql.exec('UPDATE local_jobs SET lease_until=0')
+ f.restart()
+ const recovered=await localCall(w,e,'pull',localHello)
+ assert(recovered.job.skipped);assert.equal((await f.automatic.status()).completedTranslations,101)
+ assert.equal((await localCall(w,e,'status')).completed,1)
+})
+test('automatic fallback retains DeepL-first batch routing and shared quota reservations, with Azure disabled',async()=>{
+ const calls=[]
+ const w=await loadWorker(async target=>{calls.push(String(target));return Response.json({translations:[{text:'Hello world'}]})}),f=await automaticFixture(w),{e}=f
+ Object.assign(e,{AZURE_TRANSLATOR_KEY:'test-only',DEEPL_API_KEY:'test-only',DEEPL_TOTAL_LIMIT:'1000'})
+ const {job}=await localCall(w,e,'pull',localHello)
+ assert.equal((await localCall(w,e,'fail',{id:job.id,token:job.token,reason:'inference_failed'})).completed,true)
+ assert.equal(calls.length,1);assert(calls[0].includes('deepl.com'))
+ assert.equal((await f.automatic.status()).byLanguage.en.remaining,0)
+ assert([...f.quota.data.keys()].some(key=>key.startsWith('quota:')))
+})
+test('automatic scheduler keeps unsupported targets active and defers eligible sources only while local agent is online',async()=>{
+ const w=await loadWorker(),f=await automaticFixture(w),calls=[]
+ f.automatic.translateBatch=async(items,target)=>{calls.push(target);return {results:items.map(row=>({...row,translation:'Hello world'}))}}
+ await f.e.LOCAL_TRANSLATION_QUEUE.getByName('hymt2:v1:0').heartbeat()
+ await f.automatic.run()
+ assert.deepEqual(calls,['sw']);assert.equal((await f.automatic.status()).byLanguage.en.remaining,1)
+ const presence=f.e.LOCAL_TRANSLATION_QUEUE.getByName('hymt2:v1:0').service.store
+ presence.sql.exec('UPDATE local_presence SET last_seen=0')
+ await f.automatic.run()
+ assert.deepEqual(calls,['sw','en']);assert.equal((await f.automatic.status()).byLanguage.en.remaining,0)
+})
+test('automatic local integration is off by default and reuses reviewed author translations when enabled',async()=>{
+ const w=await loadWorker(),f=await automaticFixture(w)
+ f.e.HY_MT_AUTOMATIC_ENABLED='false'
+ assert.equal((await localCall(w,f.e,'pull',localHello)).job,null)
+ f.e.HY_MT_AUTOMATIC_ENABLED='true'
+ const [key,task]=[...(await f.storage.list({prefix:'pending/'}))][0]
+ task.kind='author';task.reviewed.en='Approved author spelling';await f.storage.put(key,task)
+ assert.equal((await localCall(w,f.e,'pull',localHello)).job,null)
+ assert.equal((await f.automatic.status()).byLanguage.en.remaining,0)
 })

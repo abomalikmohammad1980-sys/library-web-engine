@@ -11,7 +11,10 @@ export class LocalTranslationService {
   }
   async enqueue(payload) {
     const plan = await this.adapters.plan(payload)
-    if (plan.translation) return { cached: true, translation: plan.translation }
+    if (plan.translation) {
+      await this.adapters.completed?.(payload, plan.translation)
+      return { cached: true, translation: plan.translation }
+    }
     const row = this.store.enqueue(payload)
     return { id: row.id, state: row.state }
   }
@@ -20,6 +23,7 @@ export class LocalTranslationService {
     if (!row) return null
     const plan = await this.adapters.plan(row)
     if (plan.translation) {
+      await this.adapters.completed?.(row, plan.translation)
       this.store.finish(row.id, row.token)
       return { skipped: true, id: row.id }
     }
@@ -76,6 +80,7 @@ export class LocalTranslationService {
     const row = this.store.requireLease(id,token)
     const plan = await this.adapters.plan(row)
     if (!plan.translation) throw Error('incomplete_job')
+    await this.adapters.completed?.(row, plan.translation)
     return this.store.finish(id,token)
   }
   async fail(id, token, reason) {

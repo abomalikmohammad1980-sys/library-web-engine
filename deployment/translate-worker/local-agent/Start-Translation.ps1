@@ -10,6 +10,9 @@ $locked = $false
 $server = $null
 $oldUrl = $env:LOCAL_TRANSLATION_URL
 $oldToken = $env:LOCAL_TRANSLATION_AGENT_TOKEN
+$oldHttpsProxy = $env:HTTPS_PROXY
+$oldNoProxy = $env:NO_PROXY
+$oldUseProxy = $env:NODE_USE_ENV_PROXY
 try {
     try { $locked = $mutex.WaitOne(0) } catch [System.Threading.AbandonedMutexException] { $locked = $true }
     if (-not $locked) { throw 'The translation agent is already running.' }
@@ -32,6 +35,17 @@ try {
         $secret | Export-Clixml -LiteralPath $tokenFile
     }
     $env:LOCAL_TRANSLATION_URL = [IO.File]::ReadAllText($urlFile, $utf8).Trim()
+    # Use the user's existing Windows connection; keep the model on loopback.
+    $workerUri = [Uri]$env:LOCAL_TRANSLATION_URL
+    $windowsProxy = [Net.WebRequest]::DefaultWebProxy
+    if (-not $env:HTTPS_PROXY -and $windowsProxy -and -not $windowsProxy.IsBypassed($workerUri)) {
+        $env:HTTPS_PROXY = $windowsProxy.GetProxy($workerUri).AbsoluteUri
+    }
+    if ($env:HTTPS_PROXY) {
+        if (-not ((& $node --help) -match '--use-env-proxy')) { throw 'This Windows connection needs Node.js 24 or newer for proxy support.' }
+        $env:NODE_USE_ENV_PROXY = '1'
+        $env:NO_PROXY = (@($oldNoProxy, '127.0.0.1', 'localhost', '::1') | Where-Object { $_ }) -join ','
+    }
     $secure = Import-Clixml -LiteralPath $tokenFile
     $pointer = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($secure)
     try { $env:LOCAL_TRANSLATION_AGENT_TOKEN = [Runtime.InteropServices.Marshal]::PtrToStringBSTR($pointer) }
@@ -62,6 +76,9 @@ try {
     if ($server -and -not $server.HasExited) { Stop-Process -Id $server.Id -ErrorAction SilentlyContinue }
     $env:LOCAL_TRANSLATION_URL = $oldUrl
     $env:LOCAL_TRANSLATION_AGENT_TOKEN = $oldToken
+    $env:HTTPS_PROXY = $oldHttpsProxy
+    $env:NO_PROXY = $oldNoProxy
+    $env:NODE_USE_ENV_PROXY = $oldUseProxy
     if ($locked) { $mutex.ReleaseMutex() }
     $mutex.Dispose()
 }

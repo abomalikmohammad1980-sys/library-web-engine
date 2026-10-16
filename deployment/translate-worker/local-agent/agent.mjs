@@ -13,7 +13,14 @@ async function progress(force=false) {
   if (stats.utf8Probe!==UTF8_PROBE) throw Error('Cloudflare UTF-8 check failed')
   lastStatus=Date.now()
   console.log(`Cloudflare | completed=${stats.completed} | pending=${stats.pending} | processing=${stats.processing} | failed=${stats.failed} | throughput=${stats.completedLastMinute}/min`)
-  console.log(`current language=${current?.target || '-'} | current item=${current?.id || '-'} | source=${current?.sourceType || '-'}`)
+  if (stats.library?.byLanguage) {
+    const counts=Object.values(stats.library.byLanguage)
+    const ready=counts.reduce((sum,row)=>sum+row.ready,0), remaining=counts.reduce((sum,row)=>sum+row.remaining,0)
+    console.log(`Library (all devices, ${stats.library.languages} languages) | ready=${ready} | remaining=${remaining} | sources=${stats.library.sources} | ${(100*ready/Math.max(1,ready+remaining)).toFixed(2)}%`)
+    console.log(`Automatic catalog -> local agent: ${stats.automaticEnabled ? 'enabled' : 'disabled (sample stage)'}`)
+  }
+  const item=current?.units?.[0]?.text?.replace(/[\u0000-\u001f\u007f]/g,' ').slice(0,100) || current?.id || '-'
+  console.log(`current language=${current?.target || '-'} | current item=${item} | source=${current?.sourceType || '-'}`)
   for (const failed of stats.failedItems.slice(0,5)) console.log(`Failed: ${failed.target} | ${failed.id} | ${failed.error}`)
 }
 try {

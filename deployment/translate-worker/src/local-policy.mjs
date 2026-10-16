@@ -43,6 +43,8 @@ export function validateLocalTranslation(source, output, target, finishReason = 
   }
   if (/(\S+)(?:\s+\1){5,}/iu.test(output)) return 'repetition'
   if (JSON.stringify(digits(source)) !== JSON.stringify(digits(output))) return 'numbers_changed'
+  const slots = value => (value.match(/\{(?:p\d+|[A-Za-z_][\w.]*)\}|%\d*\$?[sdf]/g) || []).sort()
+  if (JSON.stringify(slots(source)) !== JSON.stringify(slots(output))) return 'placeholders_changed'
   if (source.trim() === output.trim() && /\p{Script=Arabic}/u.test(source)) return 'untranslated'
   const script = { en:/[a-z]/iu, fr:/\p{Script=Latin}/u, de:/\p{Script=Latin}/u,
     ru:/\p{Script=Cyrillic}/u, uk:/\p{Script=Cyrillic}/u, kk:/\p{Script=Cyrillic}/u,
