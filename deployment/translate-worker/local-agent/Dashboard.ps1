@@ -11,8 +11,8 @@ if(-not $CheckOnly){
 }
 $utf8=New-Object System.Text.UTF8Encoding($false,$true)
 $settings=Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) 'KhzanahLocalTranslation'
-$agentFile=Join-Path $PSScriptRoot 'agent.mjs'
-$launcherFile=Join-Path $PSScriptRoot 'Start-Translation.ps1'
+$agentFile=[IO.Path]::GetFullPath((Join-Path $PSScriptRoot 'agent.mjs'))
+$launcherFile=[IO.Path]::GetFullPath((Join-Path $PSScriptRoot 'Start-Translation.ps1'))
 $logFile=Join-Path $settings 'agent-output.log'
 $script:desired=$StartAgent.IsPresent
 $script:lastStart=[datetime]::MinValue
