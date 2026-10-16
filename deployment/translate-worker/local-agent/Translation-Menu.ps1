@@ -7,7 +7,7 @@ $form.Text='الخزانة — الترجمة';$form.ClientSize=New-Object Drawi
 $form.FormBorderStyle='FixedDialog';$form.MaximizeBox=$false;$form.StartPosition='CenterScreen'
 $form.RightToLeft='Yes';$form.RightToLeftLayout=$true;$form.Font=New-Object Drawing.Font('Segoe UI',11)
 $label=New-Object Windows.Forms.Label
-$label.Text="اختر ما تريد. التقدم محفوظ في Cloudflare.`r`nحتى 4 ترجمات حسب الذاكرة؛ لا يلزم إبقاء هذه النافذة مفتوحة."
+$label.Text="اختر ما تريد. التقدم محفوظ في Cloudflare.`r`nالتوازي يتكيف مع الذاكرة؛ لا يلزم إبقاء هذه النافذة مفتوحة."
 $label.Location=New-Object Drawing.Point(20,20);$label.Size=New-Object Drawing.Size(450,65);$form.Controls.Add($label)
 $start=New-Object Windows.Forms.Button
 $start.Text='تشغيل الترجمة في الخلفية';$start.Location=New-Object Drawing.Point(20,100);$start.Size=New-Object Drawing.Size(450,45)
