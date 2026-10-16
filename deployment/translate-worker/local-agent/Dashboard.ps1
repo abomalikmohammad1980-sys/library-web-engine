@@ -13,6 +13,7 @@ $utf8=New-Object System.Text.UTF8Encoding($false,$true)
 $settings=Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) 'KhzanahLocalTranslation'
 $agentFile=[IO.Path]::GetFullPath((Join-Path $PSScriptRoot 'agent.mjs'))
 $launcherFile=[IO.Path]::GetFullPath((Join-Path $PSScriptRoot 'Start-Translation.ps1'))
+$modelPath='C:\Users\yahya\Desktop\أبوعبدالرحمن\ترجمة offline\Hy-MT2-7B-Q4_K_M.gguf'
 $logFile=Join-Path $settings 'agent-output.log'
 $script:desired=$StartAgent.IsPresent
 $script:lastStart=[datetime]::MinValue
@@ -50,7 +51,7 @@ function Start-LocalAgent {
     Start-Process powershell.exe -ArgumentList @('-NoProfile','-ExecutionPolicy','Bypass','-File',('"'+$launcherFile+'"')) -WindowStyle Hidden -RedirectStandardOutput $logFile -RedirectStandardError (Join-Path $settings 'agent-error.log') | Out-Null
 }
 function Stop-LocalProcesses {
-    # Stop only this project's exact agent, launcher, and its model child.
+    # Stop only this project's exact agent, launcher, and Hy-MT2 model.
     $launchers=@(Get-LauncherProcesses)
     $agents=@(Get-AgentProcesses)
     foreach($p in $agents){Stop-Process -Id $p.ProcessId -Force -ErrorAction SilentlyContinue}
@@ -59,6 +60,14 @@ function Stop-LocalProcesses {
             if($child.Name -eq 'llama-server.exe'){Stop-Process -Id $child.ProcessId -Force -ErrorAction SilentlyContinue}
         }
         Stop-Process -Id $p.ProcessId -Force -ErrorAction SilentlyContinue
+    }
+    # The launcher can exit while its model remains healthy. Match both the
+    # exact model path and the loopback port before stopping it, so unrelated
+    # llama-server instances are never touched.
+    foreach($p in @(Get-CimInstance Win32_Process -Filter "Name='llama-server.exe'")){
+        if($p.CommandLine -and $p.CommandLine.Contains($modelPath) -and $p.CommandLine -match '--port\s+8081'){
+            Stop-Process -Id $p.ProcessId -Force -ErrorAction SilentlyContinue
+        }
     }
 }
 $form=New-Object Windows.Forms.Form
