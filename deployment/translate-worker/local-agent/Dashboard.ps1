@@ -1,15 +1,16 @@
-﻿param([switch]$StartAgent,[switch]$CheckOnly,[string]$PreviewPath)
+﻿param([switch]$StartAgent,[switch]$CheckOnly,[string]$PreviewPath,[switch]$Tray)
 $ErrorActionPreference='Stop'
 Add-Type -AssemblyName System.Windows.Forms,System.Drawing,System.Net.Http
 [System.Windows.Forms.Application]::EnableVisualStyles()
 $uiMutex=New-Object Threading.Mutex($false,'Local\KhzanahTranslationDashboard')
 $uiLocked=$false
+$showEvent=New-Object Threading.EventWaitHandle($false,[Threading.EventResetMode]::AutoReset,'Local\KhzanahTranslationShow')
 if(-not $CheckOnly){
     try {$uiLocked=$uiMutex.WaitOne(0)} catch [Threading.AbandonedMutexException] {$uiLocked=$true}
-    if(-not $uiLocked){$shell=New-Object -ComObject WScript.Shell; [void]$shell.AppActivate('الخزانة | متابعة الترجمة'); $uiMutex.Dispose(); exit}
+    if(-not $uiLocked){if(-not $Tray){[void]$showEvent.Set()}; $showEvent.Dispose(); $uiMutex.Dispose(); exit}
 }
 $utf8=New-Object System.Text.UTF8Encoding($false,$true)
-$settings=Join-Path $env:LOCALAPPDATA 'KhzanahLocalTranslation'
+$settings=Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) 'KhzanahLocalTranslation'
 $agentFile=Join-Path $PSScriptRoot 'agent.mjs'
 $launcherFile=Join-Path $PSScriptRoot 'Start-Translation.ps1'
 $logFile=Join-Path $settings 'agent-output.log'
@@ -78,7 +79,7 @@ foreach($column in @('اللغة','المسار المفضل','الجاهز','ا
 $form.Controls.Add($grid)
 function Add-Button($text,$x,$action) {
     $b=New-Object Windows.Forms.Button; $b.Text=$text; $b.Location=New-Object Drawing.Point($x,590); $b.Size=New-Object Drawing.Size(210,45)
-    $b.Add_Click($action); $form.Controls.Add($b); return $b
+    $b.Tag=$action; $b.Add_Click($action); $form.Controls.Add($b); return $b
 }
 $startButton=Add-Button 'استئناف الترجمة' 800 {
     $script:desired=$true; $startButton.Enabled=$false; $stopButton.Enabled=$true
@@ -110,7 +111,10 @@ $null=Add-Label 'إغلاق اللوحة يترك العامل يعمل. لإي�
 function Update-RunControls {
     if((Get-Date) -lt $script:nextState){return}
     $script:nextState=(Get-Date).AddSeconds(3)
-    $state=Get-RunState $script:desired ((Get-AgentProcesses).Count -gt 0) ((Get-LauncherProcesses).Count -gt 0) $script:cloudOnline $script:activeJobs
+    try {$state=Get-RunState $script:desired ((Get-AgentProcesses).Count -gt 0) ((Get-LauncherProcesses).Count -gt 0) $script:cloudOnline $script:activeJobs}
+    catch {$state=[pscustomobject]@{Text='تعذر التحقق من العامل المحلي';Color='DarkOrange';Hint='لا يمكن تأكيد التشغيل؛ تقدم Cloudflare مستقل عن حالة هذا الجهاز.';StartEnabled=$false;StopEnabled=$false}}
+    $script:trayState=$state
+    Update-TrayView
     $runStatus.Text=$state.Text; $runStatus.ForeColor=[Drawing.Color]::FromName($state.Color)
     $stateHelp.Text=$state.Hint; $startButton.Enabled=$state.StartEnabled; $stopButton.Enabled=$state.StopEnabled
     if($state.StartEnabled){$startButton.BackColor=[Drawing.Color]::DarkGreen}else{$startButton.BackColor=[Drawing.Color]::Gainsboro}
@@ -169,13 +173,73 @@ function Refresh-View($data) {
     if($data.library.lastError -match 'guard_reached|quota|rate.limit'){$remote+=' — بلغ بعض المزودين حد الاستخدام؛ إعادة المحاولة تلقائية'}
     elseif($data.library.lastError){$remote+=' — تعذرت المحاولة الأخيرة؛ إعادة المحاولة تلقائية'}
     $activity.Text+="`r`n"+$remote
+    $script:trayData=$data
     $script:lastGood=Get-Date; $script:verified=$true
     $script:cloudOnline=$true; $script:activeJobs=@($data.current).Count
     $connection.Text='متصل بـCloudflare — آخر تحديث '+$script:lastGood.ToString('HH:mm:ss')+' — تحديث كل 15 ثانية'
 }
+# One monitor owns both the tray icon and the optional detail window.
+$script:trayState=$null
+$script:trayData=$null
+$script:exitMonitor=$false
+$notify=New-Object Windows.Forms.NotifyIcon
+$notify.Icon=[Drawing.SystemIcons]::Information
+$notify.Text='الخزانة — جارٍ التحقق'
+$trayMenu=New-Object Windows.Forms.ContextMenuStrip
+$trayMenu.RightToLeft='Yes'
+$trayStatus=$trayMenu.Items.Add('جارٍ التحقق من المترجم…');$trayStatus.Enabled=$false
+$trayLanguage=$trayMenu.Items.Add('اللغة —');$trayLanguage.Enabled=$false
+$trayProgress=$trayMenu.Items.Add('المنجز — | المتبقي —');$trayProgress.Enabled=$false
+$trayUpdated=$trayMenu.Items.Add('بانتظار قراءة Cloudflare');$trayUpdated.Enabled=$false
+[void]$trayMenu.Items.Add((New-Object Windows.Forms.ToolStripSeparator))
+$trayDetails=$trayMenu.Items.Add('عرض التفاصيل')
+$trayStart=$trayMenu.Items.Add('استئناف الترجمة');$trayStart.Enabled=$false
+$trayStop=$trayMenu.Items.Add('إيقاف الترجمة المحلية');$trayStop.Enabled=$false
+[void]$trayMenu.Items.Add((New-Object Windows.Forms.ToolStripSeparator))
+$trayExit=$trayMenu.Items.Add('إخفاء الأيقونة فقط — تستمر الترجمة')
+$notify.ContextMenuStrip=$trayMenu
+function Show-TranslationWindow {
+    $form.Show();$form.WindowState='Normal';$form.Activate()
+}
+function Get-TrayProgress($data,$languageNames) {
+    $code=[string]$data.library.localActiveLanguage
+    if(-not $code -or -not $data.library.byLanguage.$code){return [pscustomobject]@{Language='لا توجد لغة نشطة';Progress='بانتظار تحديد اللغة';Short='—'}}
+    $row=$data.library.byLanguage.$code
+    $total=[long]$row.ready+[long]$row.remaining
+    $pct=100*[long]$row.ready/[math]::Max(1,$total)
+    $name=$languageNames[$code];if(-not $name){$name=$code}
+    [pscustomobject]@{Language=$name;Progress=('المنجز {0:N0} من {1:N0} ({2:N1}%) | المتبقي {3:N0}' -f $row.ready,$total,$pct,$row.remaining);Short=('{0} {1:N1}%' -f $name,$pct)}
+}
+function Update-TrayView {
+    if(-not $script:trayState){return}
+    $state=$script:trayState
+    $trayStatus.Text=$state.Text
+    $trayStart.Enabled=$state.StartEnabled;$trayStop.Enabled=$state.StopEnabled
+    if($state.Color -eq 'DarkGreen'){$notify.Icon=[Drawing.SystemIcons]::Information}
+    elseif($state.Color -eq 'DimGray'){$notify.Icon=[Drawing.SystemIcons]::Error}
+    else{$notify.Icon=[Drawing.SystemIcons]::Warning}
+    $progress=Get-TrayProgress $script:trayData $names
+    $trayLanguage.Text='اللغة: '+$progress.Language
+    $trayProgress.Text=$progress.Progress
+    $stale=''
+    if(-not $script:cloudOnline){$stale=' | أرقام قديمة';$trayUpdated.Text='تعذر الاتصال — آخر أرقام محفوظة في هذه الجلسة'}
+    elseif($script:lastGood){$trayUpdated.Text='تحديث Cloudflare: '+$script:lastGood.ToString('HH:mm:ss')}
+    $tip=$state.Text+"`n"+$progress.Short+$stale
+    $notify.Text=$tip.Substring(0,[math]::Min(63,$tip.Length))
+}
+$trayDetails.Add_Click({Show-TranslationWindow})
+$notify.Add_DoubleClick({Show-TranslationWindow})
+$notify.Add_MouseClick({param($sender,$eventArgs) if($eventArgs.Button -eq [Windows.Forms.MouseButtons]::Left){$trayMenu.Show([Windows.Forms.Cursor]::Position)}})
+$trayStart.Add_Click({if($startButton.Enabled){& $startButton.Tag}})
+$trayStop.Add_Click({if($stopButton.Enabled){& $stopButton.Tag}})
+$trayExit.Add_Click({$script:exitMonitor=$true;$form.Close();[Windows.Forms.Application]::ExitThread()})
+$form.Add_FormClosing({param($sender,$eventArgs)
+    if(-not $script:exitMonitor -and $eventArgs.CloseReason -eq [Windows.Forms.CloseReason]::UserClosing){$eventArgs.Cancel=$true;$form.Hide()}
+})
 $timer=New-Object Windows.Forms.Timer; $timer.Interval=1000
 $tick={
     try {
+        if($showEvent.WaitOne(0)){Show-TranslationWindow}
         if($script:desired){Start-LocalAgent}
         if($script:request -and $script:request.IsCompleted){
             try {
@@ -194,7 +258,13 @@ try {
         $deadline=(Get-Date).AddSeconds(45)
         while(-not $script:verified -and (Get-Date) -lt $deadline){& $tick; Start-Sleep -Milliseconds 200}
         if(-not $script:verified){throw 'Dashboard live check failed'}
+        $script:nextState=[datetime]::MinValue; Update-RunControls
         if($PreviewPath){$form.Show();[Windows.Forms.Application]::DoEvents();$bitmap=New-Object Drawing.Bitmap($form.Width,$form.Height);try{$form.DrawToBitmap($bitmap,(New-Object Drawing.Rectangle(0,0,$form.Width,$form.Height)));$bitmap.Save($PreviewPath,[Drawing.Imaging.ImageFormat]::Png)}finally{$bitmap.Dispose()}}
-        [pscustomobject]@{languages=$grid.Rows.Count;totals=$totals.Text;groups=$groups.Text;utf8=$true}|ConvertTo-Json -Compress
-    } else { $timer.Start(); [void]$form.ShowDialog() }
-} finally {$timer.Stop();$timer.Dispose();$client.Dispose();$form.Dispose();if($uiLocked){$uiMutex.ReleaseMutex()};$uiMutex.Dispose()}
+        if($PreviewPath){
+            $trayMenu.Show(20,20);[Windows.Forms.Application]::DoEvents()
+            $menuBitmap=New-Object Drawing.Bitmap($trayMenu.Width,$trayMenu.Height)
+            try{$trayMenu.DrawToBitmap($menuBitmap,(New-Object Drawing.Rectangle(0,0,$trayMenu.Width,$trayMenu.Height)));$menuBitmap.Save(($PreviewPath+'.tray.png'),[Drawing.Imaging.ImageFormat]::Png)}finally{$menuBitmap.Dispose();$trayMenu.Close()}
+        }
+        [pscustomobject]@{languages=$grid.Rows.Count;totals=$totals.Text;groups=$groups.Text;utf8=$true;trayState=$trayStatus.Text;trayLanguage=$trayLanguage.Text;trayProgress=$trayProgress.Text}|ConvertTo-Json -Compress
+    } else { $notify.Visible=$true; $timer.Start(); if(-not $Tray){$form.Show()}; [Windows.Forms.Application]::Run() }
+} finally {$notify.Visible=$false;$notify.Dispose();$trayMenu.Dispose();$showEvent.Dispose();$timer.Stop();$timer.Dispose();$client.Dispose();$form.Dispose();if($uiLocked){$uiMutex.ReleaseMutex()};$uiMutex.Dispose()}

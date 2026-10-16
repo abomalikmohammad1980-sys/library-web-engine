@@ -14,12 +14,14 @@ $start.Text='تشغيل الترجمة في الخلفية';$start.Location=New-
 $start.BackColor=[Drawing.Color]::DarkGreen;$start.ForeColor=[Drawing.Color]::White;$form.Controls.Add($start)
 $view=New-Object Windows.Forms.Button
 $view.Text='عرض التقدم والتحكم / الإيقاف';$view.Location=New-Object Drawing.Point(20,160);$view.Size=New-Object Drawing.Size(450,45);$form.Controls.Add($view)
-function Open-TranslationTool($name){
+function Open-TranslationTool($name,[switch]$Tray){
     $file=Join-Path $PSScriptRoot $name
     if(-not (Test-Path -LiteralPath $file)){throw 'Application file missing'}
-    Start-Process powershell.exe -ArgumentList @('-NoProfile','-STA','-ExecutionPolicy','Bypass','-File',('"'+$file+'"')) -WindowStyle Hidden | Out-Null
+    $arguments=@('-NoProfile','-STA','-ExecutionPolicy','Bypass','-File',('"'+$file+'"'))
+    if($Tray){$arguments+='-Tray'}
+    Start-Process powershell.exe -ArgumentList $arguments -WindowStyle Hidden | Out-Null
 }
-$start.Add_Click({try{Open-TranslationTool 'Start-Background.ps1';$form.Close()}catch{[void][Windows.Forms.MessageBox]::Show('تعذر التشغيل. افتح عرض التقدم للمراجعة.','الخزانة')}})
+$start.Add_Click({try{Open-TranslationTool 'Start-Background.ps1';Open-TranslationTool 'Dashboard.ps1' -Tray;$form.Close()}catch{[void][Windows.Forms.MessageBox]::Show('تعذر التشغيل. افتح عرض التقدم للمراجعة.','الخزانة')}})
 $view.Add_Click({try{Open-TranslationTool 'Dashboard.ps1';$form.Close()}catch{[void][Windows.Forms.MessageBox]::Show('تعذر فتح لوحة التقدم.','الخزانة')}})
 try {
     if($CheckOnly){

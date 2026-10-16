@@ -29,3 +29,7 @@ User reported generic start error from Desktop menu. Reproduced Access denied at
 
 Follow-up: user reported settings-stage error on Desktop. Existing settings and DPAPI decryption verified via Explorer ShellExecute (same user yahya); actual background helper also returned without error. Root cause of that screenshot remains unconfirmed. Moved existing-agent mutex check before settings, uses Windows known-folder path, identifies exact settings filename on failure and falls back to temp diagnostic if settings directory cannot be written. Fresh-start path tested with process start mocked; live existing-agent path passed.
 
+
+## Tray monitor — 2026-10-16
+User requested notification-area icon with status, language and per-language completion. Dashboard now owns tray plus optional form, closes form to tray, single-instance show event, shared start/stop actions. Menu background option starts helper and Dashboard -Tray; no Windows auto-start. Status reads cloud every15sec with stale marking and distinguishes local process query failure. Progress tests cover language transition/zero/missing data. Desktop runtime must be checked using Desktop script paths to match its worker processes; canonical preview cannot identify Desktop processes by path.
+
