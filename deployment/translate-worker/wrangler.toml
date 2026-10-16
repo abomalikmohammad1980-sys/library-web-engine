@@ -14,9 +14,9 @@ routes = [
 crons = ["*/5 * * * *"]
 
 [vars]
-HY_MT_ENABLED = "false"
+HY_MT_ENABLED = "true"
 HY_MT_REQUEST_ENABLED = "false"
-HY_MT_AUTOMATIC_ENABLED = "false"
+HY_MT_AUTOMATIC_ENABLED = "true"
 HY_MT_WAIT_MS = "10000"
 DO_COORDINATION_ENABLED = "true"
 DO_COORDINATION_MONTHLY_LIMIT = "800000"
