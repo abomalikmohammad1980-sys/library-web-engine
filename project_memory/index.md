@@ -21,8 +21,8 @@ This file is a bounded routing layer. Do not put long memory content here.
   title: Windows desktop translation startup and full shutdown lifecycle
   level: P1
   status: active
-  tags: [translation, windows, powershell, desktop, tray, lifecycle, credentials]
-  use_when: Diagnosing Desktop launch failures, missing tray, duplicate workers, full shutdown or process ownership
+  tags: [translation, windows, powershell, desktop, tray, lifecycle, credentials, filesystem-view]
+  use_when: Diagnosing Desktop settings visibility, launch failures, missing tray, duplicate workers, full shutdown or process ownership
 
 ## Pinned Entries
 
@@ -30,5 +30,7 @@ This file is a bounded routing layer. Do not put long memory content here.
 
 ## Recent Entries
 
-- 2026-10-16: Desktop lifecycle acceptance passed three real Explorer starts and two full exits; original historical decryption cause remains unconfirmed. See BUG-0001.
+- 2026-10-16: Confirmed the actual Desktop process and tool context see different files at the same settings path. Existing settings installed/decrypted in the actual Desktop context; connection recovered. Open-file handle destinations confirmed Codex package AppData redirection despite UNPACKAGED process probes. Actual-context restart acceptance passed three cold starts, two full exits and new Cloudflare progress at 19:15:35Z. No application source changed in this follow-up. See BUG-0001.
+
+- 2026-10-16 (superseded acceptance scope): Earlier lifecycle tests passed three Explorer starts and two full exits in the tested context; later actual-process inspection proved that context was insufficient to establish Desktop settings visibility. See BUG-0001.
 - 2026-10-16: Prior full handoff preserved in archive/environment/2026-10-16-before-desktop-lifecycle-repair.md.
