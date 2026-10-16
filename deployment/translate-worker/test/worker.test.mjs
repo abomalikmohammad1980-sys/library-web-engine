@@ -438,3 +438,24 @@ test('automatic local integration is off by default and reuses reviewed author t
  assert.equal((await localCall(w,f.e,'pull',localHello)).job,null)
  assert.equal((await f.automatic.status()).byLanguage.en.remaining,0)
 })
+
+test('local feed finishes the first incomplete language before feeding the next across restart',async()=>{
+ const w=await loadWorker(),f=await automaticFixture(w,['en','fr'])
+ await f.automatic.enqueue([{source:'كتاب آخر',kind:'title'}])
+ const first=await f.automatic.feedLocal();assert.equal(first.target,'en')
+ f.restart()
+ const next=await f.automatic.feedLocal();assert.equal(next.target,'en')
+ for(const [key,task] of await f.storage.list({prefix:'pending/'})) await f.automatic.complete(key,task,'en','English translation',true)
+ assert.equal((await f.automatic.feedLocal()).target,'fr')
+})
+
+test('external sequential scheduler waits for first-language retry rather than translating the next',async()=>{
+ const w=await loadWorker(),f=await automaticFixture(w,['sw','ro']),calls=[]
+ f.automatic.translateBatch=async(items,target)=>{calls.push(target);return {results:[],error:'quota_unavailable'}}
+ await f.automatic.run();assert.deepEqual(calls,['sw'])
+ await f.automatic.run();assert.deepEqual(calls,['sw'])
+ const schedule=await f.storage.get('batchSchedule');schedule.backoff.sw=0;await f.storage.put('batchSchedule',schedule)
+ for(const [key,task] of await f.storage.list({prefix:'pending/'})){task.retryAfter={};await f.storage.put(key,task)}
+ f.automatic.translateBatch=async(items,target)=>{calls.push(target);return {results:items.map(row=>({...row,translation:'Translated text'}))}}
+ await f.automatic.run();await f.automatic.run();assert.deepEqual(calls,['sw','sw','ro'])
+})

@@ -1,3 +1,4 @@
+import { configuredConcurrency } from './capacity.mjs'
 import { HY_MT_LANGUAGES, HY_MT_MODEL, UTF8_PROBE, validateLocalTranslation } from '../src/local-policy.mjs'
 
 export function workerBase(value) {
@@ -41,20 +42,24 @@ export function apiClient(base, token, fetchImpl=fetch) {
     ...(body===undefined ? {} : {body:Buffer.from(JSON.stringify(body),'utf8')}),signal,
   },timeout,fetchImpl)
 }
+export function llamaBase(port=process.env.LOCAL_LLAMA_PORT || '8080') {
+  if (!/^(8080|8081)$/.test(String(port))) throw Error('invalid_local_llama_port')
+  return `http://127.0.0.1:${port}`
+}
 export async function verifyLlama(fetchImpl=fetch) {
-  const root='http://127.0.0.1:8080'
+  const root=llamaBase()
   const health=await fetchJson(`${root}/health`,{},10000,fetchImpl)
   if (health.status!=='ok') throw Error('llama_not_ready')
   const models=await fetchJson(`${root}/v1/models`,{},10000,fetchImpl)
   const model=models.data?.[0]?.id
   if (typeof model!=='string' || !/Hy-MT2-7B-Q4_K_M(?:\.gguf)?$/i.test(model.replaceAll('\\','/'))) throw Error('wrong_model')
   const props=await fetchJson(`${root}/props`,{},10000,fetchImpl)
-  if (props.total_slots!==1 || props.default_generation_settings?.n_ctx!==2048) throw Error('llama_settings_must_be_context_2048_parallel_1')
+  if (props.total_slots!==configuredConcurrency() || props.default_generation_settings?.n_ctx!==2048) throw Error('llama_settings_must_be_context_2048_parallel_'+configuredConcurrency())
   return model
 }
 export async function translateUnit(unit,target,model,signal,fetchImpl=fetch) {
   if (!Object.hasOwn(HY_MT_LANGUAGES,target)) throw Error('unsupported_language')
-  const root='http://127.0.0.1:8080'
+  const root=llamaBase()
   const messages=[{role:'user',content:`Translate the following Arabic text into ${HY_MT_LANGUAGES[target]} faithfully. Preserve the full text, proper names and numbers. Output only the translation without explanation:\n\n${unit.text}`}]
   const post=(path,body)=>fetchJson(`${root}${path}`,{
     method:'POST',headers:{'content-type':'application/json; charset=utf-8'},
