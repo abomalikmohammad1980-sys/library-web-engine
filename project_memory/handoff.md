@@ -22,3 +22,7 @@ User now requests completing each language before moving on. Local feed pins loc
 
 ## Lightweight manual menu — 2026-10-16
 User explicitly chose ONE file with start/progress menu. Desktop Khzanah-Translate.cmd now opens Translation-Menu.ps1. Background start spawns existing launcher without dashboard; progress action opens Dashboard without StartAgent. Menu closes after selection. No Windows startup. Existing mediator measured~118MB excluding model/shared GPU memory; never promise tiny model footprint. Start-Background checks loader+agent and serializes launch to avoid duplicate log truncation. Agent first cloud pull moved inside retry loop for offline startup recovery, tested with mocked offline child process. No Cloudflare changes or concurrency increase.
+
+## Background launcher permission fix — 2026-10-16
+User reported generic start error from Desktop menu. Reproduced Access denied at Get-CimInstance in restricted context. Start-Background now checks the existing launcher mutex instead of enumerating processes; releases locks before showing errors and records only safe diagnostic stage/type/HResult/time. Verified Windows PowerShell syntax, mocked fresh launch with CIM denied, and actual already-running path without duplicate agent. Existing process pair preserved. No Cloudflare deployment or progress changes.
+
