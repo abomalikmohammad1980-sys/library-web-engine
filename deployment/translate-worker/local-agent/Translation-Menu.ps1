@@ -30,10 +30,8 @@ function Test-AgentAlreadyRunning {
     return (-not $owned)
 }
 $start.Add_Click({try{
-    $already=Test-AgentAlreadyRunning
     Open-TranslationTool 'Start-Background.ps1'
     Open-TranslationTool 'Dashboard.ps1' -Tray
-    if($already){[void][Windows.Forms.MessageBox]::Show('المترجم يعمل بالفعل في الخلفية. التقدم محفوظ في Cloudflare.','الخزانة')}
     $form.Close()
 }catch{[void][Windows.Forms.MessageBox]::Show('تعذر التشغيل. افتح عرض التقدم للمراجعة.','الخزانة')}})
 $view.Add_Click({try{Open-TranslationTool 'Dashboard.ps1';$form.Close()}catch{[void][Windows.Forms.MessageBox]::Show('تعذر فتح لوحة التقدم.','الخزانة')}})
