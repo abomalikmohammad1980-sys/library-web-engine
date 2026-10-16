@@ -155,7 +155,7 @@ function Refresh-View($data) {
     }
     $pct=100*$ready/[math]::Max(1,($ready+$left)); $bar.Value=[math]::Min(10000,[int]($pct*100))
     $totals.Text='الجاهز {0:N0}     المتبقي {1:N0}     الإنجاز {2:N2}%' -f $ready,$left,$pct
-    $groups.Text='المتبقي: اللغات الـ22 = {0:N0}   |   اللغات الـ14 = {1:N0}' -f $localLeft,$remoteLeft
+    $groups.Text='المتبقي: المحلي {0:N0} | الآخرون {1:N0} | اللغة المحلية الحالية: {2}' -f $localLeft,$remoteLeft,$names[[string]$data.library.localActiveLanguage]
     $queue.Text='سجل Cloudflare: مكتمل {0} | منتظر {1} | محجوز {2} | فاشل {3} | آخر دقيقة {4}' -f $data.completed,$data.pending,$data.processing,$data.failed,$data.completedLastMinute
     $sourceNames=@{ui='نص واجهة';title='عنوان كتاب';author='اسم مؤلف';text='نص';catalog='فهرس'}
     $current=@($data.current | ForEach-Object { $names[$_.target]+' — '+$sourceNames[$_.sourceType] }) -join ' / '

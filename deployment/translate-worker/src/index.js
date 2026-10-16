@@ -96,18 +96,26 @@ var AutomaticTranslations = class {
   // Feed from the EXISTING durable pending ledger. Never reconstruct progress on a laptop.
   async feedLocal() {
     if (!automaticLocalEnabled(this.env)) return { enabled: false };
+    await this.ensureProgress();
+    const progress = await this.storage.get("batchProgress");
+    let target = await this.storage.get("localActiveLanguage:v1");
+    if (!Object.hasOwn(HY_MT_LANGUAGES,target || "") || !progress.remaining[target]) {
+      target = this.languages.find(language => Object.hasOwn(HY_MT_LANGUAGES,language) && progress.remaining[language] > 0);
+      await this.storage.delete("localPullCursor:v1");
+      if (target) await this.storage.put("localActiveLanguage:v1",target);
+      else { await this.storage.delete("localActiveLanguage:v1"); return { queued:false,target:null }; }
+    }
     const cursor = await this.storage.get("localPullCursor:v1");
     const page = await this.storage.list({ prefix: "pending/", limit: 100, ...(cursor ? { startAfter: cursor } : {}) });
     for (const [key, task] of page) {
-      const target = task.remaining.find(language => Object.hasOwn(HY_MT_LANGUAGES, language));
-      if (!target || !validSource(task.source)) {
+      if (!task.remaining.includes(target) || !validSource(task.source)) {
         await this.storage.put("localPullCursor:v1", key);
         continue;
       }
       if (task.reviewed?.[target] && validTranslation(task.source,task.reviewed[target])) {
         await this.complete(key,task,target,task.reviewed[target],true);
         await this.storage.put("localPullCursor:v1",key);
-        return { reused:true };
+        return { reused:true,target };
       }
       const id = await sha256Hex(`hymt2:auto:v1|${target}|${task.hash}`);
       const payload = { id, text: task.source, target, purpose: "ui", sourceType: task.kind,
@@ -115,10 +123,10 @@ var AutomaticTranslations = class {
       const result = await queueStub(this.env, id).enqueue(payload);
       // If dispatch fails, cursor stays put; retries are idempotent in the queue.
       await this.storage.put("localPullCursor:v1", key);
-      return { queued: true, ...result };
+      return { queued: true, ...result, target };
     }
     if (page.size < 100) await this.storage.delete("localPullCursor:v1");
-    return { queued: false };
+    return { queued: false, target };
   }
   async completeLocal(payload, translation) {
     const task = await this.storage.get(payload.automatic.key);
@@ -266,18 +274,23 @@ var AutomaticTranslations = class {
     if (automaticLocalEnabled(this.env)) {
       try { localOnline = await this.env.LOCAL_TRANSLATION_QUEUE.getByName("hymt2:v1:0").online(); } catch { /* Existing providers remain available. */ }
     }
+    if (schedule.sequentialVersion !== 1) {
+      schedule.languageIndex=0; schedule.cursor=null; schedule.sequentialVersion=1;
+    }
     let batches = 0, scans = 0;
     while (Date.now() < deadline && batches < 4 && scans++ < 12) {
       const language = this.languages[schedule.languageIndex], progress = await this.storage.get("batchProgress");
       const useLocal = localOnline && Object.hasOwn(HY_MT_LANGUAGES, language);
-      if (!progress.remaining[language] || (schedule.backoff[language] ?? 0) > Date.now()) {
+      if (!progress.remaining[language] || useLocal) {
         advance();
         continue;
       }
+      // A temporary provider failure must not switch to another language.
+      if ((schedule.backoff[language] ?? 0) > Date.now()) break;
       const page = await this.storage.list({ prefix: "pending/", limit: 250, ...schedule.cursor ? { startAfter: schedule.cursor } : {} });
       if (!page.size) {
-        advance();
-        continue;
+        schedule.cursor=null;
+        break;
       }
       const selected = [];
       let chars = 0;
@@ -338,18 +351,19 @@ var AutomaticTranslations = class {
       if (/batch_invalid|fidelity|size_mismatch|missing_id/.test(message)) schedule.sizes[language] = Math.max(1, Math.floor((schedule.sizes[language] ?? 50) / 2));
       schedule.backoff[language] = Date.now() + 15 * 6e4;
       await this.storage.put("lastError", message.slice(0, 240));
-      advance();
+      break;
     }
     await this.storage.put("batchSchedule", schedule);
     await this.storage.put("lastRunAt", Date.now());
     const remaining = await this.storage.get("batchProgress");
-    const ready = this.languages.some((l) => remaining.remaining[l] > 0 && (schedule.backoff[l] ?? 0) <= Date.now());
+    const selectedLanguage=this.languages[schedule.languageIndex];
+    const ready = remaining.remaining[selectedLanguage] > 0 && (schedule.backoff[selectedLanguage] ?? 0) <= Date.now();
     await this.storage.setAlarm(Date.now() + (ready ? 1e4 : 3e5));
   }
   async status() {
     const progress = await this.storage.get("batchProgress"), schedule = await this.storage.get("batchSchedule"), feeds = await this.storage.get("feeds");
     const byLanguage = progress ? Object.fromEntries(this.languages.map((language) => [language, { ready: progress.totalSources - progress.remaining[language], remaining: progress.remaining[language], remainingSourceCharacters: progress.characters[language], retryAt: schedule?.backoff[language] ?? null }])) : null;
-    return { enabled: this.env.AUTO_TRANSLATION_ENABLED !== "false", mode: "same-language-batches-v2", languages: this.languages.length, sources: Number(await this.storage.get("sourceCount")) || 0, inventorySources: await this.storage.get("inventoryCount") ?? null, inventoryDiscovered: Boolean(feeds?.revision && feeds.revision === await this.storage.get("inventoryDiscovered")), completedTranslations: Number(await this.storage.get("completedTranslations")) || 0, reviewedReused: Number(await this.storage.get("reviewedReused")) || 0, pending: (await this.storage.list({ prefix: "pending/", limit: 1 })).size > 0, activeLanguage: schedule ? this.languages[schedule.languageIndex] : null, batch: { maxItems: 50, maxSourceCharacters: 1800, processedGroups: progress?.batches ?? 0, groupedItems: progress?.batchedItems ?? 0, cacheReused: progress?.cacheReused ?? 0 }, byLanguage, pausedUntil: null, lastRunAt: await this.storage.get("lastRunAt") ?? null, lastError: await this.storage.get("lastError") ?? null, feedErrors: await this.storage.get("feedErrors") ?? [], azureAutomatic: "disabled_until_a_verified_remaining_allowance_is_configured" };
+    return { enabled: this.env.AUTO_TRANSLATION_ENABLED !== "false", mode: "one-language-at-a-time-v1", localActiveLanguage: await this.storage.get("localActiveLanguage:v1") ?? null, languages: this.languages.length, sources: Number(await this.storage.get("sourceCount")) || 0, inventorySources: await this.storage.get("inventoryCount") ?? null, inventoryDiscovered: Boolean(feeds?.revision && feeds.revision === await this.storage.get("inventoryDiscovered")), completedTranslations: Number(await this.storage.get("completedTranslations")) || 0, reviewedReused: Number(await this.storage.get("reviewedReused")) || 0, pending: (await this.storage.list({ prefix: "pending/", limit: 1 })).size > 0, activeLanguage: schedule ? this.languages[schedule.languageIndex] : null, batch: { maxItems: 50, maxSourceCharacters: 1800, processedGroups: progress?.batches ?? 0, groupedItems: progress?.batchedItems ?? 0, cacheReused: progress?.cacheReused ?? 0 }, byLanguage, pausedUntil: null, lastRunAt: await this.storage.get("lastRunAt") ?? null, lastError: await this.storage.get("lastError") ?? null, feedErrors: await this.storage.get("feedErrors") ?? [], azureAutomatic: "disabled_until_a_verified_remaining_allowance_is_configured" };
   }
 };
 function json(payload, status = 200) {
@@ -3894,8 +3908,8 @@ class LocalTranslationQueue extends DurableObject {
   enqueue(payload) {
     return this.service.enqueue(payload);
   }
-  claim() {
-    return this.service.claim();
+  claim(target) {
+    return this.service.claim(target);
   }
   renew(id, token) {
     return this.service.renew(id, token);
@@ -4005,10 +4019,10 @@ async function handleLocalRequest(request, env) {
       if (body.utf8Probe !== UTF8_PROBE || body.model !== HY_MT_MODEL) return json({ error: "model_or_utf8_mismatch" }, 400);
       await env.LOCAL_TRANSLATION_QUEUE.getByName("hymt2:v1:0").heartbeat();
       if (action === "heartbeat") return json({ ok: true, utf8Probe: UTF8_PROBE });
-      if (automaticLocalEnabled(env)) await automaticCoordinator(env).feedLocal();
+      const feed = automaticLocalEnabled(env) ? await automaticCoordinator(env).feedLocal() : null;
       const start = Number.isInteger(body.shard) ? Math.abs(body.shard) % LOCAL_SHARDS : 0;
       for (let i = 0; i < LOCAL_SHARDS; i++) {
-        const job = await env.LOCAL_TRANSLATION_QUEUE.getByName(`hymt2:v1:${(start + i) % LOCAL_SHARDS}`).claim();
+        const job = await env.LOCAL_TRANSLATION_QUEUE.getByName(`hymt2:v1:${(start + i) % LOCAL_SHARDS}`).claim(feed?.target ?? undefined);
         if (job) return json({ job, nextShard: (start + i + 1) % LOCAL_SHARDS });
       }
       return json({ job: null, nextShard: (start + 1) % LOCAL_SHARDS });
