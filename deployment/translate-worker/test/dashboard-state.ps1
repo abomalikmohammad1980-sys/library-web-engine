@@ -19,3 +19,18 @@ foreach($case in $cases){
     if(-not $state.Text -or -not $state.Hint){throw 'Missing explanation'}
     Write-Output ('PASS '+$case.name)
 }
+
+# A single CIM result is unwrapped by PowerShell and has no Count property.
+# Exercise the actual control updater with one running process, not just booleans.
+$fn=$ast.Find({param($node) $node -is [Management.Automation.Language.FunctionDefinitionAst] -and $node.Name -eq 'Update-RunControls'},$true)
+Invoke-Expression $fn.Extent.Text
+function Get-AgentProcesses { New-CimInstance -ClassName Win32_Process -ClientOnly -Property @{ProcessId=[uint32]123} }
+function Get-LauncherProcesses { @() }
+function Update-TrayView {}
+Add-Type -AssemblyName System.Drawing
+$script:desired=$false;$script:cloudOnline=$true;$script:activeJobs=1;$script:nextState=[datetime]::MinValue
+$runStatus=[pscustomobject]@{Text='';ForeColor=''};$stateHelp=[pscustomobject]@{Text=''}
+$startButton=[pscustomobject]@{Enabled=$true;BackColor=''};$stopButton=[pscustomobject]@{Enabled=$false;BackColor=''}
+Update-RunControls
+if($startButton.Enabled -or -not $stopButton.Enabled){throw 'Single running CIM process was treated as stopped'}
+Write-Output 'PASS single CIM process enables Stop, disables Start'

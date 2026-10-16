@@ -45,7 +45,7 @@ function Start-LocalAgent {
     if(((Get-Date)-$script:lastStart).TotalSeconds -lt 30){return}
     $script:lastStart=Get-Date
     # Loading the model can take longer than the supervision interval.
-    if((Get-LauncherProcesses).Count -gt 0 -or (Get-AgentProcesses).Count -gt 0){return}
+    if(@(Get-LauncherProcesses).Count -gt 0 -or @(Get-AgentProcesses).Count -gt 0){return}
     Start-Process powershell.exe -ArgumentList @('-NoProfile','-ExecutionPolicy','Bypass','-File',('"'+$launcherFile+'"')) -WindowStyle Hidden -RedirectStandardOutput $logFile -RedirectStandardError (Join-Path $settings 'agent-error.log') | Out-Null
 }
 $form=New-Object Windows.Forms.Form
@@ -111,7 +111,7 @@ $null=Add-Label 'إغلاق اللوحة يترك العامل يعمل. لإي�
 function Update-RunControls {
     if((Get-Date) -lt $script:nextState){return}
     $script:nextState=(Get-Date).AddSeconds(3)
-    try {$state=Get-RunState $script:desired ((Get-AgentProcesses).Count -gt 0) ((Get-LauncherProcesses).Count -gt 0) $script:cloudOnline $script:activeJobs}
+    try {$state=Get-RunState $script:desired (@(Get-AgentProcesses).Count -gt 0) (@(Get-LauncherProcesses).Count -gt 0) $script:cloudOnline $script:activeJobs}
     catch {$state=[pscustomobject]@{Text='تعذر التحقق من العامل المحلي';Color='DarkOrange';Hint='لا يمكن تأكيد التشغيل؛ تقدم Cloudflare مستقل عن حالة هذا الجهاز.';StartEnabled=$false;StopEnabled=$false}}
     $script:trayState=$state
     Update-TrayView
