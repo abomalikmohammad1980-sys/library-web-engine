@@ -24,8 +24,8 @@ jobs:
       - name: Validate worker syntax
         run: node --check deployment/translate-worker/src/index.js
       - name: Check translation contract and guards
-        run: node --experimental-vm-modules --test deployment/translate-worker/test/worker.test.mjs
+        run: node --experimental-vm-modules --test deployment/translate-worker/test/*.test.mjs
       - name: Build without publishing
-        run: npx --yes wrangler@4.143.1 deploy --dry-run --config deployment/translate-worker/wrangler.toml --outdir /tmp/translation-worker-build
+        run: npx --yes wrangler@4.151.0 deploy --dry-run --config deployment/translate-worker/wrangler.toml --outdir /tmp/translation-worker-build
         env:
           WRANGLER_SEND_METRICS: 'false'

@@ -22,6 +22,12 @@ Artifacts: outputs/Hy-MT2-Local-Agent.zip, outputs/hymt2-local-agent.patch, full
 
 Relevant memory: active/decisions/ADR-0001-hymt2-durable-pull.md.
 
+## Code synchronization — 2026-10-16
+
+User authorized copying the completed code to C:\Users\yahya\Desktop\أبوعبدالرحمن\code\_final\library-web-engine-git-v18 and uploading to the same GitHub repository. The target did not exist at inspection; preserve the separate older sibling checkout. This authorization does not include Cloudflare deployment or changes to live resources/secrets. Keep the task branch until repository review/merge. Verify the Desktop checkout and remote branch have the same commit before reporting synchronization.
+
+Translation CI now runs all three test files (64 tests), and its dry-run uses the locally verified Wrangler 4.151.0. A [CF-Pages-Skip] commit prefix prevents Pages deployment for the upload while leaving GitHub checks enabled. Existing ingestion workflows are manual/scheduled; this upload does not dispatch them. The saved GitHub account yahyakmail59 has pull permission only; uploading requires an authorized account. Never copy credentials into the repository or release archive.
+
 ## Recent Handoffs
 
 The pre-storage-audit assessment (superseded by direct live evidence) is archived at archive/environment/2026-10-16-pre-storage-audit.md.
