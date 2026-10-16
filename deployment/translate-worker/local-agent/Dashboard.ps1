@@ -46,8 +46,9 @@ function Get-LauncherProcesses {
 function Start-LocalAgent {
     if(((Get-Date)-$script:lastStart).TotalSeconds -lt 30){return}
     $script:lastStart=Get-Date
-    # Loading the model can take longer than the supervision interval.
-    if(@(Get-LauncherProcesses).Count -gt 0 -or @(Get-AgentProcesses).Count -gt 0){return}
+    # Start-Translation.ps1 owns the named mutex and rejects duplicates. Do
+    # not gate startup on WMI process enumeration, which can be denied for a
+    # hidden desktop launch and otherwise leaves the dashboard running alone.
     Start-Process powershell.exe -ArgumentList @('-NoProfile','-ExecutionPolicy','Bypass','-File',('"'+$launcherFile+'"')) -WindowStyle Hidden -RedirectStandardOutput $logFile -RedirectStandardError (Join-Path $settings 'agent-error.log') | Out-Null
 }
 function Stop-LocalProcesses {
