@@ -1,16 +1,24 @@
-﻿param([switch]$StartAgent,[switch]$CheckOnly,[string]$PreviewPath,[switch]$Tray)
+﻿param([switch]$StartAgent,[switch]$CheckOnly,[string]$PreviewPath,[switch]$Tray,[switch]$Exit)
 $ErrorActionPreference='Stop'
+. (Join-Path $PSScriptRoot 'Runtime.ps1')
+if($Exit){
+    try {$event=[Threading.EventWaitHandle]::OpenExisting('Local\KhzanahTranslationExit');[void]$event.Set();$event.Dispose()} catch [Threading.WaitHandleCannotBeOpenedException] {}
+    return
+}
 Add-Type -AssemblyName System.Windows.Forms,System.Drawing,System.Net.Http
 [System.Windows.Forms.Application]::EnableVisualStyles()
 $uiMutex=New-Object Threading.Mutex($false,'Local\KhzanahTranslationDashboard')
 $uiLocked=$false
 $showEvent=New-Object Threading.EventWaitHandle($false,[Threading.EventResetMode]::AutoReset,'Local\KhzanahTranslationShow')
+$startEvent=New-Object Threading.EventWaitHandle($false,[Threading.EventResetMode]::AutoReset,'Local\KhzanahTranslationStart')
+$exitEvent=New-Object Threading.EventWaitHandle($false,[Threading.EventResetMode]::AutoReset,'Local\KhzanahTranslationExit')
 if(-not $CheckOnly){
     try {$uiLocked=$uiMutex.WaitOne(0)} catch [Threading.AbandonedMutexException] {$uiLocked=$true}
-    if(-not $uiLocked){if(-not $Tray){[void]$showEvent.Set()}; $showEvent.Dispose(); $uiMutex.Dispose(); exit}
+    if(-not $uiLocked){if($StartAgent){[void]$startEvent.Set()};[void]$showEvent.Set();$showEvent.Dispose();$startEvent.Dispose();$exitEvent.Dispose();$uiMutex.Dispose();return}
 }
 $utf8=New-Object System.Text.UTF8Encoding($false,$true)
-$settings=Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) 'KhzanahLocalTranslation'
+$settings=Get-TranslationSettingsDirectory
+[void](Write-TranslationDiagnostic -Stage 'dashboard-start' -Details @{root=$PSScriptRoot})
 $agentFile=[IO.Path]::GetFullPath((Join-Path $PSScriptRoot 'agent.mjs'))
 $launcherFile=[IO.Path]::GetFullPath((Join-Path $PSScriptRoot 'Start-Translation.ps1'))
 $modelPath='C:\Users\yahya\Desktop\أبوعبدالرحمن\ترجمة offline\Hy-MT2-7B-Q4_K_M.gguf'
@@ -25,6 +33,14 @@ $script:cloudOnline=$false
 $script:activeJobs=0
 $script:nextState=[datetime]::MinValue
 $script:announcedRunning=$false
+$script:client=$null
+$script:url=$null
+$script:nextConnect=[datetime]::MinValue
+$script:connectionProblem=$null
+$script:launcherProcess=$null
+$script:nextRuntime=[datetime]::MinValue
+$self=[Diagnostics.Process]::GetCurrentProcess()
+try {$script:dashboardStartTicks=[string]$self.StartTime.ToUniversalTime().Ticks} finally {$self.Dispose()}
 function Get-RunState([bool]$desired,[bool]$agent,[bool]$launcher,[bool]$online,[int]$jobs) {
     if($agent){
         if(-not $online){$text='العامل مفتوح — تعذر تأكيد الاتصال';$color='DarkOrange';$hint='تُعاد محاولة الاتصال تلقائيًا. الأرقام المعروضة قديمة حتى يعود الاتصال.'}
@@ -38,38 +54,41 @@ function Get-RunState([bool]$desired,[bool]$agent,[bool]$launcher,[bool]$online,
 $localCodes='en fr tr ur ug fa hi id ms bn ru uk de es pt it nl pl kk zh ja ko'.Split(' ')
 $names=@{en='الإنجليزية';fr='الفرنسية';tr='التركية';ur='الأردية';ug='الأويغورية';fa='الفارسية';hi='الهندية';id='الإندونيسية';ms='الملايوية';bn='البنغالية';ru='الروسية';uk='الأوكرانية';de='الألمانية';es='الإسبانية';pt='البرتغالية';it='الإيطالية';nl='الهولندية';pl='البولندية';kk='الكازاخية';zh='الصينية';ja='اليابانية';ko='الكورية';ckb='الكردية السورانية';ku='الكردية';sw='السواحيلية';hu='المجرية';ps='البشتوية';so='الصومالية';ha='الهوسا';sv='السويدية';no='النرويجية';ro='الرومانية';bs='البوسنية';sq='الألبانية';az='الأذربيجانية';uz='الأوزبكية'}
 function Get-AgentProcesses {
-    @(Get-CimInstance Win32_Process -Filter "Name='node.exe'" | Where-Object { $_.CommandLine -and $_.CommandLine.Contains($agentFile) })
+    $p=Get-TranslationProcess -Role agent
+    if($p){$p}
 }
 function Get-LauncherProcesses {
-    @(Get-CimInstance Win32_Process -Filter "Name='powershell.exe'" | Where-Object { $_.CommandLine -and $_.CommandLine.Contains($launcherFile) })
+    $p=Get-TranslationProcess -Role launcher
+    if($p){$p}
 }
 function Start-LocalAgent {
+    if($script:exitMonitor -or -not $script:client){return}
+    if(Test-TranslationAgentRunning){return}
+    if($script:launcherProcess -and -not $script:launcherProcess.HasExited){return}
     if(((Get-Date)-$script:lastStart).TotalSeconds -lt 30){return}
     $script:lastStart=Get-Date
-    # Start-Translation.ps1 owns the named mutex and rejects duplicates. Do
-    # not gate startup on WMI process enumeration, which can be denied for a
-    # hidden desktop launch and otherwise leaves the dashboard running alone.
-    Start-Process powershell.exe -ArgumentList @('-NoProfile','-ExecutionPolicy','Bypass','-File',('"'+$launcherFile+'"')) -WindowStyle Hidden -RedirectStandardOutput $logFile -RedirectStandardError (Join-Path $settings 'agent-error.log') | Out-Null
+    if($script:launcherProcess){$script:launcherProcess.Dispose();$script:launcherProcess=$null}
+    $powershell=Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe'
+    $script:launcherProcess=Start-Process $powershell -ArgumentList @('-NoProfile','-NonInteractive','-ExecutionPolicy','Bypass','-File',('"'+$launcherFile+'"'),'-Background') -WindowStyle Hidden -PassThru -RedirectStandardOutput $logFile -RedirectStandardError (Join-Path $settings 'agent-error.log')
+    [void](Write-TranslationDiagnostic -Stage 'launcher-started' -Details @{processId=$script:launcherProcess.Id})
 }
 function Stop-LocalProcesses {
-    # Stop only this project's exact agent, launcher, and Hy-MT2 model.
-    $launchers=@(Get-LauncherProcesses)
-    $agents=@(Get-AgentProcesses)
-    foreach($p in $agents){Stop-Process -Id $p.ProcessId -Force -ErrorAction SilentlyContinue}
-    foreach($p in $launchers){
-        foreach($child in @(Get-CimInstance Win32_Process -Filter ('ParentProcessId='+$p.ProcessId))){
-            if($child.Name -eq 'llama-server.exe'){Stop-Process -Id $child.ProcessId -Force -ErrorAction SilentlyContinue}
-        }
-        Stop-Process -Id $p.ProcessId -Force -ErrorAction SilentlyContinue
+    $script:desired=$false
+    try {$stop=[Threading.EventWaitHandle]::OpenExisting('Local\KhzanahTranslationStop');[void]$stop.Set();$stop.Dispose()} catch [Threading.WaitHandleCannotBeOpenedException] {}
+    $launcher=Get-TranslationProcess -Role launcher
+    if(-not $launcher -and $script:launcherProcess -and -not $script:launcherProcess.HasExited){$launcher=$script:launcherProcess}
+    if($launcher){try{[void]$launcher.WaitForExit(8000)}finally{if(-not [object]::ReferenceEquals($launcher,$script:launcherProcess)){$launcher.Dispose()}}}
+    # Quiesce a stalled launcher before the final child sweep: it must not
+    # create a new model/agent after that role has already been inspected.
+    [void](Stop-TranslationProcess -Role launcher)
+    if($script:launcherProcess -and -not $script:launcherProcess.HasExited){$script:launcherProcess.Kill();[void]$script:launcherProcess.WaitForExit(3000)}
+    foreach($role in @('agent','model')){[void](Stop-TranslationProcess -Role $role)}
+    if(Test-TranslationAgentRunning){throw 'Worker shutdown incomplete'}
+    foreach($role in @('agent','model','launcher')){
+        $remaining=Get-TranslationProcess -Role $role
+        if($remaining){$remaining.Dispose();throw 'A translation process is still running'}
     }
-    # The launcher can exit while its model remains healthy. Match both the
-    # exact model path and the loopback port before stopping it, so unrelated
-    # llama-server instances are never touched.
-    foreach($p in @(Get-CimInstance Win32_Process -Filter "Name='llama-server.exe'")){
-        if($p.CommandLine -and $p.CommandLine.Contains($modelPath) -and $p.CommandLine -match '--port\s+8081'){
-            Stop-Process -Id $p.ProcessId -Force -ErrorAction SilentlyContinue
-        }
-    }
+    [void](Write-TranslationDiagnostic -Stage 'worker-stopped')
 }
 $form=New-Object Windows.Forms.Form
 $form.Text='الخزانة | متابعة الترجمة'
@@ -127,8 +146,11 @@ $null=Add-Label 'إغلاق اللوحة يترك العامل يعمل. لإي�
 function Update-RunControls {
     if((Get-Date) -lt $script:nextState){return}
     $script:nextState=(Get-Date).AddSeconds(3)
-    try {$state=Get-RunState $script:desired (@(Get-AgentProcesses).Count -gt 0) (@(Get-LauncherProcesses).Count -gt 0) $script:cloudOnline $script:activeJobs}
+    $agents=@();$launchers=@()
+    try {$agents=@(Get-AgentProcesses);$launchers=@(Get-LauncherProcesses);$state=Get-RunState $script:desired ($agents.Count -gt 0) ($launchers.Count -gt 0) $script:cloudOnline $script:activeJobs}
     catch {$state=[pscustomobject]@{Text='تعذر التحقق من العامل المحلي';Color='DarkOrange';Hint='لا يمكن تأكيد التشغيل؛ تقدم Cloudflare مستقل عن حالة هذا الجهاز.';StartEnabled=$false;StopEnabled=$false}}
+    finally {foreach($p in @($agents)+@($launchers)){if($p -is [IDisposable]){$p.Dispose()}}}
+    if($script:connectionProblem){$state.Text='بانتظار إعداد الاتصال — إعادة المحاولة تلقائية';$state.Color='DarkOrange';$state.Hint='الأيقونة متاحة للإغلاق. لم يبدأ المترجم بعد. تفاصيل الفحص محفوظة محلياً دون المفتاح.'}
     $script:trayState=$state
     Update-TrayView
     $runStatus.Text=$state.Text; $runStatus.ForeColor=[Drawing.Color]::FromName($state.Color)
@@ -140,43 +162,39 @@ function Update-RunControls {
         $script:announcedRunning=$true
     } elseif($state.Text -notmatch '^العامل يعمل'){$script:announcedRunning=$false}
 }
-try {
+function Connect-TranslationCloud {
+    if($script:client -or (Get-Date) -lt $script:nextConnect){return}
+    $script:nextConnect=(Get-Date).AddSeconds(5)
+    $secure=$null;$newClient=$null;$token=$null
     $connectionStage='read-url'
-    $urlFile=Join-Path $settings 'worker-url.txt'
-    $url=$null
-    # A cold start may briefly race with the settings writer. Wait quietly
-    # instead of showing a diagnostic dialog during that short window.
-    for($attempt=1;$attempt -le 20 -and -not $url;$attempt++){
-        try {
-            $candidate=[IO.File]::ReadAllText($urlFile,$utf8).Trim().TrimEnd('/')
-            if($candidate){$url=$candidate;break}
-        } catch { if($attempt -eq 5){$url=$null} }
-        Start-Sleep -Milliseconds 500
+    try {
+        $candidate=[IO.File]::ReadAllText((Join-Path $settings 'worker-url.txt'),$utf8).Trim().TrimEnd('/')
+        $uri=$null
+        if(-not [uri]::TryCreate($candidate,[UriKind]::Absolute,[ref]$uri) -or $uri.Scheme -ne 'https'){throw 'Invalid worker URL'}
+        $connectionStage='decrypt-settings'
+        $secure=Import-Clixml -LiteralPath (Join-Path $settings 'agent-token.xml')
+        if($secure -isnot [Security.SecureString] -or $secure.Length -lt 32){throw 'Invalid connection settings'}
+        $ptr=[Runtime.InteropServices.Marshal]::SecureStringToBSTR($secure)
+        try {$token=[Runtime.InteropServices.Marshal]::PtrToStringBSTR($ptr)}finally{[Runtime.InteropServices.Marshal]::ZeroFreeBSTR($ptr)}
+        $connectionStage='http-client'
+        $handler=New-Object Net.Http.HttpClientHandler
+        $handler.AllowAutoRedirect=$false;$handler.Proxy=[Net.WebRequest]::DefaultWebProxy
+        $newClient=New-Object Net.Http.HttpClient($handler)
+        $newClient.Timeout=[timespan]::FromSeconds(20)
+        $newClient.DefaultRequestHeaders.Authorization=New-Object Net.Http.Headers.AuthenticationHeaderValue('Bearer',$token)
+        $script:client=$newClient;$newClient=$null;$script:url=$candidate
+        $script:connectionProblem=$null
+        [void](Write-TranslationDiagnostic -Stage 'connection-ready')
+    } catch {
+        $script:connectionProblem=$connectionStage
+        [void](Write-TranslationDiagnostic -Stage $connectionStage -ErrorRecord $_)
+        $connection.Text='تعذر قراءة إعداد الاتصال — يعيد المحاولة تلقائياً. افتح التفاصيل لمعرفة الحالة.'
+        $script:cloudOnline=$false
+    } finally {
+        $token=$null
+        if($secure -is [IDisposable]){$secure.Dispose()}
+        if($newClient){$newClient.Dispose()}
     }
-    # The activated site is the canonical Worker endpoint. Use it only as a
-    # tray-mode fallback when the small local URL file is momentarily locked.
-    if(-not $url -and $Tray){$url='https://khzanah.com';$connectionStage='read-url-fallback'}
-    if(-not $url){throw 'Worker URL is empty'}
-    if(([uri]$url).Scheme -ne 'https'){throw 'HTTPS required'}
-    $connectionStage='decrypt-settings'
-    $secure=Import-Clixml -LiteralPath (Join-Path $settings 'agent-token.xml')
-    $ptr=[Runtime.InteropServices.Marshal]::SecureStringToBSTR($secure)
-    try { $token=[Runtime.InteropServices.Marshal]::PtrToStringBSTR($ptr) } finally {[Runtime.InteropServices.Marshal]::ZeroFreeBSTR($ptr);$secure.Dispose()}
-    $connectionStage='http-client'
-    $handler=New-Object Net.Http.HttpClientHandler
-    $handler.AllowAutoRedirect=$false; $handler.Proxy=[Net.WebRequest]::DefaultWebProxy
-    $client=New-Object Net.Http.HttpClient($handler)
-    $client.Timeout=[timespan]::FromSeconds(20)
-    $client.DefaultRequestHeaders.Authorization=New-Object Net.Http.Headers.AuthenticationHeaderValue('Bearer',$token)
-    $token=$null
-    try { [IO.File]::WriteAllText((Join-Path $settings 'dashboard-connection-status.json'),('{"stage":"ready","time":"'+[DateTime]::UtcNow.ToString('o')+'"}'),$utf8) } catch {}
-} catch {
-    # Record only diagnostic metadata, never exception text, headers or credentials.
-    $diagnostic=[pscustomobject]@{stage=$connectionStage;type=$_.Exception.GetType().FullName;hresult=$_.Exception.HResult;line=$_.InvocationInfo.ScriptLineNumber;time=[DateTime]::UtcNow.ToString('o')}
-    try { $diagnostic|ConvertTo-Json|Set-Content -LiteralPath (Join-Path $settings 'dashboard-connection-status.json') -Encoding UTF8 } catch {}
-    if($CheckOnly){$diagnostic|ConvertTo-Json -Compress;exit 1}
-    [Windows.Forms.MessageBox]::Show(('تعذر فتح الاتصال في هذه المحاولة. أغلق هذه الرسالة وافتح Khzanah-Translate.cmd مجددًا. لا تحذف إعداداتك ولا تدخل مفتاحًا جديدًا. رمز التشخيص: '+$connectionStage),'الخزانة')|Out-Null
-    exit 1
 }
 function Refresh-View($data) {
     if($data.utf8Probe -ne 'مرحبا بالعالم' -or -not $data.library.byLanguage){throw 'Invalid status'}
@@ -199,8 +217,9 @@ function Refresh-View($data) {
     $current=@($data.current | ForEach-Object { $names[$_.target]+' — '+$sourceNames[$_.sourceType] }) -join ' / '
     if(-not $current){$current='لا توجد مهمة محجوزة'}
     $activity.Text='المهمة المسجلة في Cloudflare: '+$current
-    if(@($data.current).Count -gt 0 -and (Test-Path -LiteralPath $logFile)){
-        $line=Get-Content -LiteralPath $logFile -Encoding UTF8 -Tail 18 | Where-Object {$_ -match '^current language=.+current item='} | Select-Object -Last 1
+    $translationLog=Join-Path $settings 'translation-output.log'
+    if(@($data.current).Count -gt 0 -and (Test-Path -LiteralPath $translationLog)){
+        $line=Get-Content -LiteralPath $translationLog -Encoding UTF8 -Tail 18 | Where-Object {$_ -match '^current language=.+current item='} | Select-Object -Last 1
         if($line -and $line -notmatch 'current item=-'){$item=(($line -split 'current item=',2)[1] -replace ' \| source=.*$',''); $activity.Text+=' — '+$item.Substring(0,[math]::Min(75,$item.Length))}
     }
     $remote='دورة المزودات الأخرى: '+$names[$data.library.activeLanguage]+' — حسب الحصص المتاحة'
@@ -266,20 +285,49 @@ $notify.Add_DoubleClick({Show-TranslationWindow})
 $notify.Add_MouseClick({param($sender,$eventArgs) if($eventArgs.Button -eq [Windows.Forms.MouseButtons]::Left){$trayMenu.Show([Windows.Forms.Cursor]::Position)}})
 $trayStart.Add_Click({if($startButton.Enabled){& $startButton.Tag}})
 $trayStop.Add_Click({if($stopButton.Enabled){& $stopButton.Tag}})
-$trayExit.Add_Click({
-    $script:exitMonitor=$true
-    try { Stop-LocalProcesses } catch {}
+function Close-TranslationApp {
     $script:desired=$false
-    $form.Close()
-    [Windows.Forms.Application]::ExitThread()
-})
+    $runStatus.Text='جارٍ الإغلاق الكامل…'
+    try {
+        Stop-LocalProcesses
+        $script:exitMonitor=$true
+        $form.Close()
+        [Windows.Forms.Application]::ExitThread()
+    } catch {
+        [void](Write-TranslationDiagnostic -Stage 'shutdown-failed' -ErrorRecord $_)
+        $connection.Text='لم يكتمل إيقاف العامل. الأيقونة باقية؛ حاول الإغلاق الكامل مرة أخرى.'
+        Show-TranslationWindow
+    }
+}
+$trayExit.Add_Click({Close-TranslationApp})
 $form.Add_FormClosing({param($sender,$eventArgs)
     if(-not $script:exitMonitor -and $eventArgs.CloseReason -eq [Windows.Forms.CloseReason]::UserClosing){$eventArgs.Cancel=$true;$form.Hide()}
 })
 $timer=New-Object Windows.Forms.Timer; $timer.Interval=1000
+function Write-DashboardRuntime {
+    if($CheckOnly -or (Get-Date) -lt $script:nextRuntime){return}
+    $script:nextRuntime=(Get-Date).AddSeconds(2)
+    $agent=$null;$launcher=$null;$model=$null
+    try {
+        $agent=Get-TranslationProcess -Role agent
+        $launcher=Get-TranslationProcess -Role launcher
+        $model=Get-TranslationProcess -Role model
+        $ready=0L
+        if($script:trayData){foreach($p in $script:trayData.library.byLanguage.PSObject.Properties){$ready+=[long]$p.Value.ready}}
+        $runtime=[ordered]@{pid=$PID;startTicks=$script:dashboardStartTicks;scriptRoot=$PSScriptRoot;time=[datetime]::UtcNow.ToString('o');iconVisible=$notify.Visible;cloudOnline=$script:cloudOnline;verified=$script:verified;desired=$script:desired;agentPid=$agent.Id;launcherPid=$launcher.Id;modelPid=$model.Id;completed=$script:trayData.completed;ready=$ready;currentLanguage=$script:trayData.library.localActiveLanguage;connectionProblem=$script:connectionProblem}
+        $target=Join-Path $settings 'dashboard-runtime.json'
+        $temp=$target+'.'+$PID+'.tmp'
+        [IO.File]::WriteAllText($temp,($runtime|ConvertTo-Json -Compress),$utf8)
+        if([IO.File]::Exists($target)){[IO.File]::Replace($temp,$target,[NullString]::Value)}else{[IO.File]::Move($temp,$target)}
+    } catch {[void](Write-TranslationDiagnostic -Stage 'dashboard-status-write' -ErrorRecord $_)}
+    finally {foreach($p in @($agent,$launcher,$model)){if($p){$p.Dispose()}}}
+}
 $tick={
     try {
+        if($exitEvent.WaitOne(0)){Close-TranslationApp;return}
+        if($startEvent.WaitOne(0)){$script:desired=$true;$script:lastStart=[datetime]::MinValue}
         if($showEvent.WaitOne(0)){Show-TranslationWindow}
+        Connect-TranslationCloud
         if($script:desired){Start-LocalAgent}
         if($script:request -and $script:request.IsCompleted){
             try {
@@ -288,9 +336,10 @@ $tick={
             } catch { $script:cloudOnline=$false; $connection.Text='تعذر الاتصال — الأرقام المعروضة آخر قراءة ناجحة. ستعاد المحاولة تلقائيًا.' }
             $script:request=$null; $script:nextPoll=(Get-Date).AddSeconds(15)
         }
-        if(-not $script:request -and (Get-Date) -ge $script:nextPoll){$script:request=$client.GetAsync($url+'/api/translate/internal/local/status')}
+        if($script:client -and -not $script:request -and (Get-Date) -ge $script:nextPoll){$script:request=$script:client.GetAsync($script:url+'/api/translate/internal/local/status')}
         Update-RunControls
-    } catch { $connection.Text='تعذر تشغيل العامل أو الاتصال. تقدم Cloudflare محفوظ؛ ستعاد المحاولة.' }
+    } catch { [void](Write-TranslationDiagnostic -Stage 'dashboard-tick' -ErrorRecord $_);$connection.Text='تعذر تشغيل العامل أو الاتصال. تقدم Cloudflare محفوظ؛ ستعاد المحاولة.' }
+    Write-DashboardRuntime
 }
 $timer.Add_Tick($tick)
 try {
@@ -306,5 +355,8 @@ try {
             try{$trayMenu.DrawToBitmap($menuBitmap,(New-Object Drawing.Rectangle(0,0,$trayMenu.Width,$trayMenu.Height)));$menuBitmap.Save(($PreviewPath+'.tray.png'),[Drawing.Imaging.ImageFormat]::Png)}finally{$menuBitmap.Dispose();$trayMenu.Close()}
         }
         [pscustomobject]@{languages=$grid.Rows.Count;totals=$totals.Text;groups=$groups.Text;utf8=$true;trayState=$trayStatus.Text;trayLanguage=$trayLanguage.Text;trayProgress=$trayProgress.Text}|ConvertTo-Json -Compress
-    } else { $notify.Visible=$true; $timer.Start(); if(-not $Tray){$form.Show()}; [Windows.Forms.Application]::Run() }
-} finally {$notify.Visible=$false;$notify.Dispose();$trayMenu.Dispose();$showEvent.Dispose();$timer.Stop();$timer.Dispose();$client.Dispose();$form.Dispose();if($uiLocked){$uiMutex.ReleaseMutex()};$uiMutex.Dispose()}
+    } else { $notify.Visible=$true;Write-DashboardRuntime;$timer.Start(); if(-not $Tray){$form.Show()}; [Windows.Forms.Application]::Run() }
+} finally {
+    $notify.Visible=$false;$script:nextRuntime=[datetime]::MinValue;Write-DashboardRuntime
+    $notify.Dispose();$trayMenu.Dispose();$showEvent.Dispose();$startEvent.Dispose();$exitEvent.Dispose();$timer.Stop();$timer.Dispose();if($script:client){$script:client.Dispose()};if($script:launcherProcess){$script:launcherProcess.Dispose()};$form.Dispose();if($uiLocked){$uiMutex.ReleaseMutex()};$uiMutex.Dispose()
+}

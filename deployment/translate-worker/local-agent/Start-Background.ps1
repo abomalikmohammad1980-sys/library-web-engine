@@ -1,49 +1,5 @@
 ﻿$ErrorActionPreference='Stop'
-$settings=Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) 'KhzanahLocalTranslation'
-$launcher=Join-Path $PSScriptRoot 'Start-Translation.ps1'
-$mutex=New-Object Threading.Mutex($false,'Local\KhzanahBackgroundLaunch')
-$locked=$false
-$agentMutex=$null
-$problem=$null
-$stage='launch-lock'
-try {
-    try {$locked=$mutex.WaitOne(0)}catch [Threading.AbandonedMutexException]{$locked=$true}
-    if(-not $locked){exit}
-    # The launcher owns this mutex during BOTH loading and translation.
-    # WMI/CIM process enumeration can be denied for an ordinary launch.
-    $stage='agent-lock'
-    $agentMutex=New-Object Threading.Mutex($false,'Local\KhzanahHyMTTranslationAgent')
-    $available=$false
-    try {$available=$agentMutex.WaitOne(0)}catch [Threading.AbandonedMutexException]{$available=$true}
-    if(-not $available){exit}
-    $agentMutex.ReleaseMutex()
-    $stage='settings'
-    foreach($file in @('worker-url.txt','agent-token.xml')){
-        $stage='settings-'+$file
-        if(-not (Test-Path -LiteralPath (Join-Path $settings $file))){throw 'Missing connection settings. Open Start-Translation.cmd once.'}
-    }
-    $stage='start-process'
-    Start-Process powershell.exe -ArgumentList @('-NoProfile','-ExecutionPolicy','Bypass','-File',('"'+$launcher+'"')) -WindowStyle Hidden -RedirectStandardOutput (Join-Path $settings 'agent-output.log') -RedirectStandardError (Join-Path $settings 'agent-error.log') | Out-Null
-    # Keep the tray monitor coupled to the one-click background start. The
-    # dashboard has its own mutex, so launching it repeatedly is harmless and
-    # cannot create a second monitor. This also repairs the case where the
-    # agent survived a previous dashboard crash and the tray icon disappeared.
-    $dashboard=Join-Path $PSScriptRoot 'Dashboard.ps1'
-    if(Test-Path -LiteralPath $dashboard){
-        Start-Process powershell.exe -ArgumentList @('-NoProfile','-STA','-ExecutionPolicy','Bypass','-File',('"'+$dashboard+'"'),'-Tray') -WindowStyle Hidden | Out-Null
-    }
-} catch {
-    $problem=[pscustomobject]@{stage=$stage;type=$_.Exception.GetType().FullName;hresult=$_.Exception.HResult;time=[datetime]::UtcNow.ToString('o')}
-    try {$problem|ConvertTo-Json|Set-Content -LiteralPath (Join-Path $settings 'background-start-error.json') -Encoding UTF8}catch {
-        try {$problem|ConvertTo-Json|Set-Content -LiteralPath (Join-Path ([IO.Path]::GetTempPath()) 'Khzanah-background-start-error.json') -Encoding UTF8}catch {}
-    }
-} finally {
-    if($agentMutex){$agentMutex.Dispose()}
-    if($locked){$mutex.ReleaseMutex()};$mutex.Dispose()
-}
-if($problem){
-    # Never keep the launch lock held while a message box is open.
-    Add-Type -AssemblyName System.Windows.Forms
-    [void][Windows.Forms.MessageBox]::Show(('تعذر بدء العامل. رمز التشخيص: '+$problem.stage+'. التقدم محفوظ في Cloudflare.'),'الخزانة')
-    exit 1
-}
+# All background entry points delegate to the one tray owner.
+$powershell=Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe'
+$dashboard=Join-Path $PSScriptRoot 'Dashboard.ps1'
+Start-Process $powershell -ArgumentList @('-NoProfile','-NonInteractive','-STA','-ExecutionPolicy','Bypass','-File',('"'+$dashboard+'"'),'-StartAgent','-Tray') -WindowStyle Hidden | Out-Null

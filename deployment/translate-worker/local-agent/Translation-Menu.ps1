@@ -31,7 +31,6 @@ function Test-AgentAlreadyRunning {
 }
 $start.Add_Click({try{
     Open-TranslationTool 'Start-Background.ps1'
-    Open-TranslationTool 'Dashboard.ps1' -Tray
     $form.Close()
 }catch{[void][Windows.Forms.MessageBox]::Show('تعذر التشغيل. افتح عرض التقدم للمراجعة.','الخزانة')}})
 $view.Add_Click({try{Open-TranslationTool 'Dashboard.ps1';$form.Close()}catch{[void][Windows.Forms.MessageBox]::Show('تعذر فتح لوحة التقدم.','الخزانة')}})

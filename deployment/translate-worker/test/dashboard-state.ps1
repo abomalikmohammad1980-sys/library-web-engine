@@ -20,17 +20,51 @@ foreach($case in $cases){
     Write-Output ('PASS '+$case.name)
 }
 
-# A single CIM result is unwrapped by PowerShell and has no Count property.
-# Exercise the actual control updater with one running process, not just booleans.
+# Exercise the actual updater with the Runtime API's explicit null result,
+# and with one process. An array containing null must not count as running.
 $fn=$ast.Find({param($node) $node -is [Management.Automation.Language.FunctionDefinitionAst] -and $node.Name -eq 'Update-RunControls'},$true)
 Invoke-Expression $fn.Extent.Text
-function Get-AgentProcesses { New-CimInstance -ClassName Win32_Process -ClientOnly -Property @{ProcessId=[uint32]123} }
-function Get-LauncherProcesses { @() }
+foreach($name in @('Get-AgentProcesses','Get-LauncherProcesses')){
+    $fn=$ast.Find({param($node) $node -is [Management.Automation.Language.FunctionDefinitionAst] -and $node.Name -eq $name},$true)
+    if($fn){Invoke-Expression $fn.Extent.Text}
+}
+$script:fakeAgent=$null;$script:fakeLauncher=$null
+function Get-TranslationProcess([string]$Role) {
+    if($Role -eq 'agent'){return $script:fakeAgent}
+    if($Role -eq 'launcher'){return $script:fakeLauncher}
+    return $null
+}
 function Update-TrayView {}
-Add-Type -AssemblyName System.Drawing
-$script:desired=$false;$script:cloudOnline=$true;$script:activeJobs=1;$script:nextState=[datetime]::MinValue
+Add-Type -AssemblyName System.Drawing,System.Windows.Forms
+Add-Type -TypeDefinition @'
+public sealed class DashboardStateTestProcess : System.IDisposable {
+    public int Id { get; set; }
+    public string ProcessName { get; set; }
+    public bool Disposed { get; private set; }
+    public void Dispose() { Disposed = true; }
+}
+'@
+$script:desired=$false;$script:cloudOnline=$true;$script:activeJobs=1;$script:nextState=[datetime]::MinValue;$script:connectionProblem=$null
 $runStatus=[pscustomobject]@{Text='';ForeColor=''};$stateHelp=[pscustomobject]@{Text=''}
 $startButton=[pscustomobject]@{Enabled=$true;BackColor=''};$stopButton=[pscustomobject]@{Enabled=$false;BackColor=''}
-Update-RunControls
-if($startButton.Enabled -or -not $stopButton.Enabled){throw 'Single running CIM process was treated as stopped'}
-Write-Output 'PASS single CIM process enables Stop, disables Start'
+$notify=New-Object Windows.Forms.NotifyIcon
+try {
+    Update-RunControls
+    if(-not $startButton.Enabled -or $stopButton.Enabled){throw 'Null runtime processes were incorrectly reported as running'}
+    Write-Output 'PASS absent runtime processes enable Start and disable Stop'
+    $script:fakeAgent=New-Object DashboardStateTestProcess
+    $script:fakeAgent.Id=123;$script:fakeAgent.ProcessName='node'
+    $script:nextState=[datetime]::MinValue
+    Update-RunControls
+    if($startButton.Enabled -or -not $stopButton.Enabled){throw 'Single running process was treated as stopped'}
+    if(-not $script:fakeAgent.Disposed){throw 'Runtime process handles must be disposed after reading state'}
+    Write-Output 'PASS single running process enables Stop, disables Start and releases its handle'
+    $script:fakeAgent=$null
+    $script:fakeLauncher=New-Object DashboardStateTestProcess
+    $script:fakeLauncher.Id=124;$script:fakeLauncher.ProcessName='powershell'
+    $script:nextState=[datetime]::MinValue
+    Update-RunControls
+    if($startButton.Enabled -or -not $stopButton.Enabled){throw 'Model loading must remain stoppable'}
+    if(-not $script:fakeLauncher.Disposed){throw 'Launcher process handle must be disposed after reading state'}
+    Write-Output 'PASS model loading remains stoppable and releases its handle'
+} finally {$notify.Dispose()}
