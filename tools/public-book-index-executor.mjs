@@ -17,7 +17,19 @@ async function readBounded(r2,key,limit){
  if(size!==object.size)throw Error('source_size_mismatch')
  return Buffer.concat(chunks,size)
 }
+/** Search needs only the source-bound paragraph/page correspondence. Keep the
+ * full reader map in storage, and do not clone native font/layout evidence into
+ * the 256 MiB extraction worker. The accepted input cap remains 32 MiB. */
+export function projectPublicWordIndexMap(map){
+ if(map===undefined)return map;
+ if(Buffer.byteLength(JSON.stringify(map))>32*1024*1024)throw Error('word_map_size_bound');
+ if(!map||typeof map!=='object'||!Array.isArray(map.paragraphs))return map;
+ const projected={totalPages:map.totalPages,paragraphCount:map.paragraphCount,paragraphs:map.paragraphs.map(p=>p&&typeof p==='object'?{text:p.text,paragraphIndex:p.paragraphIndex,physicalPage:p.physicalPage}:p)};
+ if(Buffer.byteLength(JSON.stringify(projected))>16*1024*1024)throw Error('word_map_size_bound');
+ return projected;
+}
 export function extractPublicBookBounded(input,{timeoutMs=30000}={}){
+ if(String(input?.mime).split(';',1)[0].trim().toLowerCase()==='application/vnd.openxmlformats-officedocument.wordprocessingml.document'&&input?.map!==undefined)input={...input,map:projectPublicWordIndexMap(input.map)};
  if(!Number.isSafeInteger(timeoutMs)||timeoutMs<1||timeoutMs>30000)throw Error('invalid_extraction_timeout')
  if(!(input?.bytes instanceof Uint8Array)||!input.bytes.length||input.bytes.length>(String(input.mime).split(';',1)[0].trim().toLowerCase()==='application/pdf'?64:20)*1024*1024)throw Error('source_size_bound')
  if(input.map!==undefined&&Buffer.byteLength(JSON.stringify(input.map))>16*1024*1024)throw Error('word_map_size_bound')
