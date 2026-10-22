@@ -19,32 +19,36 @@ async function readBounded(r2,key,limit){
 }
 /** Search needs only the source-bound paragraph/page correspondence. Keep the
  * full reader map in storage, and do not clone native font/layout evidence into
- * the 256 MiB extraction worker. The accepted input cap remains 32 MiB. */
+ * the 256 MiB extraction worker. The accepted input cap is 200 MiB. */
 export function projectPublicWordIndexMap(map){
  if(map===undefined)return map;
- if(Buffer.byteLength(JSON.stringify(map))>32*1024*1024)throw Error('word_map_size_bound');
+ if(Buffer.byteLength(JSON.stringify(map))>200*1024*1024)throw Error('word_map_size_bound');
  if(!map||typeof map!=='object'||!Array.isArray(map.paragraphs))return map;
  const projected={totalPages:map.totalPages,paragraphCount:map.paragraphCount,paragraphs:map.paragraphs.map(p=>p&&typeof p==='object'?{text:p.text,paragraphIndex:p.paragraphIndex,physicalPage:p.physicalPage}:p)};
  if(Buffer.byteLength(JSON.stringify(projected))>16*1024*1024)throw Error('word_map_size_bound');
  return projected;
 }
-export function extractPublicBookBounded(input,{timeoutMs=30000}={}){
+export function extractPublicBookBounded(input,{timeoutMs}={}){
+ const wordInput=String(input?.mime).split(';',1)[0].trim().toLowerCase()==='application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+ timeoutMs??=wordInput?120000:30000
  if(String(input?.mime).split(';',1)[0].trim().toLowerCase()==='application/vnd.openxmlformats-officedocument.wordprocessingml.document'&&input?.map!==undefined)input={...input,map:projectPublicWordIndexMap(input.map)};
- if(!Number.isSafeInteger(timeoutMs)||timeoutMs<1||timeoutMs>30000)throw Error('invalid_extraction_timeout')
- if(!(input?.bytes instanceof Uint8Array)||!input.bytes.length||input.bytes.length>(String(input.mime).split(';',1)[0].trim().toLowerCase()==='application/pdf'?64:20)*1024*1024)throw Error('source_size_bound')
+ if(!Number.isSafeInteger(timeoutMs)||timeoutMs<1||timeoutMs>(wordInput?120000:30000))throw Error('invalid_extraction_timeout')
+ if(!(input?.bytes instanceof Uint8Array)||!input.bytes.length||!Number.isSafeInteger(input.bytes.length))throw Error('source_size_bound')
  if(input.map!==undefined&&Buffer.byteLength(JSON.stringify(input.map))>16*1024*1024)throw Error('word_map_size_bound')
  return new Promise((resolve,reject)=>{
   // PDF.js may load a native canvas dependency. Isolate it in a process so a
   // native teardown fault cannot kill the scheduler or another book's parser.
   const pdf=String(input.mime).split(';',1)[0].trim().toLowerCase()==='application/pdf'
-  const worker=pdf?fork(new URL('./public-book-index-extract-worker.mjs',import.meta.url),[],{execArgv:['--max-old-space-size=256'],env:{},serialization:'advanced',windowsHide:true,stdio:['ignore','ignore','ignore','ipc']}):new Worker(new URL('./public-book-index-extract-worker.mjs',import.meta.url),{workerData:input,execArgv:[],env:{},resourceLimits:{maxOldGenerationSizeMb:256,maxYoungGenerationSizeMb:32}})
+  const word=String(input.mime).split(';',1)[0].trim().toLowerCase()==='application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+  const isolated=pdf||word
+  const worker=isolated?fork(new URL('./public-book-index-extract-worker.mjs',import.meta.url),[],{execArgv:[word?'--max-old-space-size=2048':'--max-old-space-size=256'],env:{},serialization:'advanced',windowsHide:true,stdio:['ignore','ignore','ignore','ipc']}):new Worker(new URL('./public-book-index-extract-worker.mjs',import.meta.url),{workerData:input,execArgv:[],env:{},resourceLimits:{maxOldGenerationSizeMb:256,maxYoungGenerationSizeMb:32}})
   let done=false
-  const finish=(error,result)=>{if(done)return;done=true;clearTimeout(timer);if(pdf)worker.kill();else void worker.terminate();error?reject(error):resolve(result)}
+  const finish=(error,result)=>{if(done)return;done=true;clearTimeout(timer);if(isolated)worker.kill();else void worker.terminate();error?reject(error):resolve(result)}
   const timer=setTimeout(()=>finish(Error('extraction_timeout')),timeoutMs)
-  worker.once('message',message=>finish(message.error?Error(message.error):null,message.result))
+  worker.on('message',message=>{if(isolated&&message.workerReady===true){worker.send(input,error=>{if(error)finish(Error('extraction_worker_failed'))});return}finish(message.error?Error(message.error):null,message.result)})
   worker.once('error',()=>finish(Error('extraction_worker_failed')))
   worker.once('exit',()=>{if(!done)finish(Error('extraction_worker_failed'))})
-  if(pdf)worker.send(input,error=>{if(error)finish(Error('extraction_worker_failed'))})
+
  })
 }
 export async function executePublicBookIndex({db,r2,job,env={},now=()=>Math.floor(Date.now()/1000)}){
@@ -53,7 +57,7 @@ export async function executePublicBookIndex({db,r2,job,env={},now=()=>Math.floo
   await fence()
   const assets=await db.prepare("SELECT COUNT(*) n FROM user_book_assets WHERE book_id=?1 AND kind='volume'").bind(job.book_id).first()
   if(Number(assets?.n)>0)throw Error('multipart_adapter_required')
-  const bytes=await readBounded(r2,job.source.object_key,(job.source.mime_type==='application/pdf'?64:20)*1024*1024)
+  const bytes=await readBounded(r2,job.source.object_key,Number.MAX_SAFE_INTEGER)
   if(bytes.length!==job.source.byte_length)throw Error('source_size_mismatch')
   const sourceSha256=digest(bytes)
   let map
@@ -62,7 +66,7 @@ export async function executePublicBookIndex({db,r2,job,env={},now=()=>Math.floo
    if(bundle){
    const manifest=JSON.parse(bundle.manifest_json)
    if(manifest.contract!=='khizana-word-bundle/1'||manifest.sourceSha256!==sourceSha256||manifest.mapSha256!==bundle.sha256)throw Error('word_bundle_source_mismatch')
-   const mapBytes=await readBounded(r2,bundle.object_key,16*1024*1024)
+   const mapBytes=await readBounded(r2,bundle.object_key,200*1024*1024)
    if(mapBytes.length!==bundle.byte_length||digest(mapBytes)!==bundle.sha256)throw Error('word_map_digest_mismatch')
    map=JSON.parse(mapBytes.toString('utf8'))
    if(map.totalPages!==manifest.totalPages)throw Error('word_map_source_mismatch')
@@ -79,7 +83,7 @@ export async function executePublicBookIndex({db,r2,job,env={},now=()=>Math.floo
   try{await r2.put(artifactKey,payload,{httpMetadata:{contentType:'application/json'}})}catch{throw Error('storage_unavailable')}
   if(digest(await readBounded(r2,artifactKey,16*1024*1024))!==manifestSha256)throw Error('artifact_digest_mismatch')
   // Detect a same-key replacement, not merely a changed metadata generation.
-  if(digest(await readBounded(r2,job.source.object_key,(job.source.mime_type==='application/pdf'?64:20)*1024*1024))!==sourceSha256)throw Error('source_changed')
+  if(digest(await readBounded(r2,job.source.object_key,Number.MAX_SAFE_INTEGER))!==sourceSha256)throw Error('source_changed')
   await fence()
   if(extracted.pdfClassification&&!await attestPdfClassification(db,job,now(),extracted.pdfClassification,sourceSha256))throw Error('publication_changed')
   const checkpoint=Math.max(1,job.checkpoint)
@@ -94,3 +98,7 @@ export async function executePublicBookIndex({db,r2,job,env={},now=()=>Math.floo
   return {ready:false,error:code}
  }
 }
+
+
+
+

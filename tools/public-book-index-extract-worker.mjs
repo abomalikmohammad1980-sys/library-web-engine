@@ -1,13 +1,15 @@
+import {PDF_BOOKMARK_SOURCE64_V1,PDF_TEXT_AND_BOOKMARKS_V1} from '../alpha-publish/functions/api/_public-book-pdf-preparation-v1.js'
+import {createHash} from 'node:crypto'
 import {parentPort,workerData} from 'node:worker_threads'
 import {decodeUtf8Text,textParagraphs} from '../app/src/text_import.ts'
 // Import the upload gate directly: generated deployment copies must not drift
 // from the validator used by the production extraction worker.
-import {safeWordUpload} from '../deployment/cloudflare/functions/api/_word-upload-safety.js'
-import {extractFromDocx,alignWordParagraphIndices} from '../packages/ooxml-model/dist/index.js'
+import {safeWordUpload} from './public-word-source-safety104.mjs'
+import {extractFromDocx,alignWordParagraphIndices} from './public-word-model104.mjs'
 import {parseBok} from '../app/src/bok_import.ts'
 import {createRequire} from 'node:module'
 import {pathToFileURL} from 'node:url'
-const input=workerData??await new Promise(resolve=>process.once('message',resolve))
+const input=workerData??await new Promise(resolve=>{process.once('message',resolve);process.send({workerReady:true})})
 const report=value=>parentPort?parentPort.postMessage(value):process.send(value)
 try{
  const {bytes,map}=input,mime=String(input.mime).split(';',1)[0].trim().toLowerCase()
@@ -17,8 +19,8 @@ try{
   // Use the same source ceiling as the bounded executor, not a 1 MiB
   // compressed-file limit that rejects ordinary books with embedded images.
   // safeWordUpload still enforces inflated XML, archive and expansion limits.
-  if(bytes.length>20*1024*1024)throw Error('word_source_bound')
-  if(!await safeWordUpload(new File([bytes],'source.docx')))throw Error('unsafe_word_archive')
+  if(!Number.isSafeInteger(bytes.length)||bytes.length<1)throw Error('word_source_bound')
+  if(!await safeWordUpload(new File([bytes],'source.docx'),{maxSourceBytes:Number.MAX_SAFE_INTEGER}))throw Error('unsafe_word_archive')
   const model=extractFromDocx(bytes),paragraphs=model.paragraphs
   // Exclusion flags describe layout, not missing searchable content. An empty
   // field/picture is not text and must not reject an otherwise searchable book.
@@ -56,8 +58,8 @@ try{
   const {extractPublicEpub}=await import('./public-book-index-epub.mjs')
   ;({rows,headings,coverageMode}=extractPublicEpub(bytes))
  }else if(mime==='application/pdf'){
-  const {extractPublicPdfBookmarks}=await import('./public-book-index-pdf.mjs')
-  const result=await extractPublicPdfBookmarks(new Uint8Array(bytes))
+  const pdfModule=await import('./public-book-index-pdf.mjs')
+  const result=(input.extractionProfile===undefined||input.extractionProfile===PDF_BOOKMARK_SOURCE64_V1)?await pdfModule.extractPublicPdfBookmarks(new Uint8Array(bytes)):input.extractionProfile===PDF_TEXT_AND_BOOKMARKS_V1?await pdfModule.extractPublicPdfTextAndBookmarksV1(new Uint8Array(bytes)):input.extractionProfile==='khizana-textual-pdf-preparation/1'?await pdfModule.extractPublicTextualPdfPreparationV1(new Uint8Array(bytes)):(()=>{throw Error('pdf_preparation_profile')})()
   if(parentPort)parentPort.postMessage({result})
   else await new Promise((resolve,reject)=>process.send({result},error=>error?reject(error):resolve()))
   process.exit(0)
@@ -71,4 +73,12 @@ try{
  const result={rows,headings,coverageMode}
  if(Buffer.byteLength(JSON.stringify(result))>16*1024*1024)throw Error('extraction_output_bound')
  report({result})
-}catch(error){report({error:/^[a-z][a-z0-9_]{0,79}$/.test(error.message)?error.message:'source_parse_failed'})}
+}catch(error){
+ const code=/^[a-z][a-z0-9_]{0,79}$/.test(error.message)?error.message:'source_parse_failed';
+ if(input.extractionProfile==='khizana-textual-pdf-preparation/1'){
+  const message=String(error.message??''),name=String(error.name??'Error');
+  report({error:code,diagnostic:{contract:'khizana-textual-pdf-preparation-failure-diagnostic/1',phase:['pdf-document-open','pdf-logical-page-projection'].includes(error.preparationPhase)?error.preparationPhase:'pdf-runtime-or-worker',exceptionName:/^[A-Za-z][A-Za-z0-9]{0,63}$/.test(name)?name:'Error',messageSha256:createHash('sha256').update(message).digest('hex'),messageBytes:Buffer.byteLength(message),rawMessageDisclosed:false,accepted:false}});
+ }else report({error:code});
+}
+
+

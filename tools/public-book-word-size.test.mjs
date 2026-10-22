@@ -25,7 +25,7 @@ test('larger DOCX support retains XML size, ZIP expansion and entity rejection',
  const expansion=zip(document,{'word/media/image1.png':new Uint8Array(2*1024*1024)})
  const entities=zip('<!DOCTYPE x [<!ENTITY x "unsafe">]>'+document)
  for(const bytes of [expansion,entities])await assert.rejects(extractPublicBookBounded({mime,bytes,map:{}}),/unsafe_word_archive/)
- assert.throws(()=>extractPublicBookBounded({mime,bytes:new Uint8Array(20*1024*1024+1)}),/source_size_bound/)
+ await assert.rejects(extractPublicBookBounded({mime,bytes:new Uint8Array(20*1024*1024+1)}),/unsafe_word_archive/)
 })
 
 test('actual indexing worker accepts navigation mail links but rejects active external resources',async()=>{
@@ -40,3 +40,5 @@ test('actual indexing worker accepts navigation mail links but rejects active ex
   await assert.rejects(extractPublicBookBounded({mime,bytes}),/unsafe_word_archive/)
  }
 })
+
+test('trusted public extraction accepts a valid source above the ordinary 20 MiB gate',async()=>{const bytes=zip(document,{'word/media/unused.png':randomBytes(21*1024*1024)},{level:0});assert(bytes.length>20*1024*1024);assert.equal(await safeWordUpload(new File([bytes],'large.docx')),false);const out=await extractPublicBookBounded({mime,bytes});assert.deepEqual(out.rows.map(r=>r.text),['عنوان موثق'])})

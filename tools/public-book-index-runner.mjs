@@ -44,9 +44,9 @@ export function ingestionGateway(config,fetcher=fetch){
    throw Error(`gateway_${op}_${response.status}_${reason}`)
   }
   const reader=response.body.getReader(),chunks=[];let size=0
-  try{for(;;){const {done,value}=await reader.read();if(done)break;size+=value.byteLength;if(size>64*1024*1024)throw Error('ingestion_response_bound');chunks.push(value)}}finally{await reader.cancel().catch(()=>{})}
+  try{for(;;){const {done,value}=await reader.read();if(done)break;size+=value.byteLength;if(size>(op==='map'?200*1024*1024:op==='source'?Number.MAX_SAFE_INTEGER:64*1024*1024))throw Error('ingestion_response_bound');chunks.push(value)}}finally{await reader.cancel().catch(()=>{})}
   const bytes=Buffer.concat(chunks,size)
-  if(binary)return {bytes,sourceSha256:response.headers.get('X-Source-Sha256')}
+  if(binary)return {bytes,sourceSha256:response.headers.get('X-Source-Sha256'),mapSha256:response.headers.get('X-Map-Sha256'),mapTotalPages:response.headers.get('X-Map-Total-Pages')}
   try{return JSON.parse(bytes.toString('utf8'))}catch{throw Error(`gateway_${op}_invalid_response`)}
  }
 }
@@ -71,7 +71,9 @@ export async function drainPublicBookIndex({gateway,maxJobs=5,maxSeconds=240,now
    if(job.mime==='application/vnd.openxmlformats-officedocument.wordprocessingml.document'){
     const result=await gateway({op:'map',lease},true)
     if(result.sourceSha256!==source.sourceSha256)throw Error('source_changed')
+    if(result.mapSha256&&createHash('sha256').update(result.bytes).digest('hex')!==result.mapSha256)throw Error('word_map_digest_mismatch')
     map=JSON.parse(result.bytes.toString('utf8'))
+    if(result.mapTotalPages&&map?.totalPages!==Number(result.mapTotalPages))throw Error('word_map_source_mismatch')
    }
    const extracted=await extract({mime:job.mime,bytes:new Uint8Array(source.bytes),map,...(job.requiredCoverage==='pdf-native-text'?{PDF_TEXT_INDEXING:'true'}:{})})
    if(extracted.reason==='ocr_required')throw Error('ocr_required')
