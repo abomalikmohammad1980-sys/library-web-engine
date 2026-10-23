@@ -8,7 +8,7 @@ import {DatabaseSync} from 'node:sqlite'
 const source=await readFile(new URL('../src/index.js',import.meta.url),'utf8')
 export async function loadWorker(fetchImpl=async()=>{throw Error('Unexpected provider call')}){
  const context=vm.createContext({Request,Response,Headers,URL,URLSearchParams,TextEncoder,TextDecoder,AbortController,AbortSignal,setTimeout,clearTimeout,crypto:webcrypto,console:{warn(){},error(){}},fetch:fetchImpl})
- const module=new vm.SourceTextModule(source+'\nexport { AutomaticTranslations, sourceHash, reserveQuota, localPlan, localSave, handleLocalRequest, providerOrderForPurpose, segmentTranslationMemoryKeys, writeR2TranslationMemory, cleanGeminiTranslation, splitOpenRouterSegments, splitStableTranslationMemorySegments, translationMemoryKeys, checkGeminiBudget, openRouterModelPool, translateWithGemini, translateWithGroq, translateWithMistral, translateWithCloudflareAI, translateWithDeepL, translateSegmentBatchWithDeepLRaw };',{context,identifier:new URL('../src/index.js',import.meta.url).href})
+ const module=new vm.SourceTextModule(source+'\nexport { AutomaticTranslations, sourceHash, reserveQuota, localPlan, localSave, handleLocalRequest, providerOrderForPurpose, segmentTranslationMemoryKeys, writeR2TranslationMemory, cleanGeminiTranslation, splitOpenRouterSegments, splitStableTranslationMemorySegments, translationMemoryKeys, checkGeminiBudget, openRouterModelPool, translateWithGemini, translateWithGroq, translateWithMistral, translateWithOpenRouter, translateWithCloudflareAI, translateWithDeepL, translateSegmentBatchWithDeepLRaw, translateAutomaticBatch, automaticTranslationPolicy, automaticBatchPrompt, validateAutomaticCatalogTranslation };',{context,identifier:new URL('../src/index.js',import.meta.url).href})
  const modules=new Map()
  async function linker(name, parent){
   if(name==='cloudflare:workers')return new vm.SyntheticModule(['DurableObject'],function(){this.setExport('DurableObject',class{})},{context})
@@ -79,6 +79,24 @@ test('cache hit returns translation without a provider call',async()=>{
  const r=await response(post(JSON.stringify({text:'السلام عليكم',targetLanguage:'en'})),e)
  assert.equal(r.status,200);assert.equal(r.json.translation,'Peace be upon you')
 })
+test('read-only automatic lookup reports KV vs R2 and never invokes a model',async()=>{
+ let providerCalls=0
+ const w=await loadWorker(async()=>{providerCalls++;throw Error('lookup must never invoke a model')})
+ const sourceKV='عنوان من الكاش';const sourceR2='عنوان من الذاكرة الدائمة'
+ const hash=async text=>Buffer.from(await webcrypto.subtle.digest('SHA-256',new TextEncoder().encode(text.trim()))).toString('hex')
+ const kvHash=await hash(sourceKV),r2Hash=await hash(sourceR2),missingHash='a'.repeat(64)
+ const e={...env(),TRANSLATION_CACHE:{get:async key=>key===`auto:v1:en:${kvHash}`?'KV translation':null}}
+ e.TRANSLATION_MEMORY={get:async key=>key===`auto/v1/en/${r2Hash}.json`?{json:async()=>({source:sourceR2,translation:'R2 translation'})}:null}
+ const request=new Request('https://khzanah.com/api/translate/lookup',{method:'POST',headers:{origin:'https://khzanah.com','content-type':'application/json'},body:JSON.stringify({language:'en',keys:[kvHash,r2Hash,missingHash]})})
+ const result=await w.default.fetch(request,e)
+ const body=await result.json()
+ assert.equal(result.status,200)
+ assert.deepEqual(body.translations,{[kvHash]:'KV translation',[r2Hash]:'R2 translation'})
+ assert.deepEqual(body.cacheLayers,{[kvHash]:'kv',[r2Hash]:'r2'})
+ assert.deepEqual(body.missingKeys,[missingHash])
+ assert.equal(body.modelInvoked,false)
+ assert.equal(providerCalls,0)
+})
 test('cache miss with unavailable providers returns controlled short 503',async()=>{
  const r=await response(post(JSON.stringify({text:'السلام عليكم',targetLanguage:'en'})))
  assert.equal(r.status,503);assert(r.text.length<2000);assert(!/ط·آ|ط¢آ/.test(r.text))
@@ -87,6 +105,39 @@ test('cleans Arabic and typographic quote pairs in provider replies',async()=>{
  const w=await loadWorker()
  for(const [a,b] of [['«','»'],['“','”'],['"','"']])assert.equal(w.cleanGeminiTranslation(a+'hello'+b),'hello')
  assert.equal(w.cleanGeminiTranslation('```text\nTranslation: hello\n```'),'hello')
+})
+test('central automatic policy distinguishes UI, bibliographic titles and author transliteration',async()=>{
+ const w=await loadWorker()
+ assert.match(w.automaticTranslationPolicy('ui','English'),/interface text or heading/i)
+ assert.match(w.automaticTranslationPolicy('title','English'),/bibliographic title/i)
+ assert.match(w.automaticTranslationPolicy('author','English'),/transliterate the full name/i)
+ const payload=JSON.parse(w.automaticBatchPrompt([
+  {id:0,source:'القائمة الرئيسية',sourceType:'ui'},
+  {id:1,source:'فتح الباري شرح صحيح البخاري',sourceType:'title'},
+  {id:2,source:'محمد بن إسماعيل البخاري',sourceType:'author'}
+ ],'English'))
+ assert.deepEqual(payload.segments.map(row=>row.sourceType),['ui','title','author'])
+ assert.match(payload.segments[2].instruction,/transliterate/i)
+})
+test('catalog validation rejects invented UI words inside titles and roles inside author names',async()=>{
+ const w=await loadWorker()
+ assert.throws(()=>w.validateAutomaticCatalogTranslation({source:'فتح الباري شرح صحيح البخاري',sourceType:'title'},'Download previous content','en'),/title_ui_leak/)
+ assert.doesNotThrow(()=>w.validateAutomaticCatalogTranslation({source:'كتاب التحميل والتنزيل',sourceType:'title'},'The Book of Downloading','en'))
+ assert.throws(()=>w.validateAutomaticCatalogTranslation({source:'محمد بن إسماعيل البخاري',sourceType:'author'},'Author: Muhammad ibn Ismail al-Bukhari','en'),/author_added_role/)
+ assert.doesNotThrow(()=>w.validateAutomaticCatalogTranslation({source:'محمد بن إسماعيل البخاري',sourceType:'author'},'Muhammad ibn Ismail al-Bukhari','en'))
+})
+test('automatic authors never use providers that cannot follow transliteration policy',async()=>{
+ let calls=0
+ const w=await loadWorker(async()=>{calls++;throw Error('DeepL must not receive author names')}),e={...env(),TRANSLATION_CACHE:memoryKV(),DEEPL_API_KEY:'test-only'}
+ const result=await w.translateAutomaticBatch({...e,AUTO_TRANSLATION_CONTEXT:true},[{id:0,source:'محمد بن إسماعيل البخاري',sourceType:'author'}],'en',new Map())
+ assert.equal(calls,0);assert.equal(result.results.length,0)
+})
+test('automatic title guard rejects invented navigation text from an unprompted provider',async()=>{
+ let calls=0
+ const w=await loadWorker(async()=>{calls++;return Response.json({translations:[{text:'Download previous content'}]})})
+ const e={...env(),TRANSLATION_CACHE:memoryKV(),DEEPL_API_KEY:'test-only',DEEPL_TOTAL_LIMIT:'1000'}
+ const result=await w.translateAutomaticBatch({...e,AUTO_TRANSLATION_CONTEXT:true},[{id:0,source:'فتح الباري شرح صحيح البخاري',sourceType:'title'}],'en',new Map())
+ assert.equal(calls,1);assert.equal(result.results.length,0);assert.match(result.error,/title_ui_leak/)
 })
 test('OpenRouter segmentation preserves Arabic punctuation and full source',async()=>{
  const w=await loadWorker(),text=('هذه فقرة عربية؟ وهذه تتمتها؛ ثم فقرة أخرى.\n\n').repeat(20)
@@ -111,7 +162,7 @@ test('Gemini guard blocks exhausted budget before provider use',async()=>{
 export function memoryKV(){const data=new Map();return {data,get:async key=>data.get(key)??null,put:async(key,value)=>{data.set(key,value)}}}
 test('failed Gemini attempts and fallback are counted and capped',async()=>{
  let calls=0
- const w=await loadWorker(async()=>{calls++;return new Response('{}',{status:429})}),kv=memoryKV()
+ const w=await loadWorker(async(_url,options)=>{calls++;assert.equal(JSON.parse(options.body).generationConfig.temperature,0.1);return new Response('{}',{status:429})}),kv=memoryKV()
  const e={...env(),TRANSLATION_CACHE:kv,GEMINI_API_KEY:'test-only',GEMINI_MAX_REQUESTS_PER_DAY:'1'}
  await assert.rejects(w.translateWithGemini(e,'نص','en'),/guard_reached/)
  assert.equal(calls,1)
@@ -121,11 +172,18 @@ test('failed Gemini attempts and fallback are counted and capped',async()=>{
 })
 for(const provider of ['Groq','Mistral'])test('failed '+provider+' calls reserve quota before retry',async()=>{
  let calls=0
- const w=await loadWorker(async()=>{calls++;return new Response('{}',{status:429})}),kv=memoryKV(),name=provider.toUpperCase()
+ const w=await loadWorker(async(_url,options)=>{calls++;assert.equal(JSON.parse(options.body).temperature,0.1);return new Response('{}',{status:429})}),kv=memoryKV(),name=provider.toUpperCase()
  const e={...env(),TRANSLATION_CACHE:kv,[name+'_API_KEY']:'test-only',[name+'_MAX_REQUESTS_PER_DAY']:'1'}
  await assert.rejects(w['translateWith'+provider](e,'نص','en'))
  await assert.rejects(w['translateWith'+provider](e,'نص','en'),/guard_reached/)
  assert.equal(calls,1)
+})
+test('OpenRouter generative translation uses temperature 0.1',async()=>{
+ let body
+ const w=await loadWorker(async(_url,options)=>{body=JSON.parse(options.body);return new Response('{}',{status:429})}),kv=memoryKV()
+ const e={...env(),TRANSLATION_CACHE:kv,OPENROUTER_API_KEY:'test-only',OPENROUTER_MAX_REQUESTS_PER_DAY:'1'}
+ await assert.rejects(w.translateWithOpenRouter(e,'نص','en'))
+ assert.equal(body.temperature,0.1)
 })
 test('failed Cloudflare AI attempts consume the source-character guard',async()=>{
  let calls=0
@@ -369,6 +427,31 @@ async function automaticFixture(w,languages=['en','sw']) {
  await storage.put('completedTranslations',100)
  return {e,storage,quota,get automatic(){return automatic},restart(){automatic=new w.AutomaticTranslations(storage,e,languages,null,async()=>{throw Error('Unexpected old batch')})}}
 }
+test('discovery ingests every changed UI page plus new book titles and author names',async()=>{
+ const hashes=['a'.repeat(64)+'.json','b'.repeat(64)+'.json']
+ let revision='revision-1',rows=Array.from({length:101},(_,i)=>({source:`عبارة واجهة ${i}`,kind:'ui'}))
+ const w=await loadWorker(async target=>{
+  const u=String(target)
+  if(u.endsWith('/data/translation-sources/catalog.json'))return Response.json({schemaVersion:1,revision,pages:hashes,rows,count:rows.length})
+  if(u.includes('/api/library/published-books'))return Response.json({schemaVersion:1,books:[{title:'عنوان كتاب جديد',author:'مؤلف الكتاب'}],hasMore:false,nextCursor:null})
+  if(u.includes('/api/library/author-names'))return Response.json({schemaVersion:1,names:[{displayName:'مؤلف الدليل'}],hasMore:false})
+  throw Error('Unexpected discovery URL '+u)
+ })
+ const e=localEnv(w),storage=durableLedger()
+ const automatic=new w.AutomaticTranslations(storage,e,['en'],null,async()=>{throw Error('Unexpected batch')})
+ await automatic.discover()
+ assert.equal((await automatic.status()).sources,104)
+ const kinds=[...(await storage.list({prefix:'pending/'})).values()].map(task=>task.kind)
+ assert.equal(kinds.filter(kind=>kind==='ui').length,101)
+ assert.equal(kinds.filter(kind=>kind==='title').length,1)
+ assert.equal(kinds.filter(kind=>kind==='author').length,2)
+
+ revision='revision-2';hashes[1]='c'.repeat(64)+'.json';rows[100]={source:'عنوان رئيس جديد أضيف لاحقًا',kind:'ui'}
+ const state=await storage.get('feeds');state.uiAfter=0;state.booksAfter=Date.now()+60000;state.authorsAfter=Date.now()+60000;await storage.put('feeds',state)
+ await automatic.discover()
+ assert.equal((await automatic.status()).sources,105)
+ assert([...(await storage.list({prefix:'pending/'})).values()].some(task=>task.source==='عنوان رئيس جديد أضيف لاحقًا'))
+})
 test('existing automatic ledger feeds local work, publishes the existing lookup format and advances old progress exactly once',async()=>{
  const w=await loadWorker(),f=await automaticFixture(w),{e,storage}=f
  const {job}=await localCall(w,e,'pull',localHello)
