@@ -532,6 +532,20 @@ test('local feed finishes the first incomplete language before feeding the next 
  assert.equal((await f.automatic.feedLocal()).target,'fr')
 })
 
+test('local feed scans beyond an unrelated full page before reporting the lane idle',async()=>{
+ const w=await loadWorker(),f=await automaticFixture(w,['en','sw'])
+ const [[originalKey,originalTask]]=[...(await f.storage.list({prefix:'pending/'}))]
+ await f.storage.delete(originalKey)
+ for(let i=0;i<550;i++){
+  const suffix=String(i).padStart(3,'0')
+  await f.storage.put(`pending/0000000000000/${suffix}`,{source:`عنصر ${suffix}`,hash:suffix.padEnd(64,'0'),kind:'title',remaining:['sw'],reviewed:{},failures:0})
+ }
+ await f.storage.put('pending/9999999999999/final',originalTask)
+ const result=await f.automatic.feedLocal()
+ assert.equal(result.queued,true)
+ assert.equal(result.target,'en')
+})
+
 test('external sequential scheduler waits for first-language retry rather than translating the next',async()=>{
  const w=await loadWorker(),f=await automaticFixture(w,['sw','ro']),calls=[]
  f.automatic.translateBatch=async(items,target)=>{calls.push(target);return {results:[],error:'quota_unavailable'}}

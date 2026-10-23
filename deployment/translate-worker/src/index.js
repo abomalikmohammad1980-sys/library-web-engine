@@ -113,27 +113,47 @@ var AutomaticTranslations = class {
       if (target) await this.storage.put("localActiveLanguage:v1",target);
       else { await this.storage.delete("localActiveLanguage:v1"); return { queued:false,target:null }; }
     }
-    const cursor = await this.storage.get("localPullCursor:v1");
-    const page = await this.storage.list({ prefix: "pending/", limit: 100, ...(cursor ? { startAfter: cursor } : {}) });
-    for (const [key, task] of page) {
-      if (!task.remaining.includes(target) || !validSource(task.source)) {
+    const initialCursor = await this.storage.get("localPullCursor:v1");
+    let cursor = initialCursor || null, wrapped = !initialCursor;
+    // Near the end of a language, its remaining rows can be far apart among all
+    // pending languages. Scan the durable ledger in one pull instead of making
+    // the local GPU wait five seconds after every unrelated 100-row page.
+    for (let pageNumber = 0; pageNumber < 40; pageNumber++) {
+      const page = await this.storage.list({ prefix: "pending/", limit: 500, ...(cursor ? { startAfter: cursor } : {}) });
+      if (!page.size) {
+        if (!wrapped) { cursor = null; wrapped = true; continue; }
+        await this.storage.delete("localPullCursor:v1");
+        return { queued: false, target };
+      }
+      for (const [key, task] of page) {
+        if (wrapped && initialCursor && key >= initialCursor) {
+          await this.storage.delete("localPullCursor:v1");
+          return { queued: false, target };
+        }
+        cursor = key;
+        if (!task.remaining.includes(target) || !validSource(task.source)) continue;
+        if (task.reviewed?.[target] && validTranslation(task.source,task.reviewed[target])) {
+          await this.complete(key,task,target,task.reviewed[target],true);
+          await this.storage.put("localPullCursor:v1",key);
+          return { reused:true,target };
+        }
+        const id = await sha256Hex(`hymt2:auto:v1|${target}|${task.hash}`);
+        const payload = { id, text: task.source, target, purpose: "ui", sourceType: task.kind,
+          automatic: { key, hash: task.hash } };
+        const result = await queueStub(this.env, id).enqueue(payload);
+        // If dispatch fails, cursor stays put; retries are idempotent in the queue.
         await this.storage.put("localPullCursor:v1", key);
-        continue;
+        return { queued: true, ...result, target };
       }
-      if (task.reviewed?.[target] && validTranslation(task.source,task.reviewed[target])) {
-        await this.complete(key,task,target,task.reviewed[target],true);
-        await this.storage.put("localPullCursor:v1",key);
-        return { reused:true,target };
+      if (page.size < 500) {
+        if (!wrapped) { cursor = null; wrapped = true; continue; }
+        await this.storage.delete("localPullCursor:v1");
+        return { queued: false, target };
       }
-      const id = await sha256Hex(`hymt2:auto:v1|${target}|${task.hash}`);
-      const payload = { id, text: task.source, target, purpose: "ui", sourceType: task.kind,
-        automatic: { key, hash: task.hash } };
-      const result = await queueStub(this.env, id).enqueue(payload);
-      // If dispatch fails, cursor stays put; retries are idempotent in the queue.
-      await this.storage.put("localPullCursor:v1", key);
-      return { queued: true, ...result, target };
     }
-    if (page.size < 100) await this.storage.delete("localPullCursor:v1");
+    // Keep the scan position only once per pull; per-row writes were the other
+    // source of slowdown when a page contained work for different languages.
+    if (cursor) await this.storage.put("localPullCursor:v1",cursor);
     return { queued: false, target };
   }
   async completeLocal(payload, translation) {
