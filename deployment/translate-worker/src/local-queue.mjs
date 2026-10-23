@@ -29,10 +29,11 @@ export class LocalQueueStore {
   online(now = Date.now()) {
     return now - (this.rows('SELECT last_seen FROM local_presence WHERE id=1')[0]?.last_seen || 0) < 45000
   }
-  claim(now = Date.now()) {
+  claim(now = Date.now(), target) {
     const row = this.rows(`SELECT id FROM local_jobs WHERE
-      (state='pending' AND available_at<=?) OR (state='processing' AND lease_until<=?)
-      ORDER BY created_at, id LIMIT 1`, now, now)[0]
+      ((state='pending' AND available_at<=?) OR (state='processing' AND lease_until<=?))
+      AND (? IS NULL OR json_extract(payload,'$.target')=?)
+      ORDER BY created_at, id LIMIT 1`, now, now,target ?? null,target ?? null)[0]
     if (!row) return null
     this.sql.exec(`UPDATE local_jobs SET state='processing', token=?, lease_until=?, attempts=attempts+1
       WHERE id=?`, crypto.randomUUID(), now+LEASE_MS, row.id)

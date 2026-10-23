@@ -18,8 +18,8 @@ export class LocalTranslationService {
     const row = this.store.enqueue(payload)
     return { id: row.id, state: row.state }
   }
-  async claim() {
-    const row = this.store.claim()
+  async claim(target) {
+    const row = this.store.claim(Date.now(),target)
     if (!row) return null
     const plan = await this.adapters.plan(row)
     if (plan.translation) {

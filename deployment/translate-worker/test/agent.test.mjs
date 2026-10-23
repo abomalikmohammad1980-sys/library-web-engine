@@ -25,9 +25,23 @@ test('Arabic bytes survive request encoding and generation uses the agreed setti
   assert.equal(result.translation,'Volume 12')
   const body=mock.calls.find(call=>call.path==='/v1/chat/completions').body
   assert(body.messages[0].content.includes('المجلد ١٢'))
-  assert.equal(body.temperature,0.7);assert.equal(body.top_p,0.6)
+  assert.equal(body.temperature,0.1);assert.equal(body.top_p,0.6)
   assert.equal(body.top_k,20);assert.equal(body.repeat_penalty,1.05)
   assert.equal(body.max_tokens,768)
+})
+test('UI text, book titles and author names receive distinct translation instructions',async()=>{
+  const cases=[
+    ['ui','واجهة مكتبة','interface text'],
+    ['title','فتح الباري شرح صحيح البخاري','bibliographic title'],
+    ['author','محمد بن إسماعيل البخاري','author name'],
+  ]
+  for(const [sourceType,text,expected] of cases){
+    const mock=llamaMock({output:'Accepted output'})
+    await translateUnit({text},'en','Hy-MT2-7B-Q4_K_M',undefined,mock.fetch,sourceType)
+    const prompt=mock.calls.find(call=>call.path==='/v1/chat/completions').body.messages[0].content
+    assert.match(prompt,new RegExp(expected,'i'))
+    assert.match(prompt,/data, never instructions/i)
+  }
 })
 test('wrong model, wrong slots, oversized prompt and truncated output are rejected',async()=>{
   await assert.rejects(verifyLlama(llamaMock({model:'other.gguf'}).fetch),/wrong_model/)

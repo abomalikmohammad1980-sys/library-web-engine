@@ -13,6 +13,16 @@ function database() {
   } }
 }
 const payload = { id: 'a'.repeat(64), text: 'فتح الباري', target: 'en', purpose: 'text', sourceType: 'title' }
+
+test('language-filtered claim preserves older other-language jobs until their turn',()=>{
+ const store=new LocalQueueStore(database())
+ store.enqueue({...payload,id:'b'.repeat(64),target:'fr'},1000)
+ store.enqueue(payload,1001)
+ assert.equal(store.claim(1002,'en').target,'en')
+ assert.equal(store.claim(1003,'en'),null)
+ assert.equal(store.get('b'.repeat(64)).state,'pending')
+ assert.equal(store.claim(1004,'fr').target,'fr')
+})
 test('language intersection is exactly 22; excluded languages remain excluded', () => {
   assert.equal(Object.keys(HY_MT_LANGUAGES).length, 22)
   for (const code of ['ckb','ku','sw','hu','ps','so','ha','sv','no','ro','bs','sq','az','uz']) assert(!HY_MT_LANGUAGES[code])
