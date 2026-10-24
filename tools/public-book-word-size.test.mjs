@@ -41,4 +41,4 @@ test('actual indexing worker accepts navigation mail links but rejects active ex
  }
 })
 
-test('trusted public extraction accepts a valid source above the ordinary 20 MiB gate',async()=>{const bytes=zip(document,{'word/media/unused.png':randomBytes(21*1024*1024)},{level:0});assert(bytes.length>20*1024*1024);assert.equal(await safeWordUpload(new File([bytes],'large.docx')),false);const out=await extractPublicBookBounded({mime,bytes});assert.deepEqual(out.rows.map(r=>r.text),['عنوان موثق'])})
+test('trusted public extraction accepts a valid source above the legacy 20 MiB boundary',async()=>{const bytes=zip(document,{'word/media/unused.png':randomBytes(21*1024*1024)},{level:0});assert(bytes.length>20*1024*1024);assert.equal(await safeWordUpload(new File([bytes],'large.docx')),true);const out=await extractPublicBookBounded({mime,bytes});assert.deepEqual(out.rows.map(r=>r.text),['عنوان موثق'])})
