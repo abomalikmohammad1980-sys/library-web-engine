@@ -1,0 +1,28 @@
+name: Translation router
+on:
+  pull_request:
+    paths:
+      - 'deployment/cloudflare/functions/api/translate.js'
+      - 'deployment/cloudflare/functions/api/_translation-*.js'
+      - 'deployment/cloudflare/tests/*translation*.test.mjs'
+      - 'deployment/cloudflare/tests/translate-handler.test.mjs'
+      - 'deployment/cloudflare/migrations/0042_translation_provider_usage.sql'
+      - '.github/workflows/translation-router.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'deployment/cloudflare/functions/api/translate.js'
+      - 'deployment/cloudflare/functions/api/_translation-*.js'
+      - 'deployment/cloudflare/tests/*translation*.test.mjs'
+      - 'deployment/cloudflare/tests/translate-handler.test.mjs'
+      - 'deployment/cloudflare/migrations/0042_translation_provider_usage.sql'
+
+jobs:
+  translation:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node --test deployment/cloudflare/tests/translation-router.test.mjs deployment/cloudflare/tests/translate-handler.test.mjs
