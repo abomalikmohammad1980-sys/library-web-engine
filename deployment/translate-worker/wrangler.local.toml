@@ -1,0 +1,27 @@
+# Entirely local simulation: no routes, AI binding, secrets or remote bindings.
+name = "khzanah-translate-local-test"
+main = "src/index.js"
+compatibility_date = "2026-08-09"
+[vars]
+HY_MT_ENABLED = "true"
+HY_MT_WAIT_MS = "1000"
+DO_COORDINATION_ENABLED = "true"
+CF_AI_ENABLED = "false"
+[[kv_namespaces]]
+binding = "TRANSLATION_CACHE"
+id = "local-only"
+[[r2_buckets]]
+binding = "TRANSLATION_MEMORY"
+bucket_name = "local-translation-memory-test"
+[[durable_objects.bindings]]
+name = "TRANSLATION_COORDINATOR"
+class_name = "TranslationCoordinator"
+[[durable_objects.bindings]]
+name = "LOCAL_TRANSLATION_QUEUE"
+class_name = "LocalTranslationQueue"
+[exports.TranslationCoordinator]
+type = "durable-object"
+storage = "sqlite"
+[exports.LocalTranslationQueue]
+type = "durable-object"
+storage = "sqlite"
