@@ -29,10 +29,17 @@ export function readerGateway(config,fetcher=fetch){
   throw Error('reader_gateway_unavailable',{cause:error})
  }
 }
+export function assertReaderImageBoundsBinding(map,proof){
+ const notes=map?.nativeWordNotes
+ if(!notes||!Object.prototype.hasOwnProperty.call(notes,'imageBounds'))return
+ const bounds=notes.imageBounds
+ if(!bounds||typeof bounds!=='object'||Array.isArray(bounds)||typeof notes.sourceSha256!=='string'||typeof bounds.pdfSha256!=='string'||notes.sourceSha256!==proof.sourceSha256||bounds.pdfSha256!==proof.pdfSha256)throw Error('reader_image_bounds_binding')
+}
 export async function buildReaderChild(dir,builder){
  const proof=JSON.parse(await fs.readFile(path.join(dir,'proof.json'),'utf8'))
  const {buildReaderPagePack}=await import(pathToFileURL(builder));const read=async name=>new Uint8Array(await fs.readFile(path.join(dir,name)))
- const result=await buildReaderPagePack(await read('source.bin'),await read('pdf.bin'),await read('map.bin'),proof)
+ const mapBytes=await read('map.bin');assertReaderImageBoundsBinding(JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(mapBytes)),proof)
+ const result=await buildReaderPagePack(await read('source.bin'),await read('pdf.bin'),mapBytes,proof)
  if(result.manifest.packBytes!==result.pack.length||sha(result.pack)!==result.manifest.packSha256)throw Error('reader_pack_integrity')
  for(const part of [...result.manifest.pages,...Object.values(result.manifest.assets)])if(sha(result.pack.subarray(part.offset,part.offset+part.length))!==part.sha256)throw Error('reader_page_integrity')
  await fs.writeFile(path.join(dir,'pages.bin'),result.pack);await fs.writeFile(path.join(dir,'manifest.json'),JSON.stringify(result.manifest))
@@ -60,7 +67,7 @@ export async function runReaderPreparation(config,{gateway=readerGateway(config)
   }
   progress={phase:'reader-pages',current:0,total:job.proof.totalPages};await beat()
   if(runChild)await runChild(dir,builder)
-  else await new Promise((resolve,reject)=>{const child=spawn(process.execPath,['--max-old-space-size=2048',fileURLToPath(import.meta.url),'--build-child',dir,builder],{windowsHide:true,stdio:['ignore','ignore','pipe']});let error='';child.stderr.on('data',b=>{if(error.length<8192)error+=b.toString()});const deadline=setTimeout(()=>{child.kill();reject(Error('reader_build_timeout'))},8*60*1000);child.once('error',e=>{clearTimeout(deadline);reject(e)});child.once('exit',code=>{clearTimeout(deadline);if(code===0)resolve();else reject(Error(/reader_source_integrity|reader_page_integrity|reader_pack_integrity/.exec(error)?.[0]??(error.includes('heap out of memory')?'reader_resource_limit':'reader_build_failed')))})})
+  else await new Promise((resolve,reject)=>{const child=spawn(process.execPath,['--max-old-space-size=2048',fileURLToPath(import.meta.url),'--build-child',dir,builder],{windowsHide:true,stdio:['ignore','ignore','pipe']});let error='';child.stderr.on('data',b=>{if(error.length<8192)error+=b.toString()});const deadline=setTimeout(()=>{child.kill();reject(Error('reader_build_timeout'))},8*60*1000);child.once('error',e=>{clearTimeout(deadline);reject(e)});child.once('exit',code=>{clearTimeout(deadline);if(code===0)resolve();else reject(Error(/reader_source_integrity|reader_page_integrity|reader_pack_integrity|reader_image_bounds_binding/.exec(error)?.[0]??(error.includes('heap out of memory')?'reader_resource_limit':'reader_build_failed')))})})
   if(heartbeatFailure)throw heartbeatFailure
   const manifest=JSON.parse(await fs.readFile(path.join(dir,'manifest.json'),'utf8')),begin=await gateway('begin',{lease,body:manifest})
   if(begin.partBytes!==5*1024*1024||!Array.isArray(begin.received))throw Error('reader_upload_invalid')
@@ -73,7 +80,7 @@ export async function runReaderPreparation(config,{gateway=readerGateway(config)
   }}finally{await handle.close()}
   progress={phase:'activating',current:manifest.packBytes,total:manifest.packBytes};await beat();const done=await gateway('finish',{lease,body:manifest});if(done.ready!==true)throw Error('reader_activation_failed');return{ready:true,pages:manifest.totalPages,packBytes:manifest.packBytes}
  }catch(error){
-  if(['reader_source_integrity','reader_page_integrity','reader_pack_integrity','reader_source_invalid','reader_compiler_integrity','reader_build_failed','reader_resource_limit'].includes(error.message))await gateway('fail',{lease,body:{error:error.message}}).catch(()=>{})
+  if(['reader_source_integrity','reader_page_integrity','reader_pack_integrity','reader_source_invalid','reader_compiler_integrity','reader_image_bounds_binding','reader_build_failed','reader_resource_limit'].includes(error.message))await gateway('fail',{lease,body:{error:error.message}}).catch(()=>{})
   // A lost executor/network leaves the fenced lease and confirmed parts intact.
   throw error
  }finally{clearInterval(timer);await fs.rm(dir,{recursive:true,force:true})}
