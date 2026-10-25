@@ -1,0 +1,14 @@
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.khzanah",
+      "sha256_cert_fingerprints": [
+        "D0:80:82:7A:73:A2:38:3A:3F:DB:8C:7F:BA:17:69:E9:8D:F9:04:BD:5C:08:04:52:2E:A8:98:A6:3C:70:47:33"
+      ]
+    }
+  }
+]
