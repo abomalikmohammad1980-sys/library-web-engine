@@ -28,7 +28,9 @@ jobs:
         with:
           python-version: '3.12'
       - name: Install official Kaggle CLI
-        run: python -m pip install 'kaggle==2.2.5'
+        run: python -m pip install 'kaggle==2.2.5' 'six>=1.16,<2'
+      - name: Verify Kaggle SDK import
+        run: python -c 'from kaggle import api; from kagglesdk.kernels.types.kernels_api_service import ApiGetKernelRequest'
       - name: Verify supervisor decisions
         run: python -m unittest discover -s deployment/translation-supervisor -p 'test_*.py'
       - name: Check and act once
