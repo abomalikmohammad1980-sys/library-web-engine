@@ -16,6 +16,39 @@ const env=()=>({TRANSLATION_CACHE:{get:async()=>null,put:async()=>{}},CF_AI_ENAB
 const url='https://khzanah.com/api/translate'
 const headers={origin:'https://khzanah.com','content-type':'application/json'}
 const post=(body,extra={})=>new Request(url,{method:'POST',headers:{...headers,...extra},body})
+
+test('automatic progress reads the existing cross-device catalog without starting translation',async()=>{
+ const w=await loadWorker(),names=[],existing={sources:15454,completedTranslations:66277}
+ const e={TRANSLATION_COORDINATOR:{idFromName(name){names.push(name);return name},get(){return {automaticStatus:async()=>existing}}}}
+ const r=await w.default.fetch(new Request(url+'/automatic'),e)
+ assert.equal(r.status,200);assert.deepEqual(await r.json(),existing)
+ assert.deepEqual(names,['automatic-catalog:v1'])
+})
+
+test('the existing scheduler starts the same automatic catalog',async()=>{
+ const w=await loadWorker(),names=[],waits=[];let starts=0
+ const e={TRANSLATION_COORDINATOR:{idFromName(name){names.push(name);return name},get(){return {startAutomatic:async()=>{starts++}}}}}
+ await w.default.scheduled({},e,{waitUntil(promise){waits.push(promise)}})
+ await Promise.all(waits)
+ assert.equal(starts,1);assert.deepEqual(names,['automatic-catalog:v1'])
+})
+
+test('automatic lookup reuses translations saved by other devices in the same KV and R2 keys',async()=>{
+ const w=await loadWorker(),a='a'.repeat(64),b='b'.repeat(64),c='c'.repeat(64),reads=[]
+ const e={TRANSLATION_CACHE:{get:async key=>key===`auto:v1:en:${a}`?'Cached translation':null},
+  TRANSLATION_MEMORY:{get:async key=>{reads.push(key);return key===`auto/v1/en/${b}.json`?{json:async()=>({source:'نص محفوظ',translation:'Saved translation'})}:null}}}
+ const r=await w.default.fetch(new Request(url+'/lookup',{method:'POST',headers,body:JSON.stringify({language:'en',keys:[a,b,b,c]})}),e)
+ assert.equal(r.status,200)
+ assert.deepEqual((await r.json()).translations,{[a]:'Cached translation',[b]:'Saved translation'})
+ assert.deepEqual(reads,[`auto/v1/en/${b}.json`,`auto/v1/en/${c}.json`])
+})
+
+test('automatic lookup rejects foreign origins and invalid keys before reading storage',async()=>{
+ const w=await loadWorker()
+ const request=(origin,keys)=>new Request(url+'/lookup',{method:'POST',headers:{...headers,origin},body:JSON.stringify({language:'en',keys})})
+ assert.equal((await w.default.fetch(request('https://elsewhere.invalid',['a'.repeat(64)]),{})).status,403)
+ assert.equal((await w.default.fetch(request('https://khzanah.com',['invalid']),{})).status,400)
+})
 async function response(request,customEnv=env()){
  const {default:worker}=await loadWorker()
  const r=await worker.fetch(request,customEnv)
@@ -23,10 +56,12 @@ async function response(request,customEnv=env()){
  return {status:r.status,text,json:JSON.parse(text)}
 }
 
-test('source has readable UTF-8 and no repeated encoding corruption',()=>{
+test('source is valid UTF-8 and Arabic errors survive the deployed Unicode escapes',async()=>{
  assert(source.length<200000)
+ new TextDecoder('utf-8',{fatal:true}).decode(await readFile(new URL('../src/index.js',import.meta.url)))
  assert(!/ط·آ|ط¢آ/.test(source))
- assert(source.includes('تعذر قراءة طلب الترجمة.'))
+ const r=await response(post('{'))
+ assert.equal(r.json.error,'تعذر قراءة طلب الترجمة.')
 })
 for(const body of ['null','[]','true','0','"text"','{'])test('rejects invalid request shape: '+body,async()=>{
  const r=await response(post(body));assert.equal(r.status,400);assert(r.text.length<200)
