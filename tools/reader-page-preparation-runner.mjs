@@ -50,12 +50,13 @@ export async function runReaderPreparation(config,{gateway=readerGateway(config)
  if(claimed.busy)return{ready:false,busy:true}
  const job=claimed.job
  if(!job||job.bookId!==config.bookId||job.binding!==config.binding||!HASH.test(job.compilerSHA256??'')||typeof job.lease!=='string')throw Error('reader_claim_invalid')
- const builder=fileURLToPath(new URL(job.compilerSHA256+'.mjs',builders));if(sha(await fs.readFile(builder))!==job.compilerSHA256)throw Error('reader_compiler_integrity')
+ const builder=fileURLToPath(new URL(job.compilerSHA256+'.mjs',builders))
  const dir=await fs.mkdtemp(path.join(os.tmpdir(),'khzanah-reader-')),lease=job.lease
  let progress={phase:'sources',current:0,total:Object.values(job.sources).reduce((n,s)=>n+s.bytes,0)},heartbeatFailure
  const beat=()=>gateway('heartbeat',{lease,body:progress}).then(()=>{heartbeatFailure=undefined}).catch(error=>{heartbeatFailure=error})
  let beating=false;const timer=setInterval(()=>{if(beating)return;beating=true;void beat().finally(()=>{beating=false})},15000)
  try{
+  let builderBytes;try{builderBytes=await fs.readFile(builder)}catch{throw Error('reader_compiler_integrity')}if(sha(builderBytes)!==job.compilerSHA256)throw Error('reader_compiler_integrity')
   await fs.writeFile(path.join(dir,'proof.json'),JSON.stringify(job.proof))
   for(const name of ['source','pdf','map']){
    const source=job.sources[name];if(!source||!HASH.test(source.sha256??'')||!Number.isSafeInteger(source.bytes)||source.bytes<1||name==='map'&&source.bytes>200*1024*1024)throw Error('reader_source_invalid')
@@ -80,7 +81,7 @@ export async function runReaderPreparation(config,{gateway=readerGateway(config)
   }}finally{await handle.close()}
   progress={phase:'activating',current:manifest.packBytes,total:manifest.packBytes};await beat();const done=await gateway('finish',{lease,body:manifest});if(done.ready!==true)throw Error('reader_activation_failed');return{ready:true,pages:manifest.totalPages,packBytes:manifest.packBytes}
  }catch(error){
-  if(['reader_source_integrity','reader_page_integrity','reader_pack_integrity','reader_source_invalid','reader_compiler_integrity','reader_image_bounds_binding','reader_build_failed','reader_resource_limit'].includes(error.message))await gateway('fail',{lease,body:{error:error.message}}).catch(()=>{})
+  if(['reader_source_integrity','reader_page_integrity','reader_pack_integrity','reader_source_invalid','reader_compiler_integrity','reader_image_bounds_binding','reader_build_failed','reader_resource_limit','reader_build_timeout','reader_manifest_invalid'].includes(error.message))await gateway('fail',{lease,body:{error:error.message}}).catch(()=>{})
   // A lost executor/network leaves the fenced lease and confirmed parts intact.
   throw error
  }finally{clearInterval(timer);await fs.rm(dir,{recursive:true,force:true})}
