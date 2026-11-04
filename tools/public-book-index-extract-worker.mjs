@@ -5,7 +5,7 @@ import {decodeUtf8Text,textParagraphs} from '../app/src/text_import.ts'
 // Import the upload gate directly: generated deployment copies must not drift
 // from the validator used by the production extraction worker.
 import {safeWordUpload} from './public-word-source-safety104.mjs'
-import {extractFromDocx,alignWordParagraphIndices} from './public-word-model104.mjs'
+import {extractFromDocx,alignWordParagraphIndices} from './public-word-index-model-6e89e58b433c42b9f49bf6c4966b278bea1837619fe11116c54b1fafdccb6d5e.mjs'
 import {parseBok} from '../app/src/bok_import.ts'
 import {createRequire} from 'node:module'
 import {pathToFileURL} from 'node:url'
