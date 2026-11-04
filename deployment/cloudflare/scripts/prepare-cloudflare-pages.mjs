@@ -1,4 +1,5 @@
 import { cp, mkdir, readFile, rm, writeFile } from 'node:fs/promises'
+import {prepareAndroidAssetlinks,assetlinksHeaders} from '../../../tools/android-assetlinks.mjs'
 import { resolve } from 'node:path'
 import {satelliteCspSources} from './satellite-build-config.mjs'
 import {stampServiceWorkerRelease,assertServiceWorkerRelease} from './service-worker-release.mjs'
@@ -50,6 +51,7 @@ await writeFile(resolve(output, '_headers'), `/*
 /quran/*
   Cache-Control: public, max-age=86400
 `, 'utf8')
+await writeFile(resolve(output,'_headers'),(await readFile(resolve(output,'_headers'),'utf8'))+assetlinksHeaders,'utf8')
 const prepaint = inlineThemeBootstrap(index, await readFile(resolve(output,'_headers'),'utf8'), await readFile(resolve(output,'theme-init.js'),'utf8'))
 const hints = await readFile(resolve(output,'route-preload-hints.json'),'utf8').catch(error=>{if(error.code==='ENOENT')return null;throw error})
 if(hints)Object.assign(prepaint,inlineRoutePreloads(prepaint.index,prepaint.headers,JSON.parse(hints)))
@@ -59,6 +61,7 @@ await writeFile(resolve(output,'sw.js'),stampServiceWorkerRelease(worker,prepain
 await cp(resolve(root,'scripts/pages-static/_redirects'),resolve(output,'_redirects'))
 await cp(resolve(root,'scripts/pages-static/404.html'),resolve(output,'404.html'))
 await cp(resolve(root,'scripts/pages-static/_routes.json'),resolve(output,'_routes.json'))
+await prepareAndroidAssetlinks(output)
 await prepareSeoIndex(output)
 
 console.log('Cloudflare Pages artifact ready: pages-dist')
