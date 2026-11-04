@@ -1,4 +1,5 @@
 name = "khezana-translate-router"
+account_id = "db956e5187111b69e796e4a8e4c3fe36"
 main = "src/index.js"
 compatibility_date = "2026-08-09"
 workers_dev = false
@@ -8,7 +9,15 @@ routes = [
   { pattern = "www.khzanah.com/api/translate*", zone_name = "khzanah.com" }
 ]
 
+# Verified on Cloudflare on 2026-10-16; preserve the existing automatic scheduler.
+[triggers]
+crons = ["*/5 * * * *"]
+
 [vars]
+HY_MT_ENABLED = "false"
+HY_MT_REQUEST_ENABLED = "false"
+HY_MT_AUTOMATIC_ENABLED = "false"
+HY_MT_WAIT_MS = "10000"
 DO_COORDINATION_ENABLED = "true"
 DO_COORDINATION_MONTHLY_LIMIT = "800000"
 
@@ -69,3 +78,16 @@ binding = "TRANSLATION_ANALYTICS"
 dataset = "khezana_translation_analytics"
 [version_metadata]
 binding = "CF_VERSION_METADATA"
+
+# Staged locally only. Deploying provisions this new durable queue after approval.
+# Keep the existing TranslationCoordinator export and binding unchanged.
+[[durable_objects.bindings]]
+name = "LOCAL_TRANSLATION_QUEUE"
+class_name = "LocalTranslationQueue"
+[exports.LocalTranslationQueue]
+type = "durable-object"
+storage = "sqlite"
+
+# Secrets (never put values here):
+# LOCAL_TRANSLATION_AGENT_TOKEN: pull/renew/result/complete/fail/status only
+# LOCAL_TRANSLATION_ENQUEUE_TOKEN: enqueue/retry only
