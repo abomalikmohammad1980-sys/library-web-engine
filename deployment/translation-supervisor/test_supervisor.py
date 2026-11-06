@@ -1,3 +1,4 @@
+import ast
 import json
 from pathlib import Path
 import unittest
@@ -18,6 +19,16 @@ class SupervisorTests(unittest.TestCase):
         self.assertEqual(supervisor.choose("RUNNING", False, 2, {"completedLanguages": 0}, automatic()), "stop_cpu_for_gpu")
         self.assertEqual(supervisor.choose("CANCEL_ACKNOWLEDGED", False, 2, {"completedLanguages": 0}, automatic()), "start_gpu")
 
+    def test_cpu_handoff_waits_for_terminal_before_gpu(self):
+        states = iter(("RUNNING", "CANCEL_ACKNOWLEDGED"))
+        snapshot = lambda: (None, next(states), 2, "")
+        self.assertTrue(supervisor.wait_for_terminal(snapshot, lambda _: None, attempts=2))
+        self.assertFalse(supervisor.wait_for_terminal(
+            lambda: (None, "RUNNING", 2, ""), lambda _: None, attempts=2))
+        with self.assertRaises(RuntimeError):
+            supervisor.wait_for_terminal(
+                lambda: (None, "ERROR", 2, ""), lambda _: None, attempts=1)
+
     def test_free_quota_selection(self):
         self.assertEqual(supervisor.choose("COMPLETE", True, 0, {"completedLanguages": 0}, automatic()), "start_cpu")
         self.assertEqual(supervisor.choose("COMPLETE", False, 1, {"completedLanguages": 0}, automatic()), "start_gpu")
@@ -35,16 +46,38 @@ class SupervisorTests(unittest.TestCase):
             supervisor.remaining_total({"byLanguage": {"en": {"remaining": 0}}})
 
     def test_render_matches_reviewed_gpu_and_cpu(self):
-        template = Path(__file__).resolve().parent / "templates" / "gpu.ipynb"
-        live = json.loads(template.read_text(encoding="utf-8"))
-        cell = live["cells"][1]
+        directory = Path(__file__).resolve().parent / "templates"
         dummy = {name: "export const sample = true;" for name in supervisor.EXPECTED_SOURCES}
-        cell["source"] = "".join(cell["source"]).replace("SOURCES = {}", "SOURCES = " + repr(dummy)).splitlines(keepends=True)
+        for live_name in ("gpu", "cpu", "legacy-gpu-v46", "legacy-cpu-v46"):
+            live = json.loads((directory / f"{live_name}.ipynb").read_text(encoding="utf-8"))
+            cell = live["cells"][1]
+            cell["source"] = "".join(cell["source"]).replace("SOURCES = {}", "SOURCES = " + repr(dummy)).splitlines(keepends=True)
+            for mode in ("gpu", "cpu"):
+                rendered = supervisor.render_notebook(live, mode)
+                self.assertEqual(supervisor.source_assignment(rendered)[3], dummy)
+                expected = json.loads((directory / f"{mode}.ipynb").read_text(encoding="utf-8"))
+                self.assertEqual(supervisor.skeleton(rendered), supervisor.skeleton(expected))
+
+    def test_five_minute_guard_counts_only_accepted_kaggle_languages(self):
+        directory = Path(__file__).resolve().parent / "templates"
         for mode in ("gpu", "cpu"):
-            rendered = supervisor.render_notebook(live, mode)
-            self.assertEqual(supervisor.source_assignment(rendered)[3], dummy)
-            self.assertEqual(supervisor.skeleton(rendered), supervisor.skeleton(
-                json.loads((template.parent / f"{mode}.ipynb").read_text(encoding="utf-8"))))
+            notebook = json.loads((directory / f"{mode}.ipynb").read_text(encoding="utf-8"))
+            code = "".join(notebook["cells"][1]["source"])
+            self.assertEqual(code.count("5 * 60"), 2)
+            helper = next(node for node in ast.walk(ast.parse(code))
+                          if isinstance(node, ast.FunctionDef) and node.name == "accepted_count")
+            namespace = {"kaggle_languages": tuple("en fr tr ur ug fa hi id ms bn ru uk de es pt it nl pl kk zh ja ko".split())}
+            exec(compile(ast.Module(body=[helper], type_ignores=[]), "guard", "exec"), namespace)
+            rows = {language: {"ready": 1} for language in namespace["kaggle_languages"]}
+            rows["sw"] = {"ready": 1000}
+            self.assertEqual(namespace["accepted_count"]({"byLanguage": rows}), 22)
+            rows["sw"]["ready"] += 100
+            self.assertEqual(namespace["accepted_count"]({"byLanguage": rows}), 22)
+            rows["de"]["ready"] += 1
+            self.assertEqual(namespace["accepted_count"]({"byLanguage": rows}), 23)
+            del rows["de"]
+            with self.assertRaises(ValueError):
+                namespace["accepted_count"]({"byLanguage": rows})
 
 
 if __name__ == "__main__":
