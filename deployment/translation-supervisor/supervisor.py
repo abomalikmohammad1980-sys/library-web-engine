@@ -11,6 +11,7 @@ from pathlib import Path
 import subprocess
 import sys
 import tempfile
+import time
 from urllib.request import Request, urlopen
 
 
@@ -88,12 +89,13 @@ def skeleton(notebook):
 
 
 def render_notebook(live, mode):
-    templates = [json.loads((HERE / "templates" / f"{name}.ipynb").read_text(encoding="utf-8"))
-                 for name in ("gpu", "cpu")]
-    if skeleton(live) not in {skeleton(template) for template in templates}:
+    template_dir = HERE / "templates"
+    templates = {name: json.loads((template_dir / f"{name}.ipynb").read_text(encoding="utf-8"))
+                 for name in ("gpu", "cpu", "legacy-gpu-v46", "legacy-cpu-v46")}
+    if skeleton(live) not in {skeleton(template) for template in templates.values()}:
         raise ValueError("Live notebook runtime differs from reviewed templates")
     _, _, _, sources = source_assignment(live)
-    template = templates[0 if mode == "gpu" else 1]
+    template = templates[mode]
     cell, code, assignment, _ = source_assignment_allow_empty(template)
     updated = code.replace(assignment, "SOURCES = " + repr(sources), 1)
     ast.parse(updated)
@@ -144,11 +146,20 @@ def stop_cpu_for_gpu():
     with api.build_kaggle_client() as client:
         kernel, status, _, _ = kaggle_snapshot()
         if status != "RUNNING" or kernel.metadata.enable_gpu:
-            return "CPU no longer running; recheck next cycle"
+            return False
         request = ApiCancelKernelSessionRequest()
         request.kernel_session_id = kernel.metadata.current_version_number
         client.kernels.kernels_api_client.cancel_kernel_session(request)
-    return "CPU stop requested; await terminal confirmation before GPU push"
+    return wait_for_terminal(kaggle_snapshot, time.sleep)
+
+
+def wait_for_terminal(snapshot, pause, attempts=12):
+    for _ in range(attempts):
+        pause(10)
+        _, status, _, _ = snapshot()
+        if status in TERMINAL:
+            return True
+    return False
 
 
 def push_mode(mode):
@@ -176,9 +187,11 @@ def push_mode(mode):
             metadata.pop("machine_shape", None)
         metadata_path.write_text(json.dumps(metadata, ensure_ascii=False, indent=2), encoding="utf-8")
         (folder / code_file).write_text(json.dumps(notebook, ensure_ascii=False), encoding="utf-8")
-        _, latest_status, _, _ = kaggle_snapshot()
+        _, latest_status, latest_gpu_hours, _ = kaggle_snapshot()
         if latest_status not in TERMINAL:
             raise RuntimeError("Kaggle session became active during preparation; refusing duplicate")
+        if mode == "gpu" and latest_gpu_hours < 0.25:
+            raise RuntimeError("Free GPU quota disappeared during preparation; refusing GPU push")
         args = ["kernels", "push", "-p", str(folder)]
         if mode == "gpu":
             args.extend(["--accelerator", "NvidiaTeslaT4"])
@@ -211,7 +224,10 @@ def main():
         print(push_mode(decision.split("_", 1)[1]))
     elif decision == "stop_cpu_for_gpu":
         try:
-            print(stop_cpu_for_gpu())
+            if stop_cpu_for_gpu():
+                print(push_mode("gpu"))
+            else:
+                print("CPU stop pending; await terminal confirmation before GPU push")
         except Exception as error:
             print("CPU stop refused; user must stop the active Kaggle version:", type(error).__name__)
             raise
