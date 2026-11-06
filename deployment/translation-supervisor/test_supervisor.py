@@ -25,6 +25,9 @@ class SupervisorTests(unittest.TestCase):
         self.assertTrue(supervisor.wait_for_terminal(snapshot, lambda _: None, attempts=2))
         self.assertFalse(supervisor.wait_for_terminal(
             lambda: (None, "RUNNING", 2, ""), lambda _: None, attempts=2))
+        with self.assertRaises(RuntimeError):
+            supervisor.wait_for_terminal(
+                lambda: (None, "ERROR", 2, ""), lambda _: None, attempts=1)
 
     def test_free_quota_selection(self):
         self.assertEqual(supervisor.choose("COMPLETE", True, 0, {"completedLanguages": 0}, automatic()), "start_cpu")

@@ -157,7 +157,9 @@ def wait_for_terminal(snapshot, pause, attempts=12):
     for _ in range(attempts):
         pause(10)
         _, status, _, _ = snapshot()
-        if status in TERMINAL:
+        if status == "ERROR":
+            raise RuntimeError("Kaggle CPU failed during cancellation; diagnose before GPU push")
+        if status in {"COMPLETE", "CANCEL_ACKNOWLEDGED"}:
             return True
     return False
 
