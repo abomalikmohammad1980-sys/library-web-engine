@@ -48,7 +48,8 @@ class SupervisorTests(unittest.TestCase):
     def test_render_matches_reviewed_gpu_and_cpu(self):
         directory = Path(__file__).resolve().parent / "templates"
         dummy = {name: "export const sample = true;" for name in supervisor.EXPECTED_SOURCES}
-        for live_name in ("gpu", "cpu", "legacy-gpu-v46", "legacy-cpu-v46"):
+        for live_name in ("gpu", "cpu", "legacy-gpu-v46", "legacy-cpu-v46",
+                          "legacy-gpu-five-minute-stop", "legacy-cpu-five-minute-stop"):
             live = json.loads((directory / f"{live_name}.ipynb").read_text(encoding="utf-8"))
             cell = live["cells"][1]
             cell["source"] = "".join(cell["source"]).replace("SOURCES = {}", "SOURCES = " + repr(dummy)).splitlines(keepends=True)
@@ -58,12 +59,15 @@ class SupervisorTests(unittest.TestCase):
                 expected = json.loads((directory / f"{mode}.ipynb").read_text(encoding="utf-8"))
                 self.assertEqual(supervisor.skeleton(rendered), supervisor.skeleton(expected))
 
-    def test_five_minute_guard_counts_only_accepted_kaggle_languages(self):
+    def test_five_minute_monitor_does_not_stop_the_session(self):
         directory = Path(__file__).resolve().parent / "templates"
         for mode in ("gpu", "cpu"):
             notebook = json.loads((directory / f"{mode}.ipynb").read_text(encoding="utf-8"))
             code = "".join(notebook["cells"][1]["source"])
-            self.assertEqual(code.count("5 * 60"), 2)
+            self.assertEqual(code.count("5 * 60"), 1)
+            self.assertIn("keeping " + mode.upper() + " session alive", code)
+            self.assertNotIn("No verified translation progress for 5 minutes; stopping", code)
+            self.assertNotIn("No verified Cloudflare progress for 5 minutes; stopping", code)
             helper = next(node for node in ast.walk(ast.parse(code))
                           if isinstance(node, ast.FunctionDef) and node.name == "accepted_count")
             namespace = {"kaggle_languages": tuple("en fr tr ur ug fa hi id ms bn ru uk de es pt it nl pl kk zh ja ko".split())}
