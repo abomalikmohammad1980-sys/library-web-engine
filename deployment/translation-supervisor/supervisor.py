@@ -92,7 +92,8 @@ def render_notebook(live, mode):
     template_dir = HERE / "templates"
     templates = {name: json.loads((template_dir / f"{name}.ipynb").read_text(encoding="utf-8"))
                  for name in ("gpu", "cpu", "legacy-gpu-v46", "legacy-cpu-v46",
-                              "legacy-gpu-five-minute-stop", "legacy-cpu-five-minute-stop")}
+                              "legacy-gpu-five-minute-stop", "legacy-cpu-five-minute-stop",
+                              "legacy-gpu-v48", "legacy-cpu-v48")}
     if skeleton(live) not in {skeleton(template) for template in templates.values()}:
         raise ValueError("Live notebook runtime differs from reviewed templates")
     _, _, _, sources = source_assignment(live)
