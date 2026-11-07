@@ -1,6 +1,7 @@
 import ast
 import json
 from pathlib import Path
+import subprocess
 import unittest
 
 import supervisor
@@ -49,7 +50,8 @@ class SupervisorTests(unittest.TestCase):
         directory = Path(__file__).resolve().parent / "templates"
         dummy = {name: "export const sample = true;" for name in supervisor.EXPECTED_SOURCES}
         for live_name in ("gpu", "cpu", "legacy-gpu-v46", "legacy-cpu-v46",
-                          "legacy-gpu-five-minute-stop", "legacy-cpu-five-minute-stop"):
+                          "legacy-gpu-five-minute-stop", "legacy-cpu-five-minute-stop",
+                          "legacy-gpu-v48", "legacy-cpu-v48"):
             live = json.loads((directory / f"{live_name}.ipynb").read_text(encoding="utf-8"))
             cell = live["cells"][1]
             cell["source"] = "".join(cell["source"]).replace("SOURCES = {}", "SOURCES = " + repr(dummy)).splitlines(keepends=True)
@@ -82,6 +84,47 @@ class SupervisorTests(unittest.TestCase):
             del rows["de"]
             with self.assertRaises(ValueError):
                 namespace["accepted_count"]({"byLanguage": rows})
+
+    def test_stubborn_agent_does_not_fail_session_cleanup(self):
+        class StubbornAgent:
+            def __init__(self):
+                self.waits = []
+                self.terminated = False
+                self.killed = False
+
+            def wait(self, timeout):
+                self.waits.append(timeout)
+                if not self.killed:
+                    raise subprocess.TimeoutExpired("agent", timeout)
+                return 0
+
+            def terminate(self):
+                self.terminated = True
+
+            def kill(self):
+                self.killed = True
+
+        directory = Path(__file__).resolve().parent / "templates"
+        for mode, variable in (("gpu", "process"), ("cpu", "agent")):
+            with self.subTest(mode=mode):
+                notebook = json.loads((directory / f"{mode}.ipynb").read_text(encoding="utf-8"))
+                code = "".join(notebook["cells"][1]["source"])
+                cleanup = next(node for node in ast.walk(ast.parse(code))
+                               if isinstance(node, ast.Try) and len(node.body) == 1
+                               and isinstance(node.body[0], ast.Expr)
+                               and isinstance(node.body[0].value, ast.Call)
+                               and isinstance(node.body[0].value.func, ast.Attribute)
+                               and node.body[0].value.func.attr == "wait"
+                               and isinstance(node.body[0].value.func.value, ast.Name)
+                               and node.body[0].value.func.value.id == variable
+                               and any(isinstance(child, ast.Attribute) and child.attr == "terminate"
+                                       for child in ast.walk(node)))
+                agent = StubbornAgent()
+                namespace = {variable: agent, "subprocess": subprocess}
+                exec(compile(ast.Module(body=[cleanup], type_ignores=[]), "cleanup", "exec"), namespace)
+                self.assertTrue(agent.terminated)
+                self.assertTrue(agent.killed)
+                self.assertEqual(agent.waits, [45, 15, 15])
 
 
 if __name__ == "__main__":
