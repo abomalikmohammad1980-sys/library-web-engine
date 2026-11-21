@@ -1,3 +1,4 @@
+import {WORD_CURRENT_PRESENTATION,eligibleWordPresentation,stampCurrentWordManifest} from './word-presentation-current.mjs'
 import fs from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
@@ -50,6 +51,7 @@ export async function runReaderPreparation(config,{gateway=readerGateway(config)
  if(claimed.busy)return{ready:false,busy:true}
  const job=claimed.job
  if(!job||job.bookId!==config.bookId||job.binding!==config.binding||!HASH.test(job.compilerSHA256??'')||typeof job.lease!=='string')throw Error('reader_claim_invalid')
+ if(job.presentationProfile!==undefined&&(job.presentationProfile!==WORD_CURRENT_PRESENTATION||!eligibleWordPresentation(job.proof)))throw Error('reader_claim_invalid')
  const builder=fileURLToPath(new URL(job.compilerSHA256+'.mjs',builders))
  const dir=await fs.mkdtemp(path.join(os.tmpdir(),'khzanah-reader-')),lease=job.lease
  let progress={phase:'sources',current:0,total:Object.values(job.sources).reduce((n,s)=>n+s.bytes,0)},heartbeatFailure
@@ -70,7 +72,7 @@ export async function runReaderPreparation(config,{gateway=readerGateway(config)
   if(runChild)await runChild(dir,builder)
   else await new Promise((resolve,reject)=>{const child=spawn(process.execPath,['--max-old-space-size=2048',fileURLToPath(import.meta.url),'--build-child',dir,builder],{windowsHide:true,stdio:['ignore','ignore','pipe']});let error='';child.stderr.on('data',b=>{if(error.length<8192)error+=b.toString()});const deadline=setTimeout(()=>{child.kill();reject(Error('reader_build_timeout'))},8*60*1000);child.once('error',e=>{clearTimeout(deadline);reject(e)});child.once('exit',code=>{clearTimeout(deadline);if(code===0)resolve();else reject(Error(/reader_source_integrity|reader_page_integrity|reader_pack_integrity|reader_image_bounds_binding/.exec(error)?.[0]??(error.includes('heap out of memory')?'reader_resource_limit':'reader_build_failed')))})})
   if(heartbeatFailure)throw heartbeatFailure
-  const manifest=JSON.parse(await fs.readFile(path.join(dir,'manifest.json'),'utf8')),begin=await gateway('begin',{lease,body:manifest})
+  const manifest=stampCurrentWordManifest(job,JSON.parse(await fs.readFile(path.join(dir,'manifest.json'),'utf8'))),begin=await gateway('begin',{lease,body:manifest})
   if(begin.partBytes!==5*1024*1024||!Array.isArray(begin.received))throw Error('reader_upload_invalid')
   progress={phase:'pack-upload',current:begin.received.reduce((n,p)=>n+p.bytes,0),total:manifest.packBytes}
   const received=new Map(begin.received.map(p=>[p.partNumber,p])),handle=await fs.open(path.join(dir,'pages.bin'),'r')
@@ -81,7 +83,7 @@ export async function runReaderPreparation(config,{gateway=readerGateway(config)
   }}finally{await handle.close()}
   progress={phase:'activating',current:manifest.packBytes,total:manifest.packBytes};await beat();const done=await gateway('finish',{lease,body:manifest});if(done.ready!==true)throw Error('reader_activation_failed');return{ready:true,pages:manifest.totalPages,packBytes:manifest.packBytes}
  }catch(error){
-  if(['reader_source_integrity','reader_page_integrity','reader_pack_integrity','reader_source_invalid','reader_compiler_integrity','reader_image_bounds_binding','reader_build_failed','reader_resource_limit','reader_build_timeout','reader_manifest_invalid'].includes(error.message))await gateway('fail',{lease,body:{error:error.message}}).catch(()=>{})
+  if(['reader_source_integrity','reader_page_integrity','reader_pack_integrity','reader_source_invalid','reader_compiler_integrity','reader_image_bounds_binding','reader_build_failed','reader_resource_limit','reader_build_timeout','reader_manifest_invalid','reader_presentation_binding','reader_claim_invalid'].includes(error.message))await gateway('fail',{lease,body:{error:error.message}}).catch(()=>{})
   // A lost executor/network leaves the fenced lease and confirmed parts intact.
   throw error
  }finally{clearInterval(timer);await fs.rm(dir,{recursive:true,force:true})}

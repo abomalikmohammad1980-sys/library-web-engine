@@ -1,3 +1,4 @@
+import {admitPublicPdfReaderOpening} from './public-pdf-reader-opening.mjs'
 // Bounded Node extraction shared by isolated tests and the dedicated-token runner.
 import {Worker} from 'node:worker_threads'
 import {fork} from 'node:child_process'
@@ -45,7 +46,7 @@ export function extractPublicBookBounded(input,{timeoutMs}={}){
   let done=false
   const finish=(error,result)=>{if(done)return;done=true;clearTimeout(timer);if(isolated)worker.kill();else void worker.terminate();error?reject(error):resolve(result)}
   const timer=setTimeout(()=>finish(Error('extraction_timeout')),timeoutMs)
-  worker.on('message',message=>{if(isolated&&message.workerReady===true){worker.send(input,error=>{if(error)finish(Error('extraction_worker_failed'))});return}finish(message.error?Error(message.error):null,message.result)})
+  worker.on('message',message=>{if(isolated&&message.workerReady===true){worker.send(input,error=>{if(error)finish(Error('extraction_worker_failed'))});return}if(message.readerOpening!==undefined){try{Object.defineProperty(message.result,'readerOpening',{value:admitPublicPdfReaderOpening(message.readerOpening,input,message.result),enumerable:false})}catch{finish(Error('reader_opening_result_invalid'));return}}if(message.readerOpeningFailure!==undefined){if(!/^reader_opening_[a-z_]{1,60}$/.test(message.readerOpeningFailure)){finish(Error('reader_opening_result_invalid'));return}Object.defineProperty(message.result,'readerOpeningFailure',{value:message.readerOpeningFailure,enumerable:false})}finish(message.error?Error(message.error):null,message.result)})
   worker.once('error',()=>finish(Error('extraction_worker_failed')))
   worker.once('exit',()=>{if(!done)finish(Error('extraction_worker_failed'))})
 

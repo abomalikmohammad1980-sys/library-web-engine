@@ -4492,7 +4492,7 @@ var require_fxp = __commonJS({
 });
 
 // outputs/active/2026-11-17-mushaf-preview/integrated-private-previews/shamela-inline-headings-review/windows/source/packages/ooxml-model/src/index_package.ts
-var import_fflate = __toESM(require_node(), 1);
+var import_fflate = __toESM(require_node());
 
 // outputs/active/2026-11-17-mushaf-preview/integrated-private-previews/shamela-inline-headings-review/windows/source/packages/ooxml-model/src/index_embedded_fonts.ts
 function deobfuscateEmbeddedFont(data, fontKey) {
@@ -4700,7 +4700,7 @@ function parseTheme(themeXml, settingsXml = null) {
 }
 
 // outputs/active/2026-11-17-mushaf-preview/integrated-private-previews/shamela-inline-headings-review/windows/source/packages/ooxml-model/src/index_xml.ts
-var import_fast_xml_parser = __toESM(require_fxp(), 1);
+var import_fast_xml_parser = __toESM(require_fxp());
 var parser = new import_fast_xml_parser.XMLParser({
   ignoreAttributes: false,
   attributeNamePrefix: "@",
@@ -5676,6 +5676,109 @@ function createTableFlattener(context) {
   };
 }
 
+// outputs/active/2026-11-17-mushaf-preview/integrated-private-previews/shamela-inline-headings-review/windows/source/packages/ooxml-model/src/word_toc_pageref_source.ts
+var scopes = /* @__PURE__ */ new WeakMap();
+var proofs = /* @__PURE__ */ new WeakMap();
+function attribute(node, key) {
+  const raw = node[":@"];
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return;
+  const value = raw[key];
+  return typeof value === "string" ? value : void 0;
+}
+function bookmarks(nodes, names) {
+  for (const node of nodes) {
+    if ("w:bookmarkStart" in node) {
+      const name = attribute(node, "@w:name");
+      if (typeof name === "string") names.add(name);
+    }
+    for (const [key, value] of Object.entries(node)) if (key !== ":@" && Array.isArray(value)) bookmarks(value, names);
+  }
+}
+function registerWordPageRefScope(group, body) {
+  const names = /* @__PURE__ */ new Set();
+  bookmarks(body, names);
+  scopes.set(group, { bookmarks: names });
+}
+function literal(nodes) {
+  let value = "";
+  for (const node of nodes) {
+    if (typeof node["#text"] !== "string") return;
+    value += node["#text"];
+  }
+  return value;
+}
+function registerWordPageRefSource(paragraph, runNodes, group) {
+  const scope = scopes.get(group);
+  if (!scope || !paragraph.toc) return;
+  let state = 0, instruction = "", visible = "", start = -1, end = -1;
+  for (const wrapper of runNodes) {
+    const run = wrapper["w:r"];
+    if (!Array.isArray(run)) return;
+    for (const node of run) {
+      const keys = Object.keys(node).filter((key2) => key2 !== ":@");
+      if (keys.length !== 1) return;
+      const key = keys[0];
+      if (key === "w:rPr") continue;
+      if (key === "w:fldChar") {
+        const kind = attribute(node, "@w:fldCharType");
+        if (kind === "begin" && state === 0) {
+          state = 1;
+          start = visible.length;
+        } else if (kind === "separate" && state === 1) state = 2;
+        else if (kind === "end" && state === 2) {
+          state = 3;
+          end = visible.length;
+        } else return;
+      } else if (key === "w:instrText") {
+        if (state !== 1) return;
+        const text = literal(node[key]);
+        if (text === void 0) return;
+        instruction += text;
+      } else if (key === "w:t") {
+        if (state === 1) return;
+        const text = literal(node[key]);
+        if (text === void 0) return;
+        visible += text;
+      } else if (key === "w:tab") {
+        if (state === 1 || state === 2) return;
+        visible += "	";
+      } else return;
+    }
+  }
+  const match = /^\s*PAGEREF\s+(_Toc[0-9]+)(?:\s+\\h)?\s*$/u.exec(instruction);
+  if (state !== 3 || start < 0 || end < start || !match || visible !== paragraph.text) return;
+  const prefix = visible.slice(0, start), result = visible.slice(start, end), suffix = visible.slice(end);
+  if (!/^[0-9٠-٩]+$/u.test(result) || !prefix.trim() || !prefix.endsWith("	") || !/^\s*$/u.test(suffix)) return;
+  if (paragraph.runs.some((run) => run.hidden)) return;
+  proofs.set(paragraph, { source: paragraph.text, prefix, suffix, target: match[1], scope, missing: false });
+}
+function bindWordPageRefSource(model) {
+  const groups = [model.paragraphs, ...model.footnotes.values(), ...model.endnotes.values(), ...model.headerFooters.values()];
+  const seen = /* @__PURE__ */ new Set(), all = /* @__PURE__ */ new Set(), bound = [];
+  let complete = true;
+  for (let at = 0; at < groups.length; at++) {
+    const group = groups[at];
+    if (seen.has(group)) continue;
+    seen.add(group);
+    const scope = scopes.get(group);
+    if (!scope) complete = false;
+    else for (const name of scope.bookmarks) all.add(name);
+    for (const paragraph of group) {
+      const proof = proofs.get(paragraph);
+      if (proof) {
+        proof.missing = false;
+        bound.push(proof);
+      }
+      for (const anchor of paragraph.anchors ?? []) if (anchor.textBox) groups.push(anchor.textBox);
+    }
+  }
+  for (const proof of bound) proof.missing = complete && !all.has(proof.target) && !proof.scope.bookmarks.has(proof.target);
+}
+function matchesMissingWordPageRef(word, paragraph, normalize) {
+  const proof = proofs.get(paragraph);
+  return Boolean(proof?.missing && paragraph.text === proof.source && word === normalize(proof.prefix + "\u062E\u0637\u0623! \u0627\u0644\u0625\u0634\u0627\u0631\u0629 \u0627\u0644\u0645\u0631\u062C\u0639\u064A\u0629 \u063A\u064A\u0631 \u0645\u0639\u0631\u0651\u0641\u0629." + proof.suffix));
+}
+
 // outputs/active/2026-11-17-mushaf-preview/integrated-private-previews/shamela-inline-headings-review/windows/source/packages/ooxml-model/src/index_inline_drawings.ts
 function createInlineDrawingParser(context) {
   return () => {
@@ -6510,6 +6613,7 @@ function createRunParser(context) {
 
 // outputs/active/2026-11-17-mushaf-preview/integrated-private-previews/shamela-inline-headings-review/windows/source/packages/ooxml-model/src/index_paragraphs.ts
 function createParagraphParser(context) {
+  registerWordPageRefScope(context.paragraphs, context.body);
   const levelLinks = /* @__PURE__ */ new Map();
   for (const [key, props] of context.numbering) if (props.paragraphStyleId) {
     const [num, level] = key.split("/");
@@ -6612,6 +6716,8 @@ function createParagraphParser(context) {
             const kind = context.pageFieldKind(instruction) ?? context.styleRefField(instruction, context.styles);
             collectInlineNodes(rNode["w:fldSimple"], inheritedHref, kind);
             excluded = excluded || "field";
+          } else if ("w:ins" in rNode) {
+            collectInlineNodes(rNode["w:ins"], inheritedHref, inheritedField);
           } else if ("w:smartTag" in rNode) {
             collectInlineNodes(rNode["w:smartTag"], inheritedHref, inheritedField);
           } else if ("w:sdt" in rNode) {
@@ -6956,6 +7062,7 @@ function createParagraphParser(context) {
         snapToGrid: context.pPrFlag(pPr, "w:snapToGrid") ?? styleProps.snapToGrid ?? true,
         framePr
       });
+      registerWordPageRefSource(context.paragraphs[context.paragraphs.length - 1], runNodes, context.paragraphs);
       const libraryPageMarkers = bookmarkIds.filter((name) => /^TheLibraryPage_\d+$/.test(name)).length;
       if (libraryPageMarkers > 1) context.pendingBreaks += libraryPageMarkers - 1;
       const pSect = pPr ? context.first(pPr, "w:sectPr") : null;
@@ -7452,6 +7559,22 @@ var VML_SPT = {
   "9": "hexagon"
 };
 
+// outputs/active/2026-11-17-mushaf-preview/integrated-private-previews/shamela-inline-headings-review/windows/source/packages/ooxml-model/src/index_vml_image_tone.ts
+function vmlImageTone(attrs) {
+  const out = {};
+  if (!attrs) return out;
+  const number = (value, fallback) => {
+    if (value === void 0) return fallback;
+    const text = value.trim().toLowerCase();
+    if (!/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)f?$/.test(text)) return fallback;
+    const n = Number.parseFloat(text) / (text.endsWith("f") ? 65536 : 1);
+    return Number.isFinite(n) ? n : fallback;
+  };
+  const gain = number(attrs["@gain"], 1), blacklevel = number(attrs["@blacklevel"], 0);
+  if (gain >= 0 && gain <= 100 && blacklevel >= -1 && blacklevel <= 1 && (gain !== 1 || blacklevel !== 0)) out.vmlTone = { gain, blacklevel };
+  return out;
+}
+
 // outputs/active/2026-11-17-mushaf-preview/integrated-private-previews/shamela-inline-headings-review/windows/source/packages/ooxml-model/src/index_vml_shapes.ts
 function parseVmlShapes(pict, styles, numbering, theme) {
   const out = [];
@@ -7520,7 +7643,7 @@ function parseVmlShapes(pict, styles, numbering, theme) {
         const chImage = collectDeep(ch, "v:imagedata")[0];
         const chStrokeNode = collectDeep(ch, "v:stroke")[0];
         const shadow = chImage && inlineGroup ? collectDeep(ch, "v:shadow")[0]?.attrs : void 0;
-        const imageEffects = {};
+        const imageEffects = { ...vmlImageTone(chImage?.attrs) };
         if (shadow && !offish(shadow["@on"])) {
           const [x, y] = (shadow["@offset"] ?? "2pt,2pt").split(",");
           const raw = shadow["@opacity"] ?? "1", opacity = raw.endsWith("f") ? Number.parseFloat(raw) / 65536 : Number.parseFloat(raw);
@@ -7687,7 +7810,7 @@ function parseVmlShapes(pict, styles, numbering, theme) {
         distB: wrapDistance("bottom"),
         wrap: wrap === "None" ? "" : wrap,
         rId: imageData?.attrs?.["@r:id"] ?? imageData?.attrs?.["@o:relid"] ?? null,
-        ...imageData ? { stretch: true } : {},
+        ...imageData ? { stretch: true, imageEffects: vmlImageTone(imageData.attrs) } : {},
         ...rotation ? { rotDeg: rotation } : {},
         ...flip.includes("x") ? { flipH: true } : {},
         ...flip.includes("y") ? { flipV: true } : {},
@@ -8158,9 +8281,13 @@ function parseNotes(notesXml, documentXml, styles, numbering = /* @__PURE__ */ n
       const notePart = tag === "w:endnote" ? "endnotes.xml" : "footnotes.xml";
       for (const q of notePs) for (const a of q.anchors ?? []) a.part = notePart;
       out.set(id, notePs);
-      const noteType = openingTag.match(/w:type="(separator|continuationSeparator)"/)?.[1];
+      const noteType = openingTag.match(/w:type="(separator|continuationSeparator|continuationNotice)"/)?.[1];
       if (noteType === "separator") out.set("-1", notePs);
       else if (noteType === "continuationSeparator") out.set("0", notePs);
+      else if (noteType === "continuationNotice") {
+        out.delete(id);
+        out.set("-2", notePs);
+      }
     } catch {
     }
   }
@@ -8204,10 +8331,10 @@ function nativeWordParenthesisSymbolSlot(run, noteParagraph = false, ownedCustom
   if (slot?.length !== 1 || slot[0].at !== 0 || slot[0].length !== 1 || run.text.length !== 1 || (run.sourceText ?? run.text) !== run.text || run.hidden || run.noteBodyRef) return false;
   const family = /^Khizana Native [a-f0-9]{20}$/.test(run.family ?? "") ? run.nativeSourceFamily : run.family;
   if (run.nativeCsFamily && run.nativeCsFamily.toLowerCase() !== family?.toLowerCase()) return false;
+  if (!run.noteRef && (/^Symbol$/iu.test(family ?? "") && /^[\uf021\uf02a\uf074]$/u.test(run.text) || /^Wingdings$/iu.test(family ?? "") && /^[\uf03f\uf04a\uf04c]$/u.test(run.text))) return true;
   if (noteParagraph && !run.noteRef && family?.trim() && /^[\ue000-\uf8ff]$/u.test(run.text) && ownedCustomMark === run.text) return true;
   const note = run.noteRef;
   if (family?.trim() && /^[\ue000-\uf8ff]$/u.test(run.text) && note?.custom === true && note.customMark === run.text && typeof note.id === "string" && note.id.length > 0 && (note.kind === "footnote" || note.kind === "endnote")) return true;
-  if (!run.noteRef && (/^Symbol$/iu.test(family ?? "") && /^[\uf021\uf074]$/u.test(run.text) || /^Wingdings$/iu.test(family ?? "") && /^[\uf03f\uf04a\uf04c]$/u.test(run.text))) return true;
   if (/^Symbol$/iu.test(family ?? "") && run.text === "\uF0B7" && !run.noteRef) return true;
   return /^Wingdings 2$/iu.test(family ?? "") && /^[\uf075-\uf077]$/u.test(run.text) && (run.noteRef?.custom === true && run.noteRef.customMark === run.text || noteParagraph && !run.noteRef);
 }
@@ -8335,6 +8462,7 @@ function matchesWordPageParagraph(wordValue, paragraph) {
     const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/\\\(\s*\\\)/g, "\\([0-9\u0660-\u0669]+\\)");
     if (new RegExp(`^${escaped}$`, "u").test(model)) return true;
   }
+  if (matchesMissingWordPageRef(word, paragraph, normalizeWordPageText)) return true;
   if (/\t[0-9٠-٩]+\s*$/u.test(paragraph.text)) {
     const withoutPage = (value) => value.replace(/\s+[0-9٠-٩]+\s*$/u, "").trim();
     const compact = (value) => withoutPage(value).replace(/\s+/g, "");
@@ -8352,6 +8480,7 @@ function matchesWordPageParagraph(wordValue, paragraph) {
   return decorative;
 }
 function alignWordParagraphIndices(model, map) {
+  bindWordPageRefSource(model);
   const word = map.paragraphs ?? [];
   if (!word.length) return null;
   const modelText = model.paragraphs.map((p) => normalizeWordPageText(p.text));

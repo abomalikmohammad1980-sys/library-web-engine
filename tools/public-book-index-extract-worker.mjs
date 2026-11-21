@@ -1,3 +1,4 @@
+import {createPublicPdfReaderOpening} from './public-pdf-reader-opening.mjs'
 import {PDF_BOOKMARK_SOURCE64_V1,PDF_TEXT_AND_BOOKMARKS_V1} from '../alpha-publish/functions/api/_public-book-pdf-preparation-v1.js'
 import {createHash} from 'node:crypto'
 import {parentPort,workerData} from 'node:worker_threads'
@@ -60,8 +61,11 @@ try{
  }else if(mime==='application/pdf'){
   const pdfModule=await import('./public-book-index-pdf.mjs')
   const result=(input.extractionProfile===undefined||input.extractionProfile===PDF_BOOKMARK_SOURCE64_V1)?await pdfModule.extractPublicPdfBookmarks(new Uint8Array(bytes)):input.extractionProfile===PDF_TEXT_AND_BOOKMARKS_V1?await pdfModule.extractPublicPdfTextAndBookmarksV1(new Uint8Array(bytes)):input.extractionProfile==='khizana-textual-pdf-preparation/1'?await pdfModule.extractPublicTextualPdfPreparationV1(new Uint8Array(bytes)):(()=>{throw Error('pdf_preparation_profile')})()
-  if(parentPort)parentPort.postMessage({result})
-  else await new Promise((resolve,reject)=>process.send({result},error=>error?reject(error):resolve()))
+  let readerOpening,readerOpeningFailure
+  try{readerOpening=await createPublicPdfReaderOpening(bytes)}catch(error){readerOpeningFailure=/^reader_opening_[a-z_]{1,60}$/.test(error?.message??'')?error.message:'reader_opening_generate_failed'}
+  const message={result,...readerOpening?{readerOpening}:{},...readerOpeningFailure?{readerOpeningFailure}:{}}
+  if(parentPort)parentPort.postMessage(message)
+  else await new Promise((resolve,reject)=>process.send(message,error=>error?reject(error):resolve()))
   process.exit(0)
  }else if(['application/octet-stream','application/x-bok','application/x-shamela-bok'].includes(mime)){
   const parsed=parseBok(bytes,'source.bok')

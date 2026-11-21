@@ -1,10 +1,11 @@
+import {readerOpeningGatewayPayload} from './public-pdf-reader-opening.mjs'
 import {pathToFileURL} from 'node:url'
 import {createHash} from 'node:crypto'
 import {extractPublicBookBounded} from './public-book-index-executor.mjs'
 const ORIGINS=new Set(['https://khzanah.com','https://khizana-bok-acceptance-20260917.pages.dev'])
 const gatewayErrors=new Set(['not_found','method_not_allowed','invalid_operation','invalid_error','lease_expired','word_map_required','source_changed','search_staging_incomplete','ingestion_operation_failed','ingestion_input_failed','ingestion_claim_failed','ingestion_lease_failed','ingestion_source_failed','ingestion_map_failed','ingestion_validate_failed','ingestion_store_failed','ingestion_verify_failed','ingestion_search_failed','ingestion_checkpoint_failed','ingestion_activate_failed'])
 const runtimeErrors=new Set(['ingestion_not_accepted','ingestion_credentials_missing','ingestion_origin_forbidden','invalid_index_target','ingestion_run_bound_invalid','target_claim_mismatch','ingestion_response_bound','ingestion_batch_deadline'])
-const gatewayOps=new Set(['claim','source','map','complete','fail','unknown'])
+const gatewayOps=new Set(['claim','source','map','opening','complete','fail','unknown'])
 /** Final diagnostics are reconstructed from fixed tokens; arbitrary messages,
  * URLs, response bodies, exception stacks and credential values never escape. */
 export function ingestionFailureCode(error){
@@ -77,10 +78,16 @@ export async function drainPublicBookIndex({gateway,maxJobs=5,maxSeconds=240,now
    }
    const extracted=await extract({mime:job.mime,bytes:new Uint8Array(source.bytes),map,...(job.requiredCoverage==='pdf-native-text'?{PDF_TEXT_INDEXING:'true'}:{})})
    if(extracted.reason==='ocr_required')throw Error('ocr_required')
+   const {readerOpening,readerOpeningFailure,...indexExtracted}=extracted
+   if(readerOpening){
+    try{const opening=await gateway({op:'opening',lease,sourceSha256:source.sourceSha256,opening:readerOpeningGatewayPayload(readerOpening)});if(!opening.ok)throw Error('reader_opening_store_failed');summary.openingReady=(summary.openingReady??0)+1}
+    catch{summary.openingFailed=(summary.openingFailed??0)+1}
+   }else if(readerOpeningFailure){summary.openingFailed=(summary.openingFailed??0)+1}
+   // A derived-preview failure is reported, and never regresses existing PDF publication.
    let result,stages=0
    do{
     if(now()>=deadline||stages++>=250)throw Error('ingestion_batch_deadline')
-    result=await gateway({op:'complete',lease,sourceSha256:source.sourceSha256,extracted})
+    result=await gateway({op:'complete',lease,sourceSha256:source.sourceSha256,extracted:indexExtracted})
    }while(result.pending===true)
    if(!result.ok)throw Error('activation_rejected')
    summary.ready++
