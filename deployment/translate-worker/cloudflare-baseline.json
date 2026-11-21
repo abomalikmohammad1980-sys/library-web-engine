@@ -1,0 +1,251 @@
+{
+  "schemaVersion": 1,
+  "worker": "khezana-translate-router",
+  "checkedAt": "2026-10-16T11:27:21.578Z",
+  "versionId": "f6634c4b-fb27-442b-b7b6-60961b99d5e6",
+  "versionNumber": 34,
+  "deployedAt": "2026-10-03T08:15:07.288135Z",
+  "etag": "347aa21539a84e9880ff5b454fe783752a5bcc9865bf0f112d0c2957b6a15bfe",
+  "sourceEndpoint": "GET /accounts/{account_id}/workers/scripts/khezana-translate-router",
+  "files": [
+    {
+      "path": "src/index.js",
+      "bytes": 143663,
+      "sha256": "17f41274d3c9d5859860bf1af17fcf43d2051d8ea84834c6270aff2d4476c6fb",
+      "origin": "Exact downloaded Cloudflare module"
+    },
+    {
+      "path": "wrangler.toml",
+      "bytes": 2224,
+      "sha256": "74592fdd3206a220574e49bc4900a536260214cfed72d9d2e8abd2e89bb2c2f3",
+      "origin": "Existing config reconciled with verified live bindings, variables, subdomain state and cron; no_bundle preserves downloaded module"
+    }
+  ],
+  "verifiedPlainVariables": 33,
+  "bindings": [
+    {
+      "name": "AI",
+      "project": "<catalog>",
+      "type": "ai"
+    },
+    {
+      "name": "AZURE_TRANSLATOR_ENDPOINT",
+      "text": "https://api.cognitive.microsofttranslator.com",
+      "type": "plain_text"
+    },
+    {
+      "name": "AZURE_TRANSLATOR_REGION",
+      "text": "northeurope",
+      "type": "plain_text"
+    },
+    {
+      "name": "CF_AI_DAILY_CHAR_LIMIT",
+      "text": "5000",
+      "type": "plain_text"
+    },
+    {
+      "name": "CF_AI_ENABLED",
+      "text": "true",
+      "type": "plain_text"
+    },
+    {
+      "name": "CF_AI_MAX_TEXT_CHARS",
+      "text": "700",
+      "type": "plain_text"
+    },
+    {
+      "name": "CF_VERSION_METADATA",
+      "type": "version_metadata"
+    },
+    {
+      "name": "DEEPL_API_ENDPOINT",
+      "text": "https://api.deepl.com/v2/translate",
+      "type": "plain_text"
+    },
+    {
+      "name": "DEEPL_TOTAL_LIMIT",
+      "text": "950000",
+      "type": "plain_text"
+    },
+    {
+      "name": "DO_COORDINATION_ENABLED",
+      "text": "true",
+      "type": "plain_text"
+    },
+    {
+      "name": "DO_COORDINATION_MONTHLY_LIMIT",
+      "text": "800000",
+      "type": "plain_text"
+    },
+    {
+      "name": "GEMINI_DAILY_CHAR_LIMIT",
+      "text": "60000",
+      "type": "plain_text"
+    },
+    {
+      "name": "GEMINI_ENABLED",
+      "text": "true",
+      "type": "plain_text"
+    },
+    {
+      "name": "GEMINI_FALLBACK_MODEL",
+      "text": "gemini-3.5-flash-lite",
+      "type": "plain_text"
+    },
+    {
+      "name": "GEMINI_MAX_REQUESTS_PER_DAY",
+      "text": "250",
+      "type": "plain_text"
+    },
+    {
+      "name": "GEMINI_MAX_TEXT_CHARS",
+      "text": "3000",
+      "type": "plain_text"
+    },
+    {
+      "name": "GEMINI_MONTHLY_CHAR_LIMIT",
+      "text": "1200000",
+      "type": "plain_text"
+    },
+    {
+      "name": "GEMINI_PRIMARY_MODEL",
+      "text": "gemini-3.8-flash",
+      "type": "plain_text"
+    },
+    {
+      "name": "GROQ_DAILY_SOURCE_CHAR_LIMIT",
+      "text": "40000",
+      "type": "plain_text"
+    },
+    {
+      "name": "GROQ_ENABLED",
+      "text": "true",
+      "type": "plain_text"
+    },
+    {
+      "name": "GROQ_MAX_REQUESTS_PER_DAY",
+      "text": "400",
+      "type": "plain_text"
+    },
+    {
+      "name": "GROQ_MAX_TEXT_CHARS",
+      "text": "3500",
+      "type": "plain_text"
+    },
+    {
+      "name": "GROQ_MODEL",
+      "text": "qwen/qwen3.8-27b",
+      "type": "plain_text"
+    },
+    {
+      "name": "GROQ_MONTHLY_SOURCE_CHAR_LIMIT",
+      "text": "1000000",
+      "type": "plain_text"
+    },
+    {
+      "name": "MISTRAL_DAILY_SOURCE_CHAR_LIMIT",
+      "text": "100000",
+      "type": "plain_text"
+    },
+    {
+      "name": "MISTRAL_ENABLED",
+      "text": "true",
+      "type": "plain_text"
+    },
+    {
+      "name": "MISTRAL_MAX_REQUESTS_PER_DAY",
+      "text": "400",
+      "type": "plain_text"
+    },
+    {
+      "name": "MISTRAL_MAX_TEXT_CHARS",
+      "text": "3000",
+      "type": "plain_text"
+    },
+    {
+      "name": "MISTRAL_MODEL",
+      "text": "mistral-small-latest",
+      "type": "plain_text"
+    },
+    {
+      "name": "MISTRAL_MONTHLY_SOURCE_CHAR_LIMIT",
+      "text": "3000000",
+      "type": "plain_text"
+    },
+    {
+      "name": "OPENROUTER_DAILY_SOURCE_CHAR_LIMIT",
+      "text": "80000",
+      "type": "plain_text"
+    },
+    {
+      "name": "OPENROUTER_ENABLED",
+      "text": "true",
+      "type": "plain_text"
+    },
+    {
+      "name": "OPENROUTER_MAX_REQUESTS_PER_DAY",
+      "text": "40",
+      "type": "plain_text"
+    },
+    {
+      "name": "OPENROUTER_MAX_TEXT_CHARS",
+      "text": "4000",
+      "type": "plain_text"
+    },
+    {
+      "name": "OPENROUTER_MONTHLY_SOURCE_CHAR_LIMIT",
+      "text": "2000000",
+      "type": "plain_text"
+    },
+    {
+      "dataset": "khezana_translation_analytics",
+      "name": "TRANSLATION_ANALYTICS",
+      "type": "analytics_engine"
+    },
+    {
+      "name": "TRANSLATION_CACHE",
+      "namespace_id": "3d02c62abedb4ecd9400ee5c4d720bca",
+      "type": "kv_namespace"
+    },
+    {
+      "class_name": "TranslationCoordinator",
+      "name": "TRANSLATION_COORDINATOR",
+      "namespace_id": "dc13f06b31af4fcea49fb90c47aa5981",
+      "type": "durable_object_namespace"
+    },
+    {
+      "bucket_name": "khezana-translation-memory",
+      "name": "TRANSLATION_MEMORY",
+      "type": "r2_bucket"
+    }
+  ],
+  "secretNames": [
+    "AZURE_TRANSLATOR_KEY",
+    "DEEPL_API_KEY",
+    "GEMINI_API_KEY",
+    "GROQ_API_KEY",
+    "MISTRAL_API_KEY",
+    "OPENROUTER_API_KEY"
+  ],
+  "runtime": {
+    "exports": {
+      "TranslationCoordinator": {
+        "type": "durable-object",
+        "storage": "sqlite"
+      }
+    },
+    "compatibility_date": "2026-08-09",
+    "usage_model": "standard"
+  },
+  "schedules": [
+    "*/5 * * * *"
+  ],
+  "subdomain": {
+    "enabled": false,
+    "previews_enabled": false
+  },
+  "routeVerification": "Existing khzanah.com/api/translate* routes retained; route inventory API denied, exact full route set not independently confirmed",
+  "data": "R2/KV/Durable Object contents remain in Cloudflare; no reset, export, enqueue or translation performed",
+  "enhancementBranch": "task/hymt2-local-agent",
+  "enhancementPullRequest": 9
+}

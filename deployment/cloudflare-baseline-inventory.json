@@ -1,0 +1,138 @@
+{
+  "checkedAt": "2026-10-16T11:31:41.052Z",
+  "direction": "Cloudflare to source control",
+  "cloudflareWrites": 0,
+  "pagesStatus": "Blocked: Pages project read returned HTTP 403; deployed website/source commit not established",
+  "workers": [
+    {
+      "worker": "khezana-localization-engine",
+      "versionId": "655afddf-d338-445d-9049-520807b8d5a1",
+      "versionNumber": 1,
+      "deployedAt": "2026-10-01T22:44:15.082872Z",
+      "modules": [
+        {
+          "filename": "index.js",
+          "bytes": 24624,
+          "sha256": "a6bcf568a61569f7e549240d0befbca42ceaf03f1fc1fa9a16e8ff6772590dde"
+        }
+      ]
+    },
+    {
+      "worker": "khezana-translate-router",
+      "versionId": "f6634c4b-fb27-442b-b7b6-60961b99d5e6",
+      "versionNumber": 34,
+      "deployedAt": "2026-10-03T08:15:07.288135Z",
+      "modules": [
+        {
+          "filename": "index.js",
+          "bytes": 143663,
+          "sha256": "17f41274d3c9d5859860bf1af17fcf43d2051d8ea84834c6270aff2d4476c6fb"
+        }
+      ]
+    },
+    {
+      "worker": "khizana-book-index-actions-preview",
+      "versionId": "fc0c08ad-8098-4f13-b9d1-769cb7294425",
+      "versionNumber": 5,
+      "deployedAt": "2026-09-17T13:39:25.323421Z",
+      "modules": [
+        {
+          "filename": "worker.js",
+          "bytes": 8816,
+          "sha256": "bcd0caf7a00f37427661e35888378f03ca9e4b24c962b0cc0c1b4afa24020a0f"
+        }
+      ]
+    },
+    {
+      "worker": "khizana-book-index-actions-production",
+      "versionId": "dc3c830e-1f7e-48d8-88ff-4f7ac8133449",
+      "versionNumber": 4,
+      "deployedAt": "2026-09-17T14:49:00.171126Z",
+      "modules": [
+        {
+          "filename": "production.js",
+          "bytes": 9073,
+          "sha256": "b62e803c98f1baf4f496726afdf6d3f424a1aeb5d3d445442370514373c3792b"
+        }
+      ]
+    },
+    {
+      "worker": "khizana-book-index-jobs-preview",
+      "versionId": "f847dca0-8dfd-4e30-890f-a427c5444269",
+      "versionNumber": 2,
+      "deployedAt": "2026-09-17T13:15:15.445637Z",
+      "modules": [
+        {
+          "filename": "worker.js",
+          "bytes": 23651,
+          "sha256": "5c5d72f6f1317c08627686f90811ccc9674da7837fc8305f9cb14c1b76ba2211"
+        }
+      ]
+    },
+    {
+      "worker": "khizana-book-index-jobs-production",
+      "versionId": "c23fa5a3-29aa-4fae-a0a2-16142fcd9b8f",
+      "versionNumber": 2,
+      "deployedAt": "2026-09-17T14:49:17.655433Z",
+      "modules": [
+        {
+          "filename": "worker.js",
+          "bytes": 23652,
+          "sha256": "38c184172a30b06edc2205a025598ee2cb8cebf828227abcad6fd373eb094338"
+        }
+      ]
+    },
+    {
+      "worker": "khizana-fts-shard-speed-20260927",
+      "versionId": "5e63ea07-1bef-454c-a650-b05bc794c8fd",
+      "versionNumber": 4,
+      "deployedAt": "2026-09-27T12:59:22.356563Z",
+      "modules": [
+        {
+          "filename": "search-fts-shard-speed-worker.js",
+          "bytes": 8111,
+          "sha256": "62eb317151a8b48946ee4f71b9fa21b7dbcb935949d755d87894215bb2f6a14c"
+        }
+      ]
+    },
+    {
+      "worker": "khizana-fts-worker-acceptance-20260926",
+      "versionId": "dd0096c5-5cb7-4196-841b-ee2328abdea6",
+      "versionNumber": 5,
+      "deployedAt": "2026-09-26T11:59:09.406286Z",
+      "modules": [
+        {
+          "filename": "search-fts-acceptance-worker.js",
+          "bytes": 16414,
+          "sha256": "0ce43fc6a2f8c6db5266ed981c7b13737766b9310cba6393c299295c5a94a5c4"
+        }
+      ]
+    },
+    {
+      "worker": "khizana-import-stage-maintenance",
+      "versionId": "6643c6fb-a340-40c1-ac89-2a7a8bdeb660",
+      "versionNumber": 1,
+      "deployedAt": "2026-10-10T13:39:36.469485Z",
+      "modules": [
+        {
+          "filename": "maintenance-worker.mjs",
+          "bytes": 862267,
+          "sha256": "331ca50dc66f7d5855eef1ca62b9361293b4ce63b852e15f5604cf7e4b39d34b"
+        }
+      ]
+    },
+    {
+      "worker": "khizana-reading-reminders-preview",
+      "versionId": "21edf274-3221-4ba1-98e9-7efb3a5a62d5",
+      "versionNumber": 2,
+      "deployedAt": "2026-10-11T08:26:05.818716Z",
+      "modules": [
+        {
+          "filename": "push-acceptance-wrapper.js",
+          "bytes": 34954,
+          "sha256": "f689b640b79bcdc7c403f1699a753a894c02e33af8d62791e150aee087e7fe62"
+        }
+      ]
+    }
+  ]
+}
