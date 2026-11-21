@@ -85,11 +85,12 @@ INSERT INTO subject_category_aliases(alias,category_id) VALUES('التفاسير
 CREATE TRIGGER subject_category_alias_insert AFTER INSERT ON subject_categories WHEN NEW.updated_by IS NOT NULL BEGIN
  INSERT INTO subject_category_aliases(alias,category_id) VALUES(NEW.name,NEW.category_id);
  INSERT INTO oversight_events(entity_type,entity_id,actor_subject,action,before_json,after_json,before_revision,revision) VALUES('subject-category',NEW.category_id,NEW.updated_by,'create',NULL,json_object('name',NEW.name),0,NEW.revision);
- SELECT CASE WHEN NOT EXISTS(SELECT 1 FROM oversight_events WHERE entity_type='subject-category' AND entity_id=NEW.category_id AND revision=NEW.revision AND actor_subject=NEW.updated_by AND after_json=json_object('name',NEW.name)) OR NOT EXISTS(SELECT 1 FROM subject_category_aliases WHERE alias=NEW.name AND category_id=NEW.category_id) THEN RAISE(ABORT,'category_audit_missing') END;
+ SELECT (CASE WHEN NOT EXISTS(SELECT 1 FROM oversight_events WHERE entity_type='subject-category' AND entity_id=NEW.category_id AND revision=NEW.revision AND actor_subject=NEW.updated_by AND after_json=json_object('name',NEW.name)) OR NOT EXISTS(SELECT 1 FROM subject_category_aliases WHERE alias=NEW.name AND category_id=NEW.category_id) THEN RAISE(ABORT,'category_audit_missing') END);
 END;
 CREATE TRIGGER subject_category_alias_update AFTER UPDATE ON subject_categories WHEN NEW.revision<>OLD.revision BEGIN
- SELECT CASE WHEN EXISTS(SELECT 1 FROM subject_category_aliases WHERE alias=NEW.name AND category_id<>NEW.category_id) THEN RAISE(ABORT,'category_name_reserved') END;
+ SELECT (CASE WHEN EXISTS(SELECT 1 FROM subject_category_aliases WHERE alias=NEW.name AND category_id<>NEW.category_id) THEN RAISE(ABORT,'category_name_reserved') END);
  INSERT OR IGNORE INTO subject_category_aliases(alias,category_id) VALUES(NEW.name,NEW.category_id);
  INSERT INTO oversight_events(entity_type,entity_id,actor_subject,action,before_json,after_json,before_revision,revision) VALUES('subject-category',NEW.category_id,NEW.updated_by,'update',json_object('name',OLD.name),json_object('name',NEW.name),OLD.revision,NEW.revision);
- SELECT CASE WHEN NOT EXISTS(SELECT 1 FROM oversight_events WHERE entity_type='subject-category' AND entity_id=NEW.category_id AND revision=NEW.revision AND actor_subject=NEW.updated_by AND after_json=json_object('name',NEW.name)) OR NOT EXISTS(SELECT 1 FROM subject_category_aliases WHERE alias=NEW.name AND category_id=NEW.category_id) THEN RAISE(ABORT,'category_audit_missing') END;
+ SELECT (CASE WHEN NOT EXISTS(SELECT 1 FROM oversight_events WHERE entity_type='subject-category' AND entity_id=NEW.category_id AND revision=NEW.revision AND actor_subject=NEW.updated_by AND after_json=json_object('name',NEW.name)) OR NOT EXISTS(SELECT 1 FROM subject_category_aliases WHERE alias=NEW.name AND category_id=NEW.category_id) THEN RAISE(ABORT,'category_audit_missing') END);
 END;
+
