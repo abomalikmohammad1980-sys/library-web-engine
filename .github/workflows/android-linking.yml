@@ -1,0 +1,41 @@
+name: Android static linking gate
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'ops/android/**'
+      - 'tools/*android*'
+      - '.github/workflows/android-linking.yml'
+      - 'deployment/cloudflare/scripts/**'
+jobs:
+  contracts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test tools/android-assetlinks.test.mjs tools/android-assetlinks-source.test.mjs
+  release-gate:
+    if: github.event_name == 'workflow_dispatch'
+    needs: contracts
+    runs-on: ubuntu-latest
+    env:
+      KHIZANA_ANDROID_RELEASE: '1'
+      KHIZANA_ANDROID_ASSETLINKS_JSON: ${{ secrets.KHIZANA_ANDROID_ASSETLINKS_JSON }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Prepare static linking artifact using the repository source or CI JSON
+        run: node tools/prepare-android-links.mjs android-linking-artifact
+      - run: node tools/verify-android-links.mjs --artifact android-linking-artifact
+      - name: Verify the official domain after its deployment
+        run: node tools/verify-android-links.mjs --origin https://khzanah.com
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: android-linking-artifact
+          path: android-linking-artifact
+          include-hidden-files: true

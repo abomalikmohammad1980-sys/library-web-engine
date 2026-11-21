@@ -69,7 +69,7 @@
 .app-header__auth { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 6px 10px; border: 1px solid var(--border-strong); border-radius: var(--radius-md); color: var(--text-primary); font-size: 13px; font-weight: 600; white-space: nowrap; flex-shrink: 0; }
 .app-header__auth:focus-visible { outline: 3px solid var(--brand-selection); outline-offset: 2px; }
 @media (max-width: 768px) {
-  .app-header__inner { flex-wrap: wrap; height: auto; min-height: 64px; padding-block: 6px; }
+  .app-header__inner { flex-wrap: nowrap; height: 64px; min-height: 64px; padding-block: 6px; }
   .app-header__auth { margin-inline-start: auto; }
 }
 
