@@ -43,6 +43,11 @@ jobs:
       - name: Show bounded result
         if: always()
         run: tail -n 8 supervisor.log
+      - name: Diagnose previous Kaggle notebook
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
+        env:
+          KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
+        run: python deployment/translation-supervisor/diagnose_logs.py 59
       - name: Derive alert identity
         if: steps.supervisor.outcome == 'failure'
         id: alert
