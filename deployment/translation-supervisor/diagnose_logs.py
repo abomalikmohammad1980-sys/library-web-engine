@@ -16,6 +16,7 @@ def summarize(lines):
     queue = None
     current = None
     counters = collections.Counter()
+    pause_reasons = collections.Counter()
     for line in lines:
         counters["lines"] += 1
         match = re.search(r"Local validation rejected: ([a-z-]+)/([a-z]+): ([a-z_]+)", line)
@@ -34,7 +35,15 @@ def summarize(lines):
         for marker in ("Saved:", "Completed:", "Paused:", "Local correction accepted:", "No claimable", "Traceback"):
             if marker in line:
                 counters[marker] += 1
-    return {"counters": counters, "validation": validation, "failures": failures,
+        if "Paused:" in line:
+            reason = line.split("Paused:", 1)[1].split("\\n", 1)[0].split('"', 1)[0]
+            reason = re.sub(r"https?://\S+", "[url]", reason)
+            reason = re.sub(r"[A-Fa-f0-9]{24,}", "[hash]", reason)
+            reason = re.sub(r"[^A-Za-z0-9 _.,:;=()/\-]", "", reason)[:140].strip()
+            if reason:
+                pause_reasons[reason] += 1
+    return {"counters": counters, "pauseReasons": pause_reasons.most_common(8),
+            "validation": validation, "failures": failures,
             "lastQueue": queue, "lastCurrent": current}
 
 
