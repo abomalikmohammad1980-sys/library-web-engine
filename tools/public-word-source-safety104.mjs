@@ -1,5 +1,6 @@
 // Structural rejection gate, NOT antivirus/CDR or a certificate of file safety.
 // No Office execution, remote resource loading, filesystem extraction or shell calls.
+import {MAX_HIGH_RATIO_EMF,MAX_HIGH_RATIO_EMF_TOTAL,safeHighRatioRasterEmf} from '../deployment/cloudflare/functions/api/word-upload-raster-emf-v1.mjs'
 const MAX_XML=64*1024*1024,MAX_TOTAL=256*1024*1024
 const decoder=new TextDecoder('utf-8',{fatal:true})
 const view=b=>new DataView(b.buffer,b.byteOffset,b.byteLength)
@@ -62,7 +63,7 @@ export async function safeWordUpload(file,{maxSourceBytes=20*1024*1024}={}){
   if(e<0||tv.getUint16(e+4,true)||tv.getUint16(e+6,true))return false
   const count=tv.getUint16(e+10,true),length=tv.getUint32(e+12,true),start=tv.getUint32(e+16,true)
   if(!count||count>4096||count!==tv.getUint16(e+8,true)||length>2*1024*1024||start+length!==file.size-tail.length+e)return false
-  const central=await bytes(file,start,start+length),cv=view(central),names=new Set(),entries=[];let p=0,total=0,xmlTotal=0
+  const central=await bytes(file,start,start+length),cv=view(central),names=new Set(),entries=[];let p=0,total=0,xmlTotal=0,highRatioEmfTotal=0
   for(let i=0;i<count;i++){
    if(p+46>central.length||cv.getUint32(p,true)!==0x02014b50)return false
    const flags=cv.getUint16(p+8,true),method=cv.getUint16(p+10,true),packed=cv.getUint32(p+20,true),size=cv.getUint32(p+24,true),n=cv.getUint16(p+28,true),extra=cv.getUint16(p+30,true),comment=cv.getUint16(p+32,true),local=cv.getUint32(p+42,true)
@@ -70,7 +71,12 @@ export async function safeWordUpload(file,{maxSourceBytes=20*1024*1024}={}){
    if(p+46+n+extra+comment>central.length||flags&~0x80e||![0,8].includes(method)||cv.getUint16(p+34,true))return false
    const name=decoder.decode(central.slice(p+46,p+46+n)),lower=name.toLowerCase()
    if(!name||names.has(lower)||/[\\\x00-\x1f%:]/.test(name)||name.startsWith('/')||name.split('/').some(x=>x==='..'||x==='.'))return false
-   names.add(lower);total+=size;if(total>MAX_TOTAL||size>Math.max(1024*1024,packed*200))return false
+   names.add(lower);total+=size;if(total>MAX_TOTAL)return false
+   const highRatio=size>Math.max(1024*1024,packed*200),expectedCrc=cv.getUint32(p+16,true)
+   if(highRatio){
+    if(!/^word\/media\/[^/]+\.emf$/u.test(name)||method!==8||(flags&8)||size>MAX_HIGH_RATIO_EMF)return false
+    highRatioEmfTotal+=size;if(highRatioEmfTotal>MAX_HIGH_RATIO_EMF_TOTAL)return false
+   }
    if(/vba|activex|embeddings|customui/i.test(name)||/\.(?:bin|exe|dll|com|js|vbs|hta|html?)$/i.test(name))return false
    const header=await bytes(file,local,local+30),hv=view(header)
    if(header.length!==30||hv.getUint32(0,true)!==0x04034b50||hv.getUint16(6,true)!==flags||hv.getUint16(8,true)!==method)return false
@@ -78,6 +84,7 @@ export async function safeWordUpload(file,{maxSourceBytes=20*1024*1024}={}){
    if(body+packed>start||decoder.decode(await bytes(file,local+30,local+30+ln))!==name)return false
    if(!(flags&8)&&(hv.getUint32(18,true)!==packed||hv.getUint32(22,true)!==size))return false
    const entry={name,local,start:body,end:body+packed,method,size,flags};entries.push(entry)
+   if(highRatio&&(hv.getUint32(14,true)!==expectedCrc||!await safeHighRatioRasterEmf(file,entry,expectedCrc)))return false
    if(/\.(?:xml|rels)$/i.test(name)){
     xmlTotal+=size;if(xmlTotal>64*1024*1024)return false
     if(!await safeXml(file,entry))return false
