@@ -62,7 +62,12 @@ try{
   const pdfModule=await import('./public-book-index-pdf.mjs')
   const result=(input.extractionProfile===undefined||input.extractionProfile===PDF_BOOKMARK_SOURCE64_V1)?await pdfModule.extractPublicPdfBookmarks(new Uint8Array(bytes)):input.extractionProfile===PDF_TEXT_AND_BOOKMARKS_V1?await pdfModule.extractPublicPdfTextAndBookmarksV1(new Uint8Array(bytes)):input.extractionProfile==='khizana-textual-pdf-preparation/1'?await pdfModule.extractPublicTextualPdfPreparationV1(new Uint8Array(bytes)):(()=>{throw Error('pdf_preparation_profile')})()
   let readerOpening,readerOpeningFailure
-  try{readerOpening=await createPublicPdfReaderOpening(bytes)}catch(error){readerOpeningFailure=/^reader_opening_[a-z_]{1,60}$/.test(error?.message??'')?error.message:'reader_opening_generate_failed'}
+  try{
+   const opening=await createPublicPdfReaderOpening(bytes)
+   const indexedPages=result.pdfClassification?.pageCount
+   if(indexedPages!==undefined&&indexedPages!==opening.pages)readerOpeningFailure='reader_opening_page_identity'
+   else readerOpening=opening
+  }catch(error){readerOpeningFailure=/^reader_opening_[a-z_]{1,60}$/.test(error?.message??'')?error.message:'reader_opening_generate_failed'}
   const message={result,...readerOpening?{readerOpening}:{},...readerOpeningFailure?{readerOpeningFailure}:{}}
   if(parentPort)parentPort.postMessage(message)
   else await new Promise((resolve,reject)=>process.send(message,error=>error?reject(error):resolve()))
